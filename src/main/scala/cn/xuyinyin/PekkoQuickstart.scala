@@ -2,15 +2,15 @@
 package cn.xuyinyin
 
 
-import org.apache.pekko.actor.typed.ActorRef
-import org.apache.pekko.actor.typed.ActorSystem
-import org.apache.pekko.actor.typed.Behavior
-import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import cn.xuyinyin.GreeterMain.SayHello
+import org.apache.pekko.actor.typed.{ActorRef, ActorSystem, Behavior}
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 
 //#greeter-actor
 object Greeter {
+
   final case class Greet(whom: String, replyTo: ActorRef[Greeted])
+
   final case class Greeted(whom: String, from: ActorRef[Greet])
 
   def apply(): Behavior[Greet] = Behaviors.receive { (context, message) =>
@@ -34,11 +34,11 @@ object GreeterBot {
     Behaviors.receive { (context, message) =>
       val n = greetingCounter + 1
       context.log.info("Greeting {} for {}", n, message.whom)
-      if (n == max) {
-        Behaviors.stopped
-      } else {
-        message.from ! Greeter.Greet(message.whom, context.self)
-        bot(n, max)
+      n match {
+        case n if n == max => Behaviors.stopped
+        case _ =>
+          message.from ! Greeter.Greet(message.whom, context.self)
+          bot(n, max)
       }
     }
 }
