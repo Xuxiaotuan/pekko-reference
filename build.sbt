@@ -1,11 +1,12 @@
-val scala            = "2.13.12"
+val scala = "2.13.12"
 
-val projectName      = "pekko-reference"
-val organizationName = "cn.xuyinyin"
-val projectVersion   = "1.0"
-val pekkoVersion     = "1.0.3"
-val scalatestVersion = "3.2.19"
-val logbackVersion   = "1.2.11"
+val projectName         = "pekko-reference"
+val organizationName    = "cn.xuyinyin"
+val projectVersion      = "0.1"
+val pekkoVersion        = "1.0.3"
+val scalatestVersion    = "3.2.19"
+val logbackVersion      = "1.2.11"
+val scalaLoggingVersion = "3.9.5"
 
 lazy val commonSettings = Seq(
   organization := organizationName,
@@ -16,8 +17,9 @@ lazy val commonSettings = Seq(
   Compile / javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation", "-source", "1.8", "-target", "1.8"),
   run / javaOptions ++= Seq("-Xms128m", "-Xmx1024m", "-Djava.library.path=./target/native"),
   libraryDependencies ++= Seq(
-    "ch.qos.logback"    % "logback-classic"             % logbackVersion,
-    "org.scalatest"    %% "scalatest"                   % scalatestVersion % Test,
+    "com.typesafe.scala-logging" %% "scala-logging"   % scalaLoggingVersion,
+    "ch.qos.logback"              % "logback-classic" % logbackVersion,
+    "org.scalatest"              %% "scalatest"       % scalatestVersion % Test,
   )
 )
 
@@ -51,6 +53,6 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       "org.apache.pekko" %% "pekko-actor-typed"           % pekkoVersion,
       "org.apache.pekko" %% "pekko-cluster-typed"         % pekkoVersion,
       "org.apache.pekko" %% "pekko-serialization-jackson" % pekkoVersion,
-      "org.apache.pekko" %% "pekko-multi-node-testkit"    % pekkoVersion     % Test,
-      "org.apache.pekko" %% "pekko-actor-testkit-typed"   % pekkoVersion     % Test),
+      "org.apache.pekko" %% "pekko-multi-node-testkit"    % pekkoVersion % Test,
+      "org.apache.pekko" %% "pekko-actor-testkit-typed"   % pekkoVersion % Test),
   )
