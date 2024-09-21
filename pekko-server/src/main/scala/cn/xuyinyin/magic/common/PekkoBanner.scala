@@ -1,13 +1,15 @@
 package cn.xuyinyin.magic.common
 
+import cn.xuyinyin.magic.config.PekkoConfig
+
 /**
- * @author : XuJiaWei
+ * @author : Xuxiaotuan
  * @since : 2024-09-21 23:44
  */
 object PekkoBanner {
 
-  def pekko(version: String): String = {
-    s"""Pekko Server $version
+  def pekkoServer: String = {
+    s"""Pekko Server ${PekkoConfig.projectVersion}
        |██████╗ ███████╗██╗  ██╗██╗  ██╗ ██████╗     ███████╗███████╗██████╗ ██╗   ██╗███████╗██████╗
        |██╔══██╗██╔════╝██║ ██╔╝██║ ██╔╝██╔═══██╗    ██╔════╝██╔════╝██╔══██╗██║   ██║██╔════╝██╔══██╗
        |██████╔╝█████╗  █████╔╝ █████╔╝ ██║   ██║    ███████╗█████╗  ██████╔╝██║   ██║█████╗  ██████╔╝

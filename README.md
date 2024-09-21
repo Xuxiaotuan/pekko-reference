@@ -6,9 +6,13 @@ reference and application of pekko functions
 
 ## TODO
 
-- [ ] cluster
+- [x] cluster
 - [ ] docker
 - [ ] Distributed Data
+
+1. pekko-reference run to docker
+2. add dispatcher-pump, worker-pump, http-query, http-cmd node
+3. pekko custon stream As a workflow implementation
 
 ## Dependencies
 

@@ -12,6 +12,10 @@ import org.apache.pekko.cluster.ClusterEvent.UnreachableMember
 import org.apache.pekko.cluster.typed.Cluster
 import org.apache.pekko.cluster.typed.Subscribe
 
+/**
+ * @author : Xuxiaotuan
+ * @since : 2024-09-21 22:18
+ */
 object ClusterListener {
 
   sealed trait Event
