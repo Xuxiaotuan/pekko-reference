@@ -12,6 +12,7 @@ lazy val commonSettings = Seq(
   organization := organizationName,
   version      := projectVersion,
   scalaVersion := scala,
+  maintainer   := "jia_yangchen@163.com, aka Xuxiaotuan",
   name         := projectName,
   Compile / scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
   Compile / javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation", "-source", "1.8", "-target", "1.8"),
