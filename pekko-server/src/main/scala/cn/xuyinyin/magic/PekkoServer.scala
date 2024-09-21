@@ -10,7 +10,14 @@ import com.typesafe.config.ConfigFactory
  * @since : 2024-09-21 09:11
  */
 
-object App {
+object PekkoServer extends App {
+
+  private val ports =
+    if (args.isEmpty)
+      Seq(17356, 17357, 17358)
+    else
+      args.toSeq.map(_.toInt)
+  ports.foreach(startup)
 
   private object RootBehavior {
     def apply(): Behavior[Nothing] = Behaviors.setup[Nothing] { context =>
@@ -19,15 +26,6 @@ object App {
 
       Behaviors.empty
     }
-  }
-
-  def main(args: Array[String]): Unit = {
-    val ports =
-      if (args.isEmpty)
-        Seq(17356, 17357, 17358)
-      else
-        args.toSeq.map(_.toInt)
-    ports.foreach(startup)
   }
 
   private def startup(port: Int): Unit = {
