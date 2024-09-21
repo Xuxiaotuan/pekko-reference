@@ -1,43 +1,20 @@
 package cn.xuyinyin.magic
 
-import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import org.apache.pekko.actor.typed.ActorSystem
-import org.apache.pekko.actor.typed.Behavior
+import cn.xuyinyin.magic.cluster.PekkoGuardian
 import com.typesafe.config.ConfigFactory
+import org.apache.pekko.actor.typed.ActorSystem
 
-/**
- * @author : XuJiaWei
- * @since : 2024-09-21 09:11
- */
+import scala.concurrent.ExecutionContextExecutor
+
 
 object PekkoServer extends App {
 
-  private val ports =
-    if (args.isEmpty)
-      Seq(17356, 17357, 17358)
-    else
-      args.toSeq.map(_.toInt)
-  ports.foreach(startup)
+  private val config = ConfigFactory.load()
 
-  private object RootBehavior {
-    def apply(): Behavior[Nothing] = Behaviors.setup[Nothing] { context =>
-      // Create an actor that handles cluster domain events
-      context.spawn(ClusterListener(), "ClusterListener")
-
-      Behaviors.empty
-    }
-  }
-
-  private def startup(port: Int): Unit = {
-    // Override the configuration of the port
-    val config = ConfigFactory
-      .parseString(s"""
-      pekko.remote.artery.canonical.port=$port
-      """)
-      .withFallback(ConfigFactory.load())
-
-    // Create an Apache Pekko system
-    ActorSystem[Nothing](RootBehavior(), "ClusterSystem", config)
-  }
+  // init Apache Pekko system
+  implicit val system: ActorSystem[PekkoGuardian.Command] = ActorSystem(PekkoGuardian(), "pekko-cluster-system", config)
+  implicit val ec: ExecutionContextExecutor               = system.executionContext
+  // allowing all actors to finish their tasks and clean up resources before shutting down completely.
+  sys.addShutdownHook(system.terminate())
 
 }
