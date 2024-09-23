@@ -1,8 +1,10 @@
 package cn.xuyinyin.magic.cluster
 
 import cn.xuyinyin.magic.ClusterListener
-import org.apache.pekko.actor.typed.Behavior
+import cn.xuyinyin.magic.single.PekkoGc
+import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.scaladsl.Behaviors.same
 import org.apache.pekko.cluster.typed.Cluster
 
 /**
@@ -12,6 +14,7 @@ import org.apache.pekko.cluster.typed.Cluster
 object PekkoGuardian {
 
   sealed trait Command
+  final case class GetNodeRoles(reply: ActorRef[Set[String]]) extends Command
 
   def apply(): Behavior[Command] = Behaviors.setup { implicit ctx =>
     val selfMember = Cluster(ctx.system).selfMember
@@ -20,6 +23,12 @@ object PekkoGuardian {
     // Create an actor that handles cluster domain events
     ctx.spawn(ClusterListener(), "ClusterListener")
 
-    Behaviors.empty
+    ctx.spawn(PekkoGc(), "PekkoGc")
+
+    Behaviors.receiveMessagePartial {
+      case GetNodeRoles(reply) =>
+        reply ! selfMember.roles
+        same
+    }
   }
 }

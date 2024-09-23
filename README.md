@@ -7,7 +7,9 @@ reference and application of pekko functions
 ## TODO
 
 - [x] cluster
-- [ ] docker
+  - [x] cluster single
+- [x] build
+- [x] docker
 - [ ] Distributed Data
 
 1. pekko-reference run to docker
