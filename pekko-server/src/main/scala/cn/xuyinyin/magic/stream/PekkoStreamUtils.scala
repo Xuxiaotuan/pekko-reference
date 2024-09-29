@@ -42,17 +42,17 @@ object PekkoStreamUtils {
   }
 
   def main(args: Array[String]): Unit = {
-    val worker1                    = Flow[String].map("step 1 " + _)
-    val worker2                    = Flow[String].map("step 2 " + _)
-    implicit val system            = ActorSystem("peekoStream")
-    implicit val mat: Materializer = Materializer(system)
+    val worker1                      = Flow[String].map("step 1 " + _)
+    val worker2                      = Flow[String].map("step 2 " + _)
+    implicit val system: ActorSystem = ActorSystem("peekoStream")
+    implicit val mat: Materializer   = Materializer(system)
 
     RunnableGraph
       .fromGraph(GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
 
-        val priorityPool1 = b.add(PekkoStreamUtils(worker1, 4))
-        val priorityPool2 = b.add(PekkoStreamUtils(worker2, 2))
+        val priorityPool1 = b.add(PekkoStreamUtils(worker1, workerCount = 4))
+        val priorityPool2 = b.add(PekkoStreamUtils(worker2, workerCount = 2))
 
         Source(1 to 100).map("job: " + _) ~> priorityPool1.jobsIn
         Source(1 to 100).map("priority job: " + _) ~> priorityPool1.priorityJobsIn
@@ -80,15 +80,7 @@ case class PriorityWorkerPoolShape[In, Out](jobsIn: Inlet[In], priorityJobsIn: I
 
   // A Shape must be able to create a copy of itself. Basically
   // it means a new instance with copies of the ports
-  override def deepCopy() =
+  override def deepCopy(): PriorityWorkerPoolShape[In, Out] =
     PriorityWorkerPoolShape(jobsIn.carbonCopy(), priorityJobsIn.carbonCopy(), resultsOut.carbonCopy())
 
-}
-
-class PriorityWorkerPoolShape2[In, Out](_init: Init[Out] = Name("PriorityWorkerPool")) extends FanInShape[Out](_init) {
-  override protected def construct(i: Init[Out]) = new PriorityWorkerPoolShape2(i)
-
-  val jobsIn         = newInlet[In]("jobsIn")
-  val priorityJobsIn = newInlet[In]("priorityJobsIn")
-  // Outlet[Out] with name "out" is automatically created
 }
