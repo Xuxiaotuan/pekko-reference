@@ -44,7 +44,7 @@ object PekkoStreamUtils {
   def main(args: Array[String]): Unit = {
     val worker1                      = Flow[String].map("step 1 " + _)
     val worker2                      = Flow[String].map("step 2 " + _)
-    implicit val system: ActorSystem = ActorSystem("peekoStream")
+    implicit val system: ActorSystem = ActorSystem("pekko-cluster-system")
     implicit val mat: Materializer   = Materializer(system)
 
     RunnableGraph
