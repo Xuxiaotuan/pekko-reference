@@ -1,6 +1,7 @@
 package cn.xuyinyin.magic.stream
 
 import cn.xuyinyin.magic.testkit.STPekkoSpec
+import com.typesafe.config.ConfigFactory
 import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.actor.{ActorRef, ActorSystem}
 import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -14,19 +15,30 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
 /**
- *  https://doc.akka.io/docs/akka/current/stream/stream-flows-and-basics.html
+ *  https://doc.pekko.io/docs/pekko/current/stream/stream-flows-and-basics.html
  *
  * @author : Xuxiaotuan
  * @since : 2023-03-20 23:34
  */
 class PekkoStreamFlowSpec extends ScalaTestWithActorTestKit with STPekkoSpec {
-  "akka stream  flow" should {
+  "pekko stream  flow" should {
 
-    implicit val system: ActorSystem  = ActorSystem("demo")
+    val config = ConfigFactory.parseString(
+      """
+        |pekko {
+        |  remote.artery {
+        |    canonical {
+        |      port = 0 # 使用随机端口
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    implicit val system: ActorSystem = ActorSystem("demo", config)
     implicit val mat: Materializer    = Materializer(system)
     implicit val ec: ExecutionContext = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(8))
 
-    "Akka Streams working with flow sample." in {
+    "pekko Streams working with flow sample." in {
       val in  = Source(1 to 10)
       val out = Sink.foreach[Int](x => println(s"out: Number: $x"))
 
@@ -57,7 +69,7 @@ class PekkoStreamFlowSpec extends ScalaTestWithActorTestKit with STPekkoSpec {
       graph.run()
     }
 
-    "Akka Stream RunnableGraph" in {
+    "pekko Stream RunnableGraph" in {
       Source(1 to 10)
         // connect the source to the sink , obtaining a RunnableGraph
         .toMat(Sink.fold[Int, Int](0)(_ + _))(Keep.right)
@@ -69,7 +81,7 @@ class PekkoStreamFlowSpec extends ScalaTestWithActorTestKit with STPekkoSpec {
         }
     }
 
-    "Akka Stream runWith, toMat()(Keep.right).run() A simplified version of " in {
+    "pekko Stream runWith, toMat()(Keep.right).run() A simplified version of " in {
       Source(1 to 10)
         // materialize the flow, getting the Sink's materialized value
         .runWith(Sink.fold[Int, Int](0)(_ + _))
@@ -79,7 +91,7 @@ class PekkoStreamFlowSpec extends ScalaTestWithActorTestKit with STPekkoSpec {
         }
     }
 
-    "Akka operators are immutable" in {
+    "pekko operators are immutable" in {
       val source = Source(1 to 10)
       // has no effect on source, since it`s immutable
       source.map(_ => 0)
