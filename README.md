@@ -17,6 +17,11 @@ reference and application of pekko functions
 3. sbt multi-module
 4. pekko custon stream As a workflow implementation
 
+
+1. Request or configure the task to be submitted from the interface
+2. Parse requests into different task flows and DSL
+3. Run the DSL
+4. Monitor the DSL operation during the execution
 ## Dependencies
 
 #### Technology stack
