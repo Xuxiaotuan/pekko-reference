@@ -1,6 +1,7 @@
 package cn.xuyinyin.magic.stream
 
 import cn.xuyinyin.magic.testkit.STPekkoSpec
+import com.typesafe.config.ConfigFactory
 import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.actor.{ActorRef, ActorSystem}
 import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -17,9 +18,20 @@ import scala.language.postfixOps
  * @since : 2023-03-20 23:34
  */
 class PekkoStreamSpec extends ScalaTestWithActorTestKit with STPekkoSpec {
-  "akka" should {
+  "pekko" should {
 
-    implicit val system: ActorSystem  = ActorSystem("demo")
+    val config = ConfigFactory.parseString(
+      """
+        |pekko {
+        |  remote.artery {
+        |    canonical {
+        |      port = 0 # 使用随机端口
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    implicit val system: ActorSystem = ActorSystem("demo", config)
     implicit val mat: Materializer    = Materializer(system)
     implicit val ec: ExecutionContext = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(8))
 
@@ -37,7 +49,7 @@ class PekkoStreamSpec extends ScalaTestWithActorTestKit with STPekkoSpec {
         .runWith(Sink.foreach(println))
     }
 
-    "akka stream" in {
+    "pekko stream" in {
       Source(1 to 1000000)
         .map(_.toString)
         .grouped(1000)
