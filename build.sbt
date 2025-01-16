@@ -60,7 +60,10 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       // -test
       "org.apache.pekko" %% "pekko-stream-testkit"      % pekkoVersion % Test,
       "org.apache.pekko" %% "pekko-multi-node-testkit"  % pekkoVersion % Test,
-      "org.apache.pekko" %% "pekko-actor-testkit-typed" % pekkoVersion % Test
+      "org.apache.pekko" %% "pekko-actor-testkit-typed" % pekkoVersion % Test,
+
+      "com.h2database" % "h2" % "2.3.232" % Test,
+
 
     ),
   )
