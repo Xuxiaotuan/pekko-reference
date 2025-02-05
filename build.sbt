@@ -7,6 +7,7 @@ val pekkoVersion        = "1.0.3"
 val scalatestVersion    = "3.2.19"
 val logbackVersion      = "1.2.11"
 val scalaLoggingVersion = "3.9.5"
+val calciteVersion        = "1.38.0"
 
 lazy val commonSettings = Seq(
   organization := organizationName,
@@ -63,6 +64,9 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       "org.apache.pekko" %% "pekko-actor-testkit-typed" % pekkoVersion % Test,
 
       "com.h2database" % "h2" % "2.3.232" % Test,
+      // sql parser
+      "org.apache.calcite" % "calcite-core"   % calciteVersion exclude ("org.slf4j", "slf4j-api") exclude ("commons-logging", "commons-logging"),
+      "org.apache.calcite" % "calcite-server" % calciteVersion exclude ("org.slf4j", "slf4j-api") exclude ("commons-logging", "commons-logging"),
 
 
     ),

@@ -62,7 +62,6 @@ class ComprehensiveCalciteTest extends STSpec {
     }
 
     // 测试 2: 复杂过滤条件
-
     "be optimized" in {
       val relBuilder = RelBuilder.create(config)
       // 构建 RelNode（包含冗余的过滤条件和投影操作）
@@ -190,7 +189,62 @@ class ComprehensiveCalciteTest extends STSpec {
 
       // 解析 SQL
       val parsed: SqlNode = planner.parse(sql)
+    }
 
+    // 测试 6： sql转relNode
+    "sql convert relNode" in {
+      // SQL语句
+      val sql = """
+      SELECT id, name, age
+      FROM (
+        SELECT *
+        FROM my_schema.my_table
+        WHERE age > 18 AND name LIKE 'A%'
+      ) AS t
+      WHERE salary > 50000
+    """
+      // 解析 SQL 语句并转换为 RelNode
+      val planner = Frameworks.getPlanner(config)
+      val sqlNode = planner.parse(sql)
+      val validatedSqlNode = planner.validate(sqlNode)
+      val relNode = planner.rel(validatedSqlNode).project()
+      // 打印原始计划
+      println("原始计划:\n" + RelOptUtil.toString(relNode))
+
+      // 生成 SQL
+      val dialect: PostgresqlSqlDialect = new PostgresqlSqlDialect(SqlDialect.EMPTY_CONTEXT)
+      val relToSqlConverter = new RelToSqlConverter(dialect)
+      val result = relToSqlConverter.visitRoot(relNode)
+      val sqlNodeResult: SqlNode = result.asStatement()
+      val sqlString = sqlNodeResult.toSqlString(dialect).getSql
+      println("生成优化前的 SQL: \n" + sqlString)
+
+      // 创建优化器并添加规则
+      val hepProgramBuilder = new HepProgramBuilder()
+
+      // 增加优化规则
+      hepProgramBuilder.addRuleInstance(CoreRules.FILTER_REDUCE_EXPRESSIONS) // 简化过滤条件
+      hepProgramBuilder.addRuleInstance(CoreRules.FILTER_MERGE)              // 合并过滤条件
+      hepProgramBuilder.addRuleInstance(CoreRules.PROJECT_FILTER_TRANSPOSE)  // 将过滤条件下推到投影之前
+      hepProgramBuilder.addRuleInstance(CoreRules.PROJECT_MERGE)             // 合并冗余的投影操作
+      hepProgramBuilder.addRuleInstance(CoreRules.PROJECT_REMOVE)            // 移除冗余的投影操作
+      hepProgramBuilder.addRuleInstance(CoreRules.JOIN_COMMUTE)              // 交换 JOIN 顺序
+      hepProgramBuilder.addRuleInstance(CoreRules.JOIN_ASSOCIATE)            // 合并 JOIN 操作
+
+      // 添加更多规则，确保过滤条件能够合并
+      hepProgramBuilder.addRuleInstance(CoreRules.FILTER_TO_CALC)            // 通过计算来合并过滤条件
+      hepProgramBuilder.addRuleInstance(CoreRules.CALC_MERGE)                // 合并计算节点
+
+      // 创建优化器并设置 root
+      val hepPlanner: HepPlanner = new HepPlanner(hepProgramBuilder.build())
+      hepPlanner.setRoot(relNode)
+      val optimized: RelNode = hepPlanner.findBestExp()
+
+      // 打印优化后计划
+      println("\n优化后计划:\n" + RelOptUtil.toString(optimized))
+      // 生成优化后的 SQL
+      val optimizedSql = toSql(optimized, dialect)
+      println("生成优化后的 SQL:\n" + optimizedSql)
     }
   }
 
