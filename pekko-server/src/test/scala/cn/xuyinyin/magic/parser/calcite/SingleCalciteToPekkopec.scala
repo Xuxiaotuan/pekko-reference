@@ -1,13 +1,12 @@
 package cn.xuyinyin.magic.parser.calcite
 
-import cn.xuyinyin.magic.parser.calcite.myproject.Row
 import cn.xuyinyin.magic.testkit.STSpec
 import com.typesafe.config.ConfigFactory
 import org.apache.calcite.DataContext
 import org.apache.calcite.config.Lex
 import org.apache.calcite.linq4j.{Enumerable, Linq4j}
-import org.apache.calcite.plan.{RelOptTable, RelOptUtil}
 import org.apache.calcite.plan.hep.{HepPlanner, HepProgram, HepProgramBuilder}
+import org.apache.calcite.plan.{RelOptTable, RelOptUtil}
 import org.apache.calcite.rel.RelNode
 import org.apache.calcite.rel.`type`.{RelDataType, RelDataTypeFactory, RelDataTypeField}
 import org.apache.calcite.rel.core.{Filter, Join, Project, TableScan}
@@ -16,10 +15,10 @@ import org.apache.calcite.rel.rules.CoreRules
 import org.apache.calcite.rex.RexNode
 import org.apache.calcite.schema.impl.{AbstractSchema, AbstractTable}
 import org.apache.calcite.schema.{ScannableTable, SchemaPlus, Table}
-import org.apache.calcite.sql.{SqlExplainFormat, SqlExplainLevel, SqlNode}
 import org.apache.calcite.sql.`type`.SqlTypeName
 import org.apache.calcite.sql.dialect.PostgresqlSqlDialect
 import org.apache.calcite.sql.parser.SqlParser
+import org.apache.calcite.sql.{SqlExplainFormat, SqlExplainLevel, SqlNode}
 import org.apache.calcite.tools.{Frameworks, Planner}
 import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.ActorSystem
@@ -32,13 +31,8 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
 import scala.jdk.CollectionConverters.IterableHasAsJava
 
-// 定义行的类型，这里使用 Map[String, Any] 表示一行数据
-package object myproject {
-  type Row = Map[String, Any]
-}
-
 // 定义一个简单的 EMP 表（仅用于验证生成计划，实际数据为空）
-class EmpCPTable extends AbstractTable with ScannableTable {
+class EmpSingleTable extends AbstractTable with ScannableTable {
 
   override def getRowType(typeFactory: RelDataTypeFactory): RelDataType = {
     typeFactory
@@ -59,38 +53,16 @@ class EmpCPTable extends AbstractTable with ScannableTable {
   }
 }
 
-// 模拟 DEPT 表，包含字段 DEPTNO 和 DEPTNAME
-class DeptCPTable extends AbstractTable with ScannableTable {
-  override def getRowType(typeFactory: RelDataTypeFactory): RelDataType = {
-    typeFactory
-      .builder()
-      .add("DEPTNO", typeFactory.createSqlType(SqlTypeName.INTEGER))
-      .add("DEPTNAME", typeFactory.createSqlType(SqlTypeName.VARCHAR))
-      .build()
-  }
-
-  override def scan(root: DataContext): Enumerable[Array[AnyRef]] = {
-    // 初始化数据：注意数组中的元素顺序必须和 getRowType 定义的一致
-    val data = Seq(
-      Array[AnyRef](Integer.valueOf(1), "Alice"),
-      Array[AnyRef](Integer.valueOf(2), "Sales")
-    )
-    // 利用 Linq4j.asEnumerable 将 Java 集合转换为 Enumerable
-    Linq4j.asEnumerable(data.asJava)
-  }
-}
-
 // 自定义 Schema，包含一个 EMP 表、一个DEPT表
-class CPMySchema extends AbstractSchema {
+class SingleMySchema extends AbstractSchema {
   override def getTableMap: java.util.Map[String, Table] = {
     val map = new java.util.HashMap[String, Table]()
-    map.put("EMP", new EmpCPTable())
-    map.put("DEPT", new DeptCPTable())
+    map.put("EMP", new EmpSingleTable())
     map
   }
 }
 
-class CalciteToPekkopec extends STSpec {
+class SingleCalciteToPekkopec extends STSpec {
 
   "calcite to pekko" should {
     "demo1" in {
@@ -113,9 +85,8 @@ class CalciteToPekkopec extends STSpec {
       // 示例 SQL：连接 EMP 和 DEPT，过滤 DEPT.DEPTNAME = 'Sales'
       val originalSql =
         """
-          |SELECT e.EMPNO, e.ENAME, d.DEPTNAME
-          |FROM EMP e JOIN DEPT d ON e.EMPNO = d.DEPTNO
-          |WHERE d.DEPTNAME = 'Sales'
+          |SELECT e.EMPNO, e.ENAME
+          |FROM EMP e
           |""".stripMargin
 
       println(s"Original SQL:\n$originalSql")
@@ -136,7 +107,7 @@ class CalciteToPekkopec extends STSpec {
       // 【步骤2】构造 Schema，并利用 Planner 解析、校验、转换为 RelNode
       // -----------------------------------------------------
       val rootSchema: SchemaPlus = Frameworks.createRootSchema(true)
-      rootSchema.add("MYSCHEMA", new CPMySchema())
+      rootSchema.add("MYSCHEMA", new SingleMySchema())
       val config = Frameworks
         .newConfigBuilder()
         .defaultSchema(rootSchema.getSubSchema("MYSCHEMA"))
@@ -193,6 +164,7 @@ class CalciteToPekkopec extends STSpec {
       type Row = Map[String, Any]
 
       def scanTable(scan: TableScan): Iterator[Row] = {
+        // 解析出来是什么数据库，然后读库
         val table: RelOptTable = scan.getTable
         val fieldList: util.List[RelDataTypeField] = table.getRowType.getFieldList
         println(s"scan: $scan \n table: ${table.getQualifiedName} fieldList: $fieldList")
