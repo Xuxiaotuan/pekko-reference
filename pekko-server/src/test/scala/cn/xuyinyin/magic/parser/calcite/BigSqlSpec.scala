@@ -60,10 +60,6 @@ class BigMySchema extends AbstractSchema {
 
 class BigSqlSpec extends STSpec {
 
-  val filename =
-    "/Users/xujiawei/Downloads/large.sql"
-  val sql = fileUtils.readFileContents(filename)
-
   "Big Sql" should {
     "mysql to pg" in {
       // Example SQL query in source dialect (MySQL)
@@ -169,6 +165,9 @@ class BigSqlSpec extends STSpec {
     }
 
     "large mysql to pg" in {
+      val filename =
+        "/Users/xjw/Downloads/large.sql"
+      val sql = fileUtils.readFileContents(filename)
       println(s"原始 SQL 长度：${sql.length}")
 
       // 1. 配置解析器，注意设置 MySQL 的相关配置
