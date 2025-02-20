@@ -28,6 +28,7 @@ import org.apache.pekko.stream.scaladsl.{Sink, Source}
 
 import java.util
 import java.util.concurrent.Executors
+import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
 import scala.jdk.CollectionConverters.IterableHasAsJava
@@ -175,66 +176,56 @@ class CalciteToPekkopec extends STSpec {
       println("转换后的 PostgreSQL SQL:")
       println(optimizedPgSql)
       println("--------------------------------\n")
-
       // -----------------------------------------------------
       // 【步骤5】将 Calcite 的 RelNode 转换为 Pekko Stream Source，并执行流处理
       // -----------------------------------------------------
-      val source: Source[Row, NotUsed] = RelNodeToPekkoStream.convert(optimizedRelNode)
-      val future                       = source.runWith(Sink.foreach(row => println(s"\n Stream 输出：$row")))
-
-      // 等待流处理结束后关闭系统
-      Await.result(future, 5.seconds)
-      system.terminate()
-    }
-
-    // 定义一个简单的转换器，将 Calcite 的 RelNode 转换为 Pekko Stream 的 Source
-    // 这里仅作为示例：不管 RelNode 实际是什么，都返回一个固定的 Source
-    object RelNodeToPekkoStream {
-      type Row = Map[String, Any]
-
-      def scanTable(scan: TableScan): Iterator[Row] = {
-        val table: RelOptTable = scan.getTable
-        val fieldList: util.List[RelDataTypeField] = table.getRowType.getFieldList
-        println(s"scan: $scan \n table: ${table.getQualifiedName} fieldList: $fieldList")
-        Iterator.empty
-      }
-      def evaluateFilter(row: Row, condition: RexNode): Boolean             = true
-      def applyProjection(row: Row, projects: java.util.List[RexNode]): Row = row
-      // 处理 Join
-      def applyJoin(left: Source[Row, NotUsed], right: Source[Row, NotUsed], condition: RexNode): Source[Row, NotUsed] = {
-        // 实现 Join 操作的逻辑
-        left.zip(right).map { case (leftRow, rightRow) =>
-          // 根据条件合并 leftRow 和 rightRow
-          leftRow ++ rightRow
-        }
-      }
-
-      def convert(relNode: RelNode): Source[Row, NotUsed] = {
-        relNode match {
+      def relNodeToStream(rel: RelNode): Source[Row, _] = {
+        rel match {
           case scan: TableScan =>
-            // 处理 TableScan
-            scanTable(scan)
+            // 从 TableScan 获取数据
+            val table      = scan.getTable.asInstanceOf[ScannableTable]
+            val enumerable = table.scan(null) // 获取数据
+            val fieldNames = scan.getRowType.getFieldNames
+            // 将 Java Iterator 转换为 Scala Iterator
+            val scalaIterator = scala.jdk.CollectionConverters.IteratorHasAsScala(enumerable.iterator()).asScala
+            Source.fromIterator(() => scalaIterator.map(row => fieldNames.zip(row.toList).toMap))
           case filter: Filter =>
-            // 处理 Filter
-            val childSource = convert(filter.getInput)
-            childSource.filter(row => evaluateFilter(row, filter.getCondition))
-          case project: Project =>
-            // 处理 Projection
-            val childSource = convert(project.getInput)
-            childSource.map(row => applyProjection(row, project.getProjects))
+            // 处理 Filter (DEPTNAME = 'Sales')
+            val inputStream = relNodeToStream(filter.getInput)
+            inputStream.filter(row => row.getOrElse("DEPTNAME", "") == "Sales")
           case join: Join =>
-            // 处理 Join
-            val leftSource  = convert(join.getLeft)
-            val rightSource = convert(join.getRight)
-            applyJoin(leftSource, rightSource, join.getCondition)
-          // 其他 RelNode 类型的处理逻辑
+            // 处理 Join (EMPNO = DEPTNO)
+            val leftStream = relNodeToStream(join.getLeft)
+            val rightStream = relNodeToStream(join.getRight)
+            // 将右侧流收集到内存中作为一个查找表
+            val rightFuture = rightStream.runWith(Sink.seq)
+            val rightRows = Await.result(rightFuture, 5.seconds) // 等待右侧数据收集完成
+            val rightLookup = rightRows.map(row => row("DEPTNO") -> row).toMap
+            // 对左侧流进行匹配
+            leftStream.mapConcat { left =>
+              rightLookup.get(left("EMPNO")).map(right => left ++ right).toList
+            }
+          case project: Project =>
+            // 处理 Project (选择 EMPNO, ENAME, DEPTNAME)
+            val inputStream = relNodeToStream(project.getInput)
+            inputStream.map(row =>
+              Map(
+                "EMPNO"    -> row("EMPNO"),
+                "ENAME"    -> row("ENAME"),
+                "DEPTNAME" -> row("DEPTNAME")
+              ))
           case _ =>
-            throw new UnsupportedOperationException(s"Unsupported operator: ${relNode.getClass}")
+            throw new UnsupportedOperationException(s"Unsupported RelNode: ${rel.getRelTypeName}")
         }
-        // 实际应用中，你可以对 relNode 进行模式匹配，针对不同的操作（TableScan/Filter/Join 等）生成相应的流处理逻辑
-        // 这里我们直接返回一条模拟连接后的数据作为演示
-        Source.single(Map("EMPNO" -> 1, "ENAME" -> "Alice", "DEPTNAME" -> "Sales"))
       }
+
+      // 运行 Pekko Stream
+      val stream = relNodeToStream(optimizedRelNode)
+      val future = stream.runWith(Sink.foreach(row => println(s"Stream Output: $row")))
+      Await.result(future, 5.seconds)
+
+      // 清理资源
+      system.terminate()
     }
   }
 }
