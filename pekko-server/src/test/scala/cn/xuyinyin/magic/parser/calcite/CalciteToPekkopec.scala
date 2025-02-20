@@ -182,11 +182,11 @@ class CalciteToPekkopec extends STSpec {
       def relNodeToStream(rel: RelNode): Source[Row, _] = {
         rel match {
           case scan: TableScan =>
-            // 从 TableScan 获取数据
-            val table      = scan.getTable.asInstanceOf[ScannableTable]
-            val enumerable = table.scan(null) // 获取数据
+            // 从 TableScan 获取 RelOptTable，并提取底层的 ScannableTable
+            val relOptTable: RelOptTable = scan.getTable
+            val table = relOptTable.unwrap(classOf[ScannableTable]) // 使用 unwrap 获取底层表
+            val enumerable = table.scan(null)
             val fieldNames = scan.getRowType.getFieldNames
-            // 将 Java Iterator 转换为 Scala Iterator
             val scalaIterator = scala.jdk.CollectionConverters.IteratorHasAsScala(enumerable.iterator()).asScala
             Source.fromIterator(() => scalaIterator.map(row => fieldNames.zip(row.toList).toMap))
           case filter: Filter =>
