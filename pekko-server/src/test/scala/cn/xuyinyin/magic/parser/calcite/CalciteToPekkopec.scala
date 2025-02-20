@@ -188,23 +188,28 @@ class CalciteToPekkopec extends STSpec {
             val enumerable = table.scan(null)
             val fieldNames = scan.getRowType.getFieldNames
             val scalaIterator = scala.jdk.CollectionConverters.IteratorHasAsScala(enumerable.iterator()).asScala
-            Source.fromIterator(() => scalaIterator.map(row => fieldNames.zip(row.toList).toMap))
+            val source = Source.fromIterator(() => scalaIterator.map(row => fieldNames.zip(row.toList).toMap))
+            println(s"Topology: TableScan(${relOptTable.getQualifiedName.mkString(".")})")
+            source.wireTap(row => println(s"TableScan(${relOptTable.getQualifiedName.mkString(".")}) Output: $row"))
           case filter: Filter =>
             // 处理 Filter (DEPTNAME = 'Sales')
             val inputStream = relNodeToStream(filter.getInput)
-            inputStream.filter(row => row.getOrElse("DEPTNAME", "") == "Sales")
+            println("Topology: Filter(DEPTNAME = 'Sales') <- Input")
+            val filtered = inputStream.filter(row => row.getOrElse("DEPTNAME", "") == "Sales")
+            filtered.wireTap(row => println(s"Filter(DEPTNAME = 'Sales') Output: $row"))
+
           case join: Join =>
-            // 处理 Join (EMPNO = DEPTNO)
             val leftStream = relNodeToStream(join.getLeft)
             val rightStream = relNodeToStream(join.getRight)
-            // 将右侧流收集到内存中作为一个查找表
             val rightFuture = rightStream.runWith(Sink.seq)
-            val rightRows = Await.result(rightFuture, 5.seconds) // 等待右侧数据收集完成
+            val rightRows = Await.result(rightFuture, 5.seconds)
             val rightLookup = rightRows.map(row => row("DEPTNO") -> row).toMap
-            // 对左侧流进行匹配
-            leftStream.mapConcat { left =>
+            println("Topology: Join(EMPNO = DEPTNO) <- Left Input <- Right Input (materialized)")
+            println(s"Join Right Lookup Table: $rightLookup")
+            val joined = leftStream.mapConcat { left =>
               rightLookup.get(left("EMPNO")).map(right => left ++ right).toList
             }
+            joined.wireTap(row => println(s"Join(EMPNO = DEPTNO) Output: $row"))
           case project: Project =>
             // 处理 Project (选择 EMPNO, ENAME, DEPTNAME)
             val inputStream = relNodeToStream(project.getInput)
@@ -220,6 +225,7 @@ class CalciteToPekkopec extends STSpec {
       }
 
       // 运行 Pekko Stream
+      println("Starting Pekko Stream Execution")
       val stream = relNodeToStream(optimizedRelNode)
       val future = stream.runWith(Sink.foreach(row => println(s"Stream Output: $row")))
       Await.result(future, 5.seconds)
