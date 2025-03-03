@@ -5,7 +5,7 @@ val organizationName    = "cn.xuyinyin"
 val projectVersion      = "0.1"
 val pekkoVersion        = "1.1.3"
 val scalatestVersion    = "3.2.19"
-val logbackVersion      = "1.2.11"
+val logbackVersion      = "1.4.12"
 val scalaLoggingVersion = "3.9.5"
 val calciteVersion      = "1.38.0"
 
