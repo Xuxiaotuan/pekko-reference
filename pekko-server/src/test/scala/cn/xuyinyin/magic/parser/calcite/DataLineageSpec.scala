@@ -184,19 +184,13 @@ class DataLineageSpec extends STSpec {
           |FROM MYSCHEMA.EMP e
           |WHERE e.EMPNO > 100
           |""".stripMargin
-
       val (optimizedRelNode: RelNode, _) = parseAndOptimize(sql)
       val visitor = new LineageVisitor()
       visitor.go(optimizedRelNode)
-
       val lineage = visitor.lineageMap
-
       // 打印血缘关系
       println("\nFinal Lineage Map:")
-      lineage.foreach { case (field, origins) =>
-        println(s"$field -> ${origins.mkString(", ")}")
-      }
-
+      lineage.foreach { case (field, origins) => println(s"$field -> ${origins.mkString(", ")}")}
       // 验证结果
       lineage.getOrElse("employee_id", Set.empty) should contain (ColumnOrigin("MYSCHEMA.EMP", "EMPNO"))
       lineage.getOrElse("ENAME", Set.empty) should contain (ColumnOrigin("MYSCHEMA.EMP", "ENAME"))
@@ -228,13 +222,15 @@ class DataLineageSpec extends STSpec {
           |       LOWER(e.ENAME) AS lower_name
           |FROM MYSCHEMA.EMP e
           |""".stripMargin
-
       val (rel, _) = parseAndOptimize(sql)
       val visitor = new LineageVisitor()
       visitor.go(rel)
-
-      visitor.lineageMap.getOrElse("emp_id_plus", Set.empty) should contain (ColumnOrigin("MYSCHEMA.EMP", "EMPNO"))
-      visitor.lineageMap.getOrElse("lower_name", Set.empty) should contain (ColumnOrigin("MYSCHEMA.EMP", "ENAME"))
+      val lineage = visitor.lineageMap
+      // 打印血缘关系
+      println("\nFinal Lineage Map:")
+      lineage.foreach { case (field, origins) => println(s"$field -> ${origins.mkString(", ")}")}
+      lineage.getOrElse("emp_id_plus", Set.empty) should contain (ColumnOrigin("MYSCHEMA.EMP", "EMPNO"))
+      lineage.getOrElse("lower_name", Set.empty) should contain (ColumnOrigin("MYSCHEMA.EMP", "ENAME"))
     }
   }
 
