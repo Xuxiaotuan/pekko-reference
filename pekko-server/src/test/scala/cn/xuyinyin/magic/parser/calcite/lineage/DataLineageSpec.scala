@@ -1,7 +1,8 @@
-package cn.xuyinyin.magic.parser.calcite
+package cn.xuyinyin.magic.parser.calcite.lineage
 
+import cn.xuyinyin.magic.parser.calcite.SingleMySchema
 import cn.xuyinyin.magic.testkit.STSpec
-import org.apache.calcite.rel.core.{Filter, Join, Project, TableScan}
+import org.apache.calcite.rel.core.{Aggregate, Filter, Join, Project, TableScan}
 import org.apache.calcite.rel.rules.CoreRules
 import org.apache.calcite.rel.{RelNode, RelVisitor}
 import org.apache.calcite.rex.{RexInputRef, RexNode, RexShuttle}
@@ -39,16 +40,16 @@ class DataLineageSpec extends STSpec {
         case join: Join =>
           handleJoin(join)
 
-        case _ => // 其他操作符暂不处理
+        case agg: Aggregate =>
+          handleAggregate(agg)
+        case _ =>
       }
       super.visit(node, ordinal, parent)
     }
 
     private def handleTableScan(scan: TableScan): Unit = {
       val tableName = scan.getTable.getQualifiedName.asScala.mkString(".")
-      val fields = scan.getRowType.getFieldList.asScala
-
-      fields.foreach { field =>
+      scan.getRowType.getFieldList.asScala.foreach { field =>
         val fullName = s"$tableName.${field.getName}"
         lineageMap(fullName) = Set(ColumnOrigin(tableName, field.getName))
       }
@@ -62,63 +63,76 @@ class DataLineageSpec extends STSpec {
       println(s"Output fields: ${currentContext.mkString(", ")}")
       println(s"Input fields: ${project.getInput.getRowType.getFieldNames.asScala.mkString(", ")}")
 
-      // 先处理输入节点（关键步骤）
-      go(project.getInput) // 确保递归处理输入源
-
+      go(project.getInput)
       project.getProjects.asScala.zipWithIndex.foreach { case (expr, idx) =>
         val targetField = currentContext(idx)
-        val inputFields = extractInputRefs(expr)
-
-        println(s"\nProcessing expression $idx: $expr")
-        println(s"Target field: $targetField")
-        println(s"Input refs: ${inputFields.map(_.getIndex).mkString(", ")}")
-
-        val combinedOrigins = inputFields.flatMap { ref =>
-          val inputFieldName = getQualifiedInputName(project.getInput, ref.getIndex)
-          println(s"Input field $inputFieldName has origins: ${lineageMap.get(inputFieldName)}")
-          lineageMap.getOrElse(inputFieldName, Set.empty)
+        val inputRefs = extractInputRefs(expr)
+        // 处理复合表达式的情况
+        val origins = inputRefs.flatMap { ref =>
+          val originPath = getOriginPath(project.getInput, ref.getIndex)
+          lineageMap.getOrElse(originPath, Set.empty)
         }.toSet
-
-        if (combinedOrigins.nonEmpty) {
-          lineageMap(targetField) = combinedOrigins
-          println(s"Set $targetField -> ${combinedOrigins.mkString(", ")}")
-        } else {
-          lineageMap(targetField) = Set(ColumnOrigin("expression", expr.toString))
-          println(s"Set $targetField -> expression: $expr")
-        }
+        // 只有输入字段为空时才标记为表达式
+        lineageMap(targetField) = if (origins.nonEmpty) origins
+        else Set(ColumnOrigin("expression", expr.toString))
       }
-
       currentContext = oldContext
     }
 
+    @tailrec
+    private def getOriginPath(rel: RelNode, index: Int): String = {
+      rel match {
+        case scan: TableScan =>
+          val tableName = scan.getTable.getQualifiedName.asScala.mkString(".")
+          s"$tableName.${scan.getRowType.getFieldList.get(index).getName}"
+
+        case project: Project =>
+          project.getProjects.get(index) match {
+            case ref: RexInputRef =>
+              getOriginPath(project.getInput, ref.getIndex)
+            case _ =>
+              // 处理表达式嵌套的情况
+              val inputIndex = project.getInput.getRowType.getFieldList.get(index).getIndex
+              getOriginPath(project.getInput, inputIndex)
+          }
+
+        case join: Join =>
+          if (index < join.getLeft.getRowType.getFieldCount) {
+            getOriginPath(join.getLeft, index)
+          } else {
+            getOriginPath(join.getRight, index - join.getLeft.getRowType.getFieldCount)
+          }
+
+        case _ =>
+          // 递归查找直到找到表扫描
+          if (rel.getInputs.size() > 0) {
+            getOriginPath(rel.getInput(0), index)
+          } else {
+            s"unknown.${rel.getRowType.getFieldList.get(index).getName}"
+          }
+      }
+    }
+
     private def getQualifiedInputName(inputRel: RelNode, index: Int): String = {
-      // 递归查找原始输入源
       @tailrec
       def findOrigin(rel: RelNode, idx: Int): String = rel match {
         case scan: TableScan =>
-          val tableName = scan.getTable.getQualifiedName.asScala.mkString(".")
-          val fieldName = scan.getRowType.getFieldList.get(idx).getName
-          s"$tableName.$fieldName"
+          s"${scan.getTable.getQualifiedName.asScala.mkString(".")}.${scan.getRowType.getFieldList.get(idx).getName}"
 
         case project: Project =>
-          // 解析Project表达式中的字段来源
-          val originIndex = project.getProjects.get(idx) match {
-            case ref: RexInputRef => ref.getIndex
-            case _ => idx
+          project.getProjects.get(idx) match {
+            case ref: RexInputRef => findOrigin(project.getInput, ref.getIndex)
+            case _ => findOrigin(project.getInput, idx) // 表达式索引处理
           }
-          findOrigin(project.getInput, originIndex)
 
-        case filter: Filter =>
-          findOrigin(filter.getInput, idx)
+        case join: Join =>
+          if (idx < join.getLeft.getRowType.getFieldCount) findOrigin(join.getLeft, idx)
+          else findOrigin(join.getRight, idx - join.getLeft.getRowType.getFieldCount)
 
         case _ =>
-          val fieldName = rel.getRowType.getFieldList.get(idx).getName
-          fieldName
+          rel.getRowType.getFieldList.get(idx).getName
       }
-
-      val fullName = findOrigin(inputRel, index)
-      println(s"Resolved input $index: $fullName")
-      fullName
+      findOrigin(inputRel, index)
     }
 
     private def extractInputRefs(rexNode: RexNode): List[RexInputRef] = {
@@ -138,6 +152,15 @@ class DataLineageSpec extends STSpec {
     }
 
     private def handleJoin(join: Join): Unit = {
+      join.getRowType.getFieldList.asScala.zipWithIndex.foreach { case (field, idx) =>
+        val origin = if (idx < join.getLeft.getRowType.getFieldCount) {
+          getQualifiedInputName(join.getLeft, idx)
+        } else {
+          getQualifiedInputName(join.getRight, idx - join.getLeft.getRowType.getFieldCount)
+        }
+        lineageMap(field.getName) = lineageMap.getOrElse(origin, Set.empty)
+      }
+
       // 处理左右输入
       go(join.getLeft)
       go(join.getRight)
@@ -148,6 +171,16 @@ class DataLineageSpec extends STSpec {
         // 可以记录Join条件字段的使用情况
       }
     }
+
+    private def handleAggregate(agg: Aggregate): Unit = {
+      // 处理聚合字段
+      agg.getInput.getRowType.getFieldList.asScala.zipWithIndex.foreach {
+        case (field, idx) =>
+          val origin = getQualifiedInputName(agg.getInput, idx)
+          lineageMap(field.getName) = lineageMap.getOrElse(origin, Set.empty)
+      }
+    }
+
   }
 
   "Data Lineage Analysis" should {
@@ -227,7 +260,7 @@ class DataLineageSpec extends STSpec {
       visitor.go(rel)
       val lineage = visitor.lineageMap
       // 打印血缘关系
-      println("\nFinal Lineage Map:")
+      println(s"\nFinal Lineage Map: $lineage")
       lineage.foreach { case (field, origins) => println(s"$field -> ${origins.mkString(", ")}")}
       lineage.getOrElse("emp_id_plus", Set.empty) should contain (ColumnOrigin("MYSCHEMA.EMP", "EMPNO"))
       lineage.getOrElse("lower_name", Set.empty) should contain (ColumnOrigin("MYSCHEMA.EMP", "ENAME"))

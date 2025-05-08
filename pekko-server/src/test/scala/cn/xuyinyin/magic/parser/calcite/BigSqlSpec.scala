@@ -1,6 +1,6 @@
 package cn.xuyinyin.magic.parser.calcite
 
-import cn.xuyinyin.magic.common.fileUtils
+import cn.xuyinyin.magic.common.FileUtils
 import cn.xuyinyin.magic.parser.calcite.CalciteMysqlSqlParser.parseSql
 import cn.xuyinyin.magic.testkit.STSpec
 import org.apache.calcite.DataContext
@@ -166,8 +166,8 @@ class BigSqlSpec extends STSpec {
 
     "large mysql to pg" in {
       val filename =
-        "/Users/xjw/Downloads/large.sql"
-      val sql = fileUtils.readFileContents(filename)
+        "/Users/xujiawei/Downloads/large.sql"
+      val sql = FileUtils.readFileContents(filename)
       println(s"原始 SQL 长度：${sql.length}")
 
       // 1. 配置解析器，注意设置 MySQL 的相关配置

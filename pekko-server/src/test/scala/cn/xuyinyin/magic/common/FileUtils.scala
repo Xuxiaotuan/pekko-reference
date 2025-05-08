@@ -7,7 +7,7 @@ import scala.util.Using
  * @author : XuJiaWei
  * @since : 2024-06-26 09:58
  */
-object fileUtils {
+object FileUtils {
 
   def readFileContents(filename: String): String = {
     Using

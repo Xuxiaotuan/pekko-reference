@@ -1,6 +1,6 @@
 package cn.xuyinyin.magic.parser.calcite
 
-import cn.xuyinyin.magic.common.fileUtils
+import cn.xuyinyin.magic.common.FileUtils
 import cn.xuyinyin.magic.parser.calcite.CalciteMysqlSqlParser.parseSql
 import cn.xuyinyin.magic.testkit.STSpec
 import org.apache.calcite.config.Lex
@@ -31,7 +31,7 @@ class MysqlSqlParserSpec extends STSpec {
     "case 1" in {
       val filename =
         "/Users/xjw/magic/scala-workbench/pekko-reference/pekko-server/src/test/scala/cn/xuyinyin/magic/parser/calcite/test.sql"
-      val sql = fileUtils.readFileContents(filename)
+      val sql = FileUtils.readFileContents(filename)
 
       // Step 1: Parse SQL to SqlNode
       val parser: SqlParser = parseSql(sql)
