@@ -26,9 +26,8 @@ import scala.jdk.CollectionConverters._
 class SchemaFreeLineageSpec extends STSpec {
 
   private class DynamicSchema extends AbstractSchema {
-    private val tableMap                              = new util.HashMap[String, Table]()
+    private val tableMap = new util.HashMap[String, Table]()
     override def getTableMap: util.Map[String, Table] = tableMap
-
     def addFakeTable(tableName: String, fields: Set[String]): Unit = {
       tableMap.put(tableName, new FakeTable(fields))
     }
@@ -53,67 +52,62 @@ class SchemaFreeLineageSpec extends STSpec {
         call.getKind.toString match {
           case "AS" =>
             if (inFromOrJoinContext) {
-              val realTableId = call.operand(0).asInstanceOf[SqlIdentifier]
-              val aliasId = call.operand(1).asInstanceOf[SqlIdentifier]
-              aliasToRealTable.put(aliasId.getSimple, realTableId.names.mkString("."))
-              realTableId.accept(this)
+              val leftNode: SqlNode = call.operand(0)
+              val rightNode: SqlNode = call.operand(1)
+
+              if (leftNode.isInstanceOf[SqlIdentifier] && rightNode.isInstanceOf[SqlIdentifier]) {
+                val real: SqlIdentifier = leftNode.asInstanceOf[SqlIdentifier]
+                val alias: SqlIdentifier = rightNode.asInstanceOf[SqlIdentifier]
+
+                if (real.names.size() == 2) {
+                  aliasToRealTable.put(alias.getSimple, real.names.mkString("."))
+                }
+
+                real.accept(this)
+              }
             }
-          // 如果不在 FROM/JOIN，就不处理AS，忽略
+
 
           case "SELECT" =>
             val select = call.asInstanceOf[org.apache.calcite.sql.SqlSelect]
-            if (select.getFrom != null) {
-              val prev = inFromOrJoinContext
-              inFromOrJoinContext = true
-              select.getFrom.accept(this)
-              inFromOrJoinContext = prev
-            }
-            if (select.getWhere != null) {
-              select.getWhere.accept(this)
-            }
-            if (select.getSelectList != null) {
-              select.getSelectList.asScala.foreach(_.accept(this))
-            }
+            val prev = inFromOrJoinContext
+            inFromOrJoinContext = true
+            if (select.getFrom != null) select.getFrom.accept(this)
+            inFromOrJoinContext = prev
+            if (select.getWhere != null) select.getWhere.accept(this)
+            if (select.getSelectList != null) select.getSelectList.asScala.foreach(_.accept(this))
 
           case "JOIN" =>
             val prev = inFromOrJoinContext
             inFromOrJoinContext = true
-            call.getOperandList.asScala.foreach { operand =>
-              if (operand != null) operand.accept(this)
+            call.getOperandList.asScala.foreach {
+              case sub if sub != null => sub.accept(this)
+              case _ =>
             }
             inFromOrJoinContext = prev
 
           case _ =>
-            call.getOperandList.asScala.foreach { operand =>
-              if (operand != null) operand.accept(this)
+            call.getOperandList.asScala.foreach {
+              case sub if sub != null => sub.accept(this)
+              case _ =>
             }
         }
       }
 
       override def visit(id: SqlIdentifier): Unit = {
-        if (inFromOrJoinContext && id.names.size() >= 2) {
-          val realTable = id.names.mkString(".")
-          if (!aliasToRealTable.values.toSet.contains(realTable)) {
-            aliasToRealTable.put(realTable, realTable)
+        if (inFromOrJoinContext && id.names.size() == 2) {
+          val alias = id.names.get(0)
+          if (!aliasToRealTable.contains(alias)) {
+            aliasToRealTable.put(alias, s"MYSCHEMA.$alias")
           }
         }
-      }
-
-      override def visit(literal: org.apache.calcite.sql.SqlLiteral): Unit = {}
-      override def visit(dataTypeSpec: org.apache.calcite.sql.SqlDataTypeSpec): Unit = {}
-      override def visit(dynamicParam: org.apache.calcite.sql.SqlDynamicParam): Unit = {}
-      override def visit(intervalQualifier: org.apache.calcite.sql.SqlIntervalQualifier): Unit = {}
-      override def visit(nodeList: org.apache.calcite.sql.SqlNodeList): Unit = {
-        nodeList.asScala.foreach(_.accept(this))
       }
     })
 
     aliasToRealTable.toMap
   }
 
-  // 完整版：只提表名，动态注册假字段
   private def parseAndOptimize(sql: String): RelNode = {
-    // 第一次：空Schema，只为了parse，不validate
     val rootSchema1 = CalciteSchema.createRootSchema(true)
     val dynamicSchema1 = new DynamicSchema()
     rootSchema1.add("MYSCHEMA", dynamicSchema1)
@@ -124,28 +118,27 @@ class SchemaFreeLineageSpec extends STSpec {
       .parserConfig(SqlParser.config().withLex(Lex.MYSQL).withCaseSensitive(false))
       .build()
 
-    var planner1: Planner = null
-    val parsedSql: SqlNode =
-      try {
-        planner1 = Frameworks.getPlanner(config1)
-        planner1.parse(sql)
-      } finally {
-        if (planner1 != null) planner1.close()
-      }
+    val planner1 = Frameworks.getPlanner(config1)
+    val parsedSql = planner1.parse(sql)
+    planner1.close()
 
-    // 提取表名和别名映射
     val aliasToRealTable = extractTablesAndAliases(parsedSql)
-    println(s"提取到表和别名: $aliasToRealTable")
+    println(s"\n>>> 提取到表和别名: $aliasToRealTable")
 
-    // 第二次：建schema，注册真实表+别名表
     val rootSchema2 = CalciteSchema.createRootSchema(true)
     val dynamicSchema2 = new DynamicSchema()
     rootSchema2.add("MYSCHEMA", dynamicSchema2)
 
     aliasToRealTable.foreach { case (alias, realTable) =>
-      // 每个表注册20个字段
-      val fakeFields = (0 until 20).map(i => s"field_$i").toSet
-      dynamicSchema2.addFakeTable(alias, fakeFields)
+      val fields = Set("EMPNO", "DNAME", "DEPTNO")
+      println(s"注册虚表: $alias -> $realTable，字段: $fields")
+      dynamicSchema2.addFakeTable(alias, fields)
+
+      val tableOnly = realTable.split("\\.").last
+      if (!dynamicSchema2.getTableMap.containsKey(tableOnly)) {
+        println(s"注册真实表: $tableOnly -> $realTable，字段: $fields")
+        dynamicSchema2.addFakeTable(tableOnly, fields)
+      }
     }
 
     val config2 = Frameworks
@@ -154,31 +147,33 @@ class SchemaFreeLineageSpec extends STSpec {
       .parserConfig(SqlParser.config().withLex(Lex.MYSQL).withCaseSensitive(false))
       .build()
 
-    var planner2: Planner = null
-    try {
-      planner2 = Frameworks.getPlanner(config2)
-      val parsed = planner2.parse(sql)
-      val validated = planner2.validate(parsed)
-      val originalRel = planner2.rel(validated).project
-
-      // 继续走优化器
-      val hepProgram = new HepProgramBuilder()
-        .addRuleInstance(CoreRules.FILTER_INTO_JOIN)
-        .build()
-
-      val hepPlanner = new HepPlanner(hepProgram)
-      hepPlanner.setRoot(originalRel)
-      hepPlanner.findBestExp()
-    } finally {
-      if (planner2 != null) planner2.close()
+    val planner2 = Frameworks.getPlanner(config2)
+    val parsed = planner2.parse(sql)
+    val validated = try {
+      planner2.validate(parsed)
+    } catch {
+      case e: Exception =>
+        println(s">>> 校验失败: ${e.getMessage}")
+        throw e
     }
+    val originalRel = planner2.rel(validated).project
+
+    val hepProgram = new HepProgramBuilder()
+      .addRuleInstance(CoreRules.FILTER_INTO_JOIN)
+      .build()
+
+    val hepPlanner = new HepPlanner(hepProgram)
+    hepPlanner.setRoot(originalRel)
+    val best = hepPlanner.findBestExp()
+    planner2.close()
+    best
   }
 
   case class ColumnOrigin(table: String, column: String)
   type LineageMap = mutable.Map[String, Set[ColumnOrigin]]
 
   class LineageVisitor extends RelVisitor {
-    val lineageMap: LineageMap               = mutable.Map.empty
+    val lineageMap: LineageMap = mutable.Map.empty
     private var currentContext: List[String] = Nil
 
     override def visit(node: RelNode, ordinal: Int, parent: RelNode): Unit = {
@@ -208,7 +203,7 @@ class SchemaFreeLineageSpec extends STSpec {
       go(project.getInput)
       project.getProjects.asScala.zipWithIndex.foreach { case (expr, idx) =>
         val targetField = currentContext(idx)
-        val inputRefs   = extractInputRefs(expr)
+        val inputRefs = extractInputRefs(expr)
         val origins = inputRefs.flatMap { ref =>
           val originPath = getOriginPath(project.getInput, ref.getIndex)
           lineageMap.getOrElse(originPath, Set.empty)
@@ -297,7 +292,7 @@ class SchemaFreeLineageSpec extends STSpec {
           |FROM MYSCHEMA.EMP e
           |JOIN MYSCHEMA.DEPT d ON e.DEPTNO = d.DEPTNO
           |""".stripMargin
-      val rel     = parseAndOptimize(sql)
+      val rel = parseAndOptimize(sql)
       val visitor = new LineageVisitor()
       visitor.go(rel)
       val lineage = visitor.lineageMap
