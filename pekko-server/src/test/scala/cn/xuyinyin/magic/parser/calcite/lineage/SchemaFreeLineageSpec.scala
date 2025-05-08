@@ -8,14 +8,14 @@ import org.apache.calcite.rel.`type`.RelDataTypeFactory
 import org.apache.calcite.rel.core._
 import org.apache.calcite.rel.rules.CoreRules
 import org.apache.calcite.rel.{RelNode, RelVisitor}
-import org.apache.calcite.rex.{RexInputRef, RexNode, RexShuttle}
+import org.apache.calcite.rex.{RexCall, RexInputRef, RexNode, RexShuttle}
 import org.apache.calcite.schema.Table
 import org.apache.calcite.schema.impl.{AbstractSchema, AbstractTable}
 import org.apache.calcite.sql.`type`.SqlTypeName
 import org.apache.calcite.sql.parser.SqlParser
 import org.apache.calcite.sql.util.SqlBasicVisitor
-import org.apache.calcite.sql.{SqlCall, SqlIdentifier, SqlNode}
-import org.apache.calcite.tools.{Frameworks, Planner}
+import org.apache.calcite.sql.{SqlCall, SqlIdentifier, SqlNode, SqlSelect}
+import org.apache.calcite.tools.Frameworks
 
 import java.util
 import scala.annotation.tailrec
@@ -29,6 +29,7 @@ class SchemaFreeLineageSpec extends STSpec {
     private val tableMap = new util.HashMap[String, Table]()
     override def getTableMap: util.Map[String, Table] = tableMap
     def addFakeTable(tableName: String, fields: Set[String]): Unit = {
+      println(s"注册虚表: $tableName -> 字段: $fields")
       tableMap.put(tableName, new FakeTable(fields))
     }
   }
@@ -43,6 +44,8 @@ class SchemaFreeLineageSpec extends STSpec {
     }
   }
 
+  private val aliasToFields = mutable.Map[String, mutable.Set[String]]()
+
   private def extractTablesAndAliases(parsedSql: SqlNode): Map[String, String] = {
     val aliasToRealTable = mutable.Map[String, String]()
     var inFromOrJoinContext: Boolean = false
@@ -55,27 +58,53 @@ class SchemaFreeLineageSpec extends STSpec {
               val leftNode: SqlNode = call.operand(0)
               val rightNode: SqlNode = call.operand(1)
 
-              if (leftNode.isInstanceOf[SqlIdentifier] && rightNode.isInstanceOf[SqlIdentifier]) {
-                val real: SqlIdentifier = leftNode.asInstanceOf[SqlIdentifier]
-                val alias: SqlIdentifier = rightNode.asInstanceOf[SqlIdentifier]
+              if (leftNode != null && rightNode != null &&
+                leftNode.isInstanceOf[SqlIdentifier] &&
+                rightNode.isInstanceOf[SqlIdentifier]) {
 
-                if (real.names.size() == 2) {
-                  aliasToRealTable.put(alias.getSimple, real.names.mkString("."))
+                val realTableId = leftNode.asInstanceOf[SqlIdentifier]
+                val aliasId = rightNode.asInstanceOf[SqlIdentifier]
+                if (realTableId.names.size() == 2) {
+                  aliasToRealTable.put(aliasId.getSimple, realTableId.names.mkString("."))
                 }
-
-                real.accept(this)
+                println(s"提取别名: $aliasId -> $realTableId")
+                realTableId.accept(this)
+              } else {
+                call.getOperandList.asScala.foreach {
+                  case sub if sub != null => sub.accept(this)
+                  case _ =>
+                }
               }
             }
 
-
           case "SELECT" =>
-            val select = call.asInstanceOf[org.apache.calcite.sql.SqlSelect]
+            val select = call.asInstanceOf[SqlSelect]
+            println("开始解析 SELECT 语句")
+
+            select.getSelectList.asScala.foreach {
+              case id: SqlIdentifier =>
+                id.accept(this)
+
+              case nestedCall: SqlCall =>
+                nestedCall.getOperandList.asScala.foreach {
+                  case opId: SqlIdentifier if opId.names.size() == 2 =>
+                    val alias = opId.names.get(0)
+                    val field = opId.names.get(1)
+                    println(s">>> 函数中的字段绑定: ${opId.toString} -> alias: $alias, field: $field")
+                    aliasToFields.getOrElseUpdate(alias, mutable.Set.empty) += field
+                  case other =>
+                    if (other != null) other.accept(this)
+                }
+
+              case other =>
+                if (other != null) other.accept(this)
+            }
+
             val prev = inFromOrJoinContext
             inFromOrJoinContext = true
             if (select.getFrom != null) select.getFrom.accept(this)
             inFromOrJoinContext = prev
             if (select.getWhere != null) select.getWhere.accept(this)
-            if (select.getSelectList != null) select.getSelectList.asScala.foreach(_.accept(this))
 
           case "JOIN" =>
             val prev = inFromOrJoinContext
@@ -95,9 +124,13 @@ class SchemaFreeLineageSpec extends STSpec {
       }
 
       override def visit(id: SqlIdentifier): Unit = {
-        if (inFromOrJoinContext && id.names.size() == 2) {
+        if (id.names.size() == 2) {
           val alias = id.names.get(0)
-          if (!aliasToRealTable.contains(alias)) {
+          val field = id.names.get(1)
+          println(s">>> 字段绑定: ${id.toString} -> alias: $alias, field: $field")
+          aliasToFields.getOrElseUpdate(alias, mutable.Set.empty) += field
+
+          if (inFromOrJoinContext && !aliasToRealTable.contains(alias)) {
             aliasToRealTable.put(alias, s"MYSCHEMA.$alias")
           }
         }
@@ -130,14 +163,14 @@ class SchemaFreeLineageSpec extends STSpec {
     rootSchema2.add("MYSCHEMA", dynamicSchema2)
 
     aliasToRealTable.foreach { case (alias, realTable) =>
-      val fields = Set("EMPNO", "DNAME", "DEPTNO")
-      println(s"注册虚表: $alias -> $realTable，字段: $fields")
-      dynamicSchema2.addFakeTable(alias, fields)
+      val parsedFields = aliasToFields.get(alias).map(_.toSet).getOrElse(Set("id"))
+      println(s"注册虚表: $alias -> $realTable，字段: $parsedFields")
+      dynamicSchema2.addFakeTable(alias, parsedFields)
 
       val tableOnly = realTable.split("\\.").last
       if (!dynamicSchema2.getTableMap.containsKey(tableOnly)) {
-        println(s"注册真实表: $tableOnly -> $realTable，字段: $fields")
-        dynamicSchema2.addFakeTable(tableOnly, fields)
+        println(s"注册真实表: $tableOnly -> $realTable，字段: $parsedFields")
+        dynamicSchema2.addFakeTable(tableOnly, parsedFields)
       }
     }
 
@@ -203,6 +236,19 @@ class SchemaFreeLineageSpec extends STSpec {
       go(project.getInput)
       project.getProjects.asScala.zipWithIndex.foreach { case (expr, idx) =>
         val targetField = currentContext(idx)
+        expr match {
+          case call: RexCall =>
+            println(s"字段 $targetField 是函数调用: ${call.getOperator.getName}(${call.getOperands.asScala.mkString(", ")})")
+            // 处理函数调用中的字段
+            call.getOperands.asScala.foreach {
+              case rex: RexInputRef =>
+                val fieldName = rex.getName
+                val alias = "e"  // 这里根据实际需要绑定别名
+                aliasToFields.getOrElseUpdate(alias, mutable.Set.empty) += fieldName
+            }
+          case _ => // 非函数表达式也可以处理
+        }
+
         val inputRefs = extractInputRefs(expr)
         val origins = inputRefs.flatMap { ref =>
           val originPath = getOriginPath(project.getInput, ref.getIndex)
@@ -283,11 +329,12 @@ class SchemaFreeLineageSpec extends STSpec {
     }
   }
 
+
   "Schema-Free Parser" should {
     "parse SQL dynamically" in {
       val sql =
         """
-          |SELECT e.EMPNO AS employee_id,
+          |SELECT UPPER(e.EMPNO) AS employee_id,
           |       d.DNAME AS dept_name
           |FROM MYSCHEMA.EMP e
           |JOIN MYSCHEMA.DEPT d ON e.DEPTNO = d.DEPTNO
