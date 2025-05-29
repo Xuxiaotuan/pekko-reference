@@ -48,7 +48,7 @@ class DeptTable extends AbstractTable with ScannableTable {
   }
 }
 
-// 自定义 Schema，只包含一个 EMP 表
+// 自定义 Schema，包含一个 EMP 表、包含一个 DEPT 表
 class BigMySchema extends AbstractSchema {
   override def getTableMap: java.util.Map[String, Table] = {
     val map = new java.util.HashMap[String, Table]()
