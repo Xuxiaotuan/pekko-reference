@@ -8,7 +8,7 @@ import org.apache.calcite.plan.RelOptUtil
 import org.apache.calcite.plan.hep.{HepPlanner, HepProgramBuilder}
 import org.apache.calcite.rel.RelNode
 import org.apache.calcite.rel.`type`.{RelDataType, RelDataTypeFactory}
-import org.apache.calcite.rel.core.{Filter, Join, Project, TableScan}
+import org.apache.calcite.rel.core.{Filter, Join, Project, Sort, TableScan}
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter
 import org.apache.calcite.rel.rules.CoreRules
 import org.apache.calcite.rex.{RexCall, RexInputRef, RexLiteral, RexNode}
@@ -155,7 +155,7 @@ class CalciteQueryParserSpec extends STSpec {
    * 提取每张表及其过滤条件
    */
   private def extractTableFilters(node: RelNode): Seq[(String, String)] = node match {
-    case s: org.apache.calcite.rel.core.Sort => extractTableFilters(s.getInput)
+    case s: Sort => extractTableFilters(s.getInput)
     case p: Project    => extractTableFilters(p.getInput)
     case f: Filter     =>
       val base = extractTableFilters(f.getInput)
