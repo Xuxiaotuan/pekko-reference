@@ -1,34 +1,85 @@
 package cn.xuyinyin.magic.cluster
 
-import cn.xuyinyin.magic.ClusterListener
 import cn.xuyinyin.magic.single.PekkoGc
-import org.apache.pekko.actor.typed.{ActorRef, Behavior}
+import com.typesafe.scalalogging.Logger
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import org.apache.pekko.actor.typed.scaladsl.Behaviors.same
+import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import org.apache.pekko.cluster.typed.Cluster
+
+import scala.concurrent.duration.DurationInt
 
 /**
  * @author : Xuxiaotuan
  * @since : 2024-09-21 22:18
  */
 object PekkoGuardian {
+  private val logger = Logger(getClass)
 
   sealed trait Command
-  final case class GetNodeRoles(reply: ActorRef[Set[String]]) extends Command
+  case class GetNodeRoles(reply: ActorRef[Set[String]]) extends Command
+  case class GetHealthChecker(reply: ActorRef[ActorRef[HealthChecker.Command]]) extends Command
+  private case object CheckLeadership extends Command
 
   def apply(): Behavior[Command] = Behaviors.setup { implicit ctx =>
-    val selfMember = Cluster(ctx.system).selfMember
-    ctx.log.info(s"Pekko System Guardian Launching, roles: ${selfMember.roles.mkString(",")}")
+    val cluster = Cluster(ctx.system)
+    val selfMember = cluster.selfMember
+    logger.info(s"Pekko System Guardian Launching, roles: ${selfMember.roles.mkString(",")}")
 
     // Create an actor that handles cluster domain events
     ctx.spawn(ClusterListener(), "ClusterListener")
+    
+    // Create and start health checker
+    val healthChecker = ctx.spawn(HealthChecker(), "HealthChecker")
+    healthChecker ! HealthChecker.StartPeriodicCheck(30000) // 每30秒检查一次
 
-    ctx.spawn(PekkoGc(), "PekkoGc")
+    // Start periodic leadership check
+    import org.apache.pekko.actor.typed.scaladsl.Behaviors.withTimers
+    withTimers { timer =>
+      timer.startTimerAtFixedRate(CheckLeadership, 5.seconds)
+      
+      // Initial check
+      managePekkoGc(cluster)
 
-    Behaviors.receiveMessagePartial {
-      case GetNodeRoles(reply) =>
-        reply ! selfMember.roles
-        same
+      Behaviors.receiveMessage {
+        case CheckLeadership =>
+          managePekkoGc(cluster)
+          Behaviors.same
+          
+        case GetNodeRoles(reply) =>
+          reply ! selfMember.roles
+          Behaviors.same
+          
+        case GetHealthChecker(reply) =>
+          reply ! healthChecker
+          Behaviors.same
+      }
+    }
+  }
+  
+  private def managePekkoGc(cluster: Cluster)(implicit ctx: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command]): Unit = {
+    val currentLeader = cluster.state.leader
+    val isLeader = currentLeader.contains(cluster.selfMember.address)
+    
+    ctx.log.info(s"Leadership check - Current leader: $currentLeader, Self address: ${cluster.selfMember.address}, Is leader: $isLeader")
+    
+    if (isLeader) {
+      // This node is the leader, start PekkoGc
+      ctx.child("PekkoGcActor") match {
+        case None =>
+          ctx.log.info("This node is the leader, starting PekkoGc")
+          ctx.spawn(Behaviors.supervise(PekkoGc()).onFailure[Exception](org.apache.pekko.actor.typed.SupervisorStrategy.restart), "PekkoGcActor")
+        case Some(_) =>
+          ctx.log.debug("PekkoGc already running on this leader node")
+      }
+    } else {
+      // This node is not the leader, stop PekkoGc if it's running
+      ctx.child("PekkoGcActor") match {
+        case Some(ref) =>
+          ctx.log.info("This node is no longer the leader, stopping PekkoGc")
+          ctx.stop(ref)
+        case None =>
+          ctx.log.debug("PekkoGc not running on this follower node")
+      }
     }
   }
 }

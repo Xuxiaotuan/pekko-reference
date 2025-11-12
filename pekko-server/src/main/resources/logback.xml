@@ -3,8 +3,9 @@
     <!-- This is a development logging configuration that logs to standard out, for an example of a production
         logging config, see the Apache Pekko docs: https://pekko.apache.org/docs/pekko/current/typed/logging.html#logback -->
     <appender name="STDOUT" target="System.out" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg%n</pattern>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <withJansi>true</withJansi>
+            <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) %cyan([%thread]) %boldMagenta([%logger{36}]) - %msg%n</pattern>
         </encoder>
     </appender>
 

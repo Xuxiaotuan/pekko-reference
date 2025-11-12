@@ -31,7 +31,11 @@ private[single] object PNGCounterCache {
     implicit val node: SelfUniqueAddress = DistributedData(ctx.system).selfUniqueAddress
 
     // 从PekkoConfig中获取全局任务限制值，用于后续可能的自动校正等操作
-    val limit = PekkoConfig.root.getInt("pekko.global-task-limit")
+    val limit = try {
+      PekkoConfig.root.getInt("pekko.global-task-limit")
+    } catch {
+      case _: Exception => 10 // 默认值
+    }
 
     // 使用DistributedData创建一个带有Replicator消息适配器的行为，用于处理与分布式数据相关的操作
     val behavior = DistributedData.withReplicatorMessageAdapter[Command, PNCounter] { replicator =>
