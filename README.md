@@ -4,8 +4,8 @@
 
 ## 🎯 项目状态
 
-**开发进度**: 🟢 Week 1 已完成  
-**当前版本**: v0.2  
+**开发进度**: 🟢 Day 2 任务调度完成 + 数据执行引擎  
+**当前版本**: v0.3  
 **JDK版本**: Java 11  
 **构建状态**: ✅ 编译通过，测试正常
 
@@ -16,6 +16,25 @@
 - 🔧 **JDK 11升级**: 完整的兼容性解决和优化配置
 - 📊 **监控体系**: HTTP API、健康检查、系统指标
 - 🛡️ **高可用设计**: 故障转移、优雅关闭、状态管理
+
+### 🆕 Day 2 重大更新 (2024-11-15)
+
+#### 📦 任务调度系统
+- ✅ **插件式任务执行器**: 模块化设计，易于扩展新任务类型
+- ✅ **Actor隔离执行**: 每个任务独立Actor，自动并发处理
+- ✅ **状态持久化**: TaskScheduler持久化任务状态，即使Actor停止也可查询
+- ✅ **HTTP API**: 完整的REST接口（提交任务、查询状态、统计信息）
+- ✅ **内置执行器**: SQL、数据处理、文件传输
+- ✅ **模块化代码结构**: `executors/`目录，每个执行器独立文件
+
+#### 🌊 Pekko Stream数据执行引擎 (NEW!)
+- ✅ **类Spark/Flink API**: 熟悉的Dataset抽象和操作
+- ✅ **流式处理**: 支持无限数据流和批处理
+- ✅ **自动背压**: 处理快速生产者和慢速消费者
+- ✅ **多种数据源**: 文件、内存、流式、数据库（扩展中）
+- ✅ **丰富的操作**: map、filter、groupBy、join、distinct、sort等
+- ✅ **多种数据汇**: 文件输出、控制台、内存收集、聚合
+- ✅ **可组合**: 通过Flow组合构建复杂数据管道
 
 ## 🚀 快速开始
 
@@ -58,15 +77,18 @@ sbt "project pekko-server" "runMain cn.xuyinyin.magic.PekkoServer 2553"
 
 启动成功后，可以通过以下端点验证服务：
 
-| 端点 | 功能 | 示例响应 |
-|------|------|----------|
-| **GET /** | API文档 | `Pekko DataFusion Arrow API Documentation` |
-| **GET /api/v1/status** | API状态检查 | `API Status: OK` |
-| **GET /health** | 整体健康状态 | `Overall Health: OK` |
-| **GET /health/live** | 存活探针 | `Liveness: OK` |
-| **GET /health/ready** | 就绪探针 | `Readiness: OK` |
-| **GET /monitoring/cluster/status** | 集群状态 | `Cluster Status: Up` |
-| **GET /monitoring/metrics** | 系统指标 | `System Metrics JSON` |
+| 端点 | 方法 | 功能 | 
+|------|------|------|
+| **/** | GET | API文档 |
+| **/api/v1/status** | GET | API状态检查 |
+| **/api/v1/tasks** | POST | 提交任务 ⭐ NEW |
+| **/api/v1/tasks/statistics** | GET | 任务统计 ⭐ NEW |
+| **/api/v1/tasks/{taskId}** | GET | 查询任务状态 ⭐ NEW |
+| **/health** | GET | 整体健康状态 |
+| **/health/live** | GET | 存活探针 |
+| **/health/ready** | GET | 就绪探针 |
+| **/monitoring/cluster/status** | GET | 集群状态 |
+| **/monitoring/metrics** | GET | 系统指标 |
 
 ```bash
 # 快速健康检查
@@ -79,7 +101,99 @@ curl http://localhost:8080/monitoring/cluster/status
 
 # API状态检查
 curl http://localhost:8080/api/v1/status
-# 输出: API Status: OK
+# 输出: API Status with Task Scheduling features
+```
+
+### 🎯 任务调度系统快速使用
+
+#### 1. 提交SQL任务
+```bash
+curl -X POST http://localhost:8080/api/v1/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "taskType": "sql",
+    "sql": "SELECT * FROM users WHERE age > 18",
+    "database": "production",
+    "priority": 5
+  }'
+
+# 响应: {"taskId": "xxx", "message": "Task submitted successfully"}
+```
+
+#### 2. 提交数据处理任务
+```bash
+curl -X POST http://localhost:8080/api/v1/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "taskType": "data_process",
+    "inputPath": "/data/input.csv",
+    "outputPath": "/data/output.csv",
+    "operation": "filter",
+    "priority": 7
+  }'
+```
+
+#### 3. 查询任务状态
+```bash
+curl http://localhost:8080/api/v1/tasks/{taskId}
+
+# 响应示例:
+# {
+#   "taskId": "xxx",
+#   "status": "completed",
+#   "progress": 100.0,
+#   "message": "Task completed successfully"
+# }
+```
+
+#### 4. 查询任务统计
+```bash
+curl http://localhost:8080/api/v1/tasks/statistics
+
+# 响应示例:
+# {
+#   "totalTasks": 10,
+#   "runningTasks": 2,
+#   "completedTasks": 7,
+#   "failedTasks": 1,
+#   "successRate": 70.0
+# }
+```
+
+### 🌊 数据执行引擎快速使用
+
+#### 编程API示例
+```scala
+import cn.xuyinyin.magic.stream.engine.{DataExecutionEngine, DataSink}
+
+// 1. 从集合创建数据集
+val numbers = DataExecutionEngine.fromCollection(1 to 100)
+
+// 2. 数据转换管道
+val result = numbers
+  .filter(_ % 2 == 0)      // 过滤偶数
+  .map(_ * 2)              // 乘以2
+  .limit(10)               // 取前10个
+  .collect()               // 执行并收集结果
+
+// 3. 文件操作
+val dataset = DataExecutionEngine.readCSV("data.csv")
+val processed = dataset
+  .filter(row => row.nonEmpty)
+  .map(row => row.map(_.toUpperCase))
+processed.writeTo(DataSink.File.csv("output.csv"))
+
+// 4. 分组聚合
+val sales = DataExecutionEngine.fromCollection(salesData)
+val totals = sales
+  .groupBy(_.category)
+  .sum(_.amount)
+```
+
+查看完整示例：
+```bash
+# 运行数据引擎示例
+sbt "project pekko-server" "runMain cn.xuyinyin.magic.stream.engine.EXAMPLE_DataExecutionEngineUsage"
 ```
 
 ### 📊 PekkoGc组件验证
@@ -1310,7 +1424,129 @@ prost = "0.12"
   - [ ] 推送通知支持
   - [ ] 离线数据缓存
 
+## 📁 项目结构 (Day 2 更新)
+
+```
+pekko-reference/
+├── pekko-server/src/main/scala/cn/xuyinyin/magic/
+│   ├── cluster/                    # 集群管理
+│   │   ├── PekkoGuardian.scala    # 集群守护Actor
+│   │   └── HealthChecker.scala    # 健康检查
+│   │
+│   ├── task/                       # ⭐ 任务调度系统 (NEW)
+│   │   ├── TaskModels.scala       # 任务模型定义
+│   │   ├── TaskScheduler.scala    # 任务调度器
+│   │   ├── TaskActor.scala        # 单任务执行Actor
+│   │   ├── TaskExecutionEngine.scala  # 执行引擎门面
+│   │   └── executors/             # 执行器目录
+│   │       ├── TaskExecutor.scala            # 执行器基类
+│   │       ├── SqlTaskExecutor.scala         # SQL执行器
+│   │       ├── DataProcessTaskExecutor.scala # 数据处理
+│   │       ├── FileTransferTaskExecutor.scala # 文件传输
+│   │       ├── ExecutorRegistry.scala        # 注册表
+│   │       └── EXAMPLE_KafkaTaskExecutor.scala # 扩展示例
+│   │
+│   ├── stream/engine/              # ⭐ 数据执行引擎 (NEW)
+│   │   ├── DataExecutionEngine.scala  # 核心引擎
+│   │   ├── DataSource.scala          # 数据源
+│   │   ├── DataSink.scala            # 数据汇
+│   │   └── EXAMPLE_DataExecutionEngineUsage.scala # 使用示例
+│   │
+│   ├── http/                       # HTTP服务
+│   │   ├── HttpRoutes.scala       # 路由定义
+│   │   └── TaskHttpRoutes.scala   # 任务API (NEW)
+│   │
+│   ├── server/                     # 服务器
+│   │   └── PekkoClusterService.scala
+│   │
+│   └── single/                     # 单例组件
+│       └── PekkoGc.scala          # GC清理
+│
+├── xxt-ui/                         # 前端项目 (React)
+│   ├── src/
+│   │   ├── pages/                 # 页面组件
+│   │   ├── api/                   # API客户端
+│   │   └── components/            # 通用组件
+│   └── package.json
+│
+├── docs/                           # 📚 文档
+│   ├── TASK_ARCHITECTURE_V2.md    # 任务系统架构 (NEW)
+│   ├── TASK_SCHEDULING_GUIDE.md   # 任务调度指南
+│   └── TASK_EXTENSION_GUIDE.md    # 任务扩展指南
+│
+├── test_task_scheduling.sh         # 测试脚本 (NEW)
+└── README.md                       # 本文件
+```
+
+## 📚 文档导航
+
+### 核心文档
+- **[README.md](./README.md)** - 项目总览（本文件）
+- **[TASK_ARCHITECTURE_V2.md](./TASK_ARCHITECTURE_V2.md)** - 任务系统架构详解 ⭐ NEW
+- **[TASK_SCHEDULING_GUIDE.md](./TASK_SCHEDULING_GUIDE.md)** - 任务调度使用指南
+- **[TASK_EXTENSION_GUIDE.md](./TASK_EXTENSION_GUIDE.md)** - 如何扩展新任务类型
+
+### 前端文档
+- **[xxt-ui/GETTING_STARTED.md](./xxt-ui/GETTING_STARTED.md)** - 前端快速开始
+- **[xxt-ui/README.md](./xxt-ui/README.md)** - 前端项目说明
+
+### 示例代码
+- **[EXAMPLE_DataExecutionEngineUsage.scala](./pekko-server/src/main/scala/cn/xuyinyin/magic/stream/engine/EXAMPLE_DataExecutionEngineUsage.scala)** - 数据引擎使用示例 ⭐ NEW
+- **[EXAMPLE_KafkaTaskExecutor.scala](./pekko-server/src/main/scala/cn/xuyinyin/magic/task/executors/EXAMPLE_KafkaTaskExecutor.scala)** - 任务扩展完整示例 ⭐ NEW
+
+## 🎓 学习路径
+
+### 1️⃣ 快速体验（15分钟）
+1. 启动服务：`sbt "project pekko-server" "runMain cn.xuyinyin.magic.PekkoServer"`
+2. 提交SQL任务（见上面的示例）
+3. 查询任务状态
+4. 运行测试脚本：`./test_task_scheduling.sh`
+
+### 2️⃣ 深入理解（1小时）
+1. 阅读 **TASK_ARCHITECTURE_V2.md** 理解架构设计
+2. 查看 **TaskScheduler.scala** 了解调度逻辑
+3. 研究 **DataExecutionEngine.scala** 学习数据处理
+4. 运行示例程序感受API
+
+### 3️⃣ 动手实践（2小时）
+1. 参考 **EXAMPLE_KafkaTaskExecutor.scala** 添加自定义任务类型
+2. 使用数据执行引擎处理实际数据
+3. 集成外部组件（Spark/Kafka等）
+4. 编写单元测试
+
+### 4️⃣ 生产部署（1天）
+1. 配置多节点集群
+2. 添加监控告警
+3. 优化性能参数
+4. 编写运维文档
+
+## 💡 使用技巧
+
+### 任务调度最佳实践
+1. **合理设置优先级**: 重要任务优先级设为7-10
+2. **使用批处理**: 大量小任务使用batch操作
+3. **监控任务状态**: 定期查询统计信息
+4. **错误处理**: 实现自定义的重试逻辑
+
+### 数据处理最佳实践
+1. **流式处理**: 大文件使用流式读取，避免OOM
+2. **背压控制**: 让Pekko Stream自动处理背压
+3. **分批处理**: 使用`.batch()`分批处理数据
+4. **资源清理**: 使用try-finally确保资源释放
+
+### 性能优化建议
+1. **并行度调整**: 根据CPU核心数调整并行度
+2. **缓冲区大小**: 调整buffer size平衡内存和吞吐
+3. **ActorSystem复用**: 全局共享ActorSystem实例
+4. **连接池**: 数据库/Kafka使用连接池
+
 ### 🔧 技术债务清单
+
+#### 已完成 ✅
+- ✅ `TaskScheduler` - 修复death pact问题
+- ✅ `TaskActor` - 状态持久化
+- ✅ 代码结构重构 - 模块化executors目录
+- ✅ 数据执行引擎 - 基于Pekko Stream
 
 #### 需要重构的模块
 - [ ] `CalciteMysqlSqlParser` - 简化复杂的字符串替换逻辑
@@ -1319,6 +1555,7 @@ prost = "0.12"
 - [ ] `ClusterManager` - 优化集群状态同步性能
 - [ ] `DataFlowCoordinator` - 重构任务调度算法
 - [ ] `ArrowSerializer` - 优化序列化性能
+- [ ] `DataProcessTaskExecutor` - 集成真实的ActorSystem传递 ⭐ TODO
 
 #### 配置优化
 - [ ] 统一配置文件格式

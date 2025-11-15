@@ -1,7 +1,7 @@
 package cn.xuyinyin.magic.server
 
-import cn.xuyinyin.magic.cluster.PekkoGuardian
-import cn.xuyinyin.magic.http.HttpRoutes
+import cn.xuyinyin.magic.core.cluster.PekkoGuardian
+import cn.xuyinyin.magic.api.http.routes.HttpRoutes
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.Logger
 import org.apache.pekko.actor.typed.ActorSystem
@@ -101,14 +101,17 @@ object PekkoClusterService {
     system: ActorSystem[PekkoGuardian.Command],
     scheduler: org.apache.pekko.actor.typed.Scheduler
   )(implicit ec: ExecutionContextExecutor, timeout: Timeout): Unit = {
-    logger.info("Starting HTTP server on api-gateway node...")
+    logger.info("Starting HTTP server with Task Scheduling support...")
+    
+    // Guardian引用就是system本身
+    val guardian = system
     
     // 获取HealthChecker引用
     val healthCheckerFuture = system.ask(ref => PekkoGuardian.GetHealthChecker(ref))(timeout, scheduler)
     
     healthCheckerFuture.onComplete {
       case Success(healthChecker) =>
-        val routes = HttpRoutes.createRoutes(system, healthChecker)
+        val routes = HttpRoutes.createRoutes(system, healthChecker, guardian)
         implicit val classicSystem = system.classicSystem
         val bindingFuture = Http().newServerAt("localhost", 8080).bind(routes)
         
@@ -117,8 +120,11 @@ object PekkoClusterService {
             val address = binding.localAddress
             logger.info(s"HTTP server successfully started at http://${address.getHostString}:${address.getPort}/")
             logger.info("Available HTTP endpoints:")
-            logger.info("  - API: http://localhost:8080/api/v1/status")
-            logger.info("  - Health: http://localhost:8080/health")
+            logger.info("  - API Status: http://localhost:8080/api/v1/status")
+            logger.info("  - Task Submit: POST http://localhost:8080/api/v1/tasks")
+            logger.info("  - Task Statistics: http://localhost:8080/api/v1/tasks/statistics")
+            logger.info("  - Task Status: http://localhost:8080/api/v1/tasks/{taskId}")
+            logger.info("  - Health Check: http://localhost:8080/health")
             logger.info("  - Monitoring: http://localhost:8080/monitoring/")
             
           case Failure(exception) =>

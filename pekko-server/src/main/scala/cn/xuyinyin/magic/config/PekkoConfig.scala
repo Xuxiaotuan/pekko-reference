@@ -1,6 +1,6 @@
 package cn.xuyinyin.magic.config
 
-import cn.xuyinyin.magic.cluster.NodeRole
+import cn.xuyinyin.magic.core.cluster.NodeRole
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
 

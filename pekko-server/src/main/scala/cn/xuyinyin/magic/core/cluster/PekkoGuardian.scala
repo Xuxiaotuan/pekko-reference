@@ -1,6 +1,8 @@
-package cn.xuyinyin.magic.cluster
+package cn.xuyinyin.magic.core.cluster
 
 import cn.xuyinyin.magic.single.PekkoGc
+import cn.xuyinyin.magic.workflow.actors.WorkflowSupervisor
+import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
 import com.typesafe.scalalogging.Logger
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
@@ -16,8 +18,9 @@ object PekkoGuardian {
   private val logger = Logger(getClass)
 
   sealed trait Command
-  case class GetNodeRoles(reply: ActorRef[Set[String]]) extends Command
+  private case class GetNodeRoles(reply: ActorRef[Set[String]]) extends Command
   case class GetHealthChecker(reply: ActorRef[ActorRef[HealthChecker.Command]]) extends Command
+  case class GetWorkflowSupervisor(reply: ActorRef[ActorRef[WorkflowSupervisor.Command]]) extends Command
   private case object CheckLeadership extends Command
 
   def apply(): Behavior[Command] = Behaviors.setup { implicit ctx =>
@@ -31,6 +34,15 @@ object PekkoGuardian {
     // Create and start health checker
     val healthChecker = ctx.spawn(HealthChecker(), "HealthChecker")
     healthChecker ! HealthChecker.StartPeriodicCheck(30000) // 每30秒检查一次
+    
+    // Create workflow supervisor (工作流管理器)
+    implicit val ec = ctx.executionContext
+    val executionEngine = new WorkflowExecutionEngine()(ctx.system, ec)
+    val workflowSupervisor = ctx.spawn(
+      WorkflowSupervisor(executionEngine),
+      "WorkflowSupervisor"
+    )
+    logger.info("WorkflowSupervisor created")
 
     // Start periodic leadership check
     import org.apache.pekko.actor.typed.scaladsl.Behaviors.withTimers
@@ -52,11 +64,17 @@ object PekkoGuardian {
         case GetHealthChecker(reply) =>
           reply ! healthChecker
           Behaviors.same
+        
+        case GetWorkflowSupervisor(reply) =>
+          reply ! workflowSupervisor
+          Behaviors.same
       }
     }
   }
   
   private def managePekkoGc(cluster: Cluster)(implicit ctx: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command]): Unit = {
+    // TODO: PekkoGc暂时注释，学习用
+    /*
     val currentLeader = cluster.state.leader
     val isLeader = currentLeader.contains(cluster.selfMember.address)
     
@@ -81,5 +99,6 @@ object PekkoGuardian {
           ctx.log.debug("PekkoGc not running on this follower node")
       }
     }
+    */
   }
 }

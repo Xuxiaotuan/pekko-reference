@@ -1,4 +1,4 @@
-package cn.xuyinyin.magic.cluster
+package cn.xuyinyin.magic.core.cluster
 
 import scala.collection.mutable
 

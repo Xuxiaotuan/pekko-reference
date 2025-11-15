@@ -88,6 +88,10 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       "org.apache.pekko" %% "pekko-stream"                % pekkoVersion,
       "org.apache.pekko" %% "pekko-connectors-slick"      % "1.0.2",
       "org.apache.pekko" %% "pekko-http"                  % "1.0.1",
+      "org.apache.pekko" %% "pekko-http-spray-json"       % "1.0.1",
+      "io.spray"         %% "spray-json"                  % "1.3.6",
+      // Alpakka connectors
+      "org.apache.pekko" %% "pekko-connectors-csv"        % "1.0.2",
       // -test
       "org.apache.pekko" %% "pekko-stream-testkit"      % pekkoVersion % Test,
       "org.apache.pekko" %% "pekko-multi-node-testkit"  % pekkoVersion % Test,

@@ -1,17 +1,20 @@
-package cn.xuyinyin.magic.http
+package cn.xuyinyin.magic.api.http.routes
 
-import cn.xuyinyin.magic.cluster.HealthChecker
+import cn.xuyinyin.magic.core.cluster.{HealthChecker, PekkoGuardian}
 import org.apache.pekko.actor.typed.{ActorRef, ActorSystem}
 import org.apache.pekko.cluster.Cluster
 import org.apache.pekko.http.scaladsl.model.{ContentTypes, HttpEntity}
 import org.apache.pekko.http.scaladsl.server.Directives.{complete, get, path, pathEndOrSingleSlash, pathPrefix, concat}
 import org.apache.pekko.http.scaladsl.server.Route
 
+import scala.concurrent.ExecutionContext
+
 /**
  * HTTP服务路由
  * 
  * 提供完整的HTTP服务接口，包括：
  * - API接口
+ * - 任务管理
  * - 健康检查
  * - 系统监控
  * 
@@ -25,9 +28,13 @@ object HttpRoutes {
    */
   def createRoutes(
     system: ActorSystem[_],
-    healthChecker: ActorRef[HealthChecker.Command]
-  ): Route = {
+    healthChecker: ActorRef[HealthChecker.Command],
+    guardian: ActorRef[PekkoGuardian.Command]
+  )(implicit ec: ExecutionContext): Route = {
     concat(
+      // 工作流管理API (DSL可视化) - 增强版本
+      new EnhancedWorkflowRoutes()(system, ec).routes,
+      
       // API接口路径
       pathPrefix("api") {
         concat(
@@ -37,8 +44,9 @@ object HttpRoutes {
                 val apiStatus = 
                   """
                     |API Status:
-                    |- Version: 1.0.0
+                    |- Version: 1.0.0 (with Task Scheduling)
                     |- Status: Running
+                    |- Features: Task Management, Health Check, Monitoring
                     |- Timestamp: """ + System.currentTimeMillis() + """
                     |""".stripMargin
                 complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, apiStatus))
