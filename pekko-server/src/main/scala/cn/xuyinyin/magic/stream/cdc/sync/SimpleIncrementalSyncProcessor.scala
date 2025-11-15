@@ -1,13 +1,13 @@
-package cn.xuyinyin.magic.cdc.sync
+package cn.xuyinyin.magic.stream.cdc.sync
+
+import cn.xuyinyin.magic.common.CborSerializable
+import cn.xuyinyin.magic.stream.cdc.models.{CdcEvent, DELETE, INSERT, SyncConfig, SyncResult, UPDATE}
+import cn.xuyinyin.magic.stream.cdc.simulator.{CdcDataSimulator, DataStats}
+import cn.xuyinyin.magic.stream.cdc.watermark.{WatermarkManager, WatermarkStatus}
+import com.typesafe.scalalogging.LazyLogging
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
-import cn.xuyinyin.magic.cdc.models.{CdcEvent, SyncConfig, SyncResult, SyncStatus, INCREMENTAL_SYNC}
-import cn.xuyinyin.magic.cdc.simulator.CdcDataSimulator
-import cn.xuyinyin.magic.cdc.watermark.WatermarkManager
-import cn.xuyinyin.magic.common.CborSerializable
-import com.typesafe.scalalogging.LazyLogging
 
 /**
  * 简化的增量数据同步处理器
@@ -105,11 +105,11 @@ class SimpleIncrementalSyncProcessor(
   private def processCdcEvent(event: CdcEvent, config: SyncConfig): SyncResult = {
     try {
       event.eventType match {
-        case cn.xuyinyin.magic.cdc.models.INSERT =>
+        case INSERT =>
           processInsertEvent(event, config)
-        case cn.xuyinyin.magic.cdc.models.UPDATE =>
+        case UPDATE =>
           processUpdateEvent(event, config)
-        case cn.xuyinyin.magic.cdc.models.DELETE =>
+        case DELETE =>
           processDeleteEvent(event, config)
       }
       
@@ -237,9 +237,9 @@ class SimpleIncrementalSyncProcessor(
  * 增量同步状态
  */
 case class IncrementalSyncStatus(
-  tableName: String,
-  isRunning: Boolean,
-  watermarkStatus: cn.xuyinyin.magic.cdc.watermark.WatermarkStatus,
-  dataStats: cn.xuyinyin.magic.cdc.simulator.DataStats,
-  lastUpdateTime: Instant
+                                  tableName: String,
+                                  isRunning: Boolean,
+                                  watermarkStatus: WatermarkStatus,
+                                  dataStats: DataStats,
+                                  lastUpdateTime: Instant
 ) extends CborSerializable

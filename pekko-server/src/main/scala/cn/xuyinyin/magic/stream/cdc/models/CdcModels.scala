@@ -1,7 +1,8 @@
-package cn.xuyinyin.magic.cdc.models
+package cn.xuyinyin.magic.stream.cdc.models
+
+import cn.xuyinyin.magic.common.CborSerializable
 
 import java.time.Instant
-import cn.xuyinyin.magic.common.CborSerializable
 
 /**
  * CDC事件类型

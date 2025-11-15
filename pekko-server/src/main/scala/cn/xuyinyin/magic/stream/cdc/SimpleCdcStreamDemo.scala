@@ -1,16 +1,17 @@
 package cn.xuyinyin.magic.stream.cdc
 
-import java.time.Instant
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
-import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
-import org.apache.pekko.stream.{Materializer, OverflowStrategy}
-import cn.xuyinyin.magic.cdc.models.{CdcEvent, FULL_SYNC, INCREMENTAL_SYNC, SyncConfig, SyncResult}
-import cn.xuyinyin.magic.cdc.simulator.CdcDataSimulator
-import cn.xuyinyin.magic.cdc.watermark.WatermarkManager
+import cn.xuyinyin.magic.stream.cdc.models.{CdcEvent, DELETE, FULL_SYNC, INCREMENTAL_SYNC, INSERT, SyncConfig, SyncResult, UPDATE}
+import cn.xuyinyin.magic.stream.cdc.simulator.CdcDataSimulator
+import cn.xuyinyin.magic.stream.cdc.watermark.WatermarkManager
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.pekko.actor.typed.ActorSystem
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
+import org.apache.pekko.stream.{Materializer, OverflowStrategy}
+
+import java.time.Instant
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 /**
  * 简化的基于Pekko Stream的CDC演示
@@ -199,9 +200,9 @@ object SimpleCdcStreamDemo extends LazyLogging {
    */
   private def processCdcEvent(event: CdcEvent, config: SyncConfig): SyncResult = {
     val (ok, err) = event.eventType match {
-      case cn.xuyinyin.magic.cdc.models.INSERT => processInsertEvent(event, config); (1, 0)
-      case cn.xuyinyin.magic.cdc.models.UPDATE => processUpdateEvent(event, config); (1, 0)
-      case cn.xuyinyin.magic.cdc.models.DELETE => processDeleteEvent(event, config); (1, 0)
+      case INSERT => processInsertEvent(event, config); (1, 0)
+      case UPDATE => processUpdateEvent(event, config); (1, 0)
+      case DELETE => processDeleteEvent(event, config); (1, 0)
     }
     SyncResult(
       tableName = config.tableName,

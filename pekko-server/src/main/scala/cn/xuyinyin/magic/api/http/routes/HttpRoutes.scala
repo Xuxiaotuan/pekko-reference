@@ -1,6 +1,7 @@
 package cn.xuyinyin.magic.api.http.routes
 
-import cn.xuyinyin.magic.core.cluster.{HealthChecker, PekkoGuardian}
+import cn.xuyinyin.magic.cluster.{HealthChecker, PekkoGuardian}
+import cn.xuyinyin.magic.workflow.scheduler.SchedulerManager
 import org.apache.pekko.actor.typed.{ActorRef, ActorSystem}
 import org.apache.pekko.cluster.Cluster
 import org.apache.pekko.http.scaladsl.model.{ContentTypes, HttpEntity}
@@ -29,11 +30,15 @@ object HttpRoutes {
   def createRoutes(
     system: ActorSystem[_],
     healthChecker: ActorRef[HealthChecker.Command],
-    guardian: ActorRef[PekkoGuardian.Command]
+    guardian: ActorRef[PekkoGuardian.Command],
+    schedulerManager: SchedulerManager
   )(implicit ec: ExecutionContext): Route = {
     concat(
       // 工作流管理API (DSL可视化) - 增强版本
       new EnhancedWorkflowRoutes()(system, ec).routes,
+      
+      // 调度管理API
+      new SchedulerRoutes(schedulerManager).routes,
       
       // API接口路径
       pathPrefix("api") {

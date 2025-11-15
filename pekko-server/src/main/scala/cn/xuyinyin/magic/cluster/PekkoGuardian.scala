@@ -1,8 +1,9 @@
-package cn.xuyinyin.magic.core.cluster
+package cn.xuyinyin.magic.cluster
 
 import cn.xuyinyin.magic.single.PekkoGc
 import cn.xuyinyin.magic.workflow.actors.WorkflowSupervisor
 import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
+import cn.xuyinyin.magic.workflow.scheduler.{SchedulerManager, WorkflowScheduler}
 import com.typesafe.scalalogging.Logger
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
@@ -21,6 +22,7 @@ object PekkoGuardian {
   private case class GetNodeRoles(reply: ActorRef[Set[String]]) extends Command
   case class GetHealthChecker(reply: ActorRef[ActorRef[HealthChecker.Command]]) extends Command
   case class GetWorkflowSupervisor(reply: ActorRef[ActorRef[WorkflowSupervisor.Command]]) extends Command
+  case class GetSchedulerManager(reply: ActorRef[SchedulerManager]) extends Command
   private case object CheckLeadership extends Command
 
   def apply(): Behavior[Command] = Behaviors.setup { implicit ctx =>
@@ -43,6 +45,11 @@ object PekkoGuardian {
       "WorkflowSupervisor"
     )
     logger.info("WorkflowSupervisor created")
+    
+    // Create workflow scheduler and scheduler manager (调度管理器)
+    val workflowScheduler = new WorkflowScheduler(workflowSupervisor)(ctx.system)
+    val schedulerManager = new SchedulerManager(workflowScheduler)
+    logger.info("SchedulerManager created")
 
     // Start periodic leadership check
     import org.apache.pekko.actor.typed.scaladsl.Behaviors.withTimers
@@ -67,6 +74,10 @@ object PekkoGuardian {
         
         case GetWorkflowSupervisor(reply) =>
           reply ! workflowSupervisor
+          Behaviors.same
+        
+        case GetSchedulerManager(reply) =>
+          reply ! schedulerManager
           Behaviors.same
       }
     }

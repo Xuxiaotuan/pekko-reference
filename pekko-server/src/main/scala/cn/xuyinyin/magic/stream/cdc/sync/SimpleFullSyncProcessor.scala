@@ -1,12 +1,13 @@
-package cn.xuyinyin.magic.cdc.sync
+package cn.xuyinyin.magic.stream.cdc.sync
+
+import cn.xuyinyin.magic.common.CborSerializable
+import cn.xuyinyin.magic.stream.cdc.models.{SyncConfig, SyncResult}
+import cn.xuyinyin.magic.stream.cdc.simulator.CdcDataSimulator
+import cn.xuyinyin.magic.stream.cdc.watermark.WatermarkManager
+import com.typesafe.scalalogging.LazyLogging
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
-import cn.xuyinyin.magic.cdc.models.{SyncConfig, SyncResult, SyncStatus, FULL_SYNC}
-import cn.xuyinyin.magic.cdc.simulator.CdcDataSimulator
-import cn.xuyinyin.magic.cdc.watermark.WatermarkManager
-import cn.xuyinyin.magic.common.CborSerializable
-import com.typesafe.scalalogging.LazyLogging
 
 /**
  * 简化的全量数据同步处理器

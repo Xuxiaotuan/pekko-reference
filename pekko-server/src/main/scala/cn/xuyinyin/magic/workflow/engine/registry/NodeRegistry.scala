@@ -17,43 +17,62 @@ import scala.concurrent.ExecutionContext
  */
 object NodeRegistry {
   
+  // 所有Source节点实例（懒加载）
+  private lazy val sourceInstances: Map[String, NodeSource] = {
+    val sources = List(
+      new RandomNumbersSource(),
+      new SequenceSource(),
+      new CsvSource(),
+      new TextSource(),
+      new MemorySource(),
+      new SqlSource(),
+      new KafkaSource(),
+      new MySQLSource()
+    )
+    sources.map(s => s.nodeType -> s).toMap
+  }
+  
+  // 所有Sink节点实例（懒加载）
+  private lazy val sinkInstances: Map[String, NodeSink] = {
+    val sinks = List(
+      new ConsoleLogSink(),
+      new FileTextSink(),
+      new MySQLSink()
+    )
+    sinks.map(s => s.nodeType -> s).toMap
+  }
+  
   /**
    * 获取所有Source节点
    */
-  def getSources: Map[String, NodeSource] = Map(
-    "mysql.query" -> new MySQLSource(),
-    "file.read" -> new FileSource(),
-    // 添加更多...
-  )
+  def getSources: Map[String, NodeSource] = sourceInstances
   
   /**
    * 获取所有Sink节点
    */
-  def getSinks(implicit ec: ExecutionContext): Map[String, NodeSink] = Map(
-    "mysql.write" -> new MySQLSink(),
-    // 添加更多...
-  )
+  def getSinks: Map[String, NodeSink] = sinkInstances
   
   /**
    * 根据类型查找Source
    */
   def findSource(nodeType: String): Option[NodeSource] = {
-    getSources.get(nodeType)
+    sourceInstances.get(nodeType)
   }
   
   /**
    * 根据类型查找Sink
    */
-  def findSink(nodeType: String)(implicit ec: ExecutionContext): Option[NodeSink] = {
-    getSinks.get(nodeType)
+  def findSink(nodeType: String): Option[NodeSink] = {
+    sinkInstances.get(nodeType)
   }
   
   /**
-   * 获取所有支持的节点类型
+   * 获取所有支持的Source类型
    */
-  def supportedTypes: Map[String, String] = {
-    val sources = getSources.keys.map(_ -> "source")
-    val sinks = getSinks(scala.concurrent.ExecutionContext.global).keys.map(_ -> "sink")
-    (sources ++ sinks).toMap
-  }
+  def supportedSourceTypes: Set[String] = sourceInstances.keySet
+  
+  /**
+   * 获取所有支持的Sink类型
+   */
+  def supportedSinkTypes: Set[String] = sinkInstances.keySet
 }

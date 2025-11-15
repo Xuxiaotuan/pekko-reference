@@ -1,11 +1,12 @@
-package cn.xuyinyin.magic.cdc.simulator
+package cn.xuyinyin.magic.stream.cdc.simulator
+
+import cn.xuyinyin.magic.common.CborSerializable
+import cn.xuyinyin.magic.stream.cdc.models.{CdcEvent, CdcEventType, DELETE, INSERT, Order, UPDATE, User}
+import com.typesafe.scalalogging.LazyLogging
 
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicLong
 import scala.util.Random
-import cn.xuyinyin.magic.cdc.models.{CdcEvent, CdcEventType, User, Order, INSERT, UPDATE, DELETE}
-import cn.xuyinyin.magic.common.CborSerializable
-import com.typesafe.scalalogging.LazyLogging
 
 /**
  * CDC数据模拟器

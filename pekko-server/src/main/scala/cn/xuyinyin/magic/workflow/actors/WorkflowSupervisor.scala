@@ -39,6 +39,11 @@ object WorkflowSupervisor {
     replyTo: ActorRef[WorkflowActor.ExecutionResponse]
   ) extends Command
   
+  case class ExecuteWorkflowScheduled(
+    workflowId: String,
+    triggeredBy: String = "scheduler"
+  ) extends Command
+  
   case class PauseWorkflow(workflowId: String) extends Command
   case class ResumeWorkflow(workflowId: String) extends Command
   case class StopWorkflow(workflowId: String) extends Command
@@ -117,6 +122,23 @@ object WorkflowSupervisor {
             
             case None =>
               context.log.warn(s"Workflow not found: $workflowId")
+          }
+          Behaviors.same
+        
+        case ExecuteWorkflowScheduled(workflowId, triggeredBy) =>
+          workflows.get(workflowId) match {
+            case Some(actor) =>
+              context.log.info(s"Executing workflow (triggered by $triggeredBy): $workflowId")
+              // 创建临时响应actor来接收执行结果
+              val responseAdapter = context.messageAdapter[WorkflowActor.ExecutionResponse] { response =>
+                context.log.info(s"Scheduled workflow execution: $workflowId, status: ${response.status}")
+                // 可以在这里添加调度执行的额外逻辑
+                ExecuteWorkflowScheduled(workflowId, triggeredBy) // 用于占位，实际不会处理
+              }
+              actor ! WorkflowActor.Execute(responseAdapter)
+            
+            case None =>
+              context.log.warn(s"Workflow not found for scheduled execution: $workflowId")
           }
           Behaviors.same
         

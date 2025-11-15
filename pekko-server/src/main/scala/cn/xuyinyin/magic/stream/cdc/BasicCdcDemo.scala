@@ -1,13 +1,12 @@
-package cn.xuyinyin.magic.cdc
+package cn.xuyinyin.magic.stream.cdc
 
-import java.time.Instant
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
-import cn.xuyinyin.magic.cdc.models.{SyncConfig, SyncStatus, FULL_SYNC, INCREMENTAL_SYNC}
-import cn.xuyinyin.magic.cdc.simulator.CdcDataSimulator
-import cn.xuyinyin.magic.cdc.sync.{SimpleFullSyncProcessor, SimpleIncrementalSyncProcessor}
-import cn.xuyinyin.magic.cdc.watermark.WatermarkManager
+import cn.xuyinyin.magic.stream.cdc.models.{FULL_SYNC, INCREMENTAL_SYNC, SyncConfig}
+import cn.xuyinyin.magic.stream.cdc.simulator.CdcDataSimulator
+import cn.xuyinyin.magic.stream.cdc.sync.{SimpleFullSyncProcessor, SimpleIncrementalSyncProcessor}
+import cn.xuyinyin.magic.stream.cdc.watermark.WatermarkManager
 import com.typesafe.scalalogging.LazyLogging
+
+import scala.concurrent.ExecutionContext
 
 /**
  * 基础CDC演示程序

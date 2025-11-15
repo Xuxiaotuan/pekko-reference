@@ -1,13 +1,12 @@
 package cn.xuyinyin.magic.workflow.scheduler
 
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
-import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
-import org.apache.pekko.actor.typed.{ActorSystem, Behavior}
+import cn.xuyinyin.magic.workflow.actors.WorkflowSupervisor
+import org.apache.pekko.actor.typed.{ActorRef, ActorSystem, Behavior}
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext
 
 /**
  * 工作流调度器伴生对象
@@ -45,6 +44,7 @@ object WorkflowScheduler {
  * 工作流调度器
  * 
  * 支持定时执行工作流
+ * 通过WorkflowSupervisor来执行工作流，保持Actor模型的一致性
  * 
  * 功能：
  * - Cron表达式调度
@@ -52,12 +52,13 @@ object WorkflowScheduler {
  * - 固定频率调度
  * - 立即执行
  * 
+ * @param workflowSupervisor 工作流监督器的引用
  * @author : Xuxiaotuan
  * @since : 2024-11-15
  */
 class WorkflowScheduler(
-  executionEngine: WorkflowExecutionEngine
-)(implicit system: ActorSystem[_], ec: ExecutionContext) {
+  workflowSupervisor: ActorRef[WorkflowSupervisor.Command]
+)(implicit system: ActorSystem[_]) {
   
   import WorkflowScheduler._
   
@@ -139,16 +140,13 @@ class WorkflowScheduler(
   
   /**
    * 执行工作流
+   * 通过WorkflowSupervisor发送执行消息，保持Actor模型一致性
    */
   private def executeWorkflow(workflow: WorkflowDSL.Workflow): Unit = {
-    val executionId = s"scheduled_${System.currentTimeMillis()}"
+    logger.info(s"调度触发工作流执行: ${workflow.id}")
     
-    executionEngine.execute(
-      workflow,
-      executionId,
-      msg => logger.info(s"[${workflow.id}] $msg")
-    ).foreach { result =>
-      logger.info(s"工作流执行完成: ${workflow.id}, 状态: ${result.status}")
-    }
+    // 通过Supervisor执行工作流，而不是直接调用ExecutionEngine
+    workflowSupervisor ! WorkflowSupervisor.ExecuteWorkflowScheduled(
+      workflowId = workflow.id)
   }
 }

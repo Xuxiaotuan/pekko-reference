@@ -4,7 +4,7 @@ import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import org.apache.pekko.Done
 import org.apache.pekko.stream.scaladsl.Sink
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * Sink节点基类
@@ -26,7 +26,9 @@ trait NodeSink {
    * 
    * @param node 节点配置
    * @param onLog 日志回调
+   * @param ec ExecutionContext
    * @return Sink
    */
-  def createSink(node: WorkflowDSL.Node, onLog: String => Unit): Sink[String, Future[Done]]
+  def createSink(node: WorkflowDSL.Node, onLog: String => Unit)
+                (implicit ec: ExecutionContext): Sink[String, Future[Done]]
 }

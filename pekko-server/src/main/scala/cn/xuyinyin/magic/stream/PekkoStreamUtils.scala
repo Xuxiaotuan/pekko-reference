@@ -2,9 +2,8 @@ package cn.xuyinyin.magic.stream
 
 import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.stream.FanInShape.{Init, Name}
-import org.apache.pekko.stream.{ClosedShape, FanInShape, Graph, Inlet, Materializer, Outlet, Shape}
 import org.apache.pekko.stream.scaladsl.{Balance, Flow, GraphDSL, Merge, MergePreferred, RunnableGraph, Sink, Source}
+import org.apache.pekko.stream._
 
 import scala.collection.immutable
 

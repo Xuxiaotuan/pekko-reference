@@ -1,7 +1,7 @@
 package cn.xuyinyin.magic.server
 
-import cn.xuyinyin.magic.core.cluster.PekkoGuardian
 import cn.xuyinyin.magic.api.http.routes.HttpRoutes
+import cn.xuyinyin.magic.cluster.PekkoGuardian
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.Logger
 import org.apache.pekko.actor.typed.ActorSystem
@@ -109,9 +109,18 @@ object PekkoClusterService {
     // 获取HealthChecker引用
     val healthCheckerFuture = system.ask(ref => PekkoGuardian.GetHealthChecker(ref))(timeout, scheduler)
     
-    healthCheckerFuture.onComplete {
-      case Success(healthChecker) =>
-        val routes = HttpRoutes.createRoutes(system, healthChecker, guardian)
+    // 获取SchedulerManager引用
+    val schedulerManagerFuture = system.ask(ref => PekkoGuardian.GetSchedulerManager(ref))(timeout, scheduler)
+    
+    // 组合两个Future
+    val componentsFuture = for {
+      healthChecker <- healthCheckerFuture
+      schedulerManager <- schedulerManagerFuture
+    } yield (healthChecker, schedulerManager)
+    
+    componentsFuture.onComplete {
+      case Success((healthChecker, schedulerManager)) =>
+        val routes = HttpRoutes.createRoutes(system, healthChecker, guardian, schedulerManager)
         implicit val classicSystem = system.classicSystem
         val bindingFuture = Http().newServerAt("localhost", 8080).bind(routes)
         

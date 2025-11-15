@@ -1,10 +1,11 @@
-package cn.xuyinyin.magic.cdc.watermark
+package cn.xuyinyin.magic.stream.cdc.watermark
+
+import cn.xuyinyin.magic.common.CborSerializable
+import cn.xuyinyin.magic.stream.cdc.models.{SyncConfig, WatermarkEvent}
+import com.typesafe.scalalogging.LazyLogging
 
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicLong
-import cn.xuyinyin.magic.cdc.models.{WatermarkEvent, SyncConfig, SyncStatus}
-import cn.xuyinyin.magic.common.CborSerializable
-import com.typesafe.scalalogging.LazyLogging
 
 /**
  * 高低水位线管理器

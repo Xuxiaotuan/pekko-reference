@@ -1,4 +1,4 @@
-package cn.xuyinyin.magic.core.cluster
+package cn.xuyinyin.magic.cluster
 
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}

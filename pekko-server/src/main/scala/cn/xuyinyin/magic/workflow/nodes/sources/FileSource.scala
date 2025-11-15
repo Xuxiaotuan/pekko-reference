@@ -11,48 +11,43 @@ import spray.json.DefaultJsonProtocol._
 import java.nio.file.Paths
 
 /**
- * 文件数据源节点
- * 
- * 支持多种文件格式：
- * - CSV
- * - Text
- * - JSON Lines
- * 
- * 配置：
- * - path: 文件路径（必需）
- * - format: 文件格式（csv/text/jsonl，默认text）
- * - delimiter: CSV分隔符（默认逗号）
- * - encoding: 文件编码（默认UTF-8）
- * - skipHeader: 是否跳过首行（默认false）
- * 
- * @author : Xuxiaotuan
- * @since : 2024-11-15
+ * CSV文件数据源节点
  */
-class FileSource extends NodeSource {
+class CsvSource extends NodeSource {
   
-  override def nodeType: String = "file.read"
+  override def nodeType: String = "file.csv"
   
   override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] = {
     val path = node.config.fields.get("path").map(_.convertTo[String])
-      .getOrElse(throw new IllegalArgumentException("File source缺少path配置"))
-    val format = node.config.fields.get("format").map(_.convertTo[String]).getOrElse("text")
+      .getOrElse(throw new IllegalArgumentException("CSV source缺少path配置"))
     val delimiter = node.config.fields.get("delimiter").map(_.convertTo[String]).getOrElse(",")
-    val skipHeader = node.config.fields.get("skipHeader").map(_.convertTo[Boolean]).getOrElse(false)
     
-    onLog(s"读取文件: $path (格式: $format)")
+    onLog(s"读取CSV文件: $path (分隔符: $delimiter)")
     
-    val baseSource = FileIO.fromPath(Paths.get(path))
+    FileIO.fromPath(Paths.get(path))
       .mapMaterializedValue(_ => NotUsed)
       .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 8192, allowTruncation = true))
       .map(_.utf8String)
       .filter(_.nonEmpty)
+  }
+}
+
+/**
+ * 文本文件数据源节点
+ */
+class TextSource extends NodeSource {
+  
+  override def nodeType: String = "file.text"
+  
+  override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] = {
+    val path = node.config.fields.get("path").map(_.convertTo[String])
+      .getOrElse(throw new IllegalArgumentException("Text source缺少path配置"))
     
-    // 如果需要跳过首行
-    if (skipHeader && format == "csv") {
-      onLog("跳过CSV首行")
-      baseSource.drop(1)
-    } else {
-      baseSource
-    }
+    onLog(s"读取文本文件: $path")
+    
+    FileIO.fromPath(Paths.get(path))
+      .mapMaterializedValue(_ => NotUsed)
+      .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 8192, allowTruncation = true))
+      .map(_.utf8String)
   }
 }

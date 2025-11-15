@@ -33,11 +33,12 @@ import scala.concurrent.{ExecutionContext, Future}
  * @author : Xuxiaotuan
  * @since : 2024-11-15
  */
-class MySQLSink(implicit ec: ExecutionContext) extends NodeSink {
+class MySQLSink extends NodeSink {
   
   override def nodeType: String = "mysql.write"
   
-  override def createSink(node: WorkflowDSL.Node, onLog: String => Unit): Sink[String, Future[Done]] = {
+  override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)
+                        (implicit ec: ExecutionContext): Sink[String, Future[Done]] = {
     // 解析配置
     val host = node.config.fields.get("host").map(_.convertTo[String]).getOrElse("localhost")
     val port = node.config.fields.get("port").map(_.convertTo[Int]).getOrElse(3306)
