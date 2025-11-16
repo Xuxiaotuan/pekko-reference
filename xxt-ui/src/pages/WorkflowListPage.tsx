@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button, Card, Space, Tag, message, Modal, Form, Input } from 'antd';
-import { PlusOutlined, PlayCircleOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, PlayCircleOutlined, EditOutlined, DeleteOutlined, HistoryOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { workflowAPI } from '../api/workflow';
 import { Workflow } from '../types/workflow';
@@ -186,6 +186,13 @@ const WorkflowListPage = () => {
                 onClick={() => handleExecute(workflow.id)}
               >
                 执行
+              </Button>,
+              <Button
+                type="link"
+                icon={<HistoryOutlined />}
+                onClick={() => navigate(`/history/${workflow.id}`)}
+              >
+                历史
               </Button>,
               <Button
                 type="link"

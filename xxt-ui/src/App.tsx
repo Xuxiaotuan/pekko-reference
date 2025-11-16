@@ -8,6 +8,7 @@ import ClusterStatus from './pages/ClusterStatus'
 import DAGEditor from './pages/DAGEditor'
 import WorkflowListPage from './pages/WorkflowListPage'
 import WorkflowEditorPage from './pages/WorkflowEditorPage'
+import ExecutionHistory from './pages/ExecutionHistory'
 import './App.css'
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
           <Route path="/dag" element={<DAGEditor />} />
           <Route path="/workflows" element={<WorkflowListPage />} />
           <Route path="/workflows/:id/edit" element={<WorkflowEditorPage />} />
+          <Route path="/history/:workflowId" element={<ExecutionHistory />} />
         </Routes>
       </AppLayout>
     </Layout>

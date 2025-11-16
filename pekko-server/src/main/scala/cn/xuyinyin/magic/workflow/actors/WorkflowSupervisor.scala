@@ -65,21 +65,27 @@ object WorkflowSupervisor {
   /**
    * 响应消息
    */
-  case class WorkflowCreated(workflowId: String, actorRef: ActorRef[WorkflowActor.Command])
-  case class WorkflowList(workflows: Map[String, ActorRef[WorkflowActor.Command]])
+  case class WorkflowCreated(workflowId: String, actorRef: ActorRef[_])
+  case class WorkflowList(workflows: Map[String, ActorRef[_]])
   
   /**
    * 创建WorkflowSupervisor
+   * 
+   * @param executionEngine 执行引擎
+   * @param useEventSourcing 是否启用Event Sourcing（默认true）
    */
-  def apply(executionEngine: WorkflowExecutionEngine)(implicit ec: ExecutionContext): Behavior[Command] = {
+  def apply(
+    executionEngine: WorkflowExecutionEngine,
+    useEventSourcing: Boolean = true
+  )(implicit ec: ExecutionContext): Behavior[Command] = {
     Behaviors.setup { context =>
-      context.log.info("WorkflowSupervisor started")
+      context.log.info(s"WorkflowSupervisor started (Event Sourcing: $useEventSourcing)")
       
       // 监督策略：工作流Actor失败时重启
       val supervisorStrategy = SupervisorStrategy.restart
         .withLimit(maxNrOfRetries = 3, withinTimeRange = 1.minute)
       
-      active(executionEngine, Map.empty, supervisorStrategy)
+      active(executionEngine, Map.empty, supervisorStrategy, useEventSourcing)
     }
   }
   
@@ -88,8 +94,9 @@ object WorkflowSupervisor {
    */
   private def active(
     executionEngine: WorkflowExecutionEngine,
-    workflows: Map[String, ActorRef[WorkflowActor.Command]],
-    supervisorStrategy: SupervisorStrategy
+    workflows: Map[String, ActorRef[_]],
+    supervisorStrategy: SupervisorStrategy,
+    useEventSourcing: Boolean
   )(implicit ec: ExecutionContext): Behavior[Command] = {
     Behaviors.receive { (context, message) =>
       message match {
@@ -101,24 +108,33 @@ object WorkflowSupervisor {
               Behaviors.same
             
             case None =>
-              context.log.info(s"Creating workflow actor: ${workflow.id}")
+              context.log.info(s"Creating workflow actor: ${workflow.id} (Event Sourcing: $useEventSourcing)")
               
-              // 创建带监督策略的工作流Actor
-              val workflowActor = context.spawn(
-                Behaviors.supervise(WorkflowActor(workflow, executionEngine))
-                  .onFailure(supervisorStrategy),
-                s"workflow-${workflow.id}"
-              )
+              // 根据配置创建不同的工作流Actor
+              val workflowActor = if (useEventSourcing) {
+                // 使用 Event Sourced Actor
+                context.spawn(
+                  EventSourcedWorkflowActor(workflow.id, workflow, executionEngine),
+                  s"workflow-${workflow.id}"
+                )
+              } else {
+                // 使用传统 Actor
+                context.spawn(
+                  Behaviors.supervise(WorkflowActor(workflow, executionEngine))
+                    .onFailure(supervisorStrategy),
+                  s"workflow-${workflow.id}"
+                )
+              }
               
               replyTo ! WorkflowCreated(workflow.id, workflowActor)
-              active(executionEngine, workflows + (workflow.id -> workflowActor), supervisorStrategy)
+              active(executionEngine, workflows + (workflow.id -> workflowActor), supervisorStrategy, useEventSourcing)
           }
         
         case ExecuteWorkflow(workflowId, replyTo) =>
           workflows.get(workflowId) match {
             case Some(actor) =>
               context.log.info(s"Executing workflow: $workflowId")
-              actor ! WorkflowActor.Execute(replyTo)
+              actor.asInstanceOf[ActorRef[WorkflowActor.Command]] ! WorkflowActor.Execute(replyTo)
             
             case None =>
               context.log.warn(s"Workflow not found: $workflowId")
@@ -135,7 +151,7 @@ object WorkflowSupervisor {
                 // 可以在这里添加调度执行的额外逻辑
                 ExecuteWorkflowScheduled(workflowId, triggeredBy) // 用于占位，实际不会处理
               }
-              actor ! WorkflowActor.Execute(responseAdapter)
+              actor.asInstanceOf[ActorRef[WorkflowActor.Command]] ! WorkflowActor.Execute(responseAdapter)
             
             case None =>
               context.log.warn(s"Workflow not found for scheduled execution: $workflowId")
@@ -145,14 +161,14 @@ object WorkflowSupervisor {
         case PauseWorkflow(workflowId) =>
           workflows.get(workflowId).foreach { actor =>
             context.log.info(s"Pausing workflow: $workflowId")
-            actor ! WorkflowActor.Pause
+            actor.asInstanceOf[ActorRef[WorkflowActor.Command]] ! WorkflowActor.Pause
           }
           Behaviors.same
         
         case ResumeWorkflow(workflowId) =>
           workflows.get(workflowId).foreach { actor =>
             context.log.info(s"Resuming workflow: $workflowId")
-            actor ! WorkflowActor.Resume
+            actor.asInstanceOf[ActorRef[WorkflowActor.Command]] ! WorkflowActor.Resume
           }
           Behaviors.same
         
@@ -160,8 +176,8 @@ object WorkflowSupervisor {
           workflows.get(workflowId) match {
             case Some(actor) =>
               context.log.info(s"Stopping workflow: $workflowId")
-              actor ! WorkflowActor.Stop
-              active(executionEngine, workflows - workflowId, supervisorStrategy)
+              actor.asInstanceOf[ActorRef[WorkflowActor.Command]] ! WorkflowActor.Stop
+              active(executionEngine, workflows - workflowId, supervisorStrategy, useEventSourcing)
             
             case None =>
               context.log.warn(s"Workflow not found: $workflowId")
@@ -171,7 +187,7 @@ object WorkflowSupervisor {
         case GetWorkflowStatus(workflowId, replyTo) =>
           workflows.get(workflowId) match {
             case Some(actor) =>
-              actor ! WorkflowActor.GetStatus(replyTo)
+              actor.asInstanceOf[ActorRef[WorkflowActor.Command]] ! WorkflowActor.GetStatus(replyTo)
             
             case None =>
               context.log.warn(s"Workflow not found: $workflowId")
@@ -181,7 +197,7 @@ object WorkflowSupervisor {
         case GetWorkflowLogs(workflowId, replyTo) =>
           workflows.get(workflowId) match {
             case Some(actor) =>
-              actor ! WorkflowActor.GetLogs(replyTo)
+              actor.asInstanceOf[ActorRef[WorkflowActor.Command]] ! WorkflowActor.GetLogs(replyTo)
             
             case None =>
               context.log.warn(s"Workflow not found: $workflowId")

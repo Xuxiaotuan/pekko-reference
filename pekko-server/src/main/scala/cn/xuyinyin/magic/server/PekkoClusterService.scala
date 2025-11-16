@@ -112,15 +112,19 @@ object PekkoClusterService {
     // 获取SchedulerManager引用
     val schedulerManagerFuture = system.ask(ref => PekkoGuardian.GetSchedulerManager(ref))(timeout, scheduler)
     
-    // 组合两个Future
+    // 获取WorkflowSupervisor引用
+    val workflowSupervisorFuture = system.ask(ref => PekkoGuardian.GetWorkflowSupervisor(ref))(timeout, scheduler)
+    
+    // 组合所有Future
     val componentsFuture = for {
       healthChecker <- healthCheckerFuture
       schedulerManager <- schedulerManagerFuture
-    } yield (healthChecker, schedulerManager)
+      workflowSupervisor <- workflowSupervisorFuture
+    } yield (healthChecker, schedulerManager, workflowSupervisor)
     
     componentsFuture.onComplete {
-      case Success((healthChecker, schedulerManager)) =>
-        val routes = HttpRoutes.createRoutes(system, healthChecker, guardian, schedulerManager)
+      case Success((healthChecker, schedulerManager, workflowSupervisor)) =>
+        val routes = HttpRoutes.createRoutes(system, healthChecker, guardian, schedulerManager, workflowSupervisor)
         implicit val classicSystem = system.classicSystem
         val bindingFuture = Http().newServerAt("localhost", 8080).bind(routes)
         

@@ -31,11 +31,19 @@ object HttpRoutes {
     system: ActorSystem[_],
     healthChecker: ActorRef[HealthChecker.Command],
     guardian: ActorRef[PekkoGuardian.Command],
-    schedulerManager: SchedulerManager
+    schedulerManager: SchedulerManager,
+    workflowSupervisor: ActorRef[_]
   )(implicit ec: ExecutionContext): Route = {
     concat(
       // 工作流管理API (DSL可视化) - 增强版本
       new EnhancedWorkflowRoutes()(system, ec).routes,
+      
+      // Event Sourced 工作流API (v2 - 使用Event Sourcing)
+      // TODO: 修复编译错误后启用
+      // new EventSourcedWorkflowRoutes(workflowSupervisor)(system, ec).routes,
+      
+      // 执行历史API (Event Sourcing)
+      new EventHistoryRoutes(workflowSupervisor)(system, ec).routes,
       
       // 调度管理API
       new SchedulerRoutes(schedulerManager).routes,
