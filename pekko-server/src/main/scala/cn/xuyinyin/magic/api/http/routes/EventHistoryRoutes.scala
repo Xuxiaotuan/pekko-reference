@@ -1,7 +1,9 @@
 package cn.xuyinyin.magic.api.http.routes
 
+import cn.xuyinyin.magic.workflow.actors.{EventSourcedWorkflowActor, WorkflowSupervisor}
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor._
 import org.apache.pekko.actor.typed.{ActorRef, ActorSystem}
+import org.apache.pekko.actor.typed.scaladsl.AskPattern._
 import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.server.Directives._
@@ -92,35 +94,18 @@ class EventHistoryRoutes(
    * 查询工作流执行历史
    */
   private def queryExecutionHistory(workflowId: String): Future[ExecutionHistoryResponse] = {
-    // TODO: 实现通过 WorkflowSupervisor 查询
-    // workflowSupervisor.ask[ExecutionHistoryResponse](ref => GetExecutionHistory(workflowId, ref))
-    
-    // 临时返回mock数据
-    Future.successful(ExecutionHistoryResponse(
-      workflowId = workflowId,
-      executions = List(
-        ExecutionDetail(
-          executionId = "exec_123",
-          workflowName = "Sample Workflow",
-          startTime = System.currentTimeMillis() - 60000,
-          endTime = Some(System.currentTimeMillis()),
-          status = "completed",
-          duration = Some(60000),
-          nodes = List(
-            NodeExecutionDetail(
-              nodeId = "node1",
-              nodeType = "source",
-              startTime = System.currentTimeMillis() - 60000,
-              endTime = Some(System.currentTimeMillis() - 40000),
-              duration = Some(20000),
-              status = "completed",
-              recordsProcessed = 100,
-              error = None
-            )
-          )
-        )
-      )
-    ))
+    // 通过 WorkflowSupervisor 查询真实的执行历史
+    workflowSupervisor
+      .asInstanceOf[ActorRef[WorkflowSupervisor.Command]]
+      .ask[ExecutionHistoryResponse](ref => 
+        WorkflowSupervisor.GetExecutionHistory(workflowId, ref)
+      )(timeout, system.scheduler)
+      .recover {
+        case ex: Exception =>
+          system.log.error(s"Failed to query execution history for $workflowId", ex)
+          // 出错时返回空历史
+          ExecutionHistoryResponse(workflowId, List.empty)
+      }
   }
   
   /**

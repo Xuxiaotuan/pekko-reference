@@ -3,7 +3,8 @@ import { Button, Card, Space, Tag, message, Modal, Form, Input } from 'antd';
 import { PlusOutlined, PlayCircleOutlined, EditOutlined, DeleteOutlined, HistoryOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { workflowAPI } from '../api/workflow';
-import { Workflow } from '../types/workflow';
+import { Workflow, ScheduleConfig } from '../types/workflow';
+import ScheduleConfigPanel from '../components/ScheduleConfigPanel';
 
 const { TextArea } = Input;
 
@@ -12,6 +13,7 @@ const WorkflowListPage = () => {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig | null>(null);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -45,6 +47,7 @@ const WorkflowListPage = () => {
         metadata: {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          schedule: scheduleConfig || undefined,  // 包含调度配置
         },
       };
 
@@ -52,6 +55,7 @@ const WorkflowListPage = () => {
       message.success('工作流创建成功');
       setCreateModalVisible(false);
       form.resetFields();
+      setScheduleConfig(null);  // 重置调度配置
       loadWorkflows();
       
       // 跳转到编辑器
@@ -85,17 +89,29 @@ const WorkflowListPage = () => {
   const handleExecute = async (id: string) => {
     try {
       message.loading({ content: '正在执行工作流...', key: 'execute' });
-      const result = await workflowAPI.execute(id);
+      
+      // 使用 Event Sourcing 执行（产生事件，可查询历史）
+      const response = await fetch(`/api/v1/workflows/${id}/execute-es`, {
+        method: 'POST',
+      });
+      
+      if (!response.ok) {
+        throw new Error('执行失败');
+      }
+      
+      const result = await response.json();
+      
       message.success({
-        content: `工作流执行完成: ${result.status}`,
+        content: `执行已启动！执行ID: ${result.executionId}`,
         key: 'execute',
+        duration: 3,
       });
-      Modal.info({
-        title: '执行结果',
-        content: (
-          <pre>{JSON.stringify(result, null, 2)}</pre>
-        ),
-      });
+      
+      // 提示用户可以查看历史
+      setTimeout(() => {
+        message.info('执行完成后可点击"历史"按钮查看详情', 2);
+      }, 1000);
+      
     } catch (error: any) {
       console.error('Failed to execute workflow:', error);
       message.error({
@@ -298,6 +314,7 @@ const WorkflowListPage = () => {
         onCancel={() => {
           setCreateModalVisible(false);
           form.resetFields();
+          setScheduleConfig(null);  // 重置调度配置
         }}
         okText="创建"
         cancelText="取消"
@@ -326,6 +343,13 @@ const WorkflowListPage = () => {
             extra="多个标签用逗号分隔"
           >
             <Input placeholder="例如：etl, data-cleaning" />
+          </Form.Item>
+          
+          <Form.Item label="调度配置">
+            <ScheduleConfigPanel 
+              value={scheduleConfig} 
+              onChange={setScheduleConfig} 
+            />
           </Form.Item>
         </Form>
       </Modal>

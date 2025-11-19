@@ -2,7 +2,7 @@ package cn.xuyinyin.magic.workflow.scheduler
 
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow
 import cn.xuyinyin.magic.workflow.scheduler.WorkflowScheduler._
-import org.apache.pekko.actor.typed.ActorSystem
+import org.apache.pekko.actor.typed.{ActorRef, ActorSystem}
 import com.typesafe.scalalogging.Logger
 
 import scala.collection.mutable
@@ -19,7 +19,7 @@ import scala.concurrent.duration._
 class SchedulerManager(scheduler: WorkflowScheduler) {
   
   private val logger = Logger(getClass)
-  private val scheduledWorkflows = mutable.Map[String, ActorSystem[SchedulerCommand]]()
+  private val scheduledWorkflows = mutable.Map[String, ActorRef[SchedulerCommand]]()
   
   /**
    * 添加调度
@@ -30,18 +30,18 @@ class SchedulerManager(scheduler: WorkflowScheduler) {
     // 如果已存在，先停止
     stopSchedule(workflow.id)
     
-    // 创建新的调度
-    val system = scheduler.scheduleWorkflow(workflow, config)
-    scheduledWorkflows.put(workflow.id, system)
+    // 创建新的调度 Actor（在现有 ActorSystem 中）
+    val schedulerActor = scheduler.scheduleWorkflow(workflow, config)
+    scheduledWorkflows.put(workflow.id, schedulerActor)
   }
   
   /**
    * 停止调度
    */
   def stopSchedule(workflowId: String): Unit = {
-    scheduledWorkflows.get(workflowId).foreach { system =>
+    scheduledWorkflows.get(workflowId).foreach { schedulerActor =>
       logger.info(s"停止工作流调度: $workflowId")
-      system ! StopScheduler
+      schedulerActor ! StopScheduler
       scheduledWorkflows.remove(workflowId)
     }
   }
@@ -50,9 +50,9 @@ class SchedulerManager(scheduler: WorkflowScheduler) {
    * 暂停调度
    */
   def pauseSchedule(workflowId: String): Unit = {
-    scheduledWorkflows.get(workflowId).foreach { system =>
+    scheduledWorkflows.get(workflowId).foreach { schedulerActor =>
       logger.info(s"暂停工作流调度: $workflowId")
-      system ! PauseScheduler
+      schedulerActor ! PauseScheduler
     }
   }
   
@@ -60,9 +60,9 @@ class SchedulerManager(scheduler: WorkflowScheduler) {
    * 恢复调度
    */
   def resumeSchedule(workflowId: String): Unit = {
-    scheduledWorkflows.get(workflowId).foreach { system =>
+    scheduledWorkflows.get(workflowId).foreach { schedulerActor =>
       logger.info(s"恢复工作流调度: $workflowId")
-      system ! ResumeScheduler
+      schedulerActor ! ResumeScheduler
     }
   }
   
@@ -78,8 +78,8 @@ class SchedulerManager(scheduler: WorkflowScheduler) {
    */
   def shutdownAll(): Unit = {
     logger.info("关闭所有工作流调度")
-    scheduledWorkflows.foreach { case (id, system) =>
-      system ! StopScheduler
+    scheduledWorkflows.foreach { case (id, schedulerActor) =>
+      schedulerActor ! StopScheduler
     }
     scheduledWorkflows.clear()
   }

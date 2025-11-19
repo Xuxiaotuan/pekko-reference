@@ -70,11 +70,12 @@ class WorkflowScheduler(
   def scheduleWorkflow(
     workflow: WorkflowDSL.Workflow,
     config: ScheduleConfig
-  ): ActorSystem[SchedulerCommand] = {
+  ): ActorRef[SchedulerCommand] = {
     
     logger.info(s"创建工作流调度: ${workflow.id}")
     
-    ActorSystem(
+    // 在现有 ActorSystem 中创建 Actor，而不是创建新的 ActorSystem
+    system.systemActorOf(
       schedulerBehavior(workflow, config),
       s"workflow-scheduler-${workflow.id}"
     )
@@ -145,8 +146,8 @@ class WorkflowScheduler(
   private def executeWorkflow(workflow: WorkflowDSL.Workflow): Unit = {
     logger.info(s"调度触发工作流执行: ${workflow.id}")
     
-    // 通过Supervisor执行工作流，而不是直接调用ExecutionEngine
-    workflowSupervisor ! WorkflowSupervisor.ExecuteWorkflowScheduled(
-      workflowId = workflow.id)
+    // 先创建工作流 Actor（如果不存在），然后执行
+    // 使用完整的 workflow 对象，确保可以创建新的 Actor
+    workflowSupervisor ! WorkflowSupervisor.CreateAndExecuteWorkflow(workflow)
   }
 }

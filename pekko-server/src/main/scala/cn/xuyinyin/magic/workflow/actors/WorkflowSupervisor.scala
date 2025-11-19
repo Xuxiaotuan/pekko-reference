@@ -44,6 +44,11 @@ object WorkflowSupervisor {
     triggeredBy: String = "scheduler"
   ) extends Command
   
+  case class CreateAndExecuteWorkflow(
+    workflow: WorkflowDSL.Workflow,
+    triggeredBy: String = "scheduler"
+  ) extends Command
+  
   case class PauseWorkflow(workflowId: String) extends Command
   case class ResumeWorkflow(workflowId: String) extends Command
   case class StopWorkflow(workflowId: String) extends Command
@@ -60,6 +65,11 @@ object WorkflowSupervisor {
   
   case class ListWorkflows(
     replyTo: ActorRef[WorkflowList]
+  ) extends Command
+  
+  case class GetExecutionHistory(
+    workflowId: String,
+    replyTo: ActorRef[EventSourcedWorkflowActor.ExecutionHistoryResponse]
   ) extends Command
   
   /**
@@ -158,6 +168,49 @@ object WorkflowSupervisor {
           }
           Behaviors.same
         
+        case CreateAndExecuteWorkflow(workflow, triggeredBy) =>
+          val workflowId = workflow.id
+          
+          // 检查是否已存在，如果不存在则创建
+          workflows.get(workflowId) match {
+            case Some(actor) =>
+              // Actor 已存在，直接执行
+              context.log.info(s"Executing existing workflow (triggered by $triggeredBy): $workflowId")
+              val responseAdapter = context.messageAdapter[WorkflowActor.ExecutionResponse] { response =>
+                context.log.info(s"Scheduled workflow execution completed: $workflowId, status: ${response.status}")
+                CreateAndExecuteWorkflow(workflow, triggeredBy)
+              }
+              actor.asInstanceOf[ActorRef[WorkflowActor.Command]] ! WorkflowActor.Execute(responseAdapter)
+              Behaviors.same
+            
+            case None =>
+              // Actor 不存在，创建新的
+              context.log.info(s"Creating workflow actor for scheduled execution: $workflowId (Event Sourcing: $useEventSourcing)")
+              
+              val newActor = if (useEventSourcing) {
+                context.spawn(
+                  EventSourcedWorkflowActor(workflowId, workflow, executionEngine),
+                  s"event-sourced-workflow-${workflow.id}"
+                )
+              } else {
+                context.spawn(
+                  WorkflowActor(workflow, executionEngine),
+                  s"workflow-${workflow.id}"
+                )
+              }
+              
+              // 执行工作流
+              context.log.info(s"Executing newly created workflow (triggered by $triggeredBy): $workflowId")
+              val responseAdapter = context.messageAdapter[WorkflowActor.ExecutionResponse] { response =>
+                context.log.info(s"Scheduled workflow execution completed: $workflowId, status: ${response.status}")
+                CreateAndExecuteWorkflow(workflow, triggeredBy)
+              }
+              newActor.asInstanceOf[ActorRef[WorkflowActor.Command]] ! WorkflowActor.Execute(responseAdapter)
+              
+              // 返回新的行为，更新 workflows Map
+              active(executionEngine, workflows + (workflowId -> newActor), supervisorStrategy, useEventSourcing)
+          }
+        
         case PauseWorkflow(workflowId) =>
           workflows.get(workflowId).foreach { actor =>
             context.log.info(s"Pausing workflow: $workflowId")
@@ -207,6 +260,21 @@ object WorkflowSupervisor {
         case ListWorkflows(replyTo) =>
           context.log.info(s"Listing workflows: ${workflows.size} active")
           replyTo ! WorkflowList(workflows)
+          Behaviors.same
+        
+        case GetExecutionHistory(workflowId, replyTo) =>
+          workflows.get(workflowId) match {
+            case Some(actor) =>
+              context.log.info(s"Querying execution history for workflow: $workflowId")
+              // 只有 EventSourcedWorkflowActor 支持历史查询
+              actor.asInstanceOf[ActorRef[EventSourcedWorkflowActor.Command]] ! 
+                EventSourcedWorkflowActor.GetExecutionHistory(replyTo)
+            
+            case None =>
+              context.log.warn(s"Workflow not found for history query: $workflowId")
+              // 返回空历史
+              replyTo ! EventSourcedWorkflowActor.ExecutionHistoryResponse(workflowId, List.empty)
+          }
           Behaviors.same
       }
     }

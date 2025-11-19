@@ -24,10 +24,18 @@ export interface WorkflowEdge {
   style?: Record<string, any>;
 }
 
+export interface ScheduleConfig {
+  enabled: boolean;
+  scheduleType: 'fixed_rate' | 'cron' | 'immediate';
+  interval?: string;
+  cronExpression?: string;
+}
+
 export interface WorkflowMetadata {
   createdAt: string;
   updatedAt: string;
   executionHistory?: any[];
+  schedule?: ScheduleConfig;
 }
 
 export interface Workflow {

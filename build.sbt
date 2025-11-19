@@ -88,7 +88,9 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       "org.apache.pekko" %% "pekko-stream"                % pekkoVersion,
       "org.apache.pekko" %% "pekko-persistence-typed"     % pekkoVersion,
       "org.apache.pekko" %% "pekko-persistence-query"     % pekkoVersion,
+      // LevelDB for Event Sourcing
       "org.fusesource.leveldbjni" % "leveldbjni-all"     % "1.8",
+      "org.iq80.leveldb"          % "leveldb"            % "0.12",
       "org.apache.pekko" %% "pekko-connectors-slick"      % "1.0.2",
       "org.apache.pekko" %% "pekko-http"                  % "1.0.1",
       "org.apache.pekko" %% "pekko-http-spray-json"       % "1.0.1",

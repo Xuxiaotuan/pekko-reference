@@ -65,7 +65,18 @@ object WorkflowDSL {
   case class WorkflowMetadata(
     createdAt: String,
     updatedAt: String,
-    executionHistory: Option[List[ExecutionRecord]] = None
+    executionHistory: Option[List[ExecutionRecord]] = None,
+    schedule: Option[ScheduleConfig] = None  // 调度配置（可选）
+  )
+  
+  /**
+   * 调度配置
+   */
+  case class ScheduleConfig(
+    enabled: Boolean,                    // 是否启用
+    scheduleType: String,                // "fixed_rate", "cron", "immediate"
+    interval: Option[String] = None,     // "1h", "30m", "1d" (for fixed_rate)
+    cronExpression: Option[String] = None // Cron表达式 (for cron)
   )
   
   /**
@@ -86,7 +97,9 @@ object WorkflowDSL {
   
   implicit val executionRecordFormat: RootJsonFormat[ExecutionRecord] = jsonFormat5(ExecutionRecord)
   
-  implicit val workflowMetadataFormat: RootJsonFormat[WorkflowMetadata] = jsonFormat3(WorkflowMetadata)
+  implicit val scheduleConfigFormat: RootJsonFormat[ScheduleConfig] = jsonFormat4(ScheduleConfig)
+  
+  implicit val workflowMetadataFormat: RootJsonFormat[WorkflowMetadata] = jsonFormat4(WorkflowMetadata)
   
   implicit val nodeFormat: RootJsonFormat[Node] = jsonFormat7(Node)
   

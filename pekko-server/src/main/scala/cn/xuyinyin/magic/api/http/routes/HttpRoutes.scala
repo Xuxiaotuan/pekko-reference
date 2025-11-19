@@ -35,14 +35,13 @@ object HttpRoutes {
     workflowSupervisor: ActorRef[_]
   )(implicit ec: ExecutionContext): Route = {
     concat(
-      // 工作流管理API (DSL可视化) - 增强版本
-      new EnhancedWorkflowRoutes()(system, ec).routes,
+      // 工作流管理API (DSL可视化 + Event Sourcing + 调度)
+      new EnhancedWorkflowRoutes(
+        workflowSupervisor = Some(workflowSupervisor),
+        schedulerManager = Some(schedulerManager)
+      )(system, ec).routes,
       
-      // Event Sourced 工作流API (v2 - 使用Event Sourcing)
-      // TODO: 修复编译错误后启用
-      // new EventSourcedWorkflowRoutes(workflowSupervisor)(system, ec).routes,
-      
-      // 执行历史API (Event Sourcing)
+      // 执行历史查询API (Event Sourcing)
       new EventHistoryRoutes(workflowSupervisor)(system, ec).routes,
       
       // 调度管理API

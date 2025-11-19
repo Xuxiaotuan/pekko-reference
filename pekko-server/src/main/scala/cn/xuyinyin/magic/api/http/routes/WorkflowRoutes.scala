@@ -2,17 +2,23 @@ package cn.xuyinyin.magic.api.http.routes
 
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
 import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
-import org.apache.pekko.actor.typed.ActorSystem
+import cn.xuyinyin.magic.workflow.actors.{WorkflowSupervisor, WorkflowActor}
+import cn.xuyinyin.magic.workflow.scheduler.{SchedulerManager, WorkflowScheduler}
+import cn.xuyinyin.magic.workflow.scheduler.WorkflowScheduler._
+import org.apache.pekko.actor.typed.{ActorRef, ActorSystem}
+import org.apache.pekko.actor.typed.scaladsl.AskPattern._
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import org.apache.pekko.util.Timeout
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import com.typesafe.scalalogging.Logger
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 import java.time.Instant
 import java.util.UUID
 
@@ -25,10 +31,14 @@ import java.util.UUID
  * - 执行历史
  * - 执行日志
  * 
+ * @param workflowSupervisor 可选的WorkflowSupervisor，用于Event Sourcing
  * @author : Xuxiaotuan
  * @since : 2024-11-15
  */
-class EnhancedWorkflowRoutes(implicit system: ActorSystem[_], ec: ExecutionContext) {
+class EnhancedWorkflowRoutes(
+  workflowSupervisor: Option[ActorRef[_]] = None,
+  schedulerManager: Option[cn.xuyinyin.magic.workflow.scheduler.SchedulerManager] = None
+)(implicit system: ActorSystem[_], ec: ExecutionContext) {
   
   private val logger = Logger(getClass)
   
@@ -80,11 +90,26 @@ class EnhancedWorkflowRoutes(implicit system: ActorSystem[_], ec: ExecutionConte
                   "workflowId" -> JsString(workflow.id)
                 ))
               } else {
+                // 1. 存储工作流
                 workflows.put(workflow.id, workflow)
                 logger.info(s"Workflow created: ${workflow.id}")
+                
+                // 2. 检查是否有调度配置
+                val scheduleInfo = workflow.metadata.schedule match {
+                  case Some(scheduleConfig) if scheduleConfig.enabled =>
+                    // 有调度配置且启用
+                    handleScheduleCreation(workflow, scheduleConfig)
+                    
+                  case _ =>
+                    // 无调度配置或未启用 - 即时任务
+                    logger.info(s"Workflow ${workflow.id} is an immediate task (no schedule)")
+                    "Immediate task - execute manually"
+                }
+                
                 complete(StatusCodes.Created, JsObject(
                   "message" -> JsString("Workflow created successfully"),
-                  "workflowId" -> JsString(workflow.id)
+                  "workflowId" -> JsString(workflow.id),
+                  "scheduleStatus" -> JsString(scheduleInfo)
                 ))
               }
             }
@@ -223,6 +248,57 @@ class EnhancedWorkflowRoutes(implicit system: ActorSystem[_], ec: ExecutionConte
               complete(StatusCodes.NotFound, JsObject(
                 "error" -> JsString("Workflow not found"),
                 "workflowId" -> JsString(workflowId)
+              ))
+          }
+        }
+      },
+      
+      // 执行工作流（使用 Event Sourcing）
+      path(Segment / "execute-es") { workflowId =>
+        post {
+          logger.info(s"POST /api/v1/workflows/$workflowId/execute-es (Event Sourcing)")
+          
+          workflowSupervisor match {
+            case Some(supervisor) =>
+              workflows.get(workflowId) match {
+                case Some(workflow) =>
+                  implicit val askTimeout: Timeout = 10.seconds
+                  
+                  // 通过 WorkflowSupervisor 创建 EventSourced Actor 并执行
+                  val createFuture: Future[WorkflowSupervisor.WorkflowCreated] = 
+                    supervisor.asInstanceOf[ActorRef[WorkflowSupervisor.Command]]
+                      .ask(ref => WorkflowSupervisor.CreateWorkflow(workflow, ref))(askTimeout, system.scheduler)
+                  
+                  val executeFuture: Future[WorkflowActor.ExecutionResponse] = createFuture.flatMap { created =>
+                    logger.info(s"EventSourced workflow actor created: ${created.workflowId}")
+                    
+                    created.actorRef.asInstanceOf[ActorRef[WorkflowActor.Command]]
+                      .ask(ref => WorkflowActor.Execute(ref))(askTimeout, system.scheduler)
+                  }
+                  
+                  complete {
+                    executeFuture.map { response =>
+                      StatusCodes.OK -> JsObject(
+                        "message" -> JsString("Workflow execution started with Event Sourcing"),
+                        "executionId" -> JsString(response.executionId),
+                        "workflowId" -> JsString(workflowId),
+                        "status" -> JsString(response.status),
+                        "note" -> JsString(s"Events will be persisted. Check history at: GET /api/history/$workflowId")
+                      )
+                    }
+                  }
+                  
+                case None =>
+                  complete(StatusCodes.NotFound, JsObject(
+                    "error" -> JsString("Workflow not found"),
+                    "workflowId" -> JsString(workflowId)
+                  ))
+              }
+              
+            case None =>
+              complete(StatusCodes.ServiceUnavailable, JsObject(
+                "error" -> JsString("Event Sourcing not available"),
+                "message" -> JsString("WorkflowSupervisor not configured")
               ))
           }
         }
@@ -424,5 +500,75 @@ class EnhancedWorkflowRoutes(implicit system: ActorSystem[_], ec: ExecutionConte
         )
       )
     )
+  }
+  
+  /**
+   * 处理调度创建
+   */
+  private def handleScheduleCreation(workflow: Workflow, scheduleConfig: cn.xuyinyin.magic.workflow.model.WorkflowDSL.ScheduleConfig): String = {
+    (schedulerManager, workflowSupervisor) match {
+      case (Some(manager), Some(supervisor)) =>
+        try {
+          // 解析调度类型
+          val scheduleType = scheduleConfig.scheduleType match {
+            case "fixed_rate" =>
+              val duration = parseDuration(scheduleConfig.interval.getOrElse("1h"))
+              FixedRate(duration)
+            
+            case "cron" =>
+              CronSchedule(scheduleConfig.cronExpression.getOrElse("0 0 * * *"))
+            
+            case "immediate" =>
+              Immediate
+            
+            case other =>
+              logger.warn(s"Unknown schedule type: $other, defaulting to immediate")
+              Immediate
+          }
+          
+          // 创建调度配置
+          val config = WorkflowScheduler.ScheduleConfig(
+            workflowId = workflow.id,
+            scheduleType = scheduleType,
+            enabled = scheduleConfig.enabled
+          )
+          
+          // 添加到调度管理器
+          manager.addSchedule(workflow, config)
+          
+          val scheduleDesc = scheduleConfig.scheduleType match {
+            case "fixed_rate" => s"Fixed Rate: ${scheduleConfig.interval.getOrElse("?")}"
+            case "cron" => s"Cron: ${scheduleConfig.cronExpression.getOrElse("?")}"
+            case _ => "Immediate"
+          }
+          
+          logger.info(s"Schedule created for workflow ${workflow.id}: $scheduleDesc")
+          s"Scheduled: $scheduleDesc"
+          
+        } catch {
+          case ex: Exception =>
+            logger.error(s"Failed to create schedule for ${workflow.id}", ex)
+            s"Schedule creation failed: ${ex.getMessage}"
+        }
+      
+      case _ =>
+        logger.warn(s"SchedulerManager or WorkflowSupervisor not available for workflow ${workflow.id}")
+        "Schedule not available (scheduler not configured)"
+    }
+  }
+  
+  /**
+   * 解析时间间隔字符串
+   */
+  private def parseDuration(interval: String): FiniteDuration = {
+    interval.toLowerCase match {
+      case s if s.endsWith("s") => s.dropRight(1).toLong.seconds
+      case s if s.endsWith("m") => s.dropRight(1).toLong.minutes
+      case s if s.endsWith("h") => s.dropRight(1).toLong.hours
+      case s if s.endsWith("d") => s.dropRight(1).toLong.days
+      case _ => 
+        logger.warn(s"Invalid duration format: $interval, defaulting to 1 hour")
+        1.hour
+    }
   }
 }
