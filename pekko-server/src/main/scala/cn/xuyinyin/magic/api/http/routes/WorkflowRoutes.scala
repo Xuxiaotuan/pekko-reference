@@ -2,12 +2,13 @@ package cn.xuyinyin.magic.api.http.routes
 
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
 import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
-import cn.xuyinyin.magic.workflow.actors.{WorkflowSupervisor, WorkflowActor}
+import cn.xuyinyin.magic.workflow.actors.{EventSourcedWorkflowActor, WorkflowSupervisor, WorkflowActor}
 import cn.xuyinyin.magic.workflow.scheduler.{SchedulerManager, WorkflowScheduler}
 import cn.xuyinyin.magic.workflow.scheduler.WorkflowScheduler._
+import cn.xuyinyin.magic.monitoring.PrometheusMetrics
 import org.apache.pekko.actor.typed.{ActorRef, ActorSystem}
 import org.apache.pekko.actor.typed.scaladsl.AskPattern._
-import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.model.{StatusCode, StatusCodes}
 import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
@@ -21,6 +22,67 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import java.time.Instant
 import java.util.UUID
+
+/**
+ * 错误处理辅助对象
+ */
+object ErrorHandler {
+  private val logger = Logger(getClass)
+  
+  /**
+   * 处理Future异常并返回适当的HTTP响应
+   */
+  def handleError(workflowId: String, operation: String): PartialFunction[Throwable, (StatusCode, JsObject)] = {
+    case ex: org.apache.pekko.pattern.AskTimeoutException =>
+      logger.error(s"Ask timeout during $operation for workflow $workflowId", ex)
+      StatusCodes.RequestTimeout -> JsObject(
+        "error" -> JsString(s"$operation request timeout"),
+        "workflowId" -> JsString(workflowId),
+        "message" -> JsString("The actor did not respond in time. Please try again.")
+      )
+    
+    case ex: java.util.concurrent.TimeoutException =>
+      logger.error(s"Timeout during $operation for workflow $workflowId", ex)
+      StatusCodes.RequestTimeout -> JsObject(
+        "error" -> JsString(s"$operation request timeout"),
+        "workflowId" -> JsString(workflowId),
+        "message" -> JsString("The operation took too long to complete. Please try again.")
+      )
+    
+    case ex: NoSuchElementException =>
+      logger.warn(s"Entity not found during $operation for workflow $workflowId", ex)
+      StatusCodes.NotFound -> JsObject(
+        "error" -> JsString("Workflow not found"),
+        "workflowId" -> JsString(workflowId),
+        "message" -> JsString("The requested workflow does not exist.")
+      )
+    
+    case ex: IllegalArgumentException =>
+      logger.warn(s"Invalid argument during $operation for workflow $workflowId", ex)
+      StatusCodes.BadRequest -> JsObject(
+        "error" -> JsString("Invalid request"),
+        "workflowId" -> JsString(workflowId),
+        "message" -> JsString(ex.getMessage)
+      )
+    
+    case ex: IllegalStateException =>
+      logger.warn(s"Invalid state during $operation for workflow $workflowId", ex)
+      StatusCodes.Conflict -> JsObject(
+        "error" -> JsString("Invalid workflow state"),
+        "workflowId" -> JsString(workflowId),
+        "message" -> JsString(ex.getMessage)
+      )
+    
+    case ex: Exception =>
+      logger.error(s"Unexpected error during $operation for workflow $workflowId", ex)
+      StatusCodes.InternalServerError -> JsObject(
+        "error" -> JsString(s"Failed to $operation"),
+        "workflowId" -> JsString(workflowId),
+        "message" -> JsString(ex.getMessage),
+        "type" -> JsString(ex.getClass.getSimpleName)
+      )
+  }
+}
 
 /**
  * 增强的工作流HTTP路由
@@ -41,6 +103,9 @@ class EnhancedWorkflowRoutes(
 )(implicit system: ActorSystem[_], ec: ExecutionContext) {
   
   private val logger = Logger(getClass)
+  
+  // 配置合理的Ask超时（5秒）
+  private implicit val askTimeout: Timeout = 5.seconds
   
   // 真实的Pekko Stream执行引擎
   private val executionEngine = new WorkflowExecutionEngine()
@@ -84,33 +149,67 @@ class EnhancedWorkflowRoutes(
             entity(as[Workflow]) { workflow =>
               logger.info(s"POST /api/v1/workflows - Create: ${workflow.id}")
               
-              if (workflows.contains(workflow.id)) {
-                complete(StatusCodes.Conflict, JsObject(
-                  "error" -> JsString("Workflow already exists"),
-                  "workflowId" -> JsString(workflow.id)
-                ))
-              } else {
-                // 1. 存储工作流
-                workflows.put(workflow.id, workflow)
-                logger.info(s"Workflow created: ${workflow.id}")
-                
-                // 2. 检查是否有调度配置
-                val scheduleInfo = workflow.metadata.schedule match {
-                  case Some(scheduleConfig) if scheduleConfig.enabled =>
-                    // 有调度配置且启用
-                    handleScheduleCreation(workflow, scheduleConfig)
+              workflowSupervisor match {
+                case Some(supervisor) =>
+                  // 通过WorkflowSupervisor创建工作流（使用Sharding）
+                  val createFuture: Future[WorkflowSupervisor.WorkflowCreated] = 
+                    supervisor.asInstanceOf[ActorRef[WorkflowSupervisor.Command]]
+                      .ask(ref => WorkflowSupervisor.CreateWorkflow(workflow, ref))(askTimeout, system.scheduler)
+                  
+                  complete {
+                    createFuture.map { created =>
+                      // 存储到本地Map（用于列表查询）
+                      workflows.put(workflow.id, workflow)
+                      logger.info(s"Workflow created via Sharding: ${workflow.id}")
+                      
+                      // 记录指标
+                      PrometheusMetrics.recordWorkflowCreated("success")
+                      
+                      // 检查是否有调度配置
+                      val scheduleInfo = workflow.metadata.schedule match {
+                        case Some(scheduleConfig) if scheduleConfig.enabled =>
+                          handleScheduleCreation(workflow, scheduleConfig)
+                        case _ =>
+                          logger.info(s"Workflow ${workflow.id} is an immediate task (no schedule)")
+                          "Immediate task - execute manually"
+                      }
+                      
+                      StatusCodes.Created -> JsObject(
+                        "message" -> JsString("Workflow created successfully via Sharding"),
+                        "workflowId" -> JsString(workflow.id),
+                        "scheduleStatus" -> JsString(scheduleInfo)
+                      )
+                    }.recover {
+                      case ex: Throwable =>
+                        PrometheusMetrics.recordWorkflowCreated("failed")
+                        ErrorHandler.handleError(workflow.id, "create workflow")(ex)
+                    }
+                  }
+                  
+                case None =>
+                  // Fallback to local storage if supervisor not available
+                  if (workflows.contains(workflow.id)) {
+                    complete(StatusCodes.Conflict, JsObject(
+                      "error" -> JsString("Workflow already exists"),
+                      "workflowId" -> JsString(workflow.id)
+                    ))
+                  } else {
+                    workflows.put(workflow.id, workflow)
+                    logger.info(s"Workflow created (local): ${workflow.id}")
                     
-                  case _ =>
-                    // 无调度配置或未启用 - 即时任务
-                    logger.info(s"Workflow ${workflow.id} is an immediate task (no schedule)")
-                    "Immediate task - execute manually"
-                }
-                
-                complete(StatusCodes.Created, JsObject(
-                  "message" -> JsString("Workflow created successfully"),
-                  "workflowId" -> JsString(workflow.id),
-                  "scheduleStatus" -> JsString(scheduleInfo)
-                ))
+                    val scheduleInfo = workflow.metadata.schedule match {
+                      case Some(scheduleConfig) if scheduleConfig.enabled =>
+                        handleScheduleCreation(workflow, scheduleConfig)
+                      case _ =>
+                        "Immediate task - execute manually"
+                    }
+                    
+                    complete(StatusCodes.Created, JsObject(
+                      "message" -> JsString("Workflow created successfully"),
+                      "workflowId" -> JsString(workflow.id),
+                      "scheduleStatus" -> JsString(scheduleInfo)
+                    ))
+                  }
               }
             }
           }
@@ -158,102 +257,185 @@ class EnhancedWorkflowRoutes(
         }
       },
       
-      // 执行工作流
+      // 执行工作流（使用Sharding）
       path(Segment / "execute") { workflowId =>
         post {
           logger.info(s"POST /api/v1/workflows/$workflowId/execute")
           
-          workflows.get(workflowId) match {
-            case Some(workflow) =>
-              // 创建执行记录
-              val executionId = s"exec_${UUID.randomUUID().toString.take(8)}"
-              val startTime = Instant.now().toString
+          workflowSupervisor match {
+            case Some(supervisor) =>
+              // 通过WorkflowSupervisor执行工作流（使用Sharding）
+              val executeFuture: Future[EventSourcedWorkflowActor.ExecutionResponse] = 
+                supervisor.asInstanceOf[ActorRef[WorkflowSupervisor.Command]]
+                  .ask(ref => WorkflowSupervisor.ExecuteWorkflow(workflowId, ref))(askTimeout, system.scheduler)
               
-              val logs = mutable.ListBuffer[String]()
-              
-              // 日志回调函数
-              def onLog(message: String): Unit = {
-                val timestamp = Instant.now().toString
-                logs += s"[$timestamp] $message"
-                logger.info(s"[$executionId] $message")
-              }
-              
-              onLog(s"开始执行工作流: ${workflow.name}")
-              onLog(s"工作流ID: ${workflow.id}")
-              onLog(s"节点数量: ${workflow.nodes.length}")
-              onLog(s"连线数量: ${workflow.edges.length}")
-              
-              // 使用真实的Pekko Stream执行引擎
-              Future {
-                try {
-                  // 同步等待执行结果（在Future中，不阻塞HTTP响应）
-                  val result = scala.concurrent.Await.result(
-                    executionEngine.execute(workflow, executionId, onLog),
-                    scala.concurrent.duration.Duration.Inf
+              complete {
+                val startTime = System.nanoTime()
+                executeFuture.map { response =>
+                  val durationSeconds = (System.nanoTime() - startTime) / 1e9
+                  logger.info(s"Workflow execution started via Sharding: $workflowId, executionId: ${response.executionId}")
+                  
+                  // 记录指标
+                  PrometheusMetrics.recordWorkflowExecution(workflowId, response.status, durationSeconds)
+                  
+                  StatusCodes.OK -> JsObject(
+                    "message" -> JsString("Workflow execution started via Sharding"),
+                    "executionId" -> JsString(response.executionId),
+                    "workflowId" -> JsString(workflowId),
+                    "status" -> JsString(response.status),
+                    "note" -> JsString(s"Check status at: GET /api/v1/workflows/$workflowId/status")
                   )
-                  
-                  val endTime = Instant.now().toString
-                  onLog(s"工作流执行完成，状态: ${result.status}")
-                  
-                  val execution = ExecutionInfo(
-                    executionId = executionId,
-                    workflowId = workflowId,
-                    status = result.status,
-                    startTime = startTime,
-                    endTime = Some(endTime),
-                    logs = logs.toList,
-                    result = Some(JsObject(
-                      "success" -> JsBoolean(result.success),
-                      "message" -> JsString(result.message),
-                      "rowsProcessed" -> result.rowsProcessed.map(JsNumber(_)).getOrElse(JsNull)
-                    ))
-                  )
-                  
-                  executions.put(executionId, execution)
-                  logger.info(s"Execution completed: $executionId")
-                  
-                } catch {
-                  case ex: Throwable =>
-                    val endTime = Instant.now().toString
-                    val errorMsg = s"执行异常: ${ex.getMessage}"
-                    onLog(errorMsg)
-                    logger.error(s"Execution failed: $executionId", ex)
-                    
-                    val execution = ExecutionInfo(
-                      executionId = executionId,
-                      workflowId = workflowId,
-                      status = "failed",
-                      startTime = startTime,
-                      endTime = Some(endTime),
-                      logs = logs.toList,
-                      result = Some(JsObject(
-                        "success" -> JsBoolean(false),
-                        "message" -> JsString(errorMsg)
-                      ))
-                    )
-                    
-                    executions.put(executionId, execution)
-                }
+                }.recover(ErrorHandler.handleError(workflowId, "execute workflow"))
               }
-              
-              complete(StatusCodes.OK, JsObject(
-                "message" -> JsString("Workflow execution started"),
-                "executionId" -> JsString(executionId),
-                "workflowId" -> JsString(workflowId),
-                "status" -> JsString("running"),
-                "startTime" -> JsString(startTime)
-              ))
               
             case None =>
-              complete(StatusCodes.NotFound, JsObject(
-                "error" -> JsString("Workflow not found"),
-                "workflowId" -> JsString(workflowId)
-              ))
+              // Fallback to direct execution if supervisor not available
+              workflows.get(workflowId) match {
+                case Some(workflow) =>
+                  val executionId = s"exec_${UUID.randomUUID().toString.take(8)}"
+                  val startTime = Instant.now().toString
+                  
+                  val logs = mutable.ListBuffer[String]()
+                  def onLog(message: String): Unit = {
+                    val timestamp = Instant.now().toString
+                    logs += s"[$timestamp] $message"
+                    logger.info(s"[$executionId] $message")
+                  }
+                  
+                  onLog(s"开始执行工作流: ${workflow.name}")
+                  
+                  Future {
+                    try {
+                      val result = scala.concurrent.Await.result(
+                        executionEngine.execute(workflow, executionId, onLog),
+                        scala.concurrent.duration.Duration.Inf
+                      )
+                      
+                      val endTime = Instant.now().toString
+                      onLog(s"工作流执行完成，状态: ${result.status}")
+                      
+                      val execution = ExecutionInfo(
+                        executionId = executionId,
+                        workflowId = workflowId,
+                        status = result.status,
+                        startTime = startTime,
+                        endTime = Some(endTime),
+                        logs = logs.toList,
+                        result = Some(JsObject(
+                          "success" -> JsBoolean(result.success),
+                          "message" -> JsString(result.message),
+                          "rowsProcessed" -> result.rowsProcessed.map(JsNumber(_)).getOrElse(JsNull)
+                        ))
+                      )
+                      
+                      executions.put(executionId, execution)
+                      logger.info(s"Execution completed: $executionId")
+                      
+                    } catch {
+                      case ex: Throwable =>
+                        val endTime = Instant.now().toString
+                        val errorMsg = s"执行异常: ${ex.getMessage}"
+                        onLog(errorMsg)
+                        logger.error(s"Execution failed: $executionId", ex)
+                        
+                        val execution = ExecutionInfo(
+                          executionId = executionId,
+                          workflowId = workflowId,
+                          status = "failed",
+                          startTime = startTime,
+                          endTime = Some(endTime),
+                          logs = logs.toList,
+                          result = Some(JsObject(
+                            "success" -> JsBoolean(false),
+                            "message" -> JsString(errorMsg)
+                          ))
+                        )
+                        
+                        executions.put(executionId, execution)
+                    }
+                  }
+                  
+                  complete(StatusCodes.OK, JsObject(
+                    "message" -> JsString("Workflow execution started (local)"),
+                    "executionId" -> JsString(executionId),
+                    "workflowId" -> JsString(workflowId),
+                    "status" -> JsString("running"),
+                    "startTime" -> JsString(startTime)
+                  ))
+                  
+                case None =>
+                  complete(StatusCodes.NotFound, JsObject(
+                    "error" -> JsString("Workflow not found"),
+                    "workflowId" -> JsString(workflowId)
+                  ))
+              }
           }
         }
       },
       
-      // 执行工作流（使用 Event Sourcing）
+      // 获取工作流状态（使用Sharding）
+      path(Segment / "status") { workflowId =>
+        get {
+          logger.info(s"GET /api/v1/workflows/$workflowId/status")
+          
+          workflowSupervisor match {
+            case Some(supervisor) =>
+              // 通过WorkflowSupervisor查询状态（使用Sharding）
+              val statusFuture: Future[EventSourcedWorkflowActor.StatusResponse] = 
+                supervisor.asInstanceOf[ActorRef[WorkflowSupervisor.Command]]
+                  .ask(ref => WorkflowSupervisor.GetWorkflowStatus(workflowId, ref))(askTimeout, system.scheduler)
+              
+              complete {
+                statusFuture.map { response =>
+                  logger.info(s"Workflow status retrieved via Sharding: $workflowId, state: ${response.state}")
+                  
+                  StatusCodes.OK -> JsObject(
+                    "workflowId" -> JsString(response.workflowId),
+                    "state" -> JsString(response.state),
+                    "executionCount" -> JsNumber(response.allExecutions.length),
+                    "currentExecution" -> (response.currentExecution match {
+                      case Some(exec) =>
+                        JsObject(
+                          "executionId" -> JsString(exec.executionId),
+                          "status" -> JsString(exec.status),
+                          "startTime" -> JsNumber(exec.startTime),
+                          "endTime" -> exec.endTime.map(JsNumber(_)).getOrElse(JsNull)
+                        )
+                      case None => JsNull
+                    }),
+                    "lastExecution" -> (if (response.allExecutions.nonEmpty) {
+                      val lastExec = response.allExecutions.last
+                      JsObject(
+                        "executionId" -> JsString(lastExec.executionId),
+                        "status" -> JsString(lastExec.status),
+                        "startTime" -> JsNumber(lastExec.startTime),
+                        "endTime" -> lastExec.endTime.map(JsNumber(_)).getOrElse(JsNull)
+                      )
+                    } else JsNull)
+                  )
+                }.recover(ErrorHandler.handleError(workflowId, "get workflow status"))
+              }
+              
+            case None =>
+              // Fallback: return basic info from local storage
+              workflows.get(workflowId) match {
+                case Some(workflow) =>
+                  complete(StatusCodes.OK, JsObject(
+                    "workflowId" -> JsString(workflowId),
+                    "status" -> JsString("unknown"),
+                    "message" -> JsString("Status tracking not available (supervisor not configured)")
+                  ))
+                case None =>
+                  complete(StatusCodes.NotFound, JsObject(
+                    "error" -> JsString("Workflow not found"),
+                    "workflowId" -> JsString(workflowId)
+                  ))
+              }
+          }
+        }
+      },
+      
+      // 执行工作流（使用 Event Sourcing）- 保留用于向后兼容
       path(Segment / "execute-es") { workflowId =>
         post {
           logger.info(s"POST /api/v1/workflows/$workflowId/execute-es (Event Sourcing)")
@@ -269,11 +451,11 @@ class EnhancedWorkflowRoutes(
                     supervisor.asInstanceOf[ActorRef[WorkflowSupervisor.Command]]
                       .ask(ref => WorkflowSupervisor.CreateWorkflow(workflow, ref))(askTimeout, system.scheduler)
                   
-                  val executeFuture: Future[WorkflowActor.ExecutionResponse] = createFuture.flatMap { created =>
+                  val executeFuture: Future[EventSourcedWorkflowActor.ExecutionResponse] = createFuture.flatMap { created =>
                     logger.info(s"EventSourced workflow actor created: ${created.workflowId}")
                     
-                    created.actorRef.asInstanceOf[ActorRef[WorkflowActor.Command]]
-                      .ask(ref => WorkflowActor.Execute(ref))(askTimeout, system.scheduler)
+                    supervisor.asInstanceOf[ActorRef[WorkflowSupervisor.Command]]
+                      .ask(ref => WorkflowSupervisor.ExecuteWorkflow(workflowId, ref))(askTimeout, system.scheduler)
                   }
                   
                   complete {
@@ -283,7 +465,7 @@ class EnhancedWorkflowRoutes(
                         "executionId" -> JsString(response.executionId),
                         "workflowId" -> JsString(workflowId),
                         "status" -> JsString(response.status),
-                        "note" -> JsString(s"Events will be persisted. Check history at: GET /api/history/$workflowId")
+                        "note" -> JsString(s"Events will be persisted. Check status at: GET /api/v1/workflows/$workflowId/status")
                       )
                     }
                   }

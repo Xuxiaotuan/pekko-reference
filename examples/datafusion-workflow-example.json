@@ -1,0 +1,107 @@
+{
+  "id": "datafusion-demo-workflow",
+  "name": "DataFusion SQL查询演示工作流",
+  "version": "1.0",
+  "description": "展示如何在工作流中使用DataFusion进行SQL查询和数据转换",
+  "nodes": [
+    {
+      "id": "data-source",
+      "type": "source",
+      "nodeType": "sequence.numbers",
+      "label": "生成测试数据",
+      "position": {"x": 100, "y": 100},
+      "config": {
+        "start": 1,
+        "end": 1000,
+        "step": 1,
+        "fields": {
+          "id": "sequence",
+          "name": "random_string",
+          "age": "random_int(18,65)",
+          "salary": "random_double(30000,100000)",
+          "department": "random_choice(['IT','HR','Finance','Marketing'])"
+        }
+      }
+    },
+    {
+      "id": "sql-filter",
+      "type": "transform", 
+      "nodeType": "sql.query",
+      "label": "SQL过滤和转换",
+      "position": {"x": 300, "y": 100},
+      "config": {
+        "sql": "SELECT id, name, age, salary, department, CASE WHEN salary > :high_salary THEN 'Senior' WHEN salary > :mid_salary THEN 'Mid' ELSE 'Junior' END as level FROM input WHERE age >= :min_age AND department IN (:departments)",
+        "parameters": {
+          "min_age": 25,
+          "high_salary": 70000,
+          "mid_salary": 50000,
+          "departments": ["IT", "Finance"]
+        },
+        "batchSize": 100,
+        "timeout": 30
+      }
+    },
+    {
+      "id": "sql-aggregate",
+      "type": "transform",
+      "nodeType": "sql.query", 
+      "label": "SQL聚合统计",
+      "position": {"x": 500, "y": 100},
+      "config": {
+        "sql": "SELECT department, level, COUNT(*) as employee_count, AVG(salary) as avg_salary, MIN(salary) as min_salary, MAX(salary) as max_salary FROM input GROUP BY department, level ORDER BY department, avg_salary DESC",
+        "batchSize": 50,
+        "timeout": 15
+      }
+    },
+    {
+      "id": "results-sink",
+      "type": "sink",
+      "nodeType": "console.log",
+      "label": "输出结果",
+      "position": {"x": 700, "y": 100},
+      "config": {
+        "format": "json",
+        "pretty": true
+      }
+    },
+    {
+      "id": "file-sink",
+      "type": "sink",
+      "nodeType": "file.json",
+      "label": "保存到文件",
+      "position": {"x": 700, "y": 200},
+      "config": {
+        "path": "output/employee-statistics.json",
+        "overwrite": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "from": "data-source",
+      "to": "sql-filter"
+    },
+    {
+      "id": "edge-2", 
+      "from": "sql-filter",
+      "to": "sql-aggregate"
+    },
+    {
+      "id": "edge-3",
+      "from": "sql-aggregate", 
+      "to": "results-sink"
+    },
+    {
+      "id": "edge-4",
+      "from": "sql-aggregate",
+      "to": "file-sink"
+    }
+  ],
+  "metadata": {
+    "created": "2024-11-30",
+    "author": "DataFusion Integration Demo",
+    "tags": ["sql", "datafusion", "demo", "aggregation"],
+    "description": "这个工作流演示了如何使用DataFusion SQL节点进行数据过滤、转换和聚合操作"
+  }
+}

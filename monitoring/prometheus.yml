@@ -1,0 +1,26 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'pekko-workflow'
+    environment: 'production'
+
+scrape_configs:
+  # Pekko Server指标
+  - job_name: 'pekko-server'
+    static_configs:
+      - targets: ['pekko-server:9906']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # DataFusion指标（如果DataFusion Service暴露指标）
+  - job_name: 'datafusion-service'
+    static_configs:
+      - targets: ['datafusion-service:50051']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Prometheus自身指标
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

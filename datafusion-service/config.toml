@@ -1,0 +1,31 @@
+# DataFusion Service配置文件
+
+[server]
+# 监听地址
+host = "0.0.0.0"
+# 监听端口
+port = 50051
+# 最大连接数
+max_connections = 100
+
+[query]
+# 最大内存使用（MB）
+max_memory_mb = 4096
+# 批处理大小
+batch_size = 8192
+# 查询超时（秒）
+timeout_seconds = 300
+
+[tls]
+# 是否启用TLS
+enabled = false
+# 证书路径（启用TLS时必需）
+# cert_path = "/path/to/cert.pem"
+# 密钥路径（启用TLS时必需）
+# key_path = "/path/to/key.pem"
+
+[logging]
+# 日志级别: trace, debug, info, warn, error
+level = "info"
+# 日志格式: json, text
+format = "json"

@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pekko-server
+  labels:
+    app: pekko-server
+    component: workflow-engine
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: pekko-server
+  template:
+    metadata:
+      labels:
+        app: pekko-server
+        component: workflow-engine
+    spec:
+      containers:
+      - name: pekko-server
+        image: pekko-server:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 9906
+          protocol: TCP
+        - name: pekko-cluster
+          containerPort: 2551
+          protocol: TCP
+        env:
+        - name: DATAFUSION_ENABLED
+          value: "true"
+        - name: DATAFUSION_HOST
+          value: "datafusion-service"
+        - name: DATAFUSION_PORT
+          value: "50051"
+        - name: DATAFUSION_POOL_MAX_TOTAL
+          value: "10"
+        - name: DATAFUSION_POOL_MAX_IDLE
+          value: "5"
+        - name: DATAFUSION_POOL_MIN_IDLE
+          value: "2"
+        - name: PEKKO_CLUSTER_SEED_NODES
+          value: "pekko://pekko-cluster-system@pekko-server-0.pekko-server:2551,pekko://pekko-cluster-system@pekko-server-1.pekko-server:2551"
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "2000m"
+            memory: "2Gi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 9906
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 9906
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pekko-server
+  labels:
+    app: pekko-server
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless service for Pekko Cluster
+  ports:
+  - port: 9906
+    targetPort: 9906
+    protocol: TCP
+    name: http
+  - port: 2551
+    targetPort: 2551
+    protocol: TCP
+    name: pekko-cluster
+  selector:
+    app: pekko-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pekko-server-external
+  labels:
+    app: pekko-server
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 9906
+    protocol: TCP
+    name: http
+  selector:
+    app: pekko-server
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: pekko-server-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: pekko-server
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

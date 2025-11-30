@@ -1,11 +1,15 @@
 package cn.xuyinyin.magic.workflow.engine.executors
 
+import cn.xuyinyin.magic.datafusion._
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.workflow.nodes.transforms.SQLQueryNode
 import org.apache.pekko.NotUsed
+import org.apache.pekko.actor.typed.ActorSystem
 import org.apache.pekko.stream.scaladsl.Flow
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 /**
@@ -16,7 +20,9 @@ import scala.util.Try
  * @author : Xuxiaotuan
  * @since : 2024-11-15
  */
-class TransformExecutor extends NodeExecutor {
+class TransformExecutor(
+  sqlClientPool: Option[FlightClientPool] = None
+)(implicit system: ActorSystem[_], ec: ExecutionContext) extends NodeExecutor {
   
   override def supportedTypes: Set[String] = Set(
     "filter",
@@ -24,7 +30,8 @@ class TransformExecutor extends NodeExecutor {
     "distinct",
     "batch",
     "data.clean",      // 从 DataProcessTaskExecutor 迁移
-    "data.transform"   // 从 DataProcessTaskExecutor 迁移
+    "data.transform",  // 从 DataProcessTaskExecutor 迁移
+    "sql.query"        // SQL查询节点
   )
   
   /**
@@ -44,8 +51,36 @@ class TransformExecutor extends NodeExecutor {
       case "batch" =>
         createBatchFlow(node, onLog)
       
+      case "sql.query" =>
+        createSQLQueryFlow(node, onLog)
+      
       case _ =>
         throw new IllegalArgumentException(s"不支持的Transform类型: ${node.nodeType}")
+    }
+  }
+  
+  /**
+   * SQL查询Flow
+   */
+  private def createSQLQueryFlow(node: WorkflowDSL.Node, onLog: String => Unit): Flow[String, String, NotUsed] = {
+    sqlClientPool match {
+      case Some(pool) =>
+        onLog(s"创建SQL查询节点: ${node.label}")
+        
+        // 从节点配置解析SQL配置
+        SQLQueryNode.fromNode(node, pool) match {
+          case Right(sqlNode) =>
+            sqlNode.createTransform(node, onLog)
+          
+          case Left(error) =>
+            onLog(s"SQL节点配置错误: $error")
+            throw new IllegalArgumentException(s"Invalid SQL node config: $error")
+        }
+      
+      case None =>
+        val errorMsg = "SQL查询节点需要FlightClientPool，但未提供。请确保DataFusion Service已部署并配置。"
+        onLog(errorMsg)
+        throw new IllegalStateException(errorMsg)
     }
   }
   

@@ -4,6 +4,7 @@ import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
 import org.apache.pekko.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.cluster.sharding.typed.ShardingEnvelope
 import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.ExecutionContext
@@ -36,7 +37,7 @@ object WorkflowSupervisor {
   
   case class ExecuteWorkflow(
     workflowId: String,
-    replyTo: ActorRef[WorkflowActor.ExecutionResponse]
+    replyTo: ActorRef[EventSourcedWorkflowActor.ExecutionResponse]
   ) extends Command
   
   case class ExecuteWorkflowScheduled(
@@ -55,7 +56,7 @@ object WorkflowSupervisor {
   
   case class GetWorkflowStatus(
     workflowId: String,
-    replyTo: ActorRef[WorkflowActor.StatusResponse]
+    replyTo: ActorRef[EventSourcedWorkflowActor.StatusResponse]
   ) extends Command
   
   case class GetWorkflowLogs(
@@ -79,7 +80,7 @@ object WorkflowSupervisor {
   case class WorkflowList(workflows: Map[String, ActorRef[_]])
   
   /**
-   * 创建WorkflowSupervisor
+   * 创建WorkflowSupervisor（旧版本 - 本地管理）
    * 
    * @param executionEngine 执行引擎
    * @param useEventSourcing 是否启用Event Sourcing（默认true）
@@ -96,6 +97,21 @@ object WorkflowSupervisor {
         .withLimit(maxNrOfRetries = 3, withinTimeRange = 1.minute)
       
       active(executionEngine, Map.empty, supervisorStrategy, useEventSourcing)
+    }
+  }
+  
+  /**
+   * 创建WorkflowSupervisor（新版本 - Sharding代理）
+   * 
+   * @param shardRegion Cluster Sharding的ShardRegion引用
+   */
+  def withSharding(
+    shardRegion: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]]
+  ): Behavior[Command] = {
+    Behaviors.setup { context =>
+      context.log.info("WorkflowSupervisor started with Cluster Sharding")
+      
+      shardingProxy(shardRegion)
     }
   }
   
@@ -144,7 +160,14 @@ object WorkflowSupervisor {
           workflows.get(workflowId) match {
             case Some(actor) =>
               context.log.info(s"Executing workflow: $workflowId")
-              actor.asInstanceOf[ActorRef[WorkflowActor.Command]] ! WorkflowActor.Execute(replyTo)
+              if (useEventSourcing) {
+                actor.asInstanceOf[ActorRef[EventSourcedWorkflowActor.Command]] ! EventSourcedWorkflowActor.Execute(replyTo)
+              } else {
+                val adapter = context.messageAdapter[WorkflowActor.ExecutionResponse] { response =>
+                  ExecuteWorkflow(workflowId, replyTo)
+                }
+                actor.asInstanceOf[ActorRef[WorkflowActor.Command]] ! WorkflowActor.Execute(adapter)
+              }
             
             case None =>
               context.log.warn(s"Workflow not found: $workflowId")
@@ -240,7 +263,14 @@ object WorkflowSupervisor {
         case GetWorkflowStatus(workflowId, replyTo) =>
           workflows.get(workflowId) match {
             case Some(actor) =>
-              actor.asInstanceOf[ActorRef[WorkflowActor.Command]] ! WorkflowActor.GetStatus(replyTo)
+              if (useEventSourcing) {
+                actor.asInstanceOf[ActorRef[EventSourcedWorkflowActor.Command]] ! EventSourcedWorkflowActor.GetStatus(replyTo)
+              } else {
+                val adapter = context.messageAdapter[WorkflowActor.StatusResponse] { response =>
+                  GetWorkflowStatus(workflowId, replyTo)
+                }
+                actor.asInstanceOf[ActorRef[WorkflowActor.Command]] ! WorkflowActor.GetStatus(adapter)
+              }
             
             case None =>
               context.log.warn(s"Workflow not found: $workflowId")
@@ -275,6 +305,145 @@ object WorkflowSupervisor {
               // 返回空历史
               replyTo ! EventSourcedWorkflowActor.ExecutionHistoryResponse(workflowId, List.empty)
           }
+          Behaviors.same
+      }
+    }
+  }
+  
+  /**
+   * Sharding代理模式
+   * 
+   * 不再本地管理Actor，而是通过ShardRegion路由到正确的节点
+   */
+  private def shardingProxy(
+    shardRegion: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]]
+  ): Behavior[Command] = {
+    Behaviors.receive { (context, message) =>
+      message match {
+        case CreateWorkflow(workflow, replyTo) =>
+          context.log.info(s"Creating workflow via Sharding: ${workflow.id}")
+          
+          // 通过Sharding创建/初始化工作流
+          val initReplyAdapter = context.messageAdapter[EventSourcedWorkflowActor.InitializeResponse] { response =>
+            // 转换为WorkflowCreated响应
+            CreateWorkflow(workflow, replyTo) // 占位，实际不会再处理
+          }
+          
+          shardRegion ! ShardingEnvelope(
+            workflow.id,
+            EventSourcedWorkflowActor.Initialize(workflow, initReplyAdapter)
+          )
+          
+          // 直接回复创建成功（Entity会自动创建）
+          replyTo ! WorkflowCreated(workflow.id, shardRegion)
+          Behaviors.same
+        
+        case ExecuteWorkflow(workflowId, replyTo) =>
+          context.log.info(s"Executing workflow via Sharding: $workflowId")
+          
+          // 通过Sharding路由执行命令
+          shardRegion ! ShardingEnvelope(
+            workflowId,
+            EventSourcedWorkflowActor.Execute(replyTo)
+          )
+          Behaviors.same
+        
+        case GetWorkflowStatus(workflowId, replyTo) =>
+          context.log.info(s"Getting workflow status via Sharding: $workflowId")
+          
+          // 通过Sharding路由状态查询
+          val statusAdapter = context.messageAdapter[EventSourcedWorkflowActor.StatusResponse] { response =>
+            // 转换为WorkflowActor.StatusResponse
+            GetWorkflowStatus(workflowId, replyTo) // 占位
+          }
+          
+          shardRegion ! ShardingEnvelope(
+            workflowId,
+            EventSourcedWorkflowActor.GetStatus(statusAdapter)
+          )
+          
+          // 直接转发到原始replyTo
+          shardRegion ! ShardingEnvelope(
+            workflowId,
+            EventSourcedWorkflowActor.GetStatus(replyTo.asInstanceOf[ActorRef[EventSourcedWorkflowActor.StatusResponse]])
+          )
+          Behaviors.same
+        
+        case GetExecutionHistory(workflowId, replyTo) =>
+          context.log.info(s"Getting execution history via Sharding: $workflowId")
+          
+          // 通过Sharding路由历史查询
+          shardRegion ! ShardingEnvelope(
+            workflowId,
+            EventSourcedWorkflowActor.GetExecutionHistory(replyTo)
+          )
+          Behaviors.same
+        
+        case StopWorkflow(workflowId) =>
+          context.log.info(s"Stopping workflow via Sharding: $workflowId")
+          
+          // 通过Sharding发送停止命令
+          shardRegion ! ShardingEnvelope(
+            workflowId,
+            EventSourcedWorkflowActor.Stop
+          )
+          Behaviors.same
+        
+        case ExecuteWorkflowScheduled(workflowId, triggeredBy) =>
+          context.log.info(s"Executing workflow via Sharding (triggered by $triggeredBy): $workflowId")
+          
+          // 创建响应适配器
+          val responseAdapter = context.messageAdapter[EventSourcedWorkflowActor.ExecutionResponse] { response =>
+                context.log.info(s"Scheduled workflow execution: $workflowId, status: ${response.status}")
+            ExecuteWorkflowScheduled(workflowId, triggeredBy)
+          }
+          
+          shardRegion ! ShardingEnvelope(
+            workflowId,
+            EventSourcedWorkflowActor.Execute(responseAdapter)
+          )
+          Behaviors.same
+        
+        case CreateAndExecuteWorkflow(workflow, triggeredBy) =>
+          context.log.info(s"Creating and executing workflow via Sharding (triggered by $triggeredBy): ${workflow.id}")
+          
+          // 先初始化
+          val initAdapter = context.messageAdapter[EventSourcedWorkflowActor.InitializeResponse] { _ =>
+            CreateAndExecuteWorkflow(workflow, triggeredBy)
+          }
+          
+          shardRegion ! ShardingEnvelope(
+            workflow.id,
+            EventSourcedWorkflowActor.Initialize(workflow, initAdapter)
+          )
+          
+          // 然后执行
+          val executeAdapter = context.messageAdapter[EventSourcedWorkflowActor.ExecutionResponse] { response =>
+            context.log.info(s"Scheduled workflow execution completed: ${workflow.id}, status: ${response.status}")
+            CreateAndExecuteWorkflow(workflow, triggeredBy)
+          }
+          
+          shardRegion ! ShardingEnvelope(
+            workflow.id,
+            EventSourcedWorkflowActor.Execute(executeAdapter)
+          )
+          Behaviors.same
+        
+        case ListWorkflows(replyTo) =>
+          context.log.warn("ListWorkflows not supported in Sharding mode")
+          replyTo ! WorkflowList(Map.empty)
+          Behaviors.same
+        
+        case PauseWorkflow(workflowId) =>
+          context.log.warn(s"PauseWorkflow not supported in Sharding mode: $workflowId")
+          Behaviors.same
+        
+        case ResumeWorkflow(workflowId) =>
+          context.log.warn(s"ResumeWorkflow not supported in Sharding mode: $workflowId")
+          Behaviors.same
+        
+        case GetWorkflowLogs(workflowId, replyTo) =>
+          context.log.warn(s"GetWorkflowLogs not supported in Sharding mode: $workflowId")
           Behaviors.same
       }
     }

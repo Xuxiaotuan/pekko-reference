@@ -1,0 +1,123 @@
+version: '3.8'
+
+services:
+  # DataFusion Service
+  datafusion-service:
+    build:
+      context: ./datafusion-service
+      dockerfile: Dockerfile
+    image: datafusion-service:latest
+    container_name: datafusion-service
+    ports:
+      - "50051:50051"
+    environment:
+      - DATAFUSION_HOST=0.0.0.0
+      - DATAFUSION_PORT=50051
+      - DATAFUSION_MAX_MEMORY_MB=4096
+      - RUST_LOG=info
+    volumes:
+      - ./datafusion-service/config-prod.toml:/app/config.toml:ro
+    healthcheck:
+      test: ["/app/datafusion-service", "--health-check"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - pekko-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+  # Pekko Workflow Engine
+  pekko-server:
+    build:
+      context: .
+      dockerfile: pekko-server/Dockerfile
+    image: pekko-server:latest
+    container_name: pekko-server
+    ports:
+      - "9906:9906"  # HTTP API
+      - "2551:2551"  # Pekko Cluster
+    environment:
+      - DATAFUSION_ENABLED=true
+      - DATAFUSION_HOST=datafusion-service
+      - DATAFUSION_PORT=50051
+      - DATAFUSION_POOL_MAX_TOTAL=10
+      - DATAFUSION_POOL_MAX_IDLE=5
+      - DATAFUSION_POOL_MIN_IDLE=2
+    depends_on:
+      datafusion-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9906/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - pekko-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  # Prometheus (可选)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    restart: unless-stopped
+    networks:
+      - pekko-network
+    profiles:
+      - monitoring
+
+  # Grafana (可选)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - pekko-network
+    profiles:
+      - monitoring
+
+networks:
+  pekko-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:

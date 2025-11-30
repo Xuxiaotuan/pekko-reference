@@ -1,0 +1,20 @@
+# DataFusion Service - 开发环境配置
+
+[server]
+host = "127.0.0.1"
+port = 50051
+max_connections = 10
+
+[query]
+# 开发环境使用较小的内存限制
+max_memory_mb = 512
+batch_size = 1000
+# 较短的超时时间便于快速测试
+timeout_seconds = 30
+
+[tls]
+enabled = false
+
+[logging]
+level = "debug"
+format = "text"

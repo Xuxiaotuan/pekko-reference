@@ -19,20 +19,23 @@ import scala.collection.mutable
  * 
  * 架构：
  * - SourceExecutor: 处理所有数据源节点
- * - TransformExecutor: 处理所有转换节点
+ * - TransformExecutor: 处理所有转换节点（包括SQL查询节点）
  * - SinkExecutor: 处理所有数据汇节点
  * 
+ * @param sqlClientPool 可选的FlightClientPool，用于SQL查询节点
  * @author : Xuxiaotuan
  * @since : 2024-11-15
  */
-class WorkflowExecutionEngine(implicit system: ActorSystem[_], ec: ExecutionContext) {
+class WorkflowExecutionEngine(
+  sqlClientPool: Option[cn.xuyinyin.magic.datafusion.FlightClientPool] = None
+)(implicit system: ActorSystem[_], ec: ExecutionContext) {
   
   private val logger = Logger(getClass)
   implicit val materializer: Materializer = SystemMaterializer(system).materializer
   
   // 独立的执行器 - 易于扩展和测试
   private val sourceExecutor = new SourceExecutor()
-  private val transformExecutor = new TransformExecutor()
+  private val transformExecutor = new TransformExecutor(sqlClientPool)
   private val sinkExecutor = new SinkExecutor()
   
   // 节点类型判断辅助方法

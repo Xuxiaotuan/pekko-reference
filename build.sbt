@@ -8,6 +8,7 @@ val scalatestVersion    = "3.2.19"
 val logbackVersion      = "1.4.12"
 val scalaLoggingVersion = "3.9.5"
 val calciteVersion      = "1.39.0"
+val arrowVersion        = "18.0.0"  // 最新稳定版本以兼容Rust 53.0.0
 
 lazy val commonSettings = Seq(
   organization := organizationName,
@@ -83,6 +84,7 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
     libraryDependencies ++= Seq(
       "org.apache.pekko" %% "pekko-actor-typed"           % pekkoVersion,
       "org.apache.pekko" %% "pekko-cluster-typed"         % pekkoVersion,
+      "org.apache.pekko" %% "pekko-cluster-sharding-typed" % pekkoVersion,
       "org.apache.pekko" %% "pekko-cluster-tools"         % pekkoVersion,
       "org.apache.pekko" %% "pekko-serialization-jackson" % pekkoVersion,
       "org.apache.pekko" %% "pekko-stream"                % pekkoVersion,
@@ -95,18 +97,34 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       "org.apache.pekko" %% "pekko-http"                  % "1.0.1",
       "org.apache.pekko" %% "pekko-http-spray-json"       % "1.0.1",
       "io.spray"         %% "spray-json"                  % "1.3.6",
+      // Prometheus metrics
+      "io.prometheus"    % "simpleclient"                 % "0.16.0",
+      "io.prometheus"    % "simpleclient_hotspot"         % "0.16.0",
+      "io.prometheus"    % "simpleclient_common"          % "0.16.0",
       // Alpakka connectors
       "org.apache.pekko" %% "pekko-connectors-csv"        % "1.0.2",
       // -test
-      "org.apache.pekko" %% "pekko-stream-testkit"      % pekkoVersion % Test,
-      "org.apache.pekko" %% "pekko-multi-node-testkit"  % pekkoVersion % Test,
-      "org.apache.pekko" %% "pekko-actor-testkit-typed" % pekkoVersion % Test,
-      "org.apache.pekko" %% "pekko-http-testkit"        % "1.0.1" % Test,
-      "org.scalatest"     %% "scalatest"                % "3.2.17"      % Test,
-      "com.h2database"    % "h2"                        % "2.3.232"    % Test,
+      "org.apache.pekko" %% "pekko-stream-testkit"        % pekkoVersion % Test,
+      "org.apache.pekko" %% "pekko-multi-node-testkit"    % pekkoVersion % Test,
+      "org.apache.pekko" %% "pekko-actor-testkit-typed"   % pekkoVersion % Test,
+      "org.apache.pekko" %% "pekko-persistence-testkit"   % pekkoVersion % Test,
+      "org.apache.pekko" %% "pekko-http-testkit"          % "1.0.1" % Test,
+      "org.scalatest"     %% "scalatest"                  % "3.2.17"      % Test,
+      "org.scalatestplus" %% "scalacheck-1-17"            % "3.2.17.0"    % Test,
+      "org.scalacheck"    %% "scalacheck"                 % "1.17.0"      % Test,
+      "com.h2database"    % "h2"                          % "2.3.232"    % Test,
       // sql parser
-
       "org.apache.calcite" % "calcite-core"   % calciteVersion exclude ("org.slf4j", "slf4j-api") exclude ("commons-logging", "commons-logging"),
       "org.apache.calcite" % "calcite-server" % calciteVersion exclude ("org.slf4j", "slf4j-api") exclude ("commons-logging", "commons-logging"),
+      
+      // Arrow Flight for DataFusion integration
+      "org.apache.arrow" % "flight-core"         % arrowVersion,
+      "org.apache.arrow" % "arrow-memory-netty"  % arrowVersion,
+      "org.apache.arrow" % "arrow-vector"        % arrowVersion,
+      "io.grpc"          % "grpc-netty"          % "1.70.0",
+      "io.grpc"          % "grpc-stub"           % "1.70.0",
+      
+      // Apache Commons Pool for connection pooling
+      "org.apache.commons" % "commons-pool2"     % "2.12.0",
     ),
   )

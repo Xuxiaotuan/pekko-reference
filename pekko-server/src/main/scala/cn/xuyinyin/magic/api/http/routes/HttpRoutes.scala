@@ -47,6 +47,12 @@ object HttpRoutes {
       // 调度管理API
       new SchedulerRoutes(schedulerManager).routes,
       
+      // 集群监控API (Cluster Sharding)
+      new ClusterRoutes()(system, ec).routes,
+      
+      // Prometheus指标端点
+      new MetricsRoutes().routes,
+      
       // API接口路径
       pathPrefix("api") {
         concat(

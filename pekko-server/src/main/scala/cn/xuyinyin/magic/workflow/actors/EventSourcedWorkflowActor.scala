@@ -3,10 +3,12 @@ package cn.xuyinyin.magic.workflow.actors
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import cn.xuyinyin.magic.workflow.engine.{WorkflowExecutionEngine, ExecutionResult}
 import cn.xuyinyin.magic.workflow.events.WorkflowEvents._
+import cn.xuyinyin.magic.monitoring.ClusterEventLogger
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 import org.apache.pekko.persistence.typed.PersistenceId
 import org.apache.pekko.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, RetentionCriteria}
+import org.apache.pekko.cluster.typed.Cluster
 import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.ExecutionContext
@@ -28,6 +30,7 @@ object EventSourcedWorkflowActor {
   // ========== 命令 ==========
   
   sealed trait Command
+  case class Initialize(workflow: WorkflowDSL.Workflow, replyTo: ActorRef[InitializeResponse]) extends Command
   case class Execute(replyTo: ActorRef[ExecutionResponse]) extends Command
   case class GetStatus(replyTo: ActorRef[StatusResponse]) extends Command
   case class GetExecutionHistory(replyTo: ActorRef[ExecutionHistoryResponse]) extends Command
@@ -43,6 +46,7 @@ object EventSourcedWorkflowActor {
   // ========== 响应 ==========
   
   sealed trait Response
+  case class InitializeResponse(workflowId: String, status: String) extends Response
   case class ExecutionResponse(executionId: String, status: String) extends Response
   case class StatusResponse(
     workflowId: String,
@@ -138,15 +142,42 @@ object EventSourcedWorkflowActor {
   )(implicit ec: ExecutionContext): Behavior[Command] = {
     
     Behaviors.setup { context =>
+      val cluster = Cluster(context.system)
+      val nodeAddress = cluster.selfMember.address.toString
+      val shardId = cn.xuyinyin.magic.workflow.sharding.WorkflowSharding.extractShardId(workflowId)
+      
+      // 记录Entity启动事件
+      ClusterEventLogger.logEntityStarted(workflowId, shardId, nodeAddress)
+      
       EventSourcedBehavior[Command, WorkflowEvent, State](
         persistenceId = PersistenceId.ofUniqueId(s"workflow-$workflowId"),
         emptyState = IdleState(workflowId),
         commandHandler = (state, command) => commandHandler(state, command, workflow, executionEngine, context),
         eventHandler = eventHandler
-      ).withRetention(
+      )
+      .withRetention(
         RetentionCriteria.snapshotEvery(numberOfEvents = 100, keepNSnapshots = 2)
       )
+      .receiveSignal {
+        case (state, org.apache.pekko.persistence.typed.RecoveryCompleted) =>
+          context.log.info(s"Workflow $workflowId recovered: state=${getStateString(state)}, events=${state.allEvents.size}")
+          
+        case (state, org.apache.pekko.persistence.typed.SnapshotCompleted(metadata)) =>
+          context.log.info(s"Snapshot completed for workflow $workflowId at seqNr ${metadata.sequenceNr}")
+          
+        case (state, org.apache.pekko.actor.typed.PostStop) =>
+          context.log.info(s"Workflow $workflowId stopped")
+          // 记录Entity停止事件
+          ClusterEventLogger.logEntityStopped(workflowId, shardId, nodeAddress, "passivation")
+      }
     }
+  }
+  
+  private def getStateString(state: State): String = state match {
+    case _: IdleState => "idle"
+    case _: RunningState => "running"
+    case _: CompletedState => "completed"
+    case _: FailedState => "failed"
   }
   
   // ========== 命令处理 ==========
@@ -160,6 +191,12 @@ object EventSourcedWorkflowActor {
   )(implicit ec: ExecutionContext): Effect[WorkflowEvent, State] = {
     
     (state, command) match {
+      // Initialize命令：初始化工作流
+      case (_, Initialize(wf, replyTo)) =>
+        context.log.info(s"Initializing workflow: ${wf.id}")
+        replyTo ! InitializeResponse(wf.id, "initialized")
+        Effect.none
+      
       // 空闲状态：开始执行
       case (idle: IdleState, Execute(replyTo)) =>
         val executionId = s"exec_${System.currentTimeMillis()}"

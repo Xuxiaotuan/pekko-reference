@@ -1,12 +1,14 @@
 package cn.xuyinyin.magic.cluster
 
 import cn.xuyinyin.magic.single.PekkoGc
-import cn.xuyinyin.magic.workflow.actors.WorkflowSupervisor
+import cn.xuyinyin.magic.workflow.actors.{EventSourcedWorkflowActor, WorkflowSupervisor}
 import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
 import cn.xuyinyin.magic.workflow.scheduler.{SchedulerManager, WorkflowScheduler}
+import cn.xuyinyin.magic.workflow.sharding.WorkflowSharding
 import com.typesafe.scalalogging.Logger
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
+import org.apache.pekko.cluster.sharding.typed.ShardingEnvelope
 import org.apache.pekko.cluster.typed.Cluster
 
 import scala.concurrent.duration.DurationInt
@@ -33,18 +35,26 @@ object PekkoGuardian {
     // Create an actor that handles cluster domain events
     ctx.spawn(ClusterListener(), "ClusterListener")
     
+    // Create cluster event listener for structured logging
+    ctx.spawn(ClusterEventListener(), "ClusterEventListener")
+    
     // Create and start health checker
     val healthChecker = ctx.spawn(HealthChecker(), "HealthChecker")
     healthChecker ! HealthChecker.StartPeriodicCheck(30000) // 每30秒检查一次
     
-    // Create workflow supervisor (工作流管理器)
+    // Initialize WorkflowSharding (工作流分片)
     implicit val ec = ctx.executionContext
     val executionEngine = new WorkflowExecutionEngine()(ctx.system, ec)
+    val shardRegion: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]] = 
+      WorkflowSharding.init(ctx.system, executionEngine)
+    logger.info("WorkflowSharding initialized")
+    
+    // Create workflow supervisor with ShardRegion (工作流管理器)
     val workflowSupervisor = ctx.spawn(
-      WorkflowSupervisor(executionEngine),
+      WorkflowSupervisor.withSharding(shardRegion),
       "WorkflowSupervisor"
     )
-    logger.info("WorkflowSupervisor created")
+    logger.info("WorkflowSupervisor created with Sharding support")
     
     // Create workflow scheduler and scheduler manager (调度管理器)
     val workflowScheduler = new WorkflowScheduler(workflowSupervisor)(ctx.system)

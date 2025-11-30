@@ -1,0 +1,40 @@
+[package]
+name = "datafusion-service"
+version = "0.1.0"
+edition = "2021"
+authors = ["Workflow Engine Team"]
+description = "High-performance SQL query service using Apache Arrow DataFusion"
+
+[dependencies]
+# DataFusion - SQL查询引擎 (兼容Rust 1.85.0)
+datafusion = "42.0.0"
+
+# Arrow Flight - RPC协议 (兼容版本)
+arrow-flight = "53.0.0"
+arrow = "53.0.0"
+arrow-schema = "53.0.0"
+
+# gRPC框架 (兼容版本)
+tonic = "0.12"
+prost = "0.13"
+
+# 异步运行时
+tokio = { version = "1.0", features = ["full"] }
+tokio-stream = "0.1"
+futures = "0.3"
+
+# 序列化
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# 日志
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# 错误处理
+anyhow = "1.0"
+thiserror = "2.0"
+
+[build-dependencies]
+tonic-build = "0.12"

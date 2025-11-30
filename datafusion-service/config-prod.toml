@@ -1,0 +1,23 @@
+# DataFusion Service - 生产环境配置
+
+[server]
+host = "0.0.0.0"
+port = 50051
+max_connections = 100
+
+[query]
+# 生产环境使用更大的内存
+max_memory_mb = 8192
+batch_size = 8192
+# 较长的超时时间支持复杂查询
+timeout_seconds = 300
+
+[tls]
+# 生产环境建议启用TLS
+enabled = false
+# cert_path = "/path/to/cert.pem"
+# key_path = "/path/to/key.pem"
+
+[logging]
+level = "info"
+format = "json"

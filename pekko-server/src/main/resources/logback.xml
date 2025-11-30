@@ -9,11 +9,23 @@
         </encoder>
     </appender>
 
+    <!-- Cluster Events Appender - 结构化JSON日志 -->
+    <appender name="CLUSTER_EVENTS" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+    
     <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
         <queueSize>8192</queueSize>
         <neverBlock>true</neverBlock>
         <appender-ref ref="STDOUT" />
     </appender>
+    
+    <!-- 集群事件专用logger - 输出结构化JSON -->
+    <logger name="ClusterEvents" level="INFO" additivity="false">
+        <appender-ref ref="CLUSTER_EVENTS"/>
+    </logger>
 
     <root level="INFO">
         <appender-ref ref="ASYNC"/>
