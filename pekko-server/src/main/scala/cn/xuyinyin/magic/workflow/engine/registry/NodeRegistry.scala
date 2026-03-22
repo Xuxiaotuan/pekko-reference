@@ -26,11 +26,9 @@ object NodeRegistry {
     val sources = List(
       new RandomNumbersSource(),
       new SequenceSource(),
-      new CsvSource(),
-      new TextSource(),
       new MemorySource(),
       new KafkaSource(),
-      new MySQLSource()  // 保留作为示例（模拟实现）
+      new MySQLSourceNode()  // MySQL连接器（真实JDBC实现）
       // SqlSource已移除（DataFusion依赖）
     )
     sources.map(s => s.nodeType -> s).toMap
@@ -41,7 +39,7 @@ object NodeRegistry {
     val sinks = List(
       new ConsoleLogSink(),
       new FileTextSink(),
-      new MySQLSink()  // 保留作为示例（模拟实现）
+      new MySQLSinkNode()  // MySQL连接器（真实JDBC实现）
     )
     sinks.map(s => s.nodeType -> s).toMap
   }

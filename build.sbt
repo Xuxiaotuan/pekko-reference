@@ -268,6 +268,12 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       "org.apache.pekko" %% "pekko-connectors-csv"   % pekkoConnectorsVer,
       
       // ================================
+      // MySQL连接器依赖
+      // ================================
+      "com.mysql"        % "mysql-connector-j"  % "8.0.33",        // MySQL JDBC驱动
+      "com.zaxxer"       % "HikariCP"           % "5.0.1",         // 连接池
+      
+      // ================================
       // JSON 处理
       // ================================
       "io.spray" %% "spray-json" % sprayJsonVersion,
@@ -325,23 +331,12 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
   )
 
 // ================================
-// 连接器模块（基于pekko-server拆分）
-// ================================
-lazy val pekkoConnectors = (project in file("pekko-connectors"))
-  .settings(commonSettings)
-  .settings(
-    name := "pekko-connectors"
-  )
-  .dependsOn(pekkoServer)  // ← 依赖pekko-server的NodeSource/NodeSink接口
-
-// ================================
 // 根项目配置
 // ================================
 lazy val root = (project in file("."))
   .settings(commonSettings)
   .aggregate(
-    pekkoServer,
-    pekkoConnectors
+    pekkoServer
   )
   .settings(
     name := projectName,
@@ -353,9 +348,8 @@ lazy val root = (project in file("."))
     // ================================
     addCommandAlias("runServer", "pekkoServer/run"),
     addCommandAlias("testAll", "test"),
-    addCommandAlias("testConnectors", "pekkoConnectors/test"),
     addCommandAlias("dockerBuild", "pekkoServer/docker:publishLocal"),
     addCommandAlias("dockerPublish", "pekkoServer/docker:publish"),
     addCommandAlias("checkDeps", "pekkoServer/dependencyTree"),
-    addCommandAlias("cleanAll", "clean; pekkoServer/clean; pekkoConnectors/clean")
+    addCommandAlias("cleanAll", "clean; pekkoServer/clean")
   )

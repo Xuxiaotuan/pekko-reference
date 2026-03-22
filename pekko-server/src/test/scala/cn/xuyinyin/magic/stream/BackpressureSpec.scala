@@ -1,6 +1,5 @@
 package cn.xuyinyin.magic.stream
 
-import cn.xuyinyin.magic.PekkoServer.ec
 import cn.xuyinyin.magic.testkit.STPekkoSpec
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.actor.ActorSystem
@@ -10,7 +9,7 @@ import org.apache.pekko.stream.{Materializer, OverflowStrategy}
 
 import java.util.concurrent.Executors
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 class BackpressureSpec extends ScalaTestWithActorTestKit with STPekkoSpec {
   "pekko BackpressureSpec" should {

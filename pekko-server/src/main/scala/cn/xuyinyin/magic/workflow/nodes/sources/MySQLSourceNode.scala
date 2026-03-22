@@ -1,4 +1,4 @@
-package cn.xuyinyin.magic.connectors.mysql
+package cn.xuyinyin.magic.workflow.nodes.sources
 
 import cn.xuyinyin.magic.workflow.nodes.base.NodeSource
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
@@ -22,18 +22,34 @@ class MySQLSourceNode extends NodeSource {
   override def nodeType: String = "mysql.query"
   
   override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] = {
+    import spray.json._
+    
+    // 辅助方法：安全提取字符串
+    def getString(key: String, default: Option[String] = None): String = {
+      node.config.fields.get(key) match {
+        case Some(JsString(v)) => v
+        case None => default.getOrElse(throw new IllegalArgumentException(s"MySQL source缺少${key}配置"))
+        case _ => throw new IllegalArgumentException(s"${key}必须是字符串类型")
+      }
+    }
+    
+    // 辅助方法：安全提取数字
+    def getInt(key: String, default: Int): Int = {
+      node.config.fields.get(key) match {
+        case Some(JsNumber(v)) => v.toInt
+        case None => default
+        case _ => throw new IllegalArgumentException(s"${key}必须是数字类型")
+      }
+    }
+    
     // 解析配置
-    val host = node.config.fields.get("host").map(_.convertTo[String]).getOrElse("localhost")
-    val port = node.config.fields.get("port").map(_.convertTo[Int]).getOrElse(3306)
-    val database = node.config.fields.get("database").map(_.convertTo[String])
-      .getOrElse(throw new IllegalArgumentException("MySQL source缺少database配置"))
-    val username = node.config.fields.get("username").map(_.convertTo[String])
-      .getOrElse(throw new IllegalArgumentException("MySQL source缺少username配置"))
-    val password = node.config.fields.get("password").map(_.convertTo[String])
-      .getOrElse(throw new IllegalArgumentException("MySQL source缺少password配置"))
-    val sql = node.config.fields.get("sql").map(_.convertTo[String])
-      .getOrElse(throw new IllegalArgumentException("MySQL source缺少sql配置"))
-    val fetchSize = node.config.fields.get("fetchSize").map(_.convertTo[Int]).getOrElse(1000)
+    val host = getString("host", Some("localhost"))
+    val port = getInt("port", 3306)
+    val database = getString("database")
+    val username = getString("username")
+    val password = getString("password")
+    val sql = getString("sql")
+    val fetchSize = getInt("fetchSize", 1000)
     
     onLog(s"[MySQL Source] 连接MySQL: $host:$port/$database")
     onLog(s"[MySQL Source] 执行查询: $sql")

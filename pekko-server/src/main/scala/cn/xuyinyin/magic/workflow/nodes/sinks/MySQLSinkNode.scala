@@ -1,4 +1,4 @@
-package cn.xuyinyin.magic.connectors.mysql
+package cn.xuyinyin.magic.workflow.nodes.sinks
 
 import cn.xuyinyin.magic.workflow.nodes.base.NodeSink
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
@@ -24,19 +24,35 @@ class MySQLSinkNode extends NodeSink {
   
   override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)
                         (implicit ec: ExecutionContext): Sink[String, Future[Done]] = {
+    import spray.json._
+    
+    // 辅助方法：安全提取字符串
+    def getString(key: String, default: Option[String] = None): String = {
+      node.config.fields.get(key) match {
+        case Some(JsString(v)) => v
+        case None => default.getOrElse(throw new IllegalArgumentException(s"MySQL sink缺少${key}配置"))
+        case _ => throw new IllegalArgumentException(s"${key}必须是字符串类型")
+      }
+    }
+    
+    // 辅助方法：安全提取数字
+    def getInt(key: String, default: Int): Int = {
+      node.config.fields.get(key) match {
+        case Some(JsNumber(v)) => v.toInt
+        case None => default
+        case _ => throw new IllegalArgumentException(s"${key}必须是数字类型")
+      }
+    }
+    
     // 解析配置
-    val host = node.config.fields.get("host").map(_.convertTo[String]).getOrElse("localhost")
-    val port = node.config.fields.get("port").map(_.convertTo[Int]).getOrElse(3306)
-    val database = node.config.fields.get("database").map(_.convertTo[String])
-      .getOrElse(throw new IllegalArgumentException("MySQL sink缺少database配置"))
-    val table = node.config.fields.get("table").map(_.convertTo[String])
-      .getOrElse(throw new IllegalArgumentException("MySQL sink缺少table配置"))
-    val username = node.config.fields.get("username").map(_.convertTo[String])
-      .getOrElse(throw new IllegalArgumentException("MySQL sink缺少username配置"))
-    val password = node.config.fields.get("password").map(_.convertTo[String])
-      .getOrElse(throw new IllegalArgumentException("MySQL sink缺少password配置"))
-    val batchSize = node.config.fields.get("batchSize").map(_.convertTo[Int]).getOrElse(1000)
-    val mode = node.config.fields.get("mode").map(_.convertTo[String]).getOrElse("insert")
+    val host = getString("host", Some("localhost"))
+    val port = getInt("port", 3306)
+    val database = getString("database")
+    val table = getString("table")
+    val username = getString("username")
+    val password = getString("password")
+    val batchSize = getInt("batchSize", 1000)
+    val mode = getString("mode", Some("insert"))
     
     onLog(s"[MySQL Sink] 连接MySQL: $host:$port/$database")
     onLog(s"[MySQL Sink] 写入表: $table (模式: $mode, 批量: $batchSize)")
