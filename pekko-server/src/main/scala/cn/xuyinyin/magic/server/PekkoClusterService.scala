@@ -109,7 +109,7 @@ object PekkoClusterService {
     // 获取HealthChecker引用
     val healthCheckerFuture = system.ask(ref => PekkoGuardian.GetHealthChecker(ref))(timeout, scheduler)
     
-    // 获取SchedulerManager引用
+    // 获取SchedulerManager引用ActorSystem
     val schedulerManagerFuture = system.ask(ref => PekkoGuardian.GetSchedulerManager(ref))(timeout, scheduler)
     
     // 获取WorkflowSupervisor引用
