@@ -4,42 +4,71 @@ import cn.xuyinyin.magic.workflow.nodes.base.{NodeSource, NodeSink}
 import cn.xuyinyin.magic.workflow.nodes.sources._
 import cn.xuyinyin.magic.workflow.nodes.sinks._
 
-import scala.concurrent.ExecutionContext
+import scala.collection.mutable
 
 /**
  * 节点注册中心
  * 
  * 管理所有可用的节点实现
- * 方便添加和查找节点
+ * 支持动态注册和加载连接器
  * 
  * @author : Xuxiaotuan
  * @since : 2024-11-15
  */
 object NodeRegistry {
   
-  // 所有Source节点实例（懒加载）
-  private lazy val sourceInstances: Map[String, NodeSource] = {
+  // 可变的注册表，支持运行时动态注册
+  private val dynamicSources = mutable.Map[String, NodeSource]()
+  private val dynamicSinks = mutable.Map[String, NodeSink]()
+  
+  // 内置Source节点实例（懒加载）
+  private lazy val builtinSourceInstances: Map[String, NodeSource] = {
     val sources = List(
       new RandomNumbersSource(),
       new SequenceSource(),
       new CsvSource(),
       new TextSource(),
       new MemorySource(),
-      new SqlSource(),
       new KafkaSource(),
-      new MySQLSource()
+      new MySQLSource()  // 保留作为示例（模拟实现）
+      // SqlSource已移除（DataFusion依赖）
     )
     sources.map(s => s.nodeType -> s).toMap
   }
   
-  // 所有Sink节点实例（懒加载）
-  private lazy val sinkInstances: Map[String, NodeSink] = {
+  // 内置Sink节点实例（懒加载）
+  private lazy val builtinSinkInstances: Map[String, NodeSink] = {
     val sinks = List(
       new ConsoleLogSink(),
       new FileTextSink(),
-      new MySQLSink()
+      new MySQLSink()  // 保留作为示例（模拟实现）
     )
     sinks.map(s => s.nodeType -> s).toMap
+  }
+  
+  /**
+   * 动态注册Source节点
+   * 用于在运行时注册pekko-connectors中的连接器
+   */
+  def registerSource(source: NodeSource): Unit = {
+    dynamicSources.put(source.nodeType, source)
+  }
+  
+  /**
+   * 动态注册Sink节点
+   * 用于在运行时注册pekko-connectors中的连接器
+   */
+  def registerSink(sink: NodeSink): Unit = {
+    dynamicSinks.put(sink.nodeType, sink)
+  }
+  
+  // 合并内置和动态注册的节点（动态注册的优先级更高）
+  private def sourceInstances: Map[String, NodeSource] = {
+    builtinSourceInstances ++ dynamicSources
+  }
+  
+  private def sinkInstances: Map[String, NodeSink] = {
+    builtinSinkInstances ++ dynamicSinks
   }
   
   /**

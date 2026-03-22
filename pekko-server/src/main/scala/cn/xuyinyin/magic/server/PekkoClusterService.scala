@@ -2,6 +2,7 @@ package cn.xuyinyin.magic.server
 
 import cn.xuyinyin.magic.api.http.routes.HttpRoutes
 import cn.xuyinyin.magic.cluster.PekkoGuardian
+import cn.xuyinyin.magic.workflow.connectors.ConnectorLoader
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.Logger
 import org.apache.pekko.actor.typed.ActorSystem
@@ -59,6 +60,9 @@ object PekkoClusterService {
     val currentRoles = cluster.selfMember.roles
     
     logger.info(s"Pekko cluster system started with roles: ${currentRoles.mkString(", ")}")
+    
+    // 加载外部连接器（pekko-connectors）
+    ConnectorLoader.loadConnectors()
     
     // 注册优雅关闭钩子
     registerShutdownHook(system)

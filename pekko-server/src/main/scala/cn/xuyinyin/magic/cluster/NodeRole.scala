@@ -5,7 +5,7 @@ import scala.collection.mutable
 /**
  * 节点角色定义
  * 
- * 定义了Pekko DataFusion Arrow分布式系统中不同类型节点的角色和职责。
+ * 定义了Pekko分布式系统中不同类型节点的角色和职责。
  * 每个节点根据其角色承担不同的任务和功能。
  * 
  * @author : Xuxiaotuan
@@ -13,7 +13,7 @@ import scala.collection.mutable
  */
 object NodeRole {
 
-  // === DataFusion Arrow 系统角色 ===
+  // === 系统角色 ===
   
   /**
    * 任务协调节点
@@ -26,8 +26,8 @@ object NodeRole {
   /**
    * 数据处理节点
    * - 执行具体的数据处理任务
-   * - 运行DataFusion查询引擎
-   * - 处理Arrow格式的数据
+   * - 运行工作流执行引擎
+   * - 处理数据同步任务
    */
   val WORKER = "worker"
   
@@ -109,8 +109,8 @@ object NodeRole {
     )
     case WORKER => List(
       "Execute data processing tasks",
-      "Run DataFusion query engine",
-      "Process Arrow format data",
+      "Run workflow execution engine",
+      "Process data synchronization",
       "Report task execution status"
     )
     case STORAGE => List(
@@ -166,7 +166,7 @@ object NodeRole {
   def flattenRoles(roles: Seq[String]): Seq[String] = {
     val rs = mutable.Set[String]()
     
-    // 处理新的DataFusion Arrow角色（转换为小写）
+    // 处理角色（转换为小写）
     roles.map(_.toLowerCase.trim).filter(isValidRole).foreach(rs += _)
     
     // 处理旧的聚合角色（保持向后兼容）

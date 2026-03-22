@@ -114,18 +114,18 @@ lazy val commonSettings = Seq(
     "-Xmx1024m",
     
     // 本地库路径
-    "-Djava.library.path=./target/native",
+    "-Djava.library.path=./target/native"
     
-    // Pekko集群种子节点
-    "-Dpekko.cluster.seed-nodes.0=pekko://pekko-cluster-system@127.0.0.1:2551",
+    // Pekko集群种子节点（已在application.conf中配置）
+    // "-Dpekko.cluster.seed-nodes.0=pekko://pekko-cluster-system@127.0.0.1:2551"
     
-    // GC日志配置 - 用于性能分析和调优
-    "-Xlog:gc*:file=logs/gc.log:time,uptime,level,tags",
-    "-Xlog:gc+heap=trace:file=logs/gc-heap.log:time,uptime",
-    "-Xlog:gc+ref=debug:file=logs/gc-ref.log:time,uptime",
-    "-XX:+UseGCLogFileRotation",
-    "-XX:NumberOfGCLogFiles=5",
-    "-XX:GCLogFileSize=10M"
+    // GC日志配置 - 临时禁用（可选）
+    // "-Xlog:gc*:file=logs/gc.log:time,uptime,level,tags",
+    // "-Xlog:gc+heap=trace:file=logs/gc-heap.log:time,uptime",
+    // "-Xlog:gc+ref=debug:file=logs/gc-ref.log:time,uptime",
+    // "-XX:+UseGCLogFileRotation",
+    // "-XX:NumberOfGCLogFiles=5",
+    // "-XX:GCLogFileSize=10M"
   ),
   
   // ================================
@@ -325,11 +325,24 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
   )
 
 // ================================
+// 连接器模块（基于pekko-server拆分）
+// ================================
+lazy val pekkoConnectors = (project in file("pekko-connectors"))
+  .settings(commonSettings)
+  .settings(
+    name := "pekko-connectors"
+  )
+  .dependsOn(pekkoServer)  // ← 依赖pekko-server的NodeSource/NodeSink接口
+
+// ================================
 // 根项目配置
 // ================================
 lazy val root = (project in file("."))
   .settings(commonSettings)
-  .aggregate(pekkoServer)
+  .aggregate(
+    pekkoServer,
+    pekkoConnectors
+  )
   .settings(
     name := projectName,
     publish := {},        // 根项目不发布
@@ -338,12 +351,11 @@ lazy val root = (project in file("."))
     // ================================
     // 自定义任务别名 - 提供便捷命令
     // ================================
-    addCommandAlias("runServer", "pekko-server/run"),
+    addCommandAlias("runServer", "pekkoServer/run"),
     addCommandAlias("testAll", "test"),
-    addCommandAlias("testDataFusion", "testOnly cn.xuyinyin.magic.datafusion.*"),
-    addCommandAlias("testIntegration", "testOnly cn.xuyinyin.magic.datafusion.DataFusionIntegrationSpec cn.xuyinyin.magic.datafusion.integration.SQLWorkflowIntegrationSpec"),
-    addCommandAlias("dockerBuild", "pekko-server/docker:publishLocal"),
-    addCommandAlias("dockerPublish", "pekko-server/docker:publish"),
-    addCommandAlias("checkDeps", "pekko-server/dependencyTree"),
-    addCommandAlias("cleanAll", "clean; pekko-server/clean")
+    addCommandAlias("testConnectors", "pekkoConnectors/test"),
+    addCommandAlias("dockerBuild", "pekkoServer/docker:publishLocal"),
+    addCommandAlias("dockerPublish", "pekkoServer/docker:publish"),
+    addCommandAlias("checkDeps", "pekkoServer/dependencyTree"),
+    addCommandAlias("cleanAll", "clean; pekkoServer/clean; pekkoConnectors/clean")
   )
