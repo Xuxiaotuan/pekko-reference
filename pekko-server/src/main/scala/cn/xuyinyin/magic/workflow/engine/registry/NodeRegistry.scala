@@ -28,6 +28,7 @@ object NodeRegistry {
       new SequenceSource(),
       new MemorySource(),
       new KafkaSource(),
+      new MySQLSnapshotSourceNode(),
       new MySQLSourceNode()  // MySQL连接器（真实JDBC实现）
       // SqlSource已移除（DataFusion依赖）
     )
@@ -67,6 +68,15 @@ object NodeRegistry {
    */
   def registerSink(sink: NodeSink): Unit = {
     dynamicSinks.put(sink.nodeType, sink)
+  }
+
+  /**
+   * 仅在当前注册实例与期望实例匹配时移除运行时 Sink。
+   */
+  private[engine] def unregisterSink(nodeType: String, expected: NodeSink): Unit = {
+    dynamicSinks.get(nodeType)
+      .filter(current => current eq expected)
+      .foreach(_ => dynamicSinks.remove(nodeType))
   }
   
   // 合并内置和动态注册的节点（动态注册的优先级更高）

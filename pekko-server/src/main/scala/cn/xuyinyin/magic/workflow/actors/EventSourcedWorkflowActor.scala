@@ -1,20 +1,28 @@
 package cn.xuyinyin.magic.workflow.actors
 
 import cn.xuyinyin.magic.common.CborSerializable
-import cn.xuyinyin.magic.workflow.engine.{ExecutionResult, WorkflowExecutionEngine, WorkflowValidator}
+import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary}
+import cn.xuyinyin.magic.workflow.engine.{ExecutionResult, ReliableRunContext, WorkflowExecutionEngine, WorkflowValidator}
+import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
 import cn.xuyinyin.magic.workflow.events.WorkflowEvents._
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, CheckpointedNodeSource}
+import org.apache.pekko.Done
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
+import org.apache.pekko.actor.typed.scaladsl.AskPattern._
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.persistence.typed.PersistenceId
 import org.apache.pekko.persistence.typed.RecoveryCompleted
-import org.apache.pekko.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, RetentionCriteria}
+import org.apache.pekko.persistence.typed.scaladsl.{Effect, EffectBuilder, EventSourcedBehavior, RetentionCriteria}
+import org.apache.pekko.util.Timeout
 import spray.json._
 
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 import scala.util.{Failure, Success}
+import scala.util.control.NonFatal
 
 /** The workflow entity's bounded durable projection; the journal is the full audit trail. */
 object EventSourcedWorkflowActor {
@@ -37,6 +45,8 @@ object EventSourcedWorkflowActor {
   }
   final case class ExecuteManual(requestId: String, replyTo: ActorRef[Reply]) extends Command
   final case class ExecuteScheduled(scheduleId: String, scheduledAt: Long, triggerId: String, replyTo: ActorRef[Reply]) extends Command
+  final case class InitializeSnapshot(executionId: String, boundary: SnapshotBoundary, replyTo: ActorRef[Reply]) extends Command
+  final case class AdvanceCheckpoint(executionId: String, checkpoint: BatchCheckpoint, replyTo: ActorRef[Reply]) extends Command
   final case class GetSummary(replyTo: ActorRef[WorkflowSummary]) extends Command
   final case class GetStatus(replyTo: ActorRef[StatusResponse]) extends Command
   final case class GetExecutionHistory(page: Int, pageSize: Int, replyTo: ActorRef[ExecutionHistoryResponse]) extends Command
@@ -44,6 +54,7 @@ object EventSourcedWorkflowActor {
     def apply(replyTo: ActorRef[ExecutionHistoryResponse]): GetExecutionHistory =
       new GetExecutionHistory(0, DefaultHistoryPageSize, replyTo)
   }
+  private[actors] final case class GetReliableRunState(replyTo: ActorRef[ReliableRunState]) extends Command
 
   /** Kept temporarily so existing supervisor/sharding callers remain source-compatible. */
   final case class Initialize(workflowJson: String, replyTo: ActorRef[InitializeResponse]) extends Command
@@ -56,6 +67,7 @@ object EventSourcedWorkflowActor {
   private final case class EngineFinished(executionId: String, result: ExecutionResult) extends Command
   private final case class EngineCrashed(executionId: String, message: String) extends Command
   private final case class RecoverInterrupted(executionId: String) extends Command
+  private final case class RecoveryEngineLaunched(executionId: String) extends Command
 
   final case class Defined(workflowId: String, revision: Long) extends Reply
   final case class RevisionConflict(workflowId: String, expectedRevision: Long, actualRevision: Long) extends Reply
@@ -64,6 +76,11 @@ object EventSourcedWorkflowActor {
   final case class AlreadyRunning(executionId: String) extends Reply
   final case class NotInitialized(workflowId: String) extends Reply
   final case class DefinitionRejected(workflowId: String, errors: Vector[String]) extends Reply
+  final case class SnapshotInitialized(boundary: SnapshotBoundary) extends Reply
+  final case class SnapshotAlreadyInitialized(boundary: SnapshotBoundary) extends Reply
+  final case class CheckpointAccepted(checkpoint: BatchCheckpoint) extends Reply
+  final case class CheckpointAlreadyStored(checkpoint: BatchCheckpoint) extends Reply
+  final case class CheckpointRejected(reason: String) extends Reply
   sealed trait Response extends Reply
   final case class InitializeResponse(workflowId: String, status: String) extends Response
   final case class ExecutionResponse(executionId: String, status: String) extends Response
@@ -80,7 +97,15 @@ object EventSourcedWorkflowActor {
   val Completed: WorkflowStatus = WorkflowStatus.Completed
   val Failed: WorkflowStatus = WorkflowStatus.Failed
 
-  final case class ExecutionState(executionId: String, trigger: ExecutionTrigger, startedAt: Long) extends CborSerializable
+  final case class ExecutionState(
+    executionId: String,
+    trigger: ExecutionTrigger,
+    startedAt: Long,
+    workflowRevision: Long = 0L,
+    resumable: Boolean = false,
+    boundary: Option[SnapshotBoundary] = None,
+    checkpoints: Vector[BatchCheckpoint] = Vector.empty
+  ) extends CborSerializable
   final case class ManualRequestRecord(requestId: String, executionId: String) extends CborSerializable
   final case class ExecutionSummary(
     executionId: String,
@@ -117,6 +142,7 @@ object EventSourcedWorkflowActor {
     currentExecution: Option[ExecutionState],
     recentExecutions: Vector[ExecutionSummary]
   ) extends CborSerializable
+  private[actors] final case class ReliableRunState(currentExecution: Option[ExecutionState]) extends CborSerializable
   final case class ExecutionInfo(executionId: String, startTime: Long, endTime: Option[Long], status: String, completedNodes: Int, totalNodes: Int) extends CborSerializable
   final case class StatusResponse(workflowId: String, state: String, currentExecution: Option[ExecutionInfo], allExecutions: List[ExecutionSummary]) extends Response
   final case class NodeExecutionDetail(nodeId: String, nodeType: String, startTime: Option[Long], endTime: Option[Long], duration: Option[Long], status: String, recordsProcessed: Option[Int], error: Option[String]) extends CborSerializable
@@ -129,12 +155,14 @@ object EventSourcedWorkflowActor {
   private def behavior(workflowId: String, executionEngine: WorkflowExecutionEngine)(implicit ec: ExecutionContext): Behavior[Command] =
     Behaviors.setup { context =>
       val recoveryGate = new AtomicBoolean(false)
+      val snapshotEvery = context.system.settings.config.getInt("pekko.workflow.event-sourcing.snapshot-every")
+      val keepSnapshots = context.system.settings.config.getInt("pekko.workflow.event-sourcing.keep-n-snapshots")
       EventSourcedBehavior[Command, WorkflowEvent, WorkflowState](
         PersistenceId.ofUniqueId(s"workflow-$workflowId"),
         WorkflowState(),
         commandHandler(workflowId, executionEngine, context, recoveryGate),
         eventHandler
-      ).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 100, keepNSnapshots = 2))
+      ).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = snapshotEvery, keepNSnapshots = keepSnapshots))
         .receiveSignal {
           case (state, RecoveryCompleted) =>
             state.currentExecution.foreach { execution =>
@@ -146,8 +174,9 @@ object EventSourcedWorkflowActor {
 
   private def commandHandler(workflowId: String, executionEngine: WorkflowExecutionEngine, context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command], recoveryGate: AtomicBoolean)
     (state: WorkflowState, command: Command)(implicit ec: ExecutionContext): Effect[WorkflowEvent, WorkflowState] =
-    if (recoveryGate.get() && !command.isInstanceOf[RecoverInterrupted]) Effect.stash()
+    if (recoveryGate.get() && !allowedDuringRecovery(command)) Effect.stash()
     else command match {
+    case DefineWorkflow(_, _, replyTo) if state.currentExecution.nonEmpty => immediate(replyTo, AlreadyRunning(state.currentExecution.get.executionId))
     case DefineWorkflow(workflowJson, expectedRevision, replyTo) => validateDefinition(workflowId, state, workflowJson, expectedRevision, replyTo)
     case Initialize(workflowJson, replyTo) =>
       if (state.revision != 0L) { replyTo ! InitializeResponse(workflowId, "initialized"); Effect.none }
@@ -157,21 +186,46 @@ object EventSourcedWorkflowActor {
       }
     case ExecuteManual(requestId, replyTo) => startManual(workflowId, state, requestId, replyTo, executionEngine, context)
     case ExecuteScheduled(scheduleId, scheduledAt, triggerId, replyTo) => startScheduled(workflowId, state, scheduleId, scheduledAt, triggerId, replyTo, executionEngine, context)
+    case InitializeSnapshot(executionId, boundary, replyTo) => initializeSnapshot(state, executionId, boundary, replyTo)
+    case AdvanceCheckpoint(executionId, checkpoint, replyTo) => advanceCheckpoint(state, executionId, checkpoint, replyTo)
     case Execute(replyTo) => startLegacyManual(workflowId, state, replyTo, executionEngine, context)
     case GetSummary(replyTo) => replyTo ! WorkflowSummary(workflowId, state.revision, state.status, state.currentExecution, state.recentExecutions.map(publicSummary)); Effect.none
     case GetStatus(replyTo) => replyTo ! statusResponse(workflowId, state); Effect.none
     case GetExecutionHistory(page, pageSize, replyTo) => replyTo ! historyResponse(workflowId, state, page, pageSize); Effect.none
+    case GetReliableRunState(replyTo) => replyTo ! ReliableRunState(state.currentExecution); Effect.none
     case EngineFinished(executionId, result) if state.currentExecution.exists(_.executionId == executionId) =>
-      boundedPersistedResult(result) match {
+      val terminal: EffectBuilder[WorkflowEvent, WorkflowState] = boundedPersistedResult(result) match {
         case Right(persisted) => Effect.persist(if (result.success) ExecutionCompleted(executionId, persisted, now()) else ExecutionFailed(executionId, persisted, now()))
         case Left(reason) => Effect.persist(ExecutionFailed(executionId, failedPersistedResult(reason), now()))
       }
+      releaseRecoveryGateAfter(terminal, recoveryGate)
     case EngineCrashed(executionId, message) if state.currentExecution.exists(_.executionId == executionId) =>
-      Effect.persist(ExecutionFailed(executionId, failedPersistedResult(message), now()))
+      releaseRecoveryGateAfter(
+        Effect.persist(ExecutionFailed(executionId, failedPersistedResult(message), now())),
+        recoveryGate
+      )
+    case RecoverInterrupted(executionId) if state.currentExecution.exists(current => current.executionId == executionId && current.resumable) =>
+      decodeWorkflow(state) match {
+        case Left(errors) => releaseRecoveryGateAfter(
+          Effect.persist(ExecutionFailed(executionId, failedPersistedResult(s"recovered definition is invalid: ${errors.mkString("; ")}"), now())),
+          recoveryGate
+        )
+        case Right(workflow) =>
+          val current = state.currentExecution.get
+          Effect.none.thenRun { (_: WorkflowState) =>
+            if (runEngine(workflow, current, executionEngine, context)) {
+              context.self ! RecoveryEngineLaunched(executionId)
+            }
+          }
+      }
     case RecoverInterrupted(executionId) if state.currentExecution.exists(_.executionId == executionId) =>
-      Effect.persist(ExecutionFailed(executionId, failedPersistedResult("interrupted/recovered"), now()))
-        .thenRun((_: WorkflowState) => recoveryGate.set(false))
-        .thenUnstashAll()
+      releaseRecoveryGateAfter(
+        Effect.persist(ExecutionFailed(executionId, failedPersistedResult("interrupted/recovered"), now())),
+        recoveryGate
+      )
+    case RecoveryEngineLaunched(_) =>
+      recoveryGate.set(false)
+      Effect.unstashAll()
     case RecoverInterrupted(_) =>
       recoveryGate.set(false)
       Effect.unstashAll()
@@ -215,8 +269,10 @@ object EventSourcedWorkflowActor {
       case Left(_) => replyTo ! ExecutionResponse("", "definition_invalid"); Effect.none
       case Right(workflow) =>
         val executionId = newExecutionId()
-        Effect.persist(ExecutionStarted(executionId, manualTrigger(s"legacy-$executionId"), now()))
-          .thenRun((_: WorkflowState) => runEngine(workflow, executionId, executionEngine, context))
+        Effect.persist(executionStarted(state, workflow, executionId, manualTrigger(s"legacy-$executionId")))
+          .thenRun((newState: WorkflowState) => newState.currentExecution
+            .filter(_.executionId == executionId)
+            .foreach(execution => runEngine(workflow, execution, executionEngine, context)))
           .thenReply(replyTo)((_: WorkflowState) => ExecutionResponse(executionId, "started"))
     }
 
@@ -225,26 +281,167 @@ object EventSourcedWorkflowActor {
     case Left(errors) => immediate(replyTo, DefinitionRejected(workflowId, errors))
     case Right(workflow) =>
       val executionId = newExecutionId()
-      Effect.persist(ExecutionStarted(executionId, trigger, now()))
-        .thenRun((_: WorkflowState) => runEngine(workflow, executionId, executionEngine, context))
+      Effect.persist(executionStarted(state, workflow, executionId, trigger))
+        .thenRun((newState: WorkflowState) => newState.currentExecution
+          .filter(_.executionId == executionId)
+          .foreach(execution => runEngine(workflow, execution, executionEngine, context)))
         .thenReply(replyTo)((_: WorkflowState) => ExecutionAccepted(executionId))
   }
 
-  private def runEngine(workflow: WorkflowDSL.Workflow, executionId: String, executionEngine: WorkflowExecutionEngine, context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command]): Unit =
-    context.pipeToSelf(executionEngine.execute(workflow, executionId, _ => ())) {
-      case Success(result) => EngineFinished(executionId, result)
-      case Failure(error) => EngineCrashed(executionId, Option(error.getMessage).getOrElse(error.getClass.getSimpleName))
+  private def executionStarted(state: WorkflowState, workflow: WorkflowDSL.Workflow, executionId: String, trigger: ExecutionTrigger): WorkflowEvent =
+    if (isReliable(workflow)) ResumableExecutionStarted(executionId, trigger, state.revision, now())
+    else ExecutionStarted(executionId, trigger, now())
+
+  private def isReliable(workflow: WorkflowDSL.Workflow): Boolean = {
+    val source = workflow.nodes.find(_.`type` == "source")
+    val sink = workflow.nodes.find(_.`type` == "sink")
+    source.flatMap(node => NodeRegistry.findSource(node.nodeType)).exists(_.isInstanceOf[CheckpointedNodeSource]) &&
+      sink.flatMap(node => NodeRegistry.findSink(node.nodeType)).exists(_.isInstanceOf[CheckpointedNodeSink])
+  }
+
+  private def initializeSnapshot(state: WorkflowState, executionId: String, boundary: SnapshotBoundary, replyTo: ActorRef[Reply]): Effect[WorkflowEvent, WorkflowState] =
+    state.currentExecution match {
+      case None => rejectCheckpoint(replyTo, "no active execution")
+      case Some(current) if current.executionId != executionId => rejectCheckpoint(replyTo, "execution does not match the active execution")
+      case Some(current) if !current.resumable => rejectCheckpoint(replyTo, "active execution is not resumable")
+      case Some(_) if reliableSourceNodeId(state).forall(_ != boundary.sourceNodeId) => rejectCheckpoint(replyTo, "snapshot source does not match the workflow source")
+      case Some(current) => current.boundary match {
+        case None => Effect.persist(ExecutionSnapshotInitialized(executionId, boundary, now())).thenReply(replyTo)(_ => SnapshotInitialized(boundary))
+        case Some(existing) if existing == boundary => immediate(replyTo, SnapshotAlreadyInitialized(existing))
+        case Some(_) => rejectCheckpoint(replyTo, "snapshot boundary is already initialized")
+      }
     }
+
+  private def advanceCheckpoint(state: WorkflowState, executionId: String, checkpoint: BatchCheckpoint, replyTo: ActorRef[Reply]): Effect[WorkflowEvent, WorkflowState] =
+    state.currentExecution match {
+      case None => rejectCheckpoint(replyTo, "no active execution")
+      case Some(current) if current.executionId != executionId => rejectCheckpoint(replyTo, "execution does not match the active execution")
+      case Some(current) if !current.resumable => rejectCheckpoint(replyTo, "active execution is not resumable")
+      case Some(current) => current.boundary match {
+        case None => rejectCheckpoint(replyTo, "snapshot boundary is not initialized")
+        case Some(boundary) if !checkpointMatchesBoundary(checkpoint, boundary) => rejectCheckpoint(replyTo, "checkpoint does not match the snapshot boundary")
+        case Some(_) if checkpoint.batchId != BatchId.sha256(executionId, checkpoint.sourceNodeId, checkpoint.partitionId, checkpoint.batchSequence) =>
+          rejectCheckpoint(replyTo, "checkpoint batch identity is invalid")
+        case Some(_) =>
+          current.checkpoints.find(existing => samePartition(existing, checkpoint)) match {
+            case Some(existing) if existing == checkpoint => immediate(replyTo, CheckpointAlreadyStored(existing))
+            case latest if isExpectedNextCheckpointSequence(latest.map(_.batchSequence), checkpoint.batchSequence) =>
+              Effect.persist(ExecutionCheckpointAdvanced(executionId, checkpoint, now())).thenReply(replyTo)(_ => CheckpointAccepted(checkpoint))
+            case Some(existing) if checkpoint.batchSequence <= existing.batchSequence => rejectCheckpoint(replyTo, "checkpoint conflicts with a stored sequence")
+            case _ => rejectCheckpoint(replyTo, "checkpoint sequence has a gap")
+          }
+      }
+    }
+
+  private def reliableSourceNodeId(state: WorkflowState): Option[String] =
+    decodeWorkflow(state).toOption.flatMap(_.nodes.find(_.`type` == "source")).map(_.id)
+
+  private def checkpointMatchesBoundary(checkpoint: BatchCheckpoint, boundary: SnapshotBoundary): Boolean =
+    checkpoint.sourceNodeId == boundary.sourceNodeId &&
+      checkpoint.partitionId == boundary.partitionId &&
+      boundary.upperBound.contains(checkpoint.cursor.upperBound)
+
+  private def samePartition(left: BatchCheckpoint, right: BatchCheckpoint): Boolean =
+    left.sourceNodeId == right.sourceNodeId && left.partitionId == right.partitionId
+
+  private[actors] def isExpectedNextCheckpointSequence(latest: Option[Long], candidate: Long): Boolean = latest match {
+    case None => candidate == 0L
+    case Some(Long.MaxValue) => false
+    case Some(sequence) => candidate == sequence + 1L
+  }
+
+  private def rejectCheckpoint(replyTo: ActorRef[Reply], reason: String): Effect[WorkflowEvent, WorkflowState] =
+    immediate(replyTo, CheckpointRejected(reason))
+
+  private def runEngine(
+    workflow: WorkflowDSL.Workflow,
+    execution: ExecutionState,
+    executionEngine: WorkflowExecutionEngine,
+    context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command]
+  )(implicit ec: ExecutionContext): Boolean =
+    try {
+      val result =
+        if (execution.resumable) executionEngine.execute(workflow, reliableRunContext(execution, context), _ => ())
+        else executionEngine.execute(workflow, execution.executionId, _ => ())
+      context.pipeToSelf(result) {
+        case Success(value) => EngineFinished(execution.executionId, value)
+        case Failure(error) => EngineCrashed(execution.executionId, Option(error.getMessage).getOrElse(error.getClass.getSimpleName))
+      }
+      true
+    } catch {
+      case NonFatal(error) =>
+        context.self ! EngineCrashed(execution.executionId, Option(error.getMessage).getOrElse(error.getClass.getSimpleName))
+        false
+    }
+
+  private def reliableRunContext(
+    execution: ExecutionState,
+    context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command]
+  )(implicit ec: ExecutionContext): ReliableRunContext = {
+    implicit val timeout: Timeout = Timeout(5.seconds)
+    implicit val scheduler: org.apache.pekko.actor.typed.Scheduler = context.system.scheduler
+    ReliableRunContext(
+      execution.executionId,
+      execution.workflowRevision,
+      execution.boundary,
+      execution.checkpoints,
+      boundary => context.self.ask[Reply](replyTo => InitializeSnapshot(execution.executionId, boundary, replyTo)).flatMap {
+        case SnapshotInitialized(_) | SnapshotAlreadyInitialized(_) => scala.concurrent.Future.successful(Done)
+        case CheckpointRejected(reason) => scala.concurrent.Future.failed(new IllegalStateException(reason))
+        case other => scala.concurrent.Future.failed(new IllegalStateException(s"unexpected snapshot reply: ${other.getClass.getSimpleName}"))
+      },
+      checkpoint => context.self.ask[Reply](replyTo => AdvanceCheckpoint(execution.executionId, checkpoint, replyTo)).flatMap {
+        case CheckpointAccepted(_) | CheckpointAlreadyStored(_) => scala.concurrent.Future.successful(Done)
+        case CheckpointRejected(reason) => scala.concurrent.Future.failed(new IllegalStateException(reason))
+        case other => scala.concurrent.Future.failed(new IllegalStateException(s"unexpected checkpoint reply: ${other.getClass.getSimpleName}"))
+      }
+    )
+  }
+
+  private def allowedDuringRecovery(command: Command): Boolean = command match {
+    case _: InitializeSnapshot | _: AdvanceCheckpoint | _: EngineFinished | _: EngineCrashed => true
+    case _: RecoverInterrupted | _: RecoveryEngineLaunched => true
+    case _ => false
+  }
+
+  private def releaseRecoveryGateAfter(
+    effect: EffectBuilder[WorkflowEvent, WorkflowState],
+    recoveryGate: AtomicBoolean
+  ): Effect[WorkflowEvent, WorkflowState] =
+    if (recoveryGate.get()) {
+      effect.thenRun((_: WorkflowState) => recoveryGate.set(false)).thenUnstashAll()
+    } else effect
 
   private def eventHandler(state: WorkflowState, event: WorkflowEvent): WorkflowState = event match {
     case WorkflowDefined(json, revision, _) => state.copy(workflowJson = Some(json), revision = revision)
     case ExecutionStarted(executionId, trigger, timestamp) =>
-      val manual = trigger.requestId.fold(state.manualRequests)(id => (state.manualRequests :+ ManualRequestRecord(id, executionId)).takeRight(MaxManualRequests))
-      state.copy(status = Running, currentExecution = Some(ExecutionState(executionId, trigger, timestamp)), manualRequests = manual, lastAcceptedTriggerBySchedule = updateWatermark(state.lastAcceptedTriggerBySchedule, trigger))
+      running(state, ExecutionState(executionId, trigger, timestamp))
+    case ResumableExecutionStarted(executionId, trigger, workflowRevision, timestamp) =>
+      running(state, ExecutionState(executionId, trigger, timestamp, workflowRevision, resumable = true))
+    case ExecutionSnapshotInitialized(executionId, boundary, _) => state.currentExecution match {
+      case Some(current) if current.executionId == executionId => state.copy(currentExecution = Some(current.copy(boundary = Some(boundary))))
+      case _ => state
+    }
+    case ExecutionCheckpointAdvanced(executionId, checkpoint, _) => state.currentExecution match {
+      case Some(current) if current.executionId == executionId =>
+        val checkpoints = current.checkpoints.filterNot(existing => samePartition(existing, checkpoint)) :+ checkpoint
+        state.copy(currentExecution = Some(current.copy(checkpoints = checkpoints)))
+      case _ => state
+    }
     case ExecutionCompleted(executionId, result, timestamp) => terminal(state, executionId, result, Completed, timestamp)
     case ExecutionFailed(executionId, result, timestamp) => terminal(state, executionId, result, Failed, timestamp)
     case ExecutionSkipped(executionId, trigger, reason, timestamp) =>
       state.copy(recentExecutions = (state.recentExecutions :+ StoredExecutionSummary(executionId, timestamp, timestamp, hasEndTime = true, "skipped", 0L, hasDuration = true)).takeRight(MaxRecentExecutions), lastAcceptedTriggerBySchedule = updateWatermark(state.lastAcceptedTriggerBySchedule, trigger))
+  }
+
+  private def running(state: WorkflowState, execution: ExecutionState): WorkflowState = {
+    val manual = execution.trigger.requestId.fold(state.manualRequests)(id => (state.manualRequests :+ ManualRequestRecord(id, execution.executionId)).takeRight(MaxManualRequests))
+    state.copy(
+      status = Running,
+      currentExecution = Some(execution),
+      manualRequests = manual,
+      lastAcceptedTriggerBySchedule = updateWatermark(state.lastAcceptedTriggerBySchedule, execution.trigger)
+    )
   }
 
   private def terminal(state: WorkflowState, executionId: String, result: PersistedExecutionResult, status: WorkflowStatus, timestamp: Long): WorkflowState = state.currentExecution match {

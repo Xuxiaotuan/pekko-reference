@@ -1,6 +1,7 @@
 package cn.xuyinyin.magic.workflow.events
 
 import cn.xuyinyin.magic.common.CborSerializable
+import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, SnapshotBoundary}
 
 /** Events and persisted value objects for a workflow entity. */
 object WorkflowEvents {
@@ -38,6 +39,9 @@ object WorkflowEvents {
 
   final case class WorkflowDefined(workflowJson: String, revision: Long, timestamp: Long) extends WorkflowEvent
   final case class ExecutionStarted(executionId: String, trigger: ExecutionTrigger, timestamp: Long) extends WorkflowEvent
+  final case class ResumableExecutionStarted(executionId: String, trigger: ExecutionTrigger, workflowRevision: Long, timestamp: Long) extends WorkflowEvent
+  final case class ExecutionSnapshotInitialized(executionId: String, boundary: SnapshotBoundary, timestamp: Long) extends WorkflowEvent
+  final case class ExecutionCheckpointAdvanced(executionId: String, checkpoint: BatchCheckpoint, timestamp: Long) extends WorkflowEvent
   final case class ExecutionCompleted(executionId: String, result: PersistedExecutionResult, timestamp: Long) extends WorkflowEvent
   final case class ExecutionFailed(executionId: String, result: PersistedExecutionResult, timestamp: Long) extends WorkflowEvent
   final case class ExecutionSkipped(executionId: String, trigger: ExecutionTrigger, reason: String, timestamp: Long) extends WorkflowEvent

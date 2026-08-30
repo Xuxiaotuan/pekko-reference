@@ -1,16 +1,33 @@
-package cn.xuyinyin.magic.workflow.actors
+package cn.xuyinyin.magic.workflow.engine {
+  import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+  import cn.xuyinyin.magic.workflow.nodes.base.NodeSource
+
+  private[workflow] object ActorSpecNodeRegistryCleanup {
+    def unregister(source: NodeSource): Unit = NodeRegistry.unregisterSource(source.nodeType, source)
+  }
+}
+
+package cn.xuyinyin.magic.workflow.actors {
 
 import cn.xuyinyin.magic.workflow.WorkflowFixtures
-import cn.xuyinyin.magic.workflow.engine.{ExecutionResult, NodeExecutionResult, WorkflowExecutionEngine}
+import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
+import cn.xuyinyin.magic.workflow.engine.{ExecutionResult, NodeExecutionResult, ReliableRunContext, WorkflowExecutionEngine}
+import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+import cn.xuyinyin.magic.workflow.events.WorkflowEvents._
+import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSource, NodeSource}
 import com.typesafe.config.{Config, ConfigFactory}
+import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.apache.pekko.actor.testkit.typed.scaladsl.SerializationTestKit
+import org.apache.pekko.stream.scaladsl.Source
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.OptionValues
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.sql.DriverManager
-import scala.io.Source
-import scala.concurrent.{Future, Promise}
+import scala.io.{Source => IoSource}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 import spray.json._
 
@@ -27,7 +44,7 @@ object EventSourcedWorkflowActorSpec {
         statement.execute("DROP ALL OBJECTS")
         val input = Option(getClass.getClassLoader.getResourceAsStream("schema/h2/h2-create-schema.sql"))
           .getOrElse(throw new IllegalStateException("Pekko Persistence JDBC H2 schema resource is unavailable"))
-        val sql = try Source.fromInputStream(input).mkString finally input.close()
+        val sql = try IoSource.fromInputStream(input).mkString finally input.close()
         sql.split(";").map(_.trim).filter(_.nonEmpty).foreach(statement.execute)
       } finally statement.close()
     } finally connection.close()
@@ -40,9 +57,31 @@ object EventSourcedWorkflowActorSpec {
 class EventSourcedWorkflowActorSpec
     extends ScalaTestWithActorTestKit(EventSourcedWorkflowActorSpec.config)
     with AnyWordSpecLike
+    with OptionValues
     with Matchers {
 
   private implicit val executionContext: scala.concurrent.ExecutionContext = system.executionContext
+
+  private object TestSnapshotSource extends NodeSource with CheckpointedNodeSource {
+    override val nodeType: String = "mysql.snapshot"
+    override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] = Source.empty
+    override def discoverBoundary(node: WorkflowDSL.Node, onLog: String => Unit)(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] =
+      Future.failed(new AssertionError("actor checkpoint test must not execute the source"))
+    override def createBatches(
+      node: WorkflowDSL.Node,
+      executionId: String,
+      boundary: SnapshotBoundary,
+      resume: Option[BatchCheckpoint],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] =
+      Source.failed(new AssertionError("actor checkpoint test must not execute the source"))
+  }
+
+  private val reliableWorkflow = WorkflowFixtures.linearWorkflow.copy(nodes =
+    WorkflowFixtures.linearWorkflow.nodes
+      .updated(0, WorkflowFixtures.linearWorkflow.nodes.head.copy(nodeType = "mysql.snapshot"))
+      .updated(2, WorkflowFixtures.linearWorkflow.nodes(2).copy(nodeType = "mysql.write"))
+  )
 
   private def engineReturning(result: ExecutionResult): WorkflowExecutionEngine = new WorkflowExecutionEngine() {
     override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
@@ -103,6 +142,128 @@ class EventSourcedWorkflowActorSpec
       history.executions.head.nodes.head.duration shouldBe Some(1L)
     }
 
+    "round-trip resumable events, checkpoint commands, and deterministic replies" in {
+      val serialization = new SerializationTestKit(system)
+      val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
+      val trigger = ExecutionTrigger("manual", requestId = Some("request-1"))
+      val boundary = SnapshotBoundary("source-1", "pk-range-0", Some("18446744073709551615"))
+      val checkpoint = BatchCheckpoint(
+        "source-1",
+        "pk-range-0",
+        0L,
+        "batch-0",
+        SourceCursor("mysql.numeric-pk", "1009", "18446744073709551615"),
+        10L,
+        8L
+      )
+
+      serialization.verifySerialization(ResumableExecutionStarted("execution-1", trigger, 7L, 10L)) shouldBe
+        ResumableExecutionStarted("execution-1", trigger, 7L, 10L)
+      serialization.verifySerialization(ExecutionSnapshotInitialized("execution-1", boundary, 11L)) shouldBe
+        ExecutionSnapshotInitialized("execution-1", boundary, 11L)
+      serialization.verifySerialization(ExecutionCheckpointAdvanced("execution-1", checkpoint, 12L)) shouldBe
+        ExecutionCheckpointAdvanced("execution-1", checkpoint, 12L)
+
+      serialization.verifySerialization(EventSourcedWorkflowActor.InitializeSnapshot("execution-1", boundary, reply.ref)).boundary shouldBe boundary
+      serialization.verifySerialization(EventSourcedWorkflowActor.AdvanceCheckpoint("execution-1", checkpoint, reply.ref)).checkpoint shouldBe checkpoint
+      serialization.verifySerialization(EventSourcedWorkflowActor.SnapshotInitialized(boundary)) shouldBe EventSourcedWorkflowActor.SnapshotInitialized(boundary)
+      serialization.verifySerialization(EventSourcedWorkflowActor.SnapshotAlreadyInitialized(boundary)) shouldBe EventSourcedWorkflowActor.SnapshotAlreadyInitialized(boundary)
+      serialization.verifySerialization(EventSourcedWorkflowActor.CheckpointAccepted(checkpoint)) shouldBe EventSourcedWorkflowActor.CheckpointAccepted(checkpoint)
+      serialization.verifySerialization(EventSourcedWorkflowActor.CheckpointAlreadyStored(checkpoint)) shouldBe EventSourcedWorkflowActor.CheckpointAlreadyStored(checkpoint)
+      serialization.verifySerialization(EventSourcedWorkflowActor.CheckpointRejected("sequence gap")) shouldBe EventSourcedWorkflowActor.CheckpointRejected("sequence gap")
+    }
+
+    "persist one immutable boundary and monotonically advance reliable checkpoints" in {
+      NodeRegistry.registerSource(TestSnapshotSource)
+      try {
+        val completion = Promise[ExecutionResult]()
+        val pendingEngine = new WorkflowExecutionEngine() {
+          override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] = completion.future
+          override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = completion.future
+        }
+        val workflowId = "reliable-checkpoints"
+        val entity = spawn(EventSourcedWorkflowActor(workflowId, pendingEngine), workflowId)
+        val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
+        entity ! EventSourcedWorkflowActor.DefineWorkflow(reliableWorkflow, 0L, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.Defined(workflowId, 1L))
+        entity ! EventSourcedWorkflowActor.ExecuteManual("request-1", reply.ref)
+        val accepted = reply.expectMessageType[EventSourcedWorkflowActor.ExecutionAccepted]
+
+        entity ! EventSourcedWorkflowActor.DefineWorkflow(reliableWorkflow, 1L, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.AlreadyRunning(accepted.executionId))
+
+        val boundary = SnapshotBoundary("source-1", "pk-range-0", Some("18446744073709551615"))
+        val conflictingBoundary = boundary.copy(upperBound = Some("18446744073709551614"))
+        entity ! EventSourcedWorkflowActor.InitializeSnapshot(accepted.executionId, boundary, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.SnapshotInitialized(boundary))
+        entity ! EventSourcedWorkflowActor.InitializeSnapshot(accepted.executionId, boundary, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.SnapshotAlreadyInitialized(boundary))
+        entity ! EventSourcedWorkflowActor.InitializeSnapshot(accepted.executionId, conflictingBoundary, reply.ref)
+        reply.expectMessageType[EventSourcedWorkflowActor.CheckpointRejected]
+
+        val sequence0 = BatchCheckpoint(
+          "source-1",
+          "pk-range-0",
+          0L,
+          BatchId.sha256(accepted.executionId, "source-1", "pk-range-0", 0L),
+          SourceCursor("mysql.numeric-pk", "1009", "18446744073709551615"),
+          10L,
+          8L
+        )
+        entity ! EventSourcedWorkflowActor.AdvanceCheckpoint(accepted.executionId, sequence0, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.CheckpointAccepted(sequence0))
+        entity ! EventSourcedWorkflowActor.AdvanceCheckpoint(accepted.executionId, sequence0, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.CheckpointAlreadyStored(sequence0))
+        entity ! EventSourcedWorkflowActor.AdvanceCheckpoint(accepted.executionId, sequence0.copy(batchSequence = 2L, batchId = "batch-2"), reply.ref)
+        reply.expectMessageType[EventSourcedWorkflowActor.CheckpointRejected]
+        entity ! EventSourcedWorkflowActor.AdvanceCheckpoint(accepted.executionId, sequence0.copy(batchId = "conflicting-batch"), reply.ref)
+        reply.expectMessageType[EventSourcedWorkflowActor.CheckpointRejected]
+        entity ! EventSourcedWorkflowActor.AdvanceCheckpoint("wrong-execution", sequence0, reply.ref)
+        reply.expectMessageType[EventSourcedWorkflowActor.CheckpointRejected]
+        entity ! EventSourcedWorkflowActor.AdvanceCheckpoint(
+          accepted.executionId,
+          sequence0.copy(cursor = sequence0.cursor.copy(upperBound = "18446744073709551614")),
+          reply.ref
+        )
+        reply.expectMessageType[EventSourcedWorkflowActor.CheckpointRejected]
+
+        val sequence1 = sequence0.copy(
+          batchSequence = 1L,
+          batchId = BatchId.sha256(accepted.executionId, "source-1", "pk-range-0", 1L),
+          cursor = sequence0.cursor.copy(value = "1019")
+        )
+        entity ! EventSourcedWorkflowActor.AdvanceCheckpoint(accepted.executionId, sequence1, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.CheckpointAccepted(sequence1))
+        entity ! EventSourcedWorkflowActor.AdvanceCheckpoint(accepted.executionId, sequence0, reply.ref)
+        reply.expectMessageType[EventSourcedWorkflowActor.CheckpointRejected]
+        entity ! EventSourcedWorkflowActor.AdvanceCheckpoint(accepted.executionId, sequence0.copy(batchId = "conflicting-batch"), reply.ref)
+        reply.expectMessageType[EventSourcedWorkflowActor.CheckpointRejected]
+        entity ! EventSourcedWorkflowActor.AdvanceCheckpoint(
+          accepted.executionId,
+          sequence1.copy(cursor = sequence1.cursor.copy(value = "1018")),
+          reply.ref
+        )
+        reply.expectMessageType[EventSourcedWorkflowActor.CheckpointRejected]
+
+        val sequence2WithInvalidIdentity = sequence1.copy(
+          batchSequence = 2L,
+          batchId = "invalid-deterministic-identity",
+          cursor = sequence1.cursor.copy(value = "1029")
+        )
+        entity ! EventSourcedWorkflowActor.AdvanceCheckpoint(accepted.executionId, sequence2WithInvalidIdentity, reply.ref)
+        reply.expectMessageType[EventSourcedWorkflowActor.CheckpointRejected]
+
+        val reliableState = createTestProbe[EventSourcedWorkflowActor.ReliableRunState]()
+        entity ! EventSourcedWorkflowActor.GetReliableRunState(reliableState.ref)
+        val running = reliableState.receiveMessage().currentExecution.value
+        running.executionId shouldBe accepted.executionId
+        running.workflowRevision shouldBe 1L
+        running.resumable shouldBe true
+        running.boundary shouldBe Some(boundary)
+        running.checkpoints shouldBe Vector(sequence1)
+      } finally cn.xuyinyin.magic.workflow.engine.ActorSpecNodeRegistryCleanup.unregister(TestSnapshotSource)
+    }
+
     "canonicalize recursively sorted workflow JSON and bound schedule watermarks" in {
       val firstConfig = JsObject("z" -> JsObject("b" -> JsNumber(2), "a" -> JsNumber(1)), "a" -> JsString("first"))
       val secondConfig = JsObject("a" -> JsString("first"), "z" -> JsObject("a" -> JsNumber(1), "b" -> JsNumber(2)))
@@ -115,6 +276,13 @@ class EventSourcedWorkflowActorSpec
       }
       retained.size shouldBe 100
       retained.head.scheduleId shouldBe "schedule-2"
+    }
+
+    "reject checkpoint sequence wraparound after Long.MaxValue" in {
+      EventSourcedWorkflowActor.isExpectedNextCheckpointSequence(None, 0L) shouldBe true
+      EventSourcedWorkflowActor.isExpectedNextCheckpointSequence(Some(0L), 1L) shouldBe true
+      EventSourcedWorkflowActor.isExpectedNextCheckpointSequence(Some(Long.MaxValue), Long.MinValue) shouldBe false
+      EventSourcedWorkflowActor.isExpectedNextCheckpointSequence(Some(Long.MaxValue), 0L) shouldBe false
     }
 
     "persist a definition before acknowledging it and reject execution before initialization" in {
@@ -255,4 +423,5 @@ class EventSourcedWorkflowActorSpec
       reply.expectMessageType[EventSourcedWorkflowActor.DuplicateExecution]
     }
   }
+}
 }
