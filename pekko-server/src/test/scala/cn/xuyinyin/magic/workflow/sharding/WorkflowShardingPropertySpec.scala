@@ -1,11 +1,6 @@
 package cn.xuyinyin.magic.workflow.sharding
 
-import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
-import com.typesafe.config.ConfigFactory
-import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.apache.pekko.cluster.typed.{Cluster, Join}
 import org.scalacheck.Gen
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
@@ -96,8 +91,8 @@ class WorkflowShardingPropertySpec
       hash1 shouldBe hash2
       
       // 验证分片ID确定性
-      val shardId1 = (math.abs(hash1) % numberOfShards).toString
-      val shardId2 = (math.abs(hash2) % numberOfShards).toString
+      val shardId1 = Math.floorMod(hash1, numberOfShards).toString
+      val shardId2 = Math.floorMod(hash2, numberOfShards).toString
       
       shardId1 shouldBe shardId2
       
@@ -105,6 +100,11 @@ class WorkflowShardingPropertySpec
       val officialShardId = WorkflowSharding.extractShardId(workflowId, numberOfShards)
       officialShardId shouldBe shardId1
     }
+  }
+
+  property("Shard IDs remain non-negative when the hash is Int.MinValue") {
+    // This string's Java/Scala hash is Int.MinValue; abs(Int.MinValue) overflows.
+    WorkflowSharding.extractShardId("polygenelubricants", 100) shouldBe "52"
   }
   
   /**
@@ -118,8 +118,8 @@ class WorkflowShardingPropertySpec
     val numberOfShards = 100
     val numberOfWorkflows = 1000
     
-    // 生成大量workflowId
-    val workflowIds = Gen.listOfN(numberOfWorkflows, workflowIdGen).sample.get
+    // A fixed, non-duplicated population keeps this distribution property reproducible.
+    val workflowIds = (1 to numberOfWorkflows).map(index => s"workflow-$index")
     
     // 计算分片分布
     val shardDistribution = workflowIds
@@ -130,7 +130,7 @@ class WorkflowShardingPropertySpec
       .toMap
     
     // 计算统计信息
-    val counts = shardDistribution.values.toList
+    val counts = (0 until numberOfShards).map(index => shardDistribution.getOrElse(index.toString, 0)).toList
     val mean = counts.sum.toDouble / counts.size
     val variance = counts.map(c => math.pow(c - mean, 2)).sum / counts.size
     val stdDev = math.sqrt(variance)

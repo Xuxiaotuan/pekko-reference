@@ -3,11 +3,13 @@ package cn.xuyinyin.magic.workflow.nodes.sinks
 import cn.xuyinyin.magic.workflow.nodes.base.NodeSink
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import org.apache.pekko.Done
-import org.apache.pekko.stream.scaladsl.Sink
+import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink}
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import spray.json._
-import spray.json.DefaultJsonProtocol._
+import java.sql.{Connection, PreparedStatement}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success}
 
 /**
  * MySQL Sink实现
@@ -53,42 +55,56 @@ class MySQLSinkNode extends NodeSink {
     val password = getString("password")
     val batchSize = getInt("batchSize", 1000)
     val mode = getString("mode", Some("insert"))
-    
+
+    require(batchSize > 0, "MySQL sink的batchSize必须大于0")
+
     onLog(s"[MySQL Sink] 连接MySQL: $host:$port/$database")
     onLog(s"[MySQL Sink] 写入表: $table (模式: $mode, 批量: $batchSize)")
     
-    // 创建连接池
-    val dataSource = createDataSource(host, port, database, username, password)
-    
-    // 创建Sink
-    Sink.fold[Int, String](0) { (count, jsonRow) =>
+    Sink.lazyInitAsync[String, Future[Done]] { () =>
+      var dataSource: HikariDataSource = null
       try {
-        writeRecord(dataSource, table, jsonRow, mode, onLog)
-        val newCount = count + 1
-        
-        if (newCount % batchSize == 0) {
-          onLog(s"[MySQL Sink] 已写入 $newCount 行到 $table")
-        }
-        
-        newCount
+        dataSource = createDataSource(host, port, database, username, password)
+        Future.successful(createInnerSink(dataSource, table, batchSize, mode, onLog))
       } catch {
-        case ex: Exception =>
-          onLog(s"[MySQL Sink] 写入失败: ${ex.getMessage}")
-          count
+        case NonFatal(exception) =>
+          if (dataSource != null) closeDataSource(dataSource)
+          Future.failed(exception)
       }
-    }.mapMaterializedValue { future =>
-      future.map { totalCount =>
-        onLog(s"[MySQL Sink] 写入完成，总计: $totalCount 行")
-        dataSource.close()
-        Done
+    }.mapMaterializedValue(_.flatMap(_.getOrElse(Future.successful(Done))))
+  }
+
+  protected[sinks] def createInnerSink(
+    dataSource: HikariDataSource,
+    table: String,
+    batchSize: Int,
+    mode: String,
+    onLog: String => Unit
+  )(implicit ec: ExecutionContext): Sink[String, Future[Done]] =
+    Flow[String].grouped(batchSize).toMat(Sink.foldAsync[Int, Seq[String]](0) { (count, rows) =>
+      Future {
+        val written = writeBatch(dataSource, table, rows, mode)
+        val totalCount = count + written
+        onLog(s"[MySQL Sink] 已写入 $totalCount 行到 $table")
+        totalCount
+      }
+    })(Keep.right).mapMaterializedValue { future =>
+      future.transform {
+        case Success(totalCount) =>
+          try {
+            onLog(s"[MySQL Sink] 写入完成，总计: $totalCount 行")
+            Success(Done)
+          } finally closeDataSource(dataSource)
+        case Failure(exception) =>
+          closeDataSource(dataSource)
+          Failure(exception)
       }
     }
-  }
   
   /**
    * 创建HikariCP连接池
    */
-  private def createDataSource(
+  protected[sinks] def createDataSource(
     host: String, 
     port: Int, 
     database: String, 
@@ -112,54 +128,77 @@ class MySQLSinkNode extends NodeSink {
     new HikariDataSource(config)
   }
   
-  /**
-   * 写入单条记录
-   */
-  private def writeRecord(
+  private def writeBatch(
     dataSource: HikariDataSource,
     table: String,
-    jsonRow: String,
-    mode: String,
-    onLog: String => Unit
-  ): Unit = {
-    val connection = dataSource.getConnection
-    connection.setAutoCommit(false)
-    
+    rows: Seq[String],
+    mode: String
+  ): Int = {
+    var connection: Connection = null
+    var statement: PreparedStatement = null
     try {
-      // 解析JSON
-      val json = jsonRow.parseJson.asJsObject
-      val columns = json.fields.keys.toList
-      val values = json.fields.values.toList
-      
-      // 生成SQL
-      val sql = generateSQL(table, columns, mode)
-      val statement = connection.prepareStatement(sql)
-      
-      // 设置参数
-      values.zipWithIndex.foreach { case (value, idx) =>
-        val stringValue = value match {
-          case JsString(s) => s
-          case JsNumber(n) => n.toString
-          case JsBoolean(b) => b.toString
-          case JsNull => null
-          case other => other.toString.replaceAll("\"", "")
-        }
-        statement.setString(idx + 1, stringValue)
+      val records = rows.map(parseRecord)
+      val columns = records.head._1
+      if (records.exists(_._1 != columns)) {
+        throw new IllegalArgumentException("all rows in a batch must have the same columns")
       }
-      
-      // 执行写入
-      statement.executeUpdate()
+      connection = dataSource.getConnection
+      connection.setAutoCommit(false)
+      statement = connection.prepareStatement(generateSQL(table, columns.toList, mode))
+      records.foreach { record =>
+        record._2.zipWithIndex.foreach { case (value, index) =>
+          statement.setString(index + 1, jdbcValue(value))
+        }
+        statement.addBatch()
+      }
+      statement.executeBatch()
       connection.commit()
-      statement.close()
+      rows.size
     } catch {
-      case ex: Exception =>
-        connection.rollback()
-        throw ex
+      case NonFatal(exception) =>
+        rollback(connection)
+        throw new IllegalStateException("batch write failed", exception)
     } finally {
-      connection.close()
+      closeStatement(statement)
+      closeConnection(connection)
     }
   }
-  
+
+  private def parseRecord(jsonRow: String): (Vector[String], Vector[JsValue]) = {
+    val fields = jsonRow.parseJson.asJsObject.fields.toVector
+    (fields.map(_._1), fields.map(_._2))
+  }
+
+  private def jdbcValue(value: JsValue): String = value match {
+    case JsString(stringValue) => stringValue
+    case JsNumber(numberValue) => numberValue.toString
+    case JsBoolean(booleanValue) => booleanValue.toString
+    case JsNull => null
+    case other => other.toString.replaceAll("\"", "")
+  }
+
+  private def rollback(connection: Connection): Unit =
+    if (connection != null) {
+      try connection.rollback()
+      catch { case NonFatal(_) => () }
+    }
+
+  private def closeStatement(statement: PreparedStatement): Unit =
+    if (statement != null) {
+      try statement.close()
+      catch { case NonFatal(_) => () }
+    }
+
+  private def closeConnection(connection: Connection): Unit =
+    if (connection != null) {
+      try connection.close()
+      catch { case NonFatal(_) => () }
+    }
+
+  private def closeDataSource(dataSource: HikariDataSource): Unit =
+    try dataSource.close()
+    catch { case NonFatal(_) => () }
+
   /**
    * 生成SQL语句
    */

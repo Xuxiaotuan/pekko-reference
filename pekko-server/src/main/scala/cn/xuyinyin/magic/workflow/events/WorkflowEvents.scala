@@ -1,106 +1,44 @@
 package cn.xuyinyin.magic.workflow.events
 
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import cn.xuyinyin.magic.common.CborSerializable
 
-/**
- * 工作流事件定义
- * 
- * Event Sourcing 的核心：所有状态变更都通过事件表示
- * 
- * @author : Xuxiaotuan
- * @since : 2024-11-16
- */
+/** Events and persisted value objects for a workflow entity. */
 object WorkflowEvents {
-  
-  /**
-   * 工作流事件基类
-   */
-  sealed trait WorkflowEvent {
-    def workflowId: String
-    def timestamp: Long
-  }
-  
-  // ========== 工作流级别事件 ==========
-  
-  /**
-   * 工作流开始事件
-   */
-  case class WorkflowStarted(
-    workflowId: String,
-    workflowName: String,
-    executionId: String,
-    totalNodes: Int,
-    timestamp: Long = System.currentTimeMillis()
-  ) extends WorkflowEvent
-  
-  /**
-   * 工作流完成事件
-   */
-  case class WorkflowCompleted(
-    workflowId: String,
-    executionId: String,
+  sealed trait WorkflowEvent extends CborSerializable { def timestamp: Long }
+
+  /** A concrete value object avoids persisting Spray JSON implementation types. */
+  final case class ExecutionTrigger(
+    kind: String,
+    requestId: Option[String] = None,
+    scheduleId: Option[String] = None,
+    scheduledAt: Long = -1L,
+    triggerId: Option[String] = None
+  ) extends CborSerializable
+
+  final case class PersistedNodeExecutionResult(
+    nodeId: String,
+    nodeType: String,
+    status: String,
+    message: String,
+    hasMessage: Boolean,
     duration: Long,
-    completedNodes: Int,
-    timestamp: Long = System.currentTimeMillis()
-  ) extends WorkflowEvent
-  
-  /**
-   * 工作流失败事件
-   */
-  case class WorkflowFailed(
-    workflowId: String,
-    executionId: String,
-    reason: String,
-    failedNodeId: Option[String],
-    timestamp: Long = System.currentTimeMillis()
-  ) extends WorkflowEvent
-  
-  // ========== 节点级别事件 ==========
-  
-  /**
-   * 节点执行开始事件
-   */
-  case class NodeExecutionStarted(
-    workflowId: String,
-    executionId: String,
-    nodeId: String,
-    nodeType: String,
-    timestamp: Long = System.currentTimeMillis()
-  ) extends WorkflowEvent
-  
-  /**
-   * 节点执行完成事件
-   */
-  case class NodeExecutionCompleted(
-    workflowId: String,
-    executionId: String,
-    nodeId: String,
-    nodeType: String,
+    hasDuration: Boolean
+  ) extends CborSerializable
+
+  final case class PersistedExecutionResult(
+    status: String,
+    success: Boolean,
+    message: String,
+    rowsProcessed: Int,
+    hasRowsProcessed: Boolean,
     duration: Long,
-    recordsProcessed: Int = 0,
-    timestamp: Long = System.currentTimeMillis()
-  ) extends WorkflowEvent
-  
-  /**
-   * 节点执行失败事件
-   */
-  case class NodeExecutionFailed(
-    workflowId: String,
-    executionId: String,
-    nodeId: String,
-    nodeType: String,
-    error: String,
-    timestamp: Long = System.currentTimeMillis()
-  ) extends WorkflowEvent
-  
-  // ========== JSON 序列化支持 ==========
-  
-  object WorkflowEventJsonProtocol extends DefaultJsonProtocol {
-    implicit val workflowStartedFormat: RootJsonFormat[WorkflowStarted] = jsonFormat5(WorkflowStarted.apply)
-    implicit val workflowCompletedFormat: RootJsonFormat[WorkflowCompleted] = jsonFormat5(WorkflowCompleted.apply)
-    implicit val workflowFailedFormat: RootJsonFormat[WorkflowFailed] = jsonFormat5(WorkflowFailed.apply)
-    implicit val nodeExecutionStartedFormat: RootJsonFormat[NodeExecutionStarted] = jsonFormat5(NodeExecutionStarted.apply)
-    implicit val nodeExecutionCompletedFormat: RootJsonFormat[NodeExecutionCompleted] = jsonFormat7(NodeExecutionCompleted.apply)
-    implicit val nodeExecutionFailedFormat: RootJsonFormat[NodeExecutionFailed] = jsonFormat6(NodeExecutionFailed.apply)
-  }
+    hasDuration: Boolean,
+    nodeResults: Vector[PersistedNodeExecutionResult]
+  ) extends CborSerializable
+
+  final case class WorkflowDefined(workflowJson: String, revision: Long, timestamp: Long) extends WorkflowEvent
+  final case class ExecutionStarted(executionId: String, trigger: ExecutionTrigger, timestamp: Long) extends WorkflowEvent
+  final case class ExecutionCompleted(executionId: String, result: PersistedExecutionResult, timestamp: Long) extends WorkflowEvent
+  final case class ExecutionFailed(executionId: String, result: PersistedExecutionResult, timestamp: Long) extends WorkflowEvent
+  final case class ExecutionSkipped(executionId: String, trigger: ExecutionTrigger, reason: String, timestamp: Long) extends WorkflowEvent
 }

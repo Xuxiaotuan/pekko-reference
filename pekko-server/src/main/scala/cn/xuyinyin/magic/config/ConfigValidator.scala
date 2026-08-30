@@ -48,6 +48,9 @@ object ConfigValidator {
       Some(errors.toList)
     }
   }
+
+  def validateOrThrow(config: Config): Unit =
+    validate(config).foreach(errors => throw new IllegalArgumentException(errors.mkString("Invalid configuration: ", "; ", "")))
   
   private def validateClusterConfig(config: Config, errors: scala.collection.mutable.ListBuffer[String]): Unit = {
     try {
@@ -115,29 +118,78 @@ object ConfigValidator {
   
   private def validatePersistenceConfig(config: Config, errors: scala.collection.mutable.ListBuffer[String]): Unit = {
     try {
-      // 验证journal plugin
-      if (!config.hasPath("pekko.persistence.journal.plugin")) {
+      val journalPath = "pekko.persistence.journal.plugin"
+      val snapshotPath = "pekko.persistence.snapshot-store.plugin"
+      if (!config.hasPath(journalPath)) {
         errors += "Missing required config: pekko.persistence.journal.plugin"
       }
-      
-      // 验证snapshot-store plugin
-      if (!config.hasPath("pekko.persistence.snapshot-store.plugin")) {
+      if (!config.hasPath(snapshotPath)) {
         errors += "Missing required config: pekko.persistence.snapshot-store.plugin"
       }
-      
-      // 如果使用leveldb，验证目录配置
-      if (config.hasPath("pekko.persistence.journal.plugin")) {
-        val journalPlugin = config.getString("pekko.persistence.journal.plugin")
+
+      if (config.hasPath(journalPath)) {
+        val journalPlugin = config.getString(journalPath)
         if (journalPlugin.contains("leveldb")) {
           if (!config.hasPath("pekko.persistence.journal.leveldb.dir")) {
             errors += "Missing required config: pekko.persistence.journal.leveldb.dir"
           }
         }
       }
+
+      if (config.hasPath(journalPath) && config.hasPath(snapshotPath)) {
+        val journalPlugin = config.getString(journalPath)
+        val snapshotPlugin = config.getString(snapshotPath)
+        val jdbcJournal = journalPlugin == "jdbc-journal"
+        val jdbcSnapshot = snapshotPlugin == "jdbc-snapshot-store"
+        if (jdbcJournal != jdbcSnapshot) {
+          errors += "JDBC journal and snapshot-store plugins must be configured together"
+        } else if (jdbcJournal) {
+          validateJdbcPersistenceConfig(config, errors)
+        }
+      }
       
     } catch {
       case e: Exception =>
         errors += s"Error validating persistence config: ${e.getMessage}"
+    }
+  }
+
+  private def validateJdbcPersistenceConfig(config: Config, errors: scala.collection.mutable.ListBuffer[String]): Unit = {
+    val sharedDb = "pekko-persistence-jdbc.shared-databases.slick"
+    val profilePath = s"$sharedDb.profile"
+    val urlPath = s"$sharedDb.db.url"
+    val driverPath = s"$sharedDb.db.driver"
+    val requiredPaths = Seq(profilePath, urlPath, driverPath)
+    requiredPaths.foreach { path =>
+      if (!config.hasPath(path) || config.getString(path).trim.isEmpty) {
+        errors += s"Missing required config: $path"
+      }
+    }
+
+    Seq("jdbc-journal", "jdbc-snapshot-store", "jdbc-read-journal").foreach { plugin =>
+      val path = s"$plugin.use-shared-db"
+      if (!config.hasPath(path) || config.getString(path) != "slick") {
+        errors += s"$plugin must use the shared slick database"
+      }
+    }
+    if (!config.hasPath("jdbc-journal.tables.event_journal.schemaName") ||
+        !config.hasPath("jdbc-snapshot-store.tables.snapshot.schemaName")) {
+      errors += "JDBC persistence schema settings are required"
+    }
+
+    if (requiredPaths.forall(config.hasPath)) {
+      val profile = config.getString(profilePath)
+      val url = config.getString(urlPath)
+      val driver = config.getString(driverPath)
+      if (!url.startsWith("jdbc:")) {
+        errors += s"JDBC URL must start with jdbc:, got $url"
+      }
+      if (profile == "slick.jdbc.MySQLProfile$" && (!driver.contains("mysql") || !url.startsWith("jdbc:mysql:"))) {
+        errors += "MySQL Slick profile requires a MySQL JDBC driver and jdbc:mysql: URL"
+      }
+      if (profile == "slick.jdbc.H2Profile$" && (!driver.contains("h2") || !url.startsWith("jdbc:h2:"))) {
+        errors += "H2 Slick profile requires an H2 JDBC driver and jdbc:h2: URL"
+      }
     }
   }
   

@@ -38,21 +38,15 @@ object PekkoClusterService {
    * @param config 配置对象
    * @param port 端口号
    */
-  def start(systemName: String, config: Config, port: Int = 2551): Unit = {
-    // 创建动态配置，覆盖端口设置
-    val dynamicConfig = {
-      val portConfig = s"""
-        pekko.remote.artery.canonical.port = $port
-        pekko.cluster.seed-nodes = ["pekko://$systemName@127.0.0.1:2551"]
-      """
-      com.typesafe.config.ConfigFactory.parseString(portConfig).withFallback(config)
-    }
+  def start(systemName: String, config: Config, port: Option[Int] = None): Unit = {
+    val dynamicConfig = port
+      .map(value => com.typesafe.config.ConfigFactory.parseString(s"pekko.remote.artery.canonical.port = $value").withFallback(config))
+      .getOrElse(config)
     
     implicit val system: ActorSystem[PekkoGuardian.Command] = 
       ActorSystem(PekkoGuardian(), systemName, dynamicConfig)
     implicit val ec: ExecutionContextExecutor = system.executionContext
     implicit val timeout: Timeout = Timeout(5.seconds)
-    implicit val scheduler: org.apache.pekko.actor.typed.Scheduler = system.scheduler
     
     // 获取集群角色信息
     val cluster = Cluster(system)
@@ -109,8 +103,7 @@ object PekkoClusterService {
     // 获取HealthChecker引用
     val healthCheckerFuture = system.ask(ref => PekkoGuardian.GetHealthChecker(ref))(timeout, scheduler)
     
-    // 获取SchedulerManager引用ActorSystem
-    val schedulerManagerFuture = system.ask(ref => PekkoGuardian.GetSchedulerManager(ref))(timeout, scheduler)
+    val schedulerCoordinatorFuture = system.ask(ref => PekkoGuardian.GetSchedulerCoordinator(ref))(timeout, scheduler)
     
     // 获取WorkflowSupervisor引用
     val workflowSupervisorFuture = system.ask(ref => PekkoGuardian.GetWorkflowSupervisor(ref))(timeout, scheduler)
@@ -118,15 +111,17 @@ object PekkoClusterService {
     // 组合所有Future
     val componentsFuture = for {
       healthChecker <- healthCheckerFuture
-      schedulerManager <- schedulerManagerFuture
+      schedulerCoordinator <- schedulerCoordinatorFuture
       workflowSupervisor <- workflowSupervisorFuture
-    } yield (healthChecker, schedulerManager, workflowSupervisor)
+    } yield (healthChecker, schedulerCoordinator, workflowSupervisor)
     
     componentsFuture.onComplete {
-      case Success((healthChecker, schedulerManager, workflowSupervisor)) =>
-        val routes = HttpRoutes.createRoutes(system, healthChecker, guardian, schedulerManager, workflowSupervisor)
+      case Success((healthChecker, schedulerCoordinator, workflowSupervisor)) =>
+        val routes = HttpRoutes.createRoutes(system, healthChecker, guardian, schedulerCoordinator, workflowSupervisor)
         implicit val classicSystem = system.classicSystem
-        val bindingFuture = Http().newServerAt("localhost", 8080).bind(routes)
+        val host = system.settings.config.getString("http.host")
+        val port = system.settings.config.getInt("http.port")
+        val bindingFuture = Http().newServerAt(host, port).bind(routes)
         
         bindingFuture.onComplete {
           case Success(binding) =>

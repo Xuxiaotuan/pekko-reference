@@ -1,168 +1,68 @@
 package cn.xuyinyin.magic.api.http.routes
 
 import cn.xuyinyin.magic.workflow.actors.{EventSourcedWorkflowActor, WorkflowSupervisor}
-import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor._
 import org.apache.pekko.actor.typed.{ActorRef, ActorSystem}
 import org.apache.pekko.actor.typed.scaladsl.AskPattern._
 import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.model.{StatusCode, StatusCodes}
 import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.http.scaladsl.server.Route
+import org.apache.pekko.pattern.AskTimeoutException
 import org.apache.pekko.util.Timeout
-import spray.json.DefaultJsonProtocol._
 import spray.json._
+import spray.json.DefaultJsonProtocol._
 
-import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 
-/**
- * 执行历史查询 HTTP API
- * 
- * 提供：
- * - 查询工作流执行历史
- * - 查询节点执行详情
- * - 查询执行时间线
- * 
- * @author : Xuxiaotuan
- * @since : 2024-11-16
- */
-class EventHistoryRoutes(
-  workflowSupervisor: ActorRef[_]
-)(implicit system: ActorSystem[_], ec: ExecutionContext) {
-  
-  implicit val timeout: Timeout = 5.seconds
-  
-  // JSON 格式化
+/** Read-only HTTP projection over typed workflow entity queries. */
+class EventHistoryRoutes(workflowSupervisor: ActorRef[WorkflowSupervisor.Command])(implicit system: ActorSystem[_], ec: ExecutionContext) {
+  import EventSourcedWorkflowActor._
+
+  private implicit val timeout: Timeout = 5.seconds
   implicit val nodeExecutionDetailFormat: RootJsonFormat[NodeExecutionDetail] = jsonFormat8(NodeExecutionDetail.apply)
   implicit val executionDetailFormat: RootJsonFormat[ExecutionDetail] = jsonFormat7(ExecutionDetail.apply)
   implicit val executionHistoryResponseFormat: RootJsonFormat[ExecutionHistoryResponse] = jsonFormat2(ExecutionHistoryResponse.apply)
   implicit val executionInfoFormat: RootJsonFormat[ExecutionInfo] = jsonFormat6(ExecutionInfo.apply)
   implicit val executionSummaryFormat: RootJsonFormat[ExecutionSummary] = jsonFormat5(ExecutionSummary.apply)
   implicit val statusResponseFormat: RootJsonFormat[StatusResponse] = jsonFormat4(StatusResponse.apply)
-  
-  val routes: Route =
-    pathPrefix("api" / "history") {
-      concat(
-        // GET /api/history/:workflowId - 获取工作流执行历史
-        path(Segment) { workflowId =>
-          get {
-            val futureResponse = queryExecutionHistory(workflowId)
-            onSuccess(futureResponse) { response =>
-              complete(StatusCodes.OK, response.toJson)
-            }
-          }
-        },
-        
-        // GET /api/history/:workflowId/status - 获取工作流状态
-        path(Segment / "status") { workflowId =>
-          get {
-            val futureResponse = queryWorkflowStatus(workflowId)
-            onSuccess(futureResponse) { response =>
-              complete(StatusCodes.OK, response.toJson)
-            }
-          }
-        },
-        
-        // GET /api/history/:workflowId/execution/:executionId - 获取特定执行详情
-        path(Segment / "execution" / Segment) { (workflowId, executionId) =>
-          get {
-            val futureResponse = queryExecutionDetail(workflowId, executionId)
-            onSuccess(futureResponse) { response =>
-              response match {
-                case Some(detail) => complete(StatusCodes.OK, detail.toJson)
-                case None => complete(StatusCodes.NotFound, s"Execution $executionId not found")
-              }
-            }
-          }
-        },
-        
-        // GET /api/history/:workflowId/timeline - 获取执行时间线
-        path(Segment / "timeline") { workflowId =>
-          get {
-            parameters("executionId".optional) { executionIdOpt =>
-              val futureResponse = queryExecutionTimeline(workflowId, executionIdOpt)
-              onSuccess(futureResponse) { timeline =>
-                complete(StatusCodes.OK, timeline.toJson)
-              }
-            }
-          }
-        }
-      )
-    }
-  
-  /**
-   * 查询工作流执行历史
-   */
-  private def queryExecutionHistory(workflowId: String): Future[ExecutionHistoryResponse] = {
-    // 通过 WorkflowSupervisor 查询真实的执行历史
-    workflowSupervisor
-      .asInstanceOf[ActorRef[WorkflowSupervisor.Command]]
-      .ask[ExecutionHistoryResponse](ref => 
-        WorkflowSupervisor.GetExecutionHistory(workflowId, ref)
-      )(timeout, system.scheduler)
-      .recover {
-        case ex: Exception =>
-          system.log.error(s"Failed to query execution history for $workflowId", ex)
-          // 出错时返回空历史
-          ExecutionHistoryResponse(workflowId, List.empty)
+
+  val routes: Route = pathPrefix("api" / "history") {
+    concat(
+      path(Segment / "status") { workflowId => get { complete(status(workflowId)) } },
+      path(Segment) { workflowId => get { complete(history(workflowId)) } },
+      path(Segment / "execution" / Segment) { (workflowId, executionId) =>
+        get { complete(detail(workflowId, executionId)) }
       }
+    )
   }
-  
-  /**
-   * 查询工作流状态
-   */
-  private def queryWorkflowStatus(workflowId: String): Future[StatusResponse] = {
-    // TODO: 实现通过 WorkflowSupervisor 查询
-    Future.successful(StatusResponse(
-      workflowId = workflowId,
-      state = "idle",
-      currentExecution = None,
-      allExecutions = List.empty
-    ))
-  }
-  
-  /**
-   * 查询特定执行详情
-   */
-  private def queryExecutionDetail(workflowId: String, executionId: String): Future[Option[ExecutionDetail]] = {
-    queryExecutionHistory(workflowId).map { history =>
-      history.executions.find(_.executionId == executionId)
+
+  private def status(workflowId: String): Future[(StatusCode, JsValue)] =
+    workflowSupervisor.ask[StatusResponse](replyTo => WorkflowSupervisor.GetWorkflowStatus(workflowId, replyTo))
+      .map(response => if (response.state == "uninitialized") StatusCodes.NotFound -> JsObject("workflowId" -> JsString(workflowId), "error" -> JsString("workflow not found")) else StatusCodes.OK -> response.toJson)
+      .recover(systemFailure(workflowId))
+
+  private def history(workflowId: String): Future[(StatusCode, JsValue)] =
+    workflowSupervisor.ask[EventSourcedWorkflowActor.WorkflowSummary](replyTo => WorkflowSupervisor.GetWorkflowSummary(workflowId, replyTo)).flatMap { summary =>
+      if (summary.revision == 0L) Future.successful(StatusCodes.NotFound -> JsObject("workflowId" -> JsString(workflowId), "error" -> JsString("workflow not found")))
+      else workflowSupervisor.ask[ExecutionHistoryResponse](replyTo => WorkflowSupervisor.GetExecutionHistory(workflowId, replyTo)).map(response => StatusCodes.OK -> response.toJson)
     }
-  }
-  
-  /**
-   * 查询执行时间线
-   */
-  private def queryExecutionTimeline(workflowId: String, executionIdOpt: Option[String]): Future[JsValue] = {
-    queryExecutionHistory(workflowId).map { history =>
-      val execution = executionIdOpt match {
-        case Some(execId) => history.executions.find(_.executionId == execId)
-        case None => history.executions.headOption
+      .recover(systemFailure(workflowId))
+
+  private def detail(workflowId: String, executionId: String): Future[(StatusCode, JsValue)] =
+    workflowSupervisor.ask[ExecutionHistoryResponse](replyTo => WorkflowSupervisor.GetPagedExecutionHistory(workflowId, 0, 100, replyTo))
+      .map { response =>
+        response.executions.find(_.executionId == executionId)
+          .map(value => StatusCodes.OK -> value.toJson)
+          .getOrElse(StatusCodes.NotFound -> JsObject("error" -> JsString("execution not found")))
       }
-      
-      execution match {
-        case Some(exec) =>
-          JsObject(
-            "executionId" -> JsString(exec.executionId),
-            "startTime" -> JsNumber(exec.startTime),
-            "endTime" -> exec.endTime.map(JsNumber(_)).getOrElse(JsNull),
-            "duration" -> exec.duration.map(JsNumber(_)).getOrElse(JsNull),
-            "nodes" -> JsArray(exec.nodes.map { node =>
-              JsObject(
-                "nodeId" -> JsString(node.nodeId),
-                "nodeType" -> JsString(node.nodeType),
-                "startTime" -> JsNumber(node.startTime),
-                "endTime" -> node.endTime.map(JsNumber(_)).getOrElse(JsNull),
-                "duration" -> node.duration.map(JsNumber(_)).getOrElse(JsNull),
-                "status" -> JsString(node.status),
-                "recordsProcessed" -> JsNumber(node.recordsProcessed),
-                "error" -> node.error.map(JsString(_)).getOrElse(JsNull)
-              )
-            }.toVector)
-          )
-        case None =>
-          JsObject("error" -> JsString("Execution not found"))
-      }
-    }
+      .recover(systemFailure(workflowId))
+
+  private def systemFailure(workflowId: String): PartialFunction[Throwable, (StatusCode, JsValue)] = {
+    case _: AskTimeoutException | _: java.util.concurrent.TimeoutException => StatusCodes.GatewayTimeout -> JsObject("workflowId" -> JsString(workflowId), "error" -> JsString("request timed out"))
+    case _: java.util.concurrent.RejectedExecutionException => StatusCodes.ServiceUnavailable -> JsObject("workflowId" -> JsString(workflowId), "error" -> JsString("service unavailable"))
+    case failure if persistenceFailure(failure) => StatusCodes.ServiceUnavailable -> JsObject("workflowId" -> JsString(workflowId), "error" -> JsString("persistence dependency unavailable"))
+    case failure => StatusCodes.InternalServerError -> JsObject("workflowId" -> JsString(workflowId), "error" -> JsString(Option(failure.getMessage).getOrElse(failure.getClass.getSimpleName)))
   }
+  private def persistenceFailure(failure: Throwable): Boolean = Iterator.iterate(Option(failure))(_.flatMap(value => Option(value.getCause))).takeWhile(_.nonEmpty).flatten.exists(value => value.isInstanceOf[java.sql.SQLException] || value.getClass.getName.toLowerCase.contains("persistence") || value.getClass.getName.toLowerCase.contains("jdbc"))
 }

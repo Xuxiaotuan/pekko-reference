@@ -35,7 +35,7 @@ val projectOrg           = "cn.xuyinyin"
 // Pekko 生态系统
 val pekkoVersion         = "1.1.3"
 val pekkoHttpVersion     = "1.0.1"
-val pekkoConnectorsVer   = "1.0.2"
+val pekkoConnectorsVer   = "1.1.0"
 
 // 数据处理和存储
 val arrowVersion         = "18.0.0"      // Arrow Flight for DataFusion integration
@@ -43,6 +43,7 @@ val calciteVersion       = "1.39.0"      // SQL parser
 val levelDbVersion       = "1.8"         // Event Sourcing storage
 val levelDbApiVersion    = "0.12"
 val h2Version            = "2.3.232"     // Test database
+val pekkoPersistenceJdbcVersion = "1.1.1"
 
 // JSON和序列化
 val jacksonVersion       = "2.17.2"      // 统一Jackson版本，避免冲突
@@ -128,24 +129,7 @@ lazy val commonSettings = Seq(
     // "-XX:GCLogFileSize=10M"
   ),
   
-  // ================================
-  // 测试配置 - 过滤有问题的测试文件
-  // ================================
-  Test / sources := {
-    val originalSources = (Test / sources).value
-    originalSources.filter { source =>
-      val path = source.getPath
-      // 保留核心测试，排除有问题的模块
-      path.contains("Day1ClusterTest.scala") || 
-      (path.contains("test/") && 
-       !path.contains("cdc/") && 
-       !path.contains("parser/") && 
-       !path.contains("stream/") && 
-       !path.contains("actor/") && 
-       !path.contains("common/") && 
-       !path.contains("testkit/"))
-    }
-  },
+  Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-l", "cn.xuyinyin.magic.tags.ExternalIntegration"),
   
   // ================================
   // 通用依赖库
@@ -169,6 +153,8 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
   .enablePlugins(JavaServerAppPackaging, DockerPlugin, AshScriptPlugin)
   .settings(
     commonSettings ++ Seq(
+      Test / fork := false,
+      Test / parallelExecution := false,
       
       // ================================
       // Jackson版本管理 - 解决Scala模块兼容性问题
@@ -188,26 +174,12 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       Compile / mainClass := Some("cn.xuyinyin.magic.PekkoServer"),
       
       // ================================
-      // Docker打包JVM配置
+      // Universal JVM memory defaults
       // ================================
       Universal / javaOptions ++= Seq(
-        // 内存配置
         "-J-Xms256m",
-        "-J-Xmx512m",
-        
-        // Docker环境GC日志配置
-        "-J-Xlog:gc*:file=/opt/docker/logs/gc.log:time,uptime,level,tags",
-        "-J-Xlog:gc+heap=trace:file=/opt/docker/logs/gc-heap.log:time,uptime",
-        "-J-Xlog:gc+ref=debug:file=/opt/docker/logs/gc-ref.log:time,uptime",
-        "-J-XX:+UseGCLogFileRotation",
-        "-J-XX:NumberOfGCLogFiles=5",
-        "-J-XX:GCLogFileSize=10M"
+        "-J-Xmx512m"
       ),
-      
-      // ================================
-      // 启动脚本配置
-      // ================================
-      bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
       
       // ================================
       // Docker配置
@@ -218,9 +190,6 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       dockerBaseImage         := "openjdk:11-jre-alpine",
       dockerExposedPorts      := Seq(9906),           // HTTP API端口
       dockerUpdateLatest      := true,
-      
-      // 排除配置文件（使用外部配置）
-      unmanagedResources / excludeFilter := "application.conf",
       
       // Docker镜像自定义命令
       dockerCommands ++= Seq(
@@ -250,6 +219,8 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       // ================================
       "org.apache.pekko" %% "pekko-persistence-typed"  % pekkoVersion,
       "org.apache.pekko" %% "pekko-persistence-query"  % pekkoVersion,
+      "org.apache.pekko" %% "pekko-persistence-jdbc"   % pekkoPersistenceJdbcVersion,
+      "com.github.alonsodomin.cron4s" %% "cron4s-core" % "0.8.2",
       
       // LevelDB存储引擎
       "org.fusesource.leveldbjni" % "leveldbjni-all" % levelDbVersion,
@@ -326,6 +297,7 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       "org.scalatest"     %% "scalatest"                 % scalatestVersion % Test,
       "org.scalatestplus" %% "scalacheck-1-17"           % scalatestPlusVersion % Test,
       "org.scalacheck"    %% "scalacheck"                % scalacheckVersion    % Test,
+      "com.h2database"     % "h2"                        % h2Version        % Runtime,
       "com.h2database"     % "h2"                        % h2Version        % Test
     )
   )

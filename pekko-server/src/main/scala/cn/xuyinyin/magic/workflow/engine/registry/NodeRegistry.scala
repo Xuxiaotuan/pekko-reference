@@ -51,6 +51,15 @@ object NodeRegistry {
   def registerSource(source: NodeSource): Unit = {
     dynamicSources.put(source.nodeType, source)
   }
+
+  /**
+   * 仅在当前注册实例与期望实例匹配时移除运行时数据源。
+   */
+  private[engine] def unregisterSource(nodeType: String, expected: NodeSource): Unit = {
+    dynamicSources.get(nodeType)
+      .filter(current => current eq expected)
+      .foreach(_ => dynamicSources.remove(nodeType))
+  }
   
   /**
    * 动态注册Sink节点

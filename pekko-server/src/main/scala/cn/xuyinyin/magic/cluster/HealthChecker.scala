@@ -4,11 +4,17 @@ import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.scaladsl.AskPattern._
 import org.apache.pekko.util.Timeout
+import org.apache.pekko.actor.typed.ActorSystem
+import org.apache.pekko.persistence.jdbc.query.scaladsl.JdbcReadJournal
+import org.apache.pekko.persistence.query.PersistenceQuery
+import org.apache.pekko.stream.SystemMaterializer
+import org.apache.pekko.stream.scaladsl.Sink
 import com.typesafe.scalalogging.Logger
 
 import java.lang.management.ManagementFactory
 import scala.concurrent.duration._
 import scala.util.{Success, Failure}
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * 节点健康检查器
@@ -78,6 +84,23 @@ object HealthChecker {
     responseTime: Long,
     connectionsActive: Int
   )
+
+  final case class ReadinessStatus(memberUp: Boolean, shardingInitialized: Boolean, jdbcAvailable: Boolean) {
+    def ready: Boolean = memberUp && shardingInitialized && jdbcAvailable
+  }
+  final case class ReadinessProbes(memberUp: () => Future[Boolean], shardingInitialized: () => Future[Boolean], jdbcAvailable: () => Future[Boolean])
+
+  def readiness(probes: ReadinessProbes)(implicit ec: ExecutionContext): Future[ReadinessStatus] =
+    for { memberUp <- probes.memberUp().recover { case _ => false }; shardingInitialized <- probes.shardingInitialized().recover { case _ => false }; jdbcAvailable <- probes.jdbcAvailable().recover { case _ => false } } yield ReadinessStatus(memberUp, shardingInitialized, jdbcAvailable)
+
+  def defaultReadinessProbes(system: ActorSystem[_], shardingProbe: () => Future[Boolean])(implicit ec: ExecutionContext): ReadinessProbes = {
+    implicit val materializer = SystemMaterializer(system).materializer
+    ReadinessProbes(
+      () => Future.successful(org.apache.pekko.cluster.typed.Cluster(system).selfMember.status == org.apache.pekko.cluster.MemberStatus.Up),
+      shardingProbe,
+      () => Future(PersistenceQuery(system).readJournalFor[JdbcReadJournal](JdbcReadJournal.Identifier)).flatMap(_.currentPersistenceIds().take(1).runWith(Sink.ignore)).map(_ => true)
+    )
+  }
 
   /**
    * 健康检查阈值配置

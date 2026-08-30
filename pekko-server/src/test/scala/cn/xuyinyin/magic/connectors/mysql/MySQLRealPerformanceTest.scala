@@ -2,6 +2,7 @@ package cn.xuyinyin.magic.connectors.mysql
 
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
+import cn.xuyinyin.magic.tags.ExternalIntegration
 import org.apache.pekko.actor.typed.ActorSystem
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.cluster.typed.Cluster
@@ -65,7 +66,7 @@ class MySQLRealPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndA
   val dbUser = "root"
   val dbPass = "asd123456"
 
-  "真实MySQL读取" should "从perf_test_source表读取数据" in {
+  "真实MySQL读取" should "从perf_test_source表读取数据" taggedAs(ExternalIntegration) in {
     println("\n" + "="*70)
     println("🔍 真实MySQL性能测试 1: 读取大量数据")
     println("="*70)
@@ -158,7 +159,7 @@ class MySQLRealPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndA
     totalRows should be > 0
   }
 
-  "真实MySQL写入" should "写入大量数据到perf_test_sink表" in {
+  "真实MySQL写入" should "写入大量数据到perf_test_sink表" taggedAs(ExternalIntegration) in {
     println("\n" + "="*70)
     println("✍️  真实MySQL性能测试 2: 写入大量数据")
     println("="*70)
@@ -294,7 +295,7 @@ class MySQLRealPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndA
     writtenRows should be > 0
   }
 
-  "性能对比" should "生成真实MySQL性能报告" in {
+  "性能对比" should "生成真实MySQL性能报告" taggedAs(ExternalIntegration) in {
     println("\n" + "="*70)
     println("📊 PekkoSync 真实MySQL性能测试报告")
     println("="*70)

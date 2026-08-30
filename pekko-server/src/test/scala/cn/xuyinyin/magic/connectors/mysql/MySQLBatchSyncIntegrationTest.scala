@@ -2,6 +2,7 @@ package cn.xuyinyin.magic.connectors.mysql
 
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
+import cn.xuyinyin.magic.tags.ExternalIntegration
 import org.apache.pekko.actor.typed.ActorSystem
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.scalatest.flatspec.AnyFlatSpec
@@ -30,11 +31,21 @@ import scala.concurrent.duration._
  */
 class MySQLBatchSyncIntegrationTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
 
-  implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "MySQLTestSystem")
-  implicit val ec: ExecutionContext = system.executionContext
+  @volatile private var systemInitialized = false
+  implicit lazy val system: ActorSystem[Nothing] = {
+    val created = ActorSystem(Behaviors.empty, "MySQLTestSystem")
+    systemInitialized = true
+    created
+  }
+  implicit lazy val ec: ExecutionContext = system.executionContext
 
   override def afterAll(): Unit = {
-    system.terminate()
+    try {
+      if (systemInitialized) {
+        system.terminate()
+        Await.result(system.whenTerminated, 20.seconds)
+      }
+    } finally super.afterAll()
   }
 
   // 测试数据库配置
@@ -44,7 +55,7 @@ class MySQLBatchSyncIntegrationTest extends AnyFlatSpec with Matchers with Befor
   val dbUser = "root"
   val dbPass = "asd123456"
 
-  "NodeRegistry" should "包含MySQL连接器" in {
+  "NodeRegistry" should "包含MySQL连接器" taggedAs(ExternalIntegration) in {
     // 验证Source连接器已注册
     val sourceOpt = cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry.findSource("mysql.query")
     sourceOpt shouldBe defined
@@ -58,7 +69,7 @@ class MySQLBatchSyncIntegrationTest extends AnyFlatSpec with Matchers with Befor
     println("✅ MySQL连接器已注册")
   }
 
-  "MySQLSourceNode" should "读取数据库数据" in {
+  "MySQLSourceNode" should "读取数据库数据" taggedAs(ExternalIntegration) in {
     val source = cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
       .findSource("mysql.query")
       .getOrElse(fail("MySQL Source未找到"))
@@ -109,7 +120,7 @@ class MySQLBatchSyncIntegrationTest extends AnyFlatSpec with Matchers with Befor
     }
   }
 
-  "WorkflowExecutionEngine" should "执行完整的MySQL同步workflow" in {
+  "WorkflowExecutionEngine" should "执行完整的MySQL同步workflow" taggedAs(ExternalIntegration) in {
     println("\n" + "="*60)
     println("测试: 完整批量同步 xjwtest → xjwtest1")
     println("="*60)
@@ -204,7 +215,7 @@ class MySQLBatchSyncIntegrationTest extends AnyFlatSpec with Matchers with Befor
     logs.exists(_.contains("MySQL Sink")) shouldBe true
   }
 
-  "MySQL同步性能测试" should "达到预期吞吐量" in {
+  "MySQL同步性能测试" should "达到预期吞吐量" taggedAs(ExternalIntegration) in {
     println("\n" + "="*60)
     println("性能测试: 大量数据同步")
     println("="*60)

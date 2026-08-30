@@ -1,8 +1,7 @@
 package cn.xuyinyin.magic.workflow.sharding
 
-import cn.xuyinyin.magic.workflow.actors.{EventSourcedWorkflowActor, WorkflowActor}
+import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
 import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import org.apache.pekko.actor.typed.{ActorRef, ActorSystem}
 import org.apache.pekko.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityTypeKey}
 import org.apache.pekko.cluster.sharding.typed.{ClusterShardingSettings, ShardingEnvelope, ShardingMessageExtractor}
@@ -52,25 +51,7 @@ object WorkflowSharding {
       Entity(TypeKey) { entityContext =>
         val workflowId = entityContext.entityId
         
-        // 创建一个临时的workflow对象用于初始化
-        // 实际的workflow会通过Initialize命令传入
-        val emptyWorkflow = WorkflowDSL.Workflow(
-          id = workflowId,
-          name = s"workflow-$workflowId",
-          description = "",
-          version = "1.0",
-          author = "system",
-          tags = List.empty,
-          nodes = List.empty,
-          edges = List.empty,
-          metadata = WorkflowDSL.WorkflowMetadata(
-            createdAt = java.time.Instant.now().toString,
-            updatedAt = java.time.Instant.now().toString
-          )
-        )
-        
-        // 使用Event Sourcing的WorkflowActor
-        EventSourcedWorkflowActor(workflowId, emptyWorkflow, executionEngine)
+        EventSourcedWorkflowActor(workflowId, executionEngine)
       }
         .withMessageExtractor(messageExtractor)
         .withSettings(ClusterShardingSettings(system).withRole("worker"))
@@ -89,7 +70,7 @@ object WorkflowSharding {
    * 提取ShardId（基于workflowId的哈希）
    */
   def extractShardId(entityId: String, numberOfShards: Int = 100): String = {
-    (math.abs(entityId.hashCode) % numberOfShards).toString
+    Math.floorMod(entityId.hashCode, numberOfShards).toString
   }
 }
 

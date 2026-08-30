@@ -3,13 +3,13 @@ package cn.xuyinyin.magic.cluster
 import cn.xuyinyin.magic.single.PekkoGc
 import cn.xuyinyin.magic.workflow.actors.{EventSourcedWorkflowActor, WorkflowSupervisor}
 import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
-import cn.xuyinyin.magic.workflow.scheduler.{SchedulerManager, WorkflowScheduler}
+import cn.xuyinyin.magic.workflow.scheduler.{SchedulerCoordinator, SchedulerManager}
 import cn.xuyinyin.magic.workflow.sharding.WorkflowSharding
 import com.typesafe.scalalogging.Logger
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import org.apache.pekko.cluster.sharding.typed.ShardingEnvelope
-import org.apache.pekko.cluster.typed.Cluster
+import org.apache.pekko.cluster.typed.{Cluster, ClusterSingleton, ClusterSingletonSettings, SingletonActor}
 
 import scala.concurrent.duration.DurationInt
 
@@ -25,6 +25,7 @@ object PekkoGuardian {
   case class GetHealthChecker(reply: ActorRef[ActorRef[HealthChecker.Command]]) extends Command
   case class GetWorkflowSupervisor(reply: ActorRef[ActorRef[WorkflowSupervisor.Command]]) extends Command
   case class GetSchedulerManager(reply: ActorRef[SchedulerManager]) extends Command
+  case class GetSchedulerCoordinator(reply: ActorRef[ActorRef[SchedulerCoordinator.Command]]) extends Command
   private case object CheckLeadership extends Command
 
   def apply(): Behavior[Command] = Behaviors.setup { implicit ctx =>
@@ -55,11 +56,12 @@ object PekkoGuardian {
       "WorkflowSupervisor"
     )
     logger.info("WorkflowSupervisor created with Sharding support")
-    
-    // Create workflow scheduler and scheduler manager (调度管理器)
-    val workflowScheduler = new WorkflowScheduler(workflowSupervisor)(ctx.system)
-    val schedulerManager = new SchedulerManager(workflowScheduler)
-    logger.info("SchedulerManager created")
+
+    val schedulerCoordinator = ClusterSingleton(ctx.system).init(
+      SingletonActor(SchedulerCoordinator(shardRegion), "SchedulerCoordinator")
+        .withSettings(ClusterSingletonSettings(ctx.system).withRole("coordinator"))
+    )
+    logger.info("SchedulerCoordinator Cluster Singleton initialized")
 
     // Start periodic leadership check
     import org.apache.pekko.actor.typed.scaladsl.Behaviors.withTimers
@@ -87,7 +89,11 @@ object PekkoGuardian {
           Behaviors.same
         
         case GetSchedulerManager(reply) =>
-          reply ! schedulerManager
+          logger.warn("GetSchedulerManager is retired; use SchedulerCoordinator instead")
+          Behaviors.same
+
+        case GetSchedulerCoordinator(reply) =>
+          reply ! schedulerCoordinator
           Behaviors.same
       }
     }

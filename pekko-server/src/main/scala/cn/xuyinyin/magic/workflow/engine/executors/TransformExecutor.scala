@@ -4,7 +4,6 @@ import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.typed.ActorSystem
 import org.apache.pekko.stream.scaladsl.Flow
-import spray.json._
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.ExecutionContext
@@ -18,17 +17,18 @@ import scala.util.Try
  * @author : Xuxiaotuan
  * @since : 2024-11-15
  */
-class TransformExecutor()(implicit system: ActorSystem[_], ec: ExecutionContext) extends NodeExecutor {
-  
-  override def supportedTypes: Set[String] = Set(
+object TransformExecutor {
+  val supportedTypes: Set[String] = Set(
     "filter",
     "map",
     "distinct",
-    "batch",
-    "data.clean",      // 从 DataProcessTaskExecutor 迁移
-    "data.transform"   // 从 DataProcessTaskExecutor 迁移
-    // sql.query 已移除（DataFusion依赖）
+    "batch"
   )
+}
+
+class TransformExecutor()(implicit system: ActorSystem[_], ec: ExecutionContext) extends NodeExecutor {
+
+  override def supportedTypes: Set[String] = TransformExecutor.supportedTypes
   
   /**
    * 创建Transform Flow

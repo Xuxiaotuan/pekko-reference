@@ -1,14 +1,17 @@
 package cn.xuyinyin.magic.api.http.routes
 
 import cn.xuyinyin.magic.cluster.{HealthChecker, PekkoGuardian}
-import cn.xuyinyin.magic.workflow.scheduler.SchedulerManager
+import cn.xuyinyin.magic.workflow.actors.WorkflowSupervisor
+import cn.xuyinyin.magic.workflow.scheduler.SchedulerCoordinator
 import org.apache.pekko.actor.typed.{ActorRef, ActorSystem}
+import org.apache.pekko.actor.typed.scaladsl.AskPattern._
 import org.apache.pekko.cluster.Cluster
-import org.apache.pekko.http.scaladsl.model.{ContentTypes, HttpEntity}
+import org.apache.pekko.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import org.apache.pekko.http.scaladsl.server.Directives.{complete, get, path, pathEndOrSingleSlash, pathPrefix, concat}
 import org.apache.pekko.http.scaladsl.server.Route
 
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 /**
  * HTTP服务路由
@@ -31,21 +34,21 @@ object HttpRoutes {
     system: ActorSystem[_],
     healthChecker: ActorRef[HealthChecker.Command],
     guardian: ActorRef[PekkoGuardian.Command],
-    schedulerManager: SchedulerManager,
-    workflowSupervisor: ActorRef[_]
+    schedulerCoordinator: ActorRef[SchedulerCoordinator.Command],
+    workflowSupervisor: ActorRef[WorkflowSupervisor.Command],
+    readinessProbes: Option[HealthChecker.ReadinessProbes] = None
   )(implicit ec: ExecutionContext): Route = {
+    implicit val readinessTimeout: org.apache.pekko.util.Timeout = 2.seconds
+    implicit val readinessScheduler: org.apache.pekko.actor.typed.Scheduler = system.scheduler
     concat(
       // 工作流管理API (DSL可视化 + Event Sourcing + 调度)
-      new EnhancedWorkflowRoutes(
-        workflowSupervisor = Some(workflowSupervisor),
-        schedulerManager = Some(schedulerManager)
-      )(system, ec).routes,
+      new EnhancedWorkflowRoutes(workflowSupervisor)(system, ec).routes,
       
       // 执行历史查询API (Event Sourcing)
       new EventHistoryRoutes(workflowSupervisor)(system, ec).routes,
       
       // 调度管理API
-      new SchedulerRoutes(schedulerManager).routes,
+      new SchedulerRoutes(schedulerCoordinator)(system, ec).routes,
       
       // 集群监控API (Cluster Sharding)
       new ClusterRoutes()(system, ec).routes,
@@ -90,14 +93,12 @@ object HttpRoutes {
           },
           path("ready") {
             get {
-              val readiness = 
-                """
-                  |Readiness Probe:
-                  |- Status: OK
-                  |- Dependencies: Ready
-                  |- Timestamp: """ + System.currentTimeMillis() + """
-                  |""".stripMargin
-              complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, readiness))
+              val shardingProbe = () => workflowSupervisor.ask[cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor.WorkflowSummary](replyTo => WorkflowSupervisor.GetWorkflowSummary("__readiness_probe__", replyTo)).map(_ => true)
+              val probes = readinessProbes.getOrElse(HealthChecker.defaultReadinessProbes(system, shardingProbe))
+              complete(HealthChecker.readiness(probes).map { readiness =>
+                val status = if (readiness.ready) StatusCodes.OK else StatusCodes.ServiceUnavailable
+                status -> HttpEntity(ContentTypes.`text/plain(UTF-8)`, s"memberUp=${readiness.memberUp} shardingInitialized=${readiness.shardingInitialized} jdbcAvailable=${readiness.jdbcAvailable}")
+              })
             }
           },
           pathEndOrSingleSlash {

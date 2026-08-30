@@ -138,11 +138,8 @@ GET /api/history/:workflowId
         {
           "nodeId": "node1",
           "nodeType": "source",
-          "startTime": 1700000000000,
-          "endTime": 1700000020000,
           "duration": 20000,
           "status": "completed",
-          "recordsProcessed": 100,
           "error": null
         }
       ]
@@ -150,6 +147,8 @@ GET /api/history/:workflowId
   ]
 }
 ```
+
+节点级 `startTime`、`endTime` 和 `recordsProcessed` 仅在执行器提供真实测量值时返回；当前 MVP 未采集这些字段，因此响应中省略它们，不会用工作流级时间或 `0` 代替未知值。
 
 ### 获取工作流状态
 

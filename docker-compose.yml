@@ -1,27 +1,67 @@
 services:
-  seed:
-    container_name: pekko-sample-cluster-docker-compose-scala_seed_1
-    image: pekko/pekko-sample-cluster-docker-compose-scala:latest
-    ports:
-      - '1600:1600'
+  mysql:
+    image: mysql:8.0
     environment:
-      CLUSTER_PORT: 1600
-      CLUSTER_IP: seed
-      SEED_PORT_1600_TCP_ADDR: seed
-  c1:
-    image: pekko/pekko-sample-cluster-docker-compose-scala:latest
+      MYSQL_DATABASE: pekko
+      MYSQL_USER: pekko
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD}
     ports:
-      - '1601:1601'
-    environment:
-      CLUSTER_PORT: 1601
-      CLUSTER_IP: c1
-      SEED_PORT_1600_TCP_ADDR: seed
-  c2:
-    image: pekko/pekko-sample-cluster-docker-compose-scala:latest
-    ports:
-      - '1602:1602'
-    environment:
-      CLUSTER_PORT: 1602
-      CLUSTER_IP: c2
-      SEED_PORT_1600_TCP_ADDR: seed
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./pekko-server/src/main/resources/db/mysql/pekko-persistence-schema.sql:/docker-entrypoint-initdb.d/001-pekko-persistence.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -upekko -p$$MYSQL_PASSWORD --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
+  node1:
+    image: ${PEKKO_IMAGE:-pekko-reference:0.1}
+    entrypoint: ["java", "-cp", "/opt/docker/lib/*", "cn.xuyinyin.magic.PekkoServer"]
+    environment:
+      JAVA_TOOL_OPTIONS: -Dconfig.file=/opt/docker/conf/application-prod.conf -Dpekko.cluster.min-nr-of-members=2
+      PEKKO_HOSTNAME: node1
+      PEKKO_PORT: "2551"
+      HTTP_HOST: 0.0.0.0
+      HTTP_PORT: "8080"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: pekko
+      DB_USER: pekko
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+    volumes:
+      - ./pekko-server/src/main/resources:/opt/docker/conf:ro
+    ports:
+      - "2551:2551"
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  node2:
+    image: ${PEKKO_IMAGE:-pekko-reference:0.1}
+    entrypoint: ["java", "-cp", "/opt/docker/lib/*", "cn.xuyinyin.magic.PekkoServer"]
+    environment:
+      JAVA_TOOL_OPTIONS: -Dconfig.file=/opt/docker/conf/application-prod.conf -Dpekko.cluster.min-nr-of-members=2
+      PEKKO_HOSTNAME: node2
+      PEKKO_PORT: "2551"
+      HTTP_HOST: 0.0.0.0
+      HTTP_PORT: "8080"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: pekko
+      DB_USER: pekko
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+    volumes:
+      - ./pekko-server/src/main/resources:/opt/docker/conf:ro
+    ports:
+      - "2552:2551"
+      - "8081:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql-data:

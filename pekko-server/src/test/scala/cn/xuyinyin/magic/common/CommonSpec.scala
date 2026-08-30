@@ -1,19 +1,11 @@
 package cn.xuyinyin.magic.common
 
+import cn.xuyinyin.magic.tags.ExternalIntegration
 import cn.xuyinyin.magic.testkit.STSpec
 
 class CommonSpec extends STSpec {
-  // 加载动态库
-  val libraryPath = "/Users/xujiawei/magic/rust-workbench/hello_rust/target/release"
-  try {
-    // 添加库文件到系统路径
-    addLibraryPath(libraryPath)
-    // 在 macOS 上，库文件名需要包含 lib 前缀
-    System.loadLibrary("hello_rust")
-  } catch {case e: Exception =>
-      println(s"Failed to load library: ${e.getMessage}")
-      e.printStackTrace()
-  }
+  private val libraryPath = "/Users/xujiawei/magic/rust-workbench/hello_rust/target/release"
+
   // 辅助方法：添加库路径
   private def addLibraryPath(path: String): Unit = {
     val usrPaths = classOf[ClassLoader].getDeclaredField("usr_paths")
@@ -31,7 +23,9 @@ class CommonSpec extends STSpec {
   @native def calculatePrimes(start: Long, end: Long): Long
   @native def sayHello(input: String): String
   "CommonSpec" should {
-    "load native library" in {
+    "load native library" taggedAs(ExternalIntegration) in {
+      addLibraryPath(libraryPath)
+      System.loadLibrary("hello_rust")
       val result = calculatePrimes(1, 100)
       println(s"Result: $result")
       val hello = sayHello("Scala Test")

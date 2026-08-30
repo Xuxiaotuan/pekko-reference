@@ -1,416 +1,104 @@
 # 配置指南
 
-本文档描述了分布式工作流引擎的配置选项和最佳实践。
+## 配置入口
 
-## 目录
+- `application-dev.conf`：本地单节点开发。
+- `application-prod.conf`：共享 MySQL JDBC 持久化的集群部署。
+- `application-test.conf`：隔离 H2 测试。
+- `application-multinode-test.conf`：Task 8 的真实双 ActorSystem、动态 loopback
+  端口和共享 file-H2 测试。
 
-- [配置文件](#配置文件)
-- [环境变量](#环境变量)
-- [集群配置](#集群配置)
-- [持久化配置](#持久化配置)
-- [Sharding配置](#sharding配置)
-- [工作流配置](#工作流配置)
-- [配置验证](#配置验证)
-- [环境特定配置](#环境特定配置)
+使用生产配置时通过 `-Dconfig.file=/path/application-prod.conf` 或等价部署方式
+加载配置。启动配置验证器会检查 JDBC plugin、profile、driver、URL 和共享数据库
+引用；readiness 会探测 JDBC Read Journal 是否可用。它们不会创建、drop 或
+truncate 表，也不替代部署前的三表 schema 初始化检查。
 
-## 配置文件
+## 标量环境变量
 
-系统使用Typesafe Config库进行配置管理，支持HOCON格式。
+`application-prod.conf` 支持下列标量环境变量覆盖默认值：
 
-### 主配置文件
+| 变量 | 用途 |
+|---|---|
+| `PEKKO_HOSTNAME` | Artery 对其他成员公布的可达主机名 |
+| `PEKKO_PORT` | Artery 端口 |
+| `HTTP_HOST` | HTTP 绑定地址 |
+| `HTTP_PORT` | HTTP 端口 |
+| `PEKKO_SHARDING_SHARDS` | Cluster Sharding 分片数量 |
+| `PEKKO_WORKFLOW_SNAPSHOT_EVERY` | 每多少个 workflow 事件创建快照 |
+| `PEKKO_WORKFLOW_KEEP_SNAPSHOTS` | 保留的 workflow 快照数量 |
+| `PEKKO_LOG_LEVEL` | Pekko 日志级别 |
+| `DB_HOST` | MySQL 主机 |
+| `DB_PORT` | MySQL 端口 |
+| `DB_NAME` | 专用持久化数据库 |
+| `DB_USER` | 仅拥有该数据库所需权限的账号 |
+| `DB_PASSWORD` | 数据库密码 |
 
-- `application.conf` - 默认配置
-- `application-dev.conf` - 开发环境配置
-- `application-test.conf` - 测试环境配置
-- `application-prod.conf` - 生产环境配置
+## Seed 和角色是 typed list
 
-### 加载配置
-
-使用JVM参数指定配置文件：
-
-```bash
-# 使用开发环境配置
-java -Dconfig.resource=application-dev.conf -jar app.jar
-
-# 使用生产环境配置
-java -Dconfig.resource=application-prod.conf -jar app.jar
-```
-
-## 环境变量
-
-系统支持通过环境变量覆盖配置。环境变量优先级高于配置文件。
-
-### 核心环境变量
-
-| 环境变量 | 描述 | 默认值 | 示例 |
-|---------|------|--------|------|
-| `PEKKO_HOSTNAME` | 节点主机名 | 127.0.0.1 | node1.example.com |
-| `PEKKO_PORT` | 节点端口 | 2551 | 2551 |
-| `PEKKO_SEED_NODES` | 种子节点列表 | - | ["pekko://sys@node1:2551"] |
-| `PEKKO_ROLES` | 节点角色 | - | ["worker"] |
-| `PEKKO_LOG_LEVEL` | 日志级别 | INFO | DEBUG, INFO, WARN, ERROR |
-
-### Sharding环境变量
-
-| 环境变量 | 描述 | 默认值 |
-|---------|------|--------|
-| `PEKKO_SHARDING_SHARDS` | 分片数量 | 100 |
-
-### 持久化环境变量
-
-| 环境变量 | 描述 | 默认值 |
-|---------|------|--------|
-| `PEKKO_PERSISTENCE_JOURNAL_PLUGIN` | Journal插件 | leveldb |
-| `PEKKO_PERSISTENCE_JOURNAL_DIR` | Journal目录 | /var/lib/pekko/journal |
-| `PEKKO_PERSISTENCE_SNAPSHOT_PLUGIN` | Snapshot插件 | local |
-| `PEKKO_PERSISTENCE_SNAPSHOT_DIR` | Snapshot目录 | /var/lib/pekko/snapshots |
-
-### 工作流环境变量
-
-| 环境变量 | 描述 | 默认值 |
-|---------|------|--------|
-| `PEKKO_WORKFLOW_SNAPSHOT_EVERY` | 快照频率 | 100 |
-| `PEKKO_WORKFLOW_KEEP_SNAPSHOTS` | 保留快照数 | 3 |
-
-## 集群配置
-
-### 种子节点
-
-种子节点是集群的初始联系点。至少需要配置一个种子节点。
+`pekko.cluster.seed-nodes` 与 `pekko.cluster.roles` 是 HOCON 列表。普通 shell / Docker
+环境变量始终是字符串，因此把 `PEKKO_SEED_NODES='["..."]'` 或
+`PEKKO_ROLES='["worker"]'` 当作字符串注入并不等价于 typed list。默认 compose
+拓扑直接使用生产配置中已有的 seed/roles 列表。自定义部署请提供一段 HOCON：
 
 ```hocon
-pekko.cluster.seed-nodes = [
-  "pekko://pekko-cluster-system@node1:2551",
-  "pekko://pekko-cluster-system@node2:2551",
-  "pekko://pekko-cluster-system@node3:2551"
-]
-```
+include classpath("application-prod.conf")
 
-**最佳实践：**
-- 生产环境至少配置3个种子节点
-- 种子节点应该是稳定的、长期运行的节点
-- 所有节点应该配置相同的种子节点列表
-
-### 节点角色
-
-节点角色用于区分不同类型的节点。
-
-```hocon
-pekko.cluster.roles = ["coordinator", "worker", "api-gateway"]
-```
-
-**角色说明：**
-- `coordinator` - 协调节点，运行单例Actor
-- `worker` - 工作节点，运行工作流Entity
-- `api-gateway` - API网关节点，处理HTTP请求
-
-### 故障检测
-
-故障检测器用于检测节点是否可达。
-
-```hocon
-pekko.cluster.failure-detector {
-  acceptable-heartbeat-pause = 5s
-  threshold = 12.0
-}
-```
-
-**参数说明：**
-- `acceptable-heartbeat-pause` - 可接受的心跳暂停时间
-- `threshold` - 故障检测阈值（越高越宽容）
-
-**调优建议：**
-- 开发环境：`threshold = 8.0`，快速检测
-- 生产环境：`threshold = 12.0`，避免误判
-- 网络不稳定：增加`acceptable-heartbeat-pause`
-
-### Split Brain Resolver
-
-Split Brain Resolver用于处理网络分区。
-
-```hocon
 pekko.cluster {
-  downing-provider-class = "org.apache.pekko.cluster.sbr.SplitBrainResolverProvider"
-  
-  split-brain-resolver {
-    active-strategy = "keep-majority"
-    stable-after = 20s
-  }
+  seed-nodes = [
+    "pekko://pekko-cluster-system-prod@node1:2551",
+    "pekko://pekko-cluster-system-prod@node2:2551",
+    "pekko://pekko-cluster-system-prod@node3:2551"
+  ]
+  roles = ["coordinator", "worker", "api-gateway"]
 }
 ```
 
-**策略选项：**
-- `keep-majority` - 保留多数派（推荐）
-- `keep-oldest` - 保留最老的节点
-- `static-quorum` - 静态法定人数
+`worker` 承载 workflow entity；`coordinator` 承载 Scheduler Singleton；
+`api-gateway` 承载 HTTP ingress。需要 Singleton 接管时至少要有两个 coordinator，
+需要 entity 接管时至少要有两个 worker。
 
-## 持久化配置
+## 工作流与调度语义
 
-### Journal配置
+当前执行器只支持一条连通的线性路径：一个 Source、零到多个 Transform、一个
+Sink。分支、合流、环和断开的节点不在 MVP 范围。
 
-Journal用于存储事件。
+调度器采用 at-least-once 投递：
 
-**LevelDB（开发/测试）：**
-```hocon
-pekko.persistence.journal {
-  plugin = "pekko.persistence.journal.leveldb"
-  leveldb {
-    dir = "target/journal"
-    native = false
-  }
-}
-```
+1. 持久化 `TriggerPrepared`；
+2. 向 Sharding entity 发送 scheduled execution；
+3. 收到 accepted / duplicate / already-running 后持久化 ACK；
+4. 未 ACK 的 trigger 在恢复或重试定时器触发后再次投递。
 
-**Cassandra（生产推荐）：**
-```hocon
-pekko.persistence.journal {
-  plugin = "pekko.persistence.cassandra.journal"
-}
+因此外部 Sink 仍需根据自身副作用边界设计幂等性；这里验证的是实体接受执行的
+幂等，不是任意外部系统的 exactly-once 副作用。
 
-pekko.persistence.cassandra {
-  journal {
-    keyspace = "pekko"
-    table = "messages"
-  }
-}
-```
-
-### Snapshot配置
-
-Snapshot用于存储状态快照。
-
-```hocon
-pekko.persistence.snapshot-store {
-  plugin = "pekko.persistence.snapshot-store.local"
-  local {
-    dir = "target/snapshots"
-  }
-}
-```
-
-## Sharding配置
-
-### 分片数量
-
-分片数量决定了工作流的分布粒度。
-
-```hocon
-pekko.cluster.sharding.number-of-shards = 100
-```
-
-**选择建议：**
-- 小集群（< 10节点）：10-50个分片
-- 中等集群（10-50节点）：50-200个分片
-- 大集群（> 50节点）：200-1000个分片
-
-**注意：** 分片数量一旦确定，不能轻易修改。
-
-### Passivation
-
-Passivation用于自动停止空闲的Entity。
-
-```hocon
-pekko.cluster.sharding.passivate-idle-entity-after = 30m
-```
-
-**调优建议：**
-- 内存充足：设置较长时间（1h-2h）
-- 内存紧张：设置较短时间（10m-30m）
-- 高频访问：禁用Passivation（off）
-
-### Remember Entities
-
-Remember Entities确保Entity在节点重启后自动恢复。
-
-```hocon
-pekko.cluster.sharding {
-  remember-entities = on
-  remember-entities-store = "eventsourced"
-}
-```
-
-**存储选项：**
-- `eventsourced` - 使用Event Sourcing存储（推荐）
-- `ddata` - 使用分布式数据存储
-
-## 工作流配置
-
-### 快照策略
-
-```hocon
-pekko.workflow.event-sourcing {
-  snapshot-every = 100
-  keep-n-snapshots = 3
-}
-```
-
-**参数说明：**
-- `snapshot-every` - 每N个事件保存一次快照
-- `keep-n-snapshots` - 保留最近N个快照
-
-**调优建议：**
-- 事件量大：减少`snapshot-every`（50-100）
-- 事件量小：增加`snapshot-every`（200-500）
-- 磁盘空间紧张：减少`keep-n-snapshots`（2-3）
-
-## 配置验证
-
-系统启动时会自动验证配置。
-
-### 验证规则
-
-- 种子节点不能为空
-- 节点角色不能为空
-- 端口范围：1024-65535
-- 故障检测阈值：4.0-20.0
-- 分片数量：10-1000
-- 快照频率：10-10000
-- 保留快照数：1-10
-
-### 手动验证
-
-```scala
-import cn.xuyinyin.magic.config.ConfigValidator
-import com.typesafe.config.ConfigFactory
-
-val config = ConfigFactory.load()
-ConfigValidator.validate(config) match {
-  case None => println("Configuration is valid")
-  case Some(errors) => 
-    println("Configuration errors:")
-    errors.foreach(println)
-}
-```
-
-## 环境特定配置
-
-### 开发环境
+## MySQL schema
 
 ```bash
-# 使用开发环境配置
-java -Dconfig.resource=application-dev.conf \
-     -Dpekko.loglevel=DEBUG \
-     -jar app.jar
+mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_NAME" \
+  < pekko-server/src/main/resources/db/mysql/pekko-persistence-schema.sql
 ```
 
-**特点：**
-- 单节点运行
-- 内存持久化
-- 详细日志
-- 快速故障检测
+所有节点必须连接同一个专用数据库。不要让不同环境共享同一 schema，也不要把
+测试指向个人、Tailscale 或既有业务数据库。
 
-### 测试环境
+## 外部 MySQL 恢复测试
+
+外部测试默认通过 `ExternalIntegration` tag 排除。测试只接受以 `pekko_test_`
+开头、且 JDBC URL 中数据库名与声明完全一致的专用 schema：
 
 ```bash
-# 使用测试环境配置
-java -Dconfig.resource=application-test.conf \
-     -jar app.jar
+export PEKKO_TEST_MYSQL_JDBC_URL='jdbc:mysql://127.0.0.1:3306/pekko_test_recovery'
+export PEKKO_TEST_MYSQL_SCHEMA='pekko_test_recovery'
+export PEKKO_TEST_MYSQL_USER='pekko_test'
+export PEKKO_TEST_MYSQL_PASSWORD='replace-me'
+
+sbt \
+  'set pekkoServer / Test / testOptions := Seq()' \
+  'pekko-server/testOnly cn.xuyinyin.magic.workflow.integration.MySQLPersistenceRecoverySpec -- -n cn.xuyinyin.magic.tags.ExternalIntegration'
 ```
 
-**特点：**
-- 多节点模拟
-- 内存持久化
-- 快速超时
-- 自动downing
-
-### 生产环境
-
-```bash
-# 使用生产环境配置
-java -Dconfig.resource=application-prod.conf \
-     -DPEKKO_HOSTNAME=node1.example.com \
-     -DPEKKO_PORT=2551 \
-     -DPEKKO_SEED_NODES='["pekko://sys@node1:2551","pekko://sys@node2:2551"]' \
-     -DPEKKO_ROLES='["worker"]' \
-     -jar app.jar
-```
-
-**特点：**
-- 多节点集群
-- 持久化存储（Cassandra/PostgreSQL）
-- Split Brain Resolver
-- 生产级日志
-
-## 配置示例
-
-### 单节点开发环境
-
-```hocon
-pekko {
-  cluster {
-    seed-nodes = ["pekko://sys@127.0.0.1:2551"]
-    roles = ["coordinator", "worker", "api-gateway"]
-  }
-  
-  remote.artery.canonical {
-    hostname = "127.0.0.1"
-    port = 2551
-  }
-  
-  persistence {
-    journal.plugin = "pekko.persistence.journal.inmem"
-    snapshot-store.plugin = "pekko.persistence.snapshot-store.local"
-  }
-}
-```
-
-### 3节点生产集群
-
-**Node 1:**
-```bash
-PEKKO_HOSTNAME=node1.example.com \
-PEKKO_PORT=2551 \
-PEKKO_ROLES='["coordinator","worker"]' \
-java -Dconfig.resource=application-prod.conf -jar app.jar
-```
-
-**Node 2:**
-```bash
-PEKKO_HOSTNAME=node2.example.com \
-PEKKO_PORT=2551 \
-PEKKO_ROLES='["worker"]' \
-java -Dconfig.resource=application-prod.conf -jar app.jar
-```
-
-**Node 3:**
-```bash
-PEKKO_HOSTNAME=node3.example.com \
-PEKKO_PORT=2551 \
-PEKKO_ROLES='["worker","api-gateway"]' \
-java -Dconfig.resource=application-prod.conf -jar app.jar
-```
-
-## 故障排查
-
-### 常见配置问题
-
-**问题1：节点无法加入集群**
-- 检查种子节点配置是否正确
-- 检查网络连接和防火墙
-- 检查系统名称是否一致
-
-**问题2：Entity无法创建**
-- 检查Sharding角色配置
-- 检查持久化插件配置
-- 检查Journal目录权限
-
-**问题3：性能问题**
-- 调整分片数量
-- 调整Passivation时间
-- 调整快照频率
-
-## 最佳实践
-
-1. **使用环境变量** - 敏感信息和环境特定配置使用环境变量
-2. **配置验证** - 启动时验证配置完整性
-3. **分层配置** - 使用include机制复用通用配置
-4. **文档化** - 记录所有自定义配置及其用途
-5. **版本控制** - 配置文件纳入版本控制
-6. **监控配置** - 监控关键配置参数的运行时值
-
-## 参考资源
-
-- [Pekko Configuration](https://pekko.apache.org/docs/pekko/current/general/configuration.html)
-- [Pekko Cluster](https://pekko.apache.org/docs/pekko/current/typed/cluster.html)
-- [Pekko Cluster Sharding](https://pekko.apache.org/docs/pekko/current/typed/cluster-sharding.html)
-- [Pekko Persistence](https://pekko.apache.org/docs/pekko/current/typed/persistence.html)
+session override 只影响本次 sbt 会话；若不先清除默认 exclude，include 与 exclude
+同一 tag 会导致 0 tests。测试不建库、不删库、不清表，只写唯一 persistence id，
+并验证 Journal、Snapshot 和恢复。schema 初始化与最终删除由测试操作者在专用
+环境中完成。
