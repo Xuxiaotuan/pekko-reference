@@ -2,6 +2,7 @@ package cn.xuyinyin.magic.config
 
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.Logger
+import cn.xuyinyin.magic.workflow.nodes.sources.MySQLCdcStateConfig
 
 /**
  * 配置验证器
@@ -35,6 +36,8 @@ object ConfigValidator {
     
     // 验证工作流配置
     validateWorkflowConfig(config, errors)
+
+    validateMySQLCdcStateConfig(config, errors)
     
     // 验证Sharding配置
     validateShardingConfig(config, errors)
@@ -59,8 +62,12 @@ object ConfigValidator {
         errors += "Missing required config: pekko.cluster.seed-nodes"
       } else {
         val seedNodes = config.getStringList("pekko.cluster.seed-nodes")
-        if (seedNodes.isEmpty) {
-          errors += "pekko.cluster.seed-nodes cannot be empty"
+        val bootstrapEnabled = config.hasPath("pekko.workflow.cluster-bootstrap.enabled") &&
+          config.getBoolean("pekko.workflow.cluster-bootstrap.enabled")
+        if (bootstrapEnabled && !seedNodes.isEmpty) {
+          errors += "pekko.cluster.seed-nodes must be empty when pekko.workflow.cluster-bootstrap.enabled is true"
+        } else if (!bootstrapEnabled && seedNodes.isEmpty) {
+          errors += "pekko.cluster.seed-nodes cannot be empty when pekko.workflow.cluster-bootstrap.enabled is false"
         }
       }
       
@@ -214,6 +221,18 @@ object ConfigValidator {
     } catch {
       case e: Exception =>
         errors += s"Error validating workflow config: ${e.getMessage}"
+    }
+  }
+
+  private def validateMySQLCdcStateConfig(config: Config, errors: scala.collection.mutable.ListBuffer[String]): Unit = {
+    val enabledPath = "pekko.workflow.mysql-cdc.enabled"
+    if (config.hasPath(enabledPath) && config.getBoolean(enabledPath)) {
+      try {
+        MySQLCdcStateConfig.load(config)
+      } catch {
+        case e: IllegalArgumentException => errors += e.getMessage
+        case _: Exception => errors += "Invalid MySQL CDC state JDBC configuration"
+      }
     }
   }
   

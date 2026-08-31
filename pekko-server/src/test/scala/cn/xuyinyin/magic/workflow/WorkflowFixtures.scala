@@ -27,6 +27,30 @@ object WorkflowFixtures {
     List(edge(source.id, transform.id), edge(transform.id, sink.id))
   )
 
+  val mysqlCdcWorkflow: Workflow = {
+    val cdcSource = node("source-1", "source", "mysql.cdc", JsObject(
+      "connectorId" -> JsString("orders-cdc-v1"),
+      "host" -> JsString("mysql"),
+      "port" -> JsNumber(3306),
+      "database" -> JsString("pekko_workflow"),
+      "table" -> JsString("pekko_cdc_source_acceptance"),
+      "username" -> JsString("pekko_cdc"),
+      "passwordEnv" -> JsString("MYSQL_CDC_PASSWORD"),
+      "serverId" -> JsNumber(54001),
+      "maxBatchSize" -> JsNumber(100),
+      "pollIntervalMillis" -> JsNumber(500)
+    ))
+    val cdcSink = node("sink-1", "sink", "mysql.cdc.apply", JsObject(
+      "host" -> JsString("mysql"),
+      "port" -> JsNumber(3306),
+      "database" -> JsString("pekko_workflow"),
+      "table" -> JsString("pekko_cdc_target_acceptance"),
+      "username" -> JsString("pekko_workflow"),
+      "passwordEnv" -> JsString("DB_PASSWORD")
+    ))
+    workflow("mysql-cdc", List(cdcSource, cdcSink), List(edge(cdcSource.id, cdcSink.id)))
+  }
+
   val branchedWorkflow: Workflow = workflow(
     "branched",
     List(source, transform, sink, node("sink-2", "sink", "console.log")),

@@ -16,6 +16,7 @@ import java.sql.{Connection, DriverManager}
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{CyclicBarrier, Executors, TimeUnit}
 import java.util.UUID
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 import scala.io.Source.fromInputStream
@@ -40,6 +41,43 @@ class MySQLSinkNodeSpec extends STSpec {
   }
 
   "MySQLSinkNode" should {
+    "pass an environment-backed password to JDBC setup without exposing it in workflow data, logs, or errors" in {
+      val node = sinkNode(batchSize = 100, passwordEnv = Some("WORKFLOW_DB_PASSWORD"))
+      val capturedPasswords = ArrayBuffer.empty[String]
+      val logs = ArrayBuffer.empty[String]
+      val sink = new MySQLSinkNode {
+        override protected[sinks] def getenv(name: String): Option[String] =
+          Option.when(name == "WORKFLOW_DB_PASSWORD")("runtime-secret")
+
+        override protected[sinks] def createDataSource(
+          host: String,
+          port: Int,
+          database: String,
+          username: String,
+          password: String
+        ): HikariDataSource = {
+          capturedPasswords += password
+          throw new IllegalStateException("jdbc setup failed")
+        }
+      }
+
+      val failure = intercept[IllegalStateException] {
+        Await.result(sink.validateReady(node, logs += _), 5.seconds)
+      }
+
+      capturedPasswords shouldBe Vector("runtime-secret")
+      node.toJson.compactPrint should not include "runtime-secret"
+      logs.mkString("\\n") should not include "runtime-secret"
+      failure.getMessage should not include "runtime-secret"
+    }
+
+    "resolve passwordEnv using an injected environment lookup" in {
+      MySQLSinkConfig.parse(
+        sinkNode(batchSize = 100, passwordEnv = Some("WORKFLOW_DB_PASSWORD")),
+        name => Option.when(name == "WORKFLOW_DB_PASSWORD")("s3cr3t")
+      ).password shouldBe "s3cr3t"
+    }
+
     "write every row across complete and partial batches" in {
       withFixture { fixture =>
         val result = Await.result(runSink(fixture, rows = 250, batchSize = 100), 5.seconds)
@@ -48,6 +86,25 @@ class MySQLSinkNodeSpec extends STSpec {
         fixture.selectCount("sink_rows") shouldBe 250
         fixture.lastDataSource.isClosed shouldBe true
         fixture.activeConnections shouldBe 0
+      }
+    }
+
+    "preserve nested objects and arrays as valid compact JSON" in {
+      withFixture { fixture =>
+        val nestedRow =
+          """{"id":501,"payload":{"labels":["alpha","beta"],"metadata":{"enabled":true}}}"""
+
+        Await.result(
+          Source.single(nestedRow).runWith(fixture.node.createSink(sinkNode(batchSize = 100), _ => ())),
+          5.seconds
+        ) shouldBe Done
+
+        val stored = fixture.selectString("SELECT payload FROM sink_rows WHERE id = 501")
+        stored shouldBe """{"labels":["alpha","beta"],"metadata":{"enabled":true}}"""
+        stored.parseJson shouldBe JsObject(
+          "labels" -> JsArray(JsString("alpha"), JsString("beta")),
+          "metadata" -> JsObject("enabled" -> JsBoolean(true))
+        )
       }
     }
 
@@ -127,6 +184,27 @@ class MySQLSinkNodeSpec extends STSpec {
       }
     }
 
+    "upgrade a legacy ledger idempotently without losing MySQL checkpoint rows" in {
+      withFixture { fixture =>
+        fixture.initializeLegacyLedger()
+
+        fixture.initializeLedger()
+        fixture.initializeLedger()
+
+        fixture.ledgerColumns should contain("cursor_kind")
+        fixture.selectString(
+          "SELECT cursor_kind FROM pekko_sync_batch_ledger WHERE batch_id = 'legacy-batch'"
+        ) shouldBe "mysql.numeric-pk"
+        fixture.selectCount("pekko_sync_batch_ledger") shouldBe 1
+
+        val expandedCursor = "x" * 512
+        fixture.updateLegacyCursor(expandedCursor)
+        fixture.selectString(
+          "SELECT cursor_value FROM pekko_sync_batch_ledger WHERE batch_id = 'legacy-batch'"
+        ) shouldBe expandedCursor
+      }
+    }
+
     "validate ledger readiness without changing data" in {
       withFixture { fixture =>
         val failure = intercept[IllegalStateException] {
@@ -174,6 +252,60 @@ class MySQLSinkNodeSpec extends STSpec {
         )
         replay shouldBe AlreadyCommitted(first.checkpoint)
         fixture.selectCount("sink_rows") shouldBe 2
+        fixture.selectCount("pekko_sync_batch_ledger") shouldBe 1
+      }
+    }
+
+    "commit and exactly recognize a Kafka checkpoint replay through JDBC" in {
+      withFixture { fixture =>
+        fixture.initializeLedger()
+        val cursorValue =
+          """{"nextOffsets":{"0":10,"1":20,"2":30,"3":40,"4":50,"5":60},"recordsConsumed":210,"version":1}"""
+        val upperBound =
+          """{"bootstrapServers":"kafka:9092","deadlineEpochMillis":1788076800000,"partitions":[{"endOffset":100,"partition":0,"startOffset":0},{"endOffset":200,"partition":1,"startOffset":0}],"topic":"pekko-workflow-e2e","version":1}"""
+        val batch = SourceBatch(
+          sourceNodeId = "kafka-source",
+          partitionId = "kafka:pekko-workflow-e2e",
+          batchSequence = 7L,
+          batchId = BatchId.sha256(
+            "execution-kafka",
+            "kafka-source",
+            "kafka:pekko-workflow-e2e",
+            7L
+          ),
+          cursor = SourceCursor("kafka.offsets.v1", cursorValue, upperBound),
+          rows = Vector(row(701))
+        )
+
+        val first = Await.result(
+          fixture.node.commitBatch(
+            sinkNode(100),
+            "workflow-kafka",
+            "execution-kafka",
+            batch,
+            batch.rows,
+            _ => ()
+          ),
+          5.seconds
+        )
+        first shouldBe Committed(first.checkpoint)
+
+        val replay = Await.result(
+          fixture.node.commitBatch(
+            sinkNode(100),
+            "workflow-kafka",
+            "execution-kafka",
+            batch,
+            batch.rows,
+            _ => ()
+          ),
+          5.seconds
+        )
+        replay shouldBe AlreadyCommitted(first.checkpoint)
+        replay.checkpoint.cursor.kind shouldBe "kafka.offsets.v1"
+        replay.checkpoint.cursor.value shouldBe cursorValue
+        replay.checkpoint.cursor.upperBound shouldBe upperBound
+        fixture.selectCount("sink_rows") shouldBe 1
         fixture.selectCount("pekko_sync_batch_ledger") shouldBe 1
       }
     }
@@ -349,23 +481,28 @@ class MySQLSinkNodeSpec extends STSpec {
     Source(List(row(1), row(2), row(1)))
       .runWith(fixture.node.createSink(sinkNode(batchSize = 100), _ => ()))
 
-  private def sinkNode(batchSize: Int): WorkflowDSL.Node =
+  private def sinkNode(
+    batchSize: Int,
+    passwordEnv: Option[String] = None
+  ): WorkflowDSL.Node =
     WorkflowDSL.Node(
       id = "mysql-sink",
       `type` = "sink",
       nodeType = "mysql.write",
       label = "MySQL",
       position = WorkflowDSL.Position(0, 0),
-      config = JsObject(
+      config = JsObject((Vector(
         "host" -> JsString("unused"),
         "port" -> JsNumber(3306),
         "database" -> JsString("unused"),
         "table" -> JsString("sink_rows"),
         "username" -> JsString("sa"),
-        "password" -> JsString(""),
         "batchSize" -> JsNumber(batchSize),
         "mode" -> JsString("insert")
-      )
+      ) ++ (passwordEnv match {
+        case Some(value) => Vector("passwordEnv" -> JsString(value))
+        case None => Vector("password" -> JsString("test-password"))
+      })): _*)
     )
 
   private def row(id: Int): String = s"""{"id":$id,"payload":"row-$id"}"""
@@ -396,6 +533,7 @@ class MySQLSinkNodeSpec extends STSpec {
 
   private final class H2Fixture(failInnerSink: Boolean, claimHook: String => Unit) {
     private val jdbcUrl = s"jdbc:h2:mem:mysql_sink_${UUID.randomUUID().toString.replace('-', '_')};MODE=MySQL;DB_CLOSE_DELAY=0"
+    Class.forName("org.h2.Driver")
     private val inspectionConnection: Connection = DriverManager.getConnection(jdbcUrl, "sa", "")
     private var dataSources = Vector.empty[HikariDataSource]
     private val created = Promise[HikariDataSource]()
@@ -412,7 +550,7 @@ class MySQLSinkNodeSpec extends STSpec {
         config.setJdbcUrl(jdbcUrl)
         config.setDriverClassName("org.h2.Driver")
         config.setUsername(username)
-        config.setPassword(password)
+        config.setPassword("")
         config.setMaximumPoolSize(1)
         config.setMinimumIdle(0)
         val dataSource = new HikariDataSource(config)
@@ -453,6 +591,26 @@ class MySQLSinkNodeSpec extends STSpec {
       } finally statement.close()
     }
 
+    def selectString(query: String): String = {
+      val statement = inspectionConnection.createStatement()
+      try {
+        val resultSet = statement.executeQuery(query)
+        try {
+          resultSet.next() shouldBe true
+          resultSet.getString(1)
+        } finally resultSet.close()
+      } finally statement.close()
+    }
+
+    def ledgerColumns: Set[String] = {
+      val result = inspectionConnection.getMetaData.getColumns(null, null, "PEKKO_SYNC_BATCH_LEDGER", null)
+      try {
+        val columns = Set.newBuilder[String]
+        while (result.next()) columns += result.getString("COLUMN_NAME").toLowerCase
+        columns.result()
+      } finally result.close()
+    }
+
     def initializeLedger(): Unit = {
       val input = Option(getClass.getClassLoader.getResourceAsStream("schema/h2/pekko-sync-ledger-schema.sql"))
         .getOrElse(throw new IllegalStateException("missing H2 ledger schema"))
@@ -481,6 +639,30 @@ class MySQLSinkNodeSpec extends STSpec {
             |    (execution_id, source_node_id, partition_id, batch_sequence)
             |)""".stripMargin
         )
+      } finally statement.close()
+    }
+
+    def initializeLegacyLedger(): Unit = {
+      initializeLedgerWithoutCommittedAtColumn(includeCommittedAt = true)
+      val statement = inspectionConnection.createStatement()
+      try {
+        statement.executeUpdate(
+          """INSERT INTO pekko_sync_batch_ledger
+            |(batch_id, workflow_id, execution_id, source_node_id, partition_id, batch_sequence,
+            | cursor_value, upper_bound, source_rows, target_rows)
+            |VALUES ('legacy-batch', 'workflow-legacy', 'execution-legacy', 'source-legacy',
+            | 'pk-range-0', 0, '2', '12', 2, 2)""".stripMargin
+        )
+      } finally statement.close()
+    }
+
+    def updateLegacyCursor(value: String): Unit = {
+      val statement = inspectionConnection.prepareStatement(
+        "UPDATE pekko_sync_batch_ledger SET cursor_value = ? WHERE batch_id = 'legacy-batch'"
+      )
+      try {
+        statement.setString(1, value)
+        statement.executeUpdate()
       } finally statement.close()
     }
 
@@ -529,6 +711,31 @@ class MySQLSinkNodeSpec extends STSpec {
       val statement = inspectionConnection.createStatement()
       try statement.executeUpdate("CREATE TABLE sink_rows (id INT PRIMARY KEY, payload VARCHAR(255) NOT NULL)")
       finally statement.close()
+    }
+
+    private def initializeLedgerWithoutCommittedAtColumn(includeCommittedAt: Boolean): Unit = {
+      val committedAt =
+        if (includeCommittedAt) ", committed_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)"
+        else ""
+      val statement = inspectionConnection.createStatement()
+      try {
+        statement.executeUpdate(
+          s"""CREATE TABLE pekko_sync_batch_ledger (
+             |  batch_id VARCHAR(64) PRIMARY KEY,
+             |  workflow_id VARCHAR(255) NOT NULL,
+             |  execution_id VARCHAR(255) NOT NULL,
+             |  source_node_id VARCHAR(255) NOT NULL,
+             |  partition_id VARCHAR(128) NOT NULL,
+             |  batch_sequence BIGINT NOT NULL,
+             |  cursor_value VARCHAR(128) NOT NULL,
+             |  upper_bound VARCHAR(128) NOT NULL,
+             |  source_rows BIGINT NOT NULL,
+             |  target_rows BIGINT NOT NULL$committedAt,
+             |  CONSTRAINT uq_execution_partition_sequence UNIQUE
+             |    (execution_id, source_node_id, partition_id, batch_sequence)
+             |)""".stripMargin
+        )
+      } finally statement.close()
     }
   }
 }

@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: bigdata-lab
+resources:
+  - headless-service.yaml
+  - api-service.yaml
+  - statefulset.yaml
+configMapGenerator:
+  - name: pekko-cdc-single-config
+    files:
+      - application-cdc-single.conf
+generatorOptions:
+  disableNameSuffixHash: true

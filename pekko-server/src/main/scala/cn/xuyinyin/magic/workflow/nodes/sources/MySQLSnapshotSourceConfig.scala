@@ -1,6 +1,7 @@
 package cn.xuyinyin.magic.workflow.nodes.sources
 
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.workflow.nodes.JdbcPasswordResolver
 import spray.json._
 
 final case class MySQLSnapshotSourceConfig(
@@ -18,7 +19,10 @@ final case class MySQLSnapshotSourceConfig(
 object MySQLSnapshotSourceConfig {
   private val Identifier = "[A-Za-z_][A-Za-z0-9_]*".r
 
-  def parse(node: WorkflowDSL.Node): MySQLSnapshotSourceConfig = {
+  def parse(
+    node: WorkflowDSL.Node,
+    getenv: String => Option[String] = sys.env.get
+  ): MySQLSnapshotSourceConfig = {
     val fields = node.config.fields
     val table = identifier(fields, "table")
     val columns = identifiers(fields, "columns")
@@ -29,7 +33,7 @@ object MySQLSnapshotSourceConfig {
       port = optionalPositiveInt(fields, "port", 3306),
       database = requiredString(fields, "database"),
       username = requiredString(fields, "username"),
-      password = requiredString(fields, "password"),
+      password = JdbcPasswordResolver.resolve(fields, getenv),
       table = table,
       columns = columns,
       primaryKey = primaryKey,

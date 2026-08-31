@@ -8,6 +8,8 @@ import org.apache.pekko.actor.typed.ActorSystem
 import org.apache.pekko.actor.typed.scaladsl.AskPattern._
 import org.apache.pekko.cluster.Cluster
 import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.management.cluster.bootstrap.ClusterBootstrap
+import org.apache.pekko.management.scaladsl.PekkoManagement
 import org.apache.pekko.util.Timeout
 
 import scala.concurrent.ExecutionContextExecutor
@@ -47,6 +49,14 @@ object PekkoClusterService {
       ActorSystem(PekkoGuardian(), systemName, dynamicConfig)
     implicit val ec: ExecutionContextExecutor = system.executionContext
     implicit val timeout: Timeout = Timeout(5.seconds)
+
+    if (shouldStartClusterBootstrap(dynamicConfig)) {
+      PekkoManagement(system).start().failed.foreach { exception =>
+        logger.error(s"Failed to bind Pekko Management: ${exception.getMessage}")
+        system.terminate()
+      }
+      ClusterBootstrap(system).start()
+    }
     
     // 获取集群角色信息
     val cluster = Cluster(system)
@@ -65,6 +75,10 @@ object PekkoClusterService {
     // 保持服务运行
     waitForTermination(system)
   }
+
+  private[server] def shouldStartClusterBootstrap(config: Config): Boolean =
+    config.hasPath("pekko.workflow.cluster-bootstrap.enabled") &&
+      config.getBoolean("pekko.workflow.cluster-bootstrap.enabled")
   
   /**
    * 根据节点角色启动相应的服务

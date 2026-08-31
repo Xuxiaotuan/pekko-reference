@@ -73,7 +73,48 @@ object WorkflowValidator {
       if (path.lastOption.forall(_.id != sink.id) || pathIds.size != workflow.nodes.size) {
         Left(Vector(WorkflowValidationError("disconnected_node", "Every node must belong to the Source to Sink path")))
       } else {
-        Right(ValidatedPipeline(source, path.drop(1).dropRight(1), sink))
+        val pipeline = ValidatedPipeline(source, path.drop(1).dropRight(1), sink)
+        val cdcErrors = Vector.newBuilder[WorkflowValidationError]
+        if (source.nodeType == "mysql.cdc") {
+          if (source.config.fields.contains("password")) {
+            cdcErrors += WorkflowValidationError(
+              "mysql_cdc_inline_password_not_supported",
+              "MySQL CDC source definitions require passwordEnv and must not contain password"
+            )
+          }
+          if (pipeline.transforms.nonEmpty) {
+            cdcErrors += WorkflowValidationError(
+              "mysql_cdc_transform_not_supported",
+              "MySQL CDC workflows must connect the source directly to the sink"
+            )
+          }
+          if (sink.nodeType != "mysql.cdc.apply") {
+            cdcErrors += WorkflowValidationError(
+              "mysql_cdc_sink_required",
+              "MySQL CDC sources require a mysql.cdc.apply sink"
+            )
+          }
+          if (workflow.metadata.schedule.exists(_.enabled)) {
+            cdcErrors += WorkflowValidationError(
+              "mysql_cdc_schedule_not_supported",
+              "MySQL CDC workflows do not support scheduled execution"
+            )
+          }
+        }
+        if (sink.nodeType == "mysql.cdc.apply" && sink.config.fields.contains("password")) {
+          cdcErrors += WorkflowValidationError(
+            "mysql_cdc_inline_password_not_supported",
+            "MySQL CDC apply sink definitions require passwordEnv and must not contain password"
+          )
+        }
+        if (sink.nodeType == "mysql.cdc.apply" && source.nodeType != "mysql.cdc") {
+          cdcErrors += WorkflowValidationError(
+            "mysql_cdc_source_required",
+            "MySQL CDC apply sinks require a mysql.cdc source"
+          )
+        }
+        val validationErrors = cdcErrors.result()
+        if (validationErrors.nonEmpty) Left(validationErrors) else Right(pipeline)
       }
     }
   }

@@ -28,6 +28,7 @@ object NodeRegistry {
       new SequenceSource(),
       new MemorySource(),
       new KafkaSource(),
+      new MySQLCdcSourceNode(),
       new MySQLSnapshotSourceNode(),
       new MySQLSourceNode()  // MySQL连接器（真实JDBC实现）
       // SqlSource已移除（DataFusion依赖）
@@ -40,6 +41,7 @@ object NodeRegistry {
     val sinks = List(
       new ConsoleLogSink(),
       new FileTextSink(),
+      new MySQLCdcApplySinkNode(),
       new MySQLSinkNode()  // MySQL连接器（真实JDBC实现）
     )
     sinks.map(s => s.nodeType -> s).toMap

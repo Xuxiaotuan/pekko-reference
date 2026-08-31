@@ -1,21 +1,25 @@
 package cn.xuyinyin.magic.workflow.integration
 
+import cn.xuyinyin.magic.workflow.WorkflowFixtures
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
 import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
 import cn.xuyinyin.magic.workflow.sharding.WorkflowSharding
-import spray.json._
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.actor.testkit.typed.scaladsl.{ActorTestKit, ScalaTestWithActorTestKit}
-import org.apache.pekko.actor.typed.ActorSystem
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.scaladsl.AskPattern._
+import org.apache.pekko.cluster.MemberStatus
 import org.apache.pekko.cluster.sharding.typed.ShardingEnvelope
 import org.apache.pekko.cluster.typed.{Cluster, Join}
+import org.apache.pekko.util.Timeout
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 /**
@@ -23,7 +27,7 @@ import scala.concurrent.duration._
  * 
  * 测试3节点集群的以下功能：
  * - 集群启动和节点加入
- * - 工作流创建和分布
+ * - 分片实体路由和工作流初始化
  * - 工作流执行
  * - 状态查询
  * 
@@ -43,14 +47,17 @@ class ClusterIntegrationSpec
   var node1: ActorTestKit = _
   var node2: ActorTestKit = _
   var node3: ActorTestKit = _
+  var shardRegion1: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]] = _
+  var shardRegion2: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]] = _
+  var shardRegion3: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]] = _
 
   override def beforeAll(): Unit = {
     super.beforeAll()
     
     // 创建3个节点
-    node1 = ActorTestKit("ClusterSystem", ClusterIntegrationSpec.nodeConfig(2551))
-    node2 = ActorTestKit("ClusterSystem", ClusterIntegrationSpec.nodeConfig(2552))
-    node3 = ActorTestKit("ClusterSystem", ClusterIntegrationSpec.nodeConfig(2553))
+    node1 = ActorTestKit(ClusterIntegrationSpec.systemName, ClusterIntegrationSpec.nodeConfig)
+    node2 = ActorTestKit(ClusterIntegrationSpec.systemName, ClusterIntegrationSpec.nodeConfig)
+    node3 = ActorTestKit(ClusterIntegrationSpec.systemName, ClusterIntegrationSpec.nodeConfig)
     
     // 让所有节点加入集群
     val cluster1 = Cluster(node1.system)
@@ -63,17 +70,25 @@ class ClusterIntegrationSpec
     
     // 等待集群形成
     eventually {
-      cluster1.state.members.size shouldBe 3
-      cluster2.state.members.size shouldBe 3
-      cluster3.state.members.size shouldBe 3
+      Seq(cluster1, cluster2, cluster3).foreach { cluster =>
+        cluster.state.members should have size 3
+        cluster.state.members.iterator.map(_.status).toSet shouldBe Set(MemberStatus.Up)
+      }
     }
+
+    implicit val ec1 = node1.system.executionContext
+    shardRegion1 = WorkflowSharding.init(node1.system, new WorkflowExecutionEngine()(node1.system, ec1))(ec1)
+    implicit val ec2 = node2.system.executionContext
+    shardRegion2 = WorkflowSharding.init(node2.system, new WorkflowExecutionEngine()(node2.system, ec2))(ec2)
+    implicit val ec3 = node3.system.executionContext
+    shardRegion3 = WorkflowSharding.init(node3.system, new WorkflowExecutionEngine()(node3.system, ec3))(ec3)
   }
 
   override def afterAll(): Unit = {
-    node1.shutdownTestKit()
-    node2.shutdownTestKit()
-    node3.shutdownTestKit()
-    super.afterAll()
+    val nodes = Seq(node1, node2, node3).filter(_ != null)
+    nodes.foreach(_.system.terminate())
+    try nodes.foreach(node => Await.result(node.system.whenTerminated, 20.seconds))
+    finally super.afterAll()
   }
 
   "Cluster Integration" should {
@@ -90,55 +105,15 @@ class ClusterIntegrationSpec
 
       // 验证所有节点都是Up状态
       cluster1.state.members.foreach { member =>
-        member.status.toString shouldBe "Up"
+        member.status shouldBe MemberStatus.Up
       }
     }
 
-    "distribute workflows across nodes" in {
-      // 在node1上初始化WorkflowSharding
-      implicit val ec = node1.system.executionContext
-      val executionEngine1 = new WorkflowExecutionEngine()(node1.system, ec)
-      val shardRegion1 = WorkflowSharding.init(node1.system, executionEngine1)
-
-      // 在node2上初始化WorkflowSharding
-      val executionEngine2 = new WorkflowExecutionEngine()(node2.system, ec)
-      val shardRegion2 = WorkflowSharding.init(node2.system, executionEngine2)
-
-      // 在node3上初始化WorkflowSharding
-      val executionEngine3 = new WorkflowExecutionEngine()(node3.system, ec)
-      val shardRegion3 = WorkflowSharding.init(node3.system, executionEngine3)
-
-      // 等待Sharding初始化完成
-      Thread.sleep(2000)
-
+    "route and initialize workflow entities through cluster sharding" in {
       // 创建多个工作流
       val workflows = (1 to 10).map { i =>
-        val workflowId = s"workflow-$i"
-        val workflow = Workflow(
-          id = workflowId,
-          name = s"Test Workflow $i",
-          description = s"Test workflow $i",
-          version = "1.0",
-          author = "test",
-          tags = List("test", "integration"),
-          nodes = List(
-            Node(
-              id = s"node-$i",
-              `type` = "transform",
-              nodeType = "shell",
-              label = s"Test Node $i",
-              position = Position(0, 0),
-              config = spray.json.JsObject("command" -> spray.json.JsString("echo 'test'"))
-            )
-          ),
-          edges = List.empty,
-          metadata = WorkflowMetadata(
-            createdAt = java.time.Instant.now().toString,
-            updatedAt = java.time.Instant.now().toString,
-            executionHistory = None,
-            schedule = None
-          )
-        )
+        val workflowId = ClusterIntegrationSpec.workflowId(s"workflow-$i")
+        val workflow = ClusterIntegrationSpec.workflow(workflowId, s"Test Workflow $i")
 
         // 发送Initialize命令
         val probe = node1.createTestProbe[EventSourcedWorkflowActor.Response]()
@@ -148,7 +123,7 @@ class ClusterIntegrationSpec
         )
 
         // 等待响应
-        probe.expectMessageType[EventSourcedWorkflowActor.InitializeResponse](5.seconds)
+        probe.expectMessage(EventSourcedWorkflowActor.InitializeResponse(workflowId, "initialized"))
         
         workflowId
       }
@@ -157,110 +132,59 @@ class ClusterIntegrationSpec
     }
 
     "execute workflows successfully" in {
-      // 在node1上初始化WorkflowSharding
-      implicit val ec = node1.system.executionContext
-      val executionEngine = new WorkflowExecutionEngine()(node1.system, ec)
-      val shardRegion = WorkflowSharding.init(node1.system, executionEngine)
-
-      // 等待Sharding初始化完成
-      Thread.sleep(2000)
-
       // 创建一个工作流
-      val workflowId = "exec-workflow-1"
-      val workflow = Workflow(
-        id = workflowId,
-        name = "Execution Test Workflow",
-        description = "Execution test workflow",
-        version = "1.0",
-        author = "test",
-        tags = List("test", "execution"),
-        nodes = List(
-          Node(
-            id = "node-1",
-            `type` = "transform",
-            nodeType = "shell",
-            label = "Test Node",
-            position = Position(0, 0),
-            config = spray.json.JsObject("command" -> spray.json.JsString("echo 'test'"))
-          )
-        ),
-        edges = List.empty,
-        metadata = WorkflowMetadata(
-          createdAt = java.time.Instant.now().toString,
-          updatedAt = java.time.Instant.now().toString,
-          executionHistory = None,
-          schedule = None
-        )
-      )
+      val workflowId = ClusterIntegrationSpec.workflowId("exec-workflow")
+      val workflow = ClusterIntegrationSpec.workflow(workflowId, "Execution Test Workflow")
 
       // 初始化工作流
       val initProbe = node1.createTestProbe[EventSourcedWorkflowActor.Response]()
-      shardRegion ! ShardingEnvelope(
+      shardRegion1 ! ShardingEnvelope(
         workflowId,
         EventSourcedWorkflowActor.Initialize(workflow, initProbe.ref)
       )
-      initProbe.expectMessageType[EventSourcedWorkflowActor.InitializeResponse](5.seconds)
+      initProbe.expectMessage(EventSourcedWorkflowActor.InitializeResponse(workflowId, "initialized"))
 
       // 执行工作流
       val execProbe = node1.createTestProbe[EventSourcedWorkflowActor.Response]()
-      shardRegion ! ShardingEnvelope(
+      shardRegion1 ! ShardingEnvelope(
         workflowId,
         EventSourcedWorkflowActor.Execute(execProbe.ref)
       )
 
-      // 等待执行完成
+      // 验证执行已被准确启动
       val response = execProbe.expectMessageType[EventSourcedWorkflowActor.ExecutionResponse](5.seconds)
       response.executionId should not be empty
+      response.status shouldBe "started"
+
+      // 通过公开状态协议有界轮询，验证异步 sequence -> map -> console 执行真正完成
+      eventually {
+        val status = Await.result(workflowStatus(shardRegion1, workflowId), 2.seconds)
+        status.workflowId shouldBe workflowId
+        status.state shouldBe "completed"
+        status.currentExecution shouldBe None
+        val completed = status.allExecutions.find(_.executionId == response.executionId)
+          .getOrElse(fail(s"completed execution ${response.executionId} was absent from public status history: $status"))
+        completed.status shouldBe "completed"
+        completed.endTime should not be empty
+      }
     }
 
     "query workflow status successfully" in {
-      // 在node1上初始化WorkflowSharding
-      implicit val ec = node1.system.executionContext
-      val executionEngine = new WorkflowExecutionEngine()(node1.system, ec)
-      val shardRegion = WorkflowSharding.init(node1.system, executionEngine)
-
-      // 等待Sharding初始化完成
-      Thread.sleep(2000)
-
       // 创建一个工作流
-      val workflowId = "status-workflow-1"
-      val workflow = Workflow(
-        id = workflowId,
-        name = "Status Test Workflow",
-        description = "Status test workflow",
-        version = "1.0",
-        author = "test",
-        tags = List("test", "status"),
-        nodes = List(
-          Node(
-            id = "node-1",
-            `type` = "transform",
-            nodeType = "shell",
-            label = "Test Node",
-            position = Position(0, 0),
-            config = spray.json.JsObject("command" -> spray.json.JsString("echo 'test'"))
-          )
-        ),
-        edges = List.empty,
-        metadata = WorkflowMetadata(
-          createdAt = java.time.Instant.now().toString,
-          updatedAt = java.time.Instant.now().toString,
-          executionHistory = None,
-          schedule = None
-        )
-      )
+      val workflowId = ClusterIntegrationSpec.workflowId("status-workflow")
+      val workflow = ClusterIntegrationSpec.workflow(workflowId, "Status Test Workflow")
 
       // 初始化工作流
       val initProbe = node1.createTestProbe[EventSourcedWorkflowActor.Response]()
-      shardRegion ! ShardingEnvelope(
+      shardRegion1 ! ShardingEnvelope(
         workflowId,
         EventSourcedWorkflowActor.Initialize(workflow, initProbe.ref)
       )
-      initProbe.expectMessageType[EventSourcedWorkflowActor.InitializeResponse](5.seconds)
+      initProbe.expectMessage(EventSourcedWorkflowActor.InitializeResponse(workflowId, "initialized"))
 
       // 查询状态
       val statusProbe = node1.createTestProbe[EventSourcedWorkflowActor.Response]()
-      shardRegion ! ShardingEnvelope(
+      shardRegion1 ! ShardingEnvelope(
         workflowId,
         EventSourcedWorkflowActor.GetStatus(statusProbe.ref)
       )
@@ -271,55 +195,16 @@ class ClusterIntegrationSpec
     }
 
     "handle workflow queries from different nodes" in {
-      // 在所有节点上初始化WorkflowSharding
-      implicit val ec = node1.system.executionContext
-      
-      val executionEngine1 = new WorkflowExecutionEngine()(node1.system, ec)
-      val shardRegion1 = WorkflowSharding.init(node1.system, executionEngine1)
-      
-      val executionEngine2 = new WorkflowExecutionEngine()(node2.system, ec)
-      val shardRegion2 = WorkflowSharding.init(node2.system, executionEngine2)
-      
-      val executionEngine3 = new WorkflowExecutionEngine()(node3.system, ec)
-      val shardRegion3 = WorkflowSharding.init(node3.system, executionEngine3)
-
-      // 等待Sharding初始化完成
-      Thread.sleep(2000)
-
       // 在node1上创建工作流
-      val workflowId = "multi-node-workflow-1"
-      val workflow = Workflow(
-        id = workflowId,
-        name = "Multi-Node Test Workflow",
-        description = "Multi-node test workflow",
-        version = "1.0",
-        author = "test",
-        tags = List("test", "multi-node"),
-        nodes = List(
-          Node(
-            id = "node-1",
-            `type` = "transform",
-            nodeType = "shell",
-            label = "Test Node",
-            position = Position(0, 0),
-            config = spray.json.JsObject("command" -> spray.json.JsString("echo 'test'"))
-          )
-        ),
-        edges = List.empty,
-        metadata = WorkflowMetadata(
-          createdAt = java.time.Instant.now().toString,
-          updatedAt = java.time.Instant.now().toString,
-          executionHistory = None,
-          schedule = None
-        )
-      )
+      val workflowId = ClusterIntegrationSpec.workflowId("multi-node-workflow")
+      val workflow = ClusterIntegrationSpec.workflow(workflowId, "Multi-Node Test Workflow")
 
       val initProbe = node1.createTestProbe[EventSourcedWorkflowActor.Response]()
       shardRegion1 ! ShardingEnvelope(
         workflowId,
         EventSourcedWorkflowActor.Initialize(workflow, initProbe.ref)
       )
-      initProbe.expectMessageType[EventSourcedWorkflowActor.InitializeResponse](5.seconds)
+      initProbe.expectMessage(EventSourcedWorkflowActor.InitializeResponse(workflowId, "initialized"))
 
       // 从node2查询状态
       val statusProbe2 = node2.createTestProbe[EventSourcedWorkflowActor.Response]()
@@ -340,9 +225,26 @@ class ClusterIntegrationSpec
       statusResponse3.workflowId shouldBe workflowId
     }
   }
+
+  private def workflowStatus(
+    region: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]],
+    workflowId: String
+  ): scala.concurrent.Future[EventSourcedWorkflowActor.StatusResponse] = {
+    val timeout: Timeout = Timeout(2.seconds)
+    region.ask[EventSourcedWorkflowActor.StatusResponse](replyTo =>
+      ShardingEnvelope(workflowId, EventSourcedWorkflowActor.GetStatus(replyTo))
+    )(timeout, node1.system.scheduler)
+  }
 }
 
 object ClusterIntegrationSpec {
+  private val runId = java.util.UUID.randomUUID().toString
+  val systemName: String = s"ClusterSystem-$runId"
+
+  def workflowId(prefix: String): String = s"$prefix-$runId"
+
+  def workflow(id: String, name: String): Workflow =
+    WorkflowFixtures.linearWorkflow.copy(id = id, name = name)
   
   val config = ConfigFactory.parseString(
     """
@@ -362,6 +264,7 @@ object ClusterIntegrationSpec {
         sharding {
           number-of-shards = 10
           role = "worker"
+          remember-entities = off
         }
       }
       
@@ -375,10 +278,10 @@ object ClusterIntegrationSpec {
     }
     """).withFallback(ConfigFactory.load("application-test"))
 
-  def nodeConfig(port: Int) = ConfigFactory.parseString(
-    s"""
+  val nodeConfig = ConfigFactory.parseString(
+    """
     pekko {
-      remote.artery.canonical.port = $port
+      remote.artery.canonical.port = 0
       cluster.roles = ["worker"]
     }
     """).withFallback(config)

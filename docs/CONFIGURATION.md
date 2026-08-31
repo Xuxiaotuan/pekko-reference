@@ -32,6 +32,21 @@ truncate 表，也不替代部署前的三表 schema 初始化检查。
 | `DB_NAME` | 专用持久化数据库 |
 | `DB_USER` | 仅拥有该数据库所需权限的账号 |
 | `DB_PASSWORD` | 数据库密码 |
+| `MYSQL_CDC_ENABLED` | 显式设为 `true` 才在通用生产配置中启用 MySQL CDC |
+| `CDC_OFFSET_FLUSH_INTERVAL_MS` | Debezium offset 刷新间隔；正常运行默认每批尝试刷新（`0`） |
+
+## MySQL CDC 状态配置
+
+通用 `application-prod.conf` 默认关闭 MySQL CDC，避免未部署 CDC 的普通集群因缺少
+CDC 凭据而启动失败。启用时设置 `MYSQL_CDC_ENABLED=true`；专用
+`cdc-single/application-cdc-single.conf` 已显式启用。
+
+CDC offset 和 schema history 复用 Pekko JDBC persistence 的 MySQL URL，并使用
+`DB_USER`、`DB_PASSWORD` 连接。配置中的 `offset-table`、`history-table` 是表名前缀；
+运行时按稳定 `connectorId` 派生独立表：前缀最多保留 31 个字符，再拼接下划线和
+SHA-256(`connectorId`) 的前 32 个小写十六进制字符。这样不同 connector 不共享、
+不覆盖进度。表在恢复时复用，停止或删除 workflow 不会自动清理；清理 connector
+状态属于可能造成重放或数据缺口的独立管理操作。
 
 ## Seed 和角色是 typed list
 

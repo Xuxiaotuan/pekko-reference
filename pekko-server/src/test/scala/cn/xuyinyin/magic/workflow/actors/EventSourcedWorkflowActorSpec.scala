@@ -16,6 +16,7 @@ import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
 import cn.xuyinyin.magic.workflow.events.WorkflowEvents._
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSource, NodeSource}
+import cn.xuyinyin.magic.workflow.nodes.sources.KafkaCheckpointCodec
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -26,6 +27,7 @@ import org.scalatest.OptionValues
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.sql.DriverManager
+import scala.collection.mutable
 import scala.io.{Source => IoSource}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
@@ -77,10 +79,29 @@ class EventSourcedWorkflowActorSpec
       Source.failed(new AssertionError("actor checkpoint test must not execute the source"))
   }
 
+  private object TestKafkaSource extends NodeSource with CheckpointedNodeSource {
+    override val nodeType: String = "kafka.consumer"
+    override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] = Source.empty
+    override def discoverBoundary(node: WorkflowDSL.Node, onLog: String => Unit)(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] =
+      Future.failed(new AssertionError("actor Kafka checkpoint test must not execute the source"))
+    override def createBatches(
+      node: WorkflowDSL.Node,
+      executionId: String,
+      boundary: SnapshotBoundary,
+      resume: Option[BatchCheckpoint],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] =
+      Source.failed(new AssertionError("actor Kafka checkpoint test must not execute the source"))
+  }
+
   private val reliableWorkflow = WorkflowFixtures.linearWorkflow.copy(nodes =
     WorkflowFixtures.linearWorkflow.nodes
       .updated(0, WorkflowFixtures.linearWorkflow.nodes.head.copy(nodeType = "mysql.snapshot"))
       .updated(2, WorkflowFixtures.linearWorkflow.nodes(2).copy(nodeType = "mysql.write"))
+  )
+
+  private val kafkaWorkflow = reliableWorkflow.copy(nodes =
+    reliableWorkflow.nodes.updated(0, reliableWorkflow.nodes.head.copy(nodeType = TestKafkaSource.nodeType))
   )
 
   private def engineReturning(result: ExecutionResult): WorkflowExecutionEngine = new WorkflowExecutionEngine() {
@@ -262,6 +283,163 @@ class EventSourcedWorkflowActorSpec
         running.boundary shouldBe Some(boundary)
         running.checkpoints shouldBe Vector(sequence1)
       } finally cn.xuyinyin.magic.workflow.engine.ActorSpecNodeRegistryCleanup.unregister(TestSnapshotSource)
+    }
+
+    "carry an accepted Kafka checkpoint from a failed execution into the next run" in {
+      NodeRegistry.registerSource(TestKafkaSource)
+      val firstCompletion = Promise[ExecutionResult]()
+      val secondCompletion = Promise[ExecutionResult]()
+      val completions = mutable.Queue(firstCompletion, secondCompletion)
+      val pendingEngine = new WorkflowExecutionEngine() {
+        private def nextResult(): Future[ExecutionResult] = completions.dequeue().future
+        override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
+          nextResult()
+        override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] =
+          nextResult()
+      }
+      val actor = spawn(EventSourcedWorkflowActor("kafka-progress", pendingEngine), "kafka-progress")
+      val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
+
+      try {
+        actor ! EventSourcedWorkflowActor.DefineWorkflow(kafkaWorkflow, expectedRevision = 0L, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.Defined("kafka-progress", revision = 1L))
+        actor ! EventSourcedWorkflowActor.ExecuteManual("run-1", reply.ref)
+        val first = reply.expectMessageType[EventSourcedWorkflowActor.ExecutionAccepted]
+
+        val frozenBoundary = "{\"0\":50}"
+        val boundary = SnapshotBoundary("source-1", "kafka-boundary-1", Some(frozenBoundary))
+        actor ! EventSourcedWorkflowActor.InitializeSnapshot(first.executionId, boundary, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.SnapshotInitialized(boundary))
+        val checkpoint = BatchCheckpoint(
+          sourceNodeId = "source-1",
+          partitionId = "kafka-boundary-1",
+          batchSequence = 0L,
+          batchId = BatchId.sha256(first.executionId, "source-1", "kafka-boundary-1", 0L),
+          cursor = SourceCursor(KafkaCheckpointCodec.CursorKind, "{\"0\":30}", frozenBoundary),
+          sourceRowsScanned = 10L,
+          targetRowsWritten = 10L
+        )
+        actor ! EventSourcedWorkflowActor.AdvanceCheckpoint(first.executionId, checkpoint, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.CheckpointAccepted(checkpoint))
+        firstCompletion.success(failed)
+        eventuallySummary(actor)(_.status shouldBe EventSourcedWorkflowActor.Failed)
+
+        actor ! EventSourcedWorkflowActor.ExecuteManual("run-2", reply.ref)
+        val second = reply.expectMessageType[EventSourcedWorkflowActor.ExecutionAccepted]
+        second.executionId should not be first.executionId
+        val stateProbe = createTestProbe[EventSourcedWorkflowActor.ReliableRunState]()
+        actor ! EventSourcedWorkflowActor.GetReliableRunState(stateProbe.ref)
+        stateProbe.receiveMessage().currentExecution.value.checkpoints shouldBe Vector(checkpoint)
+      } finally {
+        firstCompletion.trySuccess(failed)
+        secondCompletion.trySuccess(succeeded)
+        testKit.stop(actor)
+        cn.xuyinyin.magic.workflow.engine.ActorSpecNodeRegistryCleanup.unregister(TestKafkaSource)
+      }
+    }
+
+    "keep a MySQL checkpoint scoped to its execution" in {
+      NodeRegistry.registerSource(TestSnapshotSource)
+      val firstCompletion = Promise[ExecutionResult]()
+      val secondCompletion = Promise[ExecutionResult]()
+      val completions = mutable.Queue(firstCompletion, secondCompletion)
+      val pendingEngine = new WorkflowExecutionEngine() {
+        private def nextResult(): Future[ExecutionResult] = completions.dequeue().future
+        override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
+          nextResult()
+        override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] =
+          nextResult()
+      }
+      val actor = spawn(EventSourcedWorkflowActor("mysql-execution-progress", pendingEngine), "mysql-execution-progress")
+      val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
+
+      try {
+        actor ! EventSourcedWorkflowActor.DefineWorkflow(reliableWorkflow, expectedRevision = 0L, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.Defined("mysql-execution-progress", revision = 1L))
+        actor ! EventSourcedWorkflowActor.ExecuteManual("run-1", reply.ref)
+        val first = reply.expectMessageType[EventSourcedWorkflowActor.ExecutionAccepted]
+
+        val boundary = SnapshotBoundary("source-1", "pk-range-0", Some("50"))
+        actor ! EventSourcedWorkflowActor.InitializeSnapshot(first.executionId, boundary, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.SnapshotInitialized(boundary))
+        val checkpoint = BatchCheckpoint(
+          "source-1",
+          "pk-range-0",
+          0L,
+          BatchId.sha256(first.executionId, "source-1", "pk-range-0", 0L),
+          SourceCursor("mysql.numeric-pk", "30", "50"),
+          10L,
+          10L
+        )
+        actor ! EventSourcedWorkflowActor.AdvanceCheckpoint(first.executionId, checkpoint, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.CheckpointAccepted(checkpoint))
+        firstCompletion.success(failed)
+        eventuallySummary(actor)(_.status shouldBe EventSourcedWorkflowActor.Failed)
+
+        actor ! EventSourcedWorkflowActor.ExecuteManual("run-2", reply.ref)
+        reply.expectMessageType[EventSourcedWorkflowActor.ExecutionAccepted]
+        val stateProbe = createTestProbe[EventSourcedWorkflowActor.ReliableRunState]()
+        actor ! EventSourcedWorkflowActor.GetReliableRunState(stateProbe.ref)
+        stateProbe.receiveMessage().currentExecution.value.checkpoints shouldBe empty
+      } finally {
+        firstCompletion.trySuccess(failed)
+        secondCompletion.trySuccess(succeeded)
+        testKit.stop(actor)
+        cn.xuyinyin.magic.workflow.engine.ActorSpecNodeRegistryCleanup.unregister(TestSnapshotSource)
+      }
+    }
+
+    "clear Kafka progress when a new workflow revision is defined" in {
+      NodeRegistry.registerSource(TestKafkaSource)
+      val firstCompletion = Promise[ExecutionResult]()
+      val secondCompletion = Promise[ExecutionResult]()
+      val completions = mutable.Queue(firstCompletion, secondCompletion)
+      val pendingEngine = new WorkflowExecutionEngine() {
+        private def nextResult(): Future[ExecutionResult] = completions.dequeue().future
+        override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
+          nextResult()
+        override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] =
+          nextResult()
+      }
+      val actor = spawn(EventSourcedWorkflowActor("kafka-progress-revision", pendingEngine), "kafka-progress-revision")
+      val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
+
+      try {
+        actor ! EventSourcedWorkflowActor.DefineWorkflow(kafkaWorkflow, expectedRevision = 0L, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.Defined("kafka-progress-revision", revision = 1L))
+        actor ! EventSourcedWorkflowActor.ExecuteManual("run-1", reply.ref)
+        val first = reply.expectMessageType[EventSourcedWorkflowActor.ExecutionAccepted]
+        val frozenBoundary = "{\"0\":50}"
+        val boundary = SnapshotBoundary("source-1", "kafka-boundary-1", Some(frozenBoundary))
+        actor ! EventSourcedWorkflowActor.InitializeSnapshot(first.executionId, boundary, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.SnapshotInitialized(boundary))
+        val checkpoint = BatchCheckpoint(
+          "source-1",
+          "kafka-boundary-1",
+          0L,
+          BatchId.sha256(first.executionId, "source-1", "kafka-boundary-1", 0L),
+          SourceCursor(KafkaCheckpointCodec.CursorKind, "{\"0\":30}", frozenBoundary),
+          10L,
+          10L
+        )
+        actor ! EventSourcedWorkflowActor.AdvanceCheckpoint(first.executionId, checkpoint, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.CheckpointAccepted(checkpoint))
+        firstCompletion.success(failed)
+        eventuallySummary(actor)(_.status shouldBe EventSourcedWorkflowActor.Failed)
+
+        actor ! EventSourcedWorkflowActor.DefineWorkflow(kafkaWorkflow, expectedRevision = 1L, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.Defined("kafka-progress-revision", revision = 2L))
+        actor ! EventSourcedWorkflowActor.ExecuteManual("run-2", reply.ref)
+        reply.expectMessageType[EventSourcedWorkflowActor.ExecutionAccepted]
+        val stateProbe = createTestProbe[EventSourcedWorkflowActor.ReliableRunState]()
+        actor ! EventSourcedWorkflowActor.GetReliableRunState(stateProbe.ref)
+        stateProbe.receiveMessage().currentExecution.value.checkpoints shouldBe empty
+      } finally {
+        firstCompletion.trySuccess(failed)
+        secondCompletion.trySuccess(succeeded)
+        testKit.stop(actor)
+        cn.xuyinyin.magic.workflow.engine.ActorSpecNodeRegistryCleanup.unregister(TestKafkaSource)
+      }
     }
 
     "canonicalize recursively sorted workflow JSON and bound schedule watermarks" in {

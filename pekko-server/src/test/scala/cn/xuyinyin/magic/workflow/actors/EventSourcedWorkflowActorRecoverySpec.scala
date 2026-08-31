@@ -18,6 +18,7 @@ import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
 import cn.xuyinyin.magic.workflow.events.WorkflowEvents.ExecutionTrigger
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, CheckpointedNodeSource, NodeSink, NodeSource}
+import cn.xuyinyin.magic.workflow.nodes.sources.KafkaCheckpointCodec
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.actor.ExtendedActorSystem
@@ -31,6 +32,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.sql.DriverManager
 import java.util.concurrent.atomic.AtomicInteger
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 import scala.io.{Source => IoSource}
@@ -169,6 +171,9 @@ class EventSourcedWorkflowActorRecoverySpec
       .updated(0, WorkflowFixtures.linearWorkflow.nodes.head.copy(nodeType = "mysql.snapshot"))
       .updated(2, WorkflowFixtures.linearWorkflow.nodes(2).copy(nodeType = "mysql.write"))
   )
+  private val kafkaWorkflow = reliableWorkflow.copy(nodes =
+    reliableWorkflow.nodes.updated(0, reliableWorkflow.nodes.head.copy(nodeType = KafkaCheckpointSource.nodeType))
+  )
   private val customReliableWorkflow = WorkflowFixtures.linearWorkflow.copy(nodes =
     WorkflowFixtures.linearWorkflow.nodes
       .updated(0, WorkflowFixtures.linearWorkflow.nodes.head.copy(nodeType = CustomCheckpointSource.nodeType))
@@ -189,6 +194,21 @@ class EventSourcedWorkflowActorRecoverySpec
     )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = Source.empty
   }
 
+  private object KafkaCheckpointSource extends NodeSource with CheckpointedNodeSource {
+    override val nodeType: String = "kafka.consumer"
+    override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] = Source.empty
+    override def discoverBoundary(node: WorkflowDSL.Node, onLog: String => Unit)(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] =
+      Future.failed(new AssertionError("Kafka progress recovery test must not execute the source"))
+    override def createBatches(
+      node: WorkflowDSL.Node,
+      executionId: String,
+      boundary: SnapshotBoundary,
+      resume: Option[BatchCheckpoint],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] =
+      Source.failed(new AssertionError("Kafka progress recovery test must not execute the source"))
+  }
+
   private object CustomCheckpointSink extends NodeSink with CheckpointedNodeSink {
     override val nodeType: String = "test.actor-checkpoint-sink"
     override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] = Sink.ignore
@@ -202,6 +222,70 @@ class EventSourcedWorkflowActorRecoverySpec
       onLog: String => Unit
     )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] =
       Future.failed(new AssertionError("actor routing test must not execute connector batches"))
+  }
+
+  private object ControllableCdcSource extends NodeSource with CheckpointedNodeSource {
+    override val nodeType: String = "mysql.cdc"
+    override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] = Source.empty
+    override def discoverBoundary(node: WorkflowDSL.Node, onLog: String => Unit)(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] =
+      Future.successful(SnapshotBoundary(node.id, "mysql-cdc:orders-cdc-v1", Some("stream-v1")))
+    override def createBatches(
+      node: WorkflowDSL.Node,
+      executionId: String,
+      boundary: SnapshotBoundary,
+      resume: Option[BatchCheckpoint],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = Source.empty
+  }
+
+  private object ControllableCdcSink extends NodeSink with CheckpointedNodeSink {
+    override val nodeType: String = "mysql.cdc.apply"
+    override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] = Sink.ignore
+    override def validateReady(node: WorkflowDSL.Node, onLog: String => Unit)(implicit blockingEc: ExecutionContext): Future[Done] = Future.successful(Done)
+    override def commitBatch(
+      node: WorkflowDSL.Node,
+      workflowId: String,
+      executionId: String,
+      batch: SourceBatch,
+      transformedRows: Vector[String],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] =
+      Future.failed(new AssertionError("actor CDC routing test must not execute connector batches"))
+  }
+
+  private object RestartAwareCdcSource extends NodeSource with CheckpointedNodeSource {
+    override val nodeType: String = "mysql.cdc"
+    private val createCount = new AtomicInteger(0)
+    private val events = ListBuffer.empty[String]
+
+    def reset(): Unit = {
+      createCount.set(0)
+      events.synchronized(events.clear())
+    }
+
+    def eventsSnapshot: Vector[String] = events.synchronized(events.toVector)
+
+    override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] = Source.empty
+    override def discoverBoundary(
+      node: WorkflowDSL.Node,
+      resumeFrom: Option[BatchCheckpoint],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] =
+      Future.successful(SnapshotBoundary(node.id, "mysql-cdc:orders-cdc-v1", Some("stream-v1")))
+    override def createBatches(
+      node: WorkflowDSL.Node,
+      executionId: String,
+      boundary: SnapshotBoundary,
+      resume: Option[BatchCheckpoint],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
+      val generation = createCount.incrementAndGet()
+      Source.maybe[SourceBatch].watchTermination() { (_, termination) =>
+        events.synchronized(events += s"open-$generation")
+        termination.onComplete(_ => events.synchronized(events += s"close-$generation"))(blockingEc)
+        NotUsed
+      }
+    }
   }
 
   private object CapabilityLostLegacySource extends NodeSource {
@@ -250,6 +334,12 @@ class EventSourcedWorkflowActorRecoverySpec
     throw lastFailure.getOrElse(new AssertionError("summary did not reach the expected state"))
   }
 
+  private def awaitActorCondition(clue: String)(condition: => Boolean): Unit = {
+    val deadline = 5.seconds.fromNow
+    while (deadline.hasTimeLeft() && !condition) Thread.sleep(20)
+    withClue(clue)(condition shouldBe true)
+  }
+
   private def eventuallySnapshot(persistenceId: String): Long = {
     val deadline = 5.seconds.fromNow
     while (deadline.hasTimeLeft()) {
@@ -281,6 +371,101 @@ class EventSourcedWorkflowActorRecoverySpec
   }
 
   "EventSourcedWorkflowActor recovery" should {
+    "keep a MySQL CDC manual execution running and reject a concurrent manual start" in {
+      NodeRegistry.registerSource(ControllableCdcSource)
+      NodeRegistry.registerSink(ControllableCdcSink)
+      val reliableInvocation = Promise[ReliableRunContext]()
+      val pending = Promise[ExecutionResult]()
+      val cancellation = Promise[Done]()
+      val cancelCalls = new AtomicInteger(0)
+      val cdcEngine = new WorkflowExecutionEngine() {
+        override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
+          Future.failed(new AssertionError("MySQL CDC entered legacy execution"))
+        override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = {
+          reliableInvocation.trySuccess(runContext)
+          pending.future
+        }
+        override def cancel(executionId: String): Future[Done] = {
+          cancelCalls.incrementAndGet()
+          cancellation.trySuccess(Done)
+          Future.successful(Done)
+        }
+      }
+      val workflowId = "mysql-cdc-unbounded"
+      val entity = spawn(EventSourcedWorkflowActor(workflowId, cdcEngine), workflowId)
+      val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
+      try {
+        entity ! EventSourcedWorkflowActor.DefineWorkflow(WorkflowFixtures.mysqlCdcWorkflow, 0L, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.Defined(workflowId, 1L))
+        entity ! EventSourcedWorkflowActor.ExecuteManual("cdc-first", reply.ref)
+        val accepted = reply.expectMessageType[EventSourcedWorkflowActor.ExecutionAccepted]
+
+        val context = Await.result(reliableInvocation.future, 3.seconds)
+        context.executionId shouldBe accepted.executionId
+        eventuallySummary(entity) { summary =>
+          summary.status shouldBe EventSourcedWorkflowActor.Running
+          summary.currentExecution.value.resumable shouldBe true
+        }
+        pending.isCompleted shouldBe false
+
+        entity ! EventSourcedWorkflowActor.ExecuteManual("cdc-second", reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.AlreadyRunning(accepted.executionId))
+
+        entity ! EventSourcedWorkflowActor.Stop
+        Await.result(cancellation.future, 3.seconds) shouldBe Done
+        Thread.sleep(100)
+        cancelCalls.get shouldBe 1
+      } finally {
+        testKit.stop(entity)
+        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(ControllableCdcSource)
+        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(ControllableCdcSink)
+      }
+    }
+
+    "release the old MySQL CDC source before recovering the same execution in-process" in {
+      RestartAwareCdcSource.reset()
+      NodeRegistry.registerSource(RestartAwareCdcSource)
+      NodeRegistry.registerSink(ControllableCdcSink)
+      val executionEngine = new WorkflowExecutionEngine(name =>
+        Option.when(Set("MYSQL_CDC_PASSWORD", "DB_PASSWORD").contains(name))("actor-runtime-secret")
+      )
+      val workflowId = "mysql-cdc-in-process-recovery"
+      val first = spawn(EventSourcedWorkflowActor(workflowId, executionEngine), s"$workflowId-before")
+      val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
+      var firstStopped = false
+      try {
+        first ! EventSourcedWorkflowActor.DefineWorkflow(WorkflowFixtures.mysqlCdcWorkflow, 0L, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.Defined(workflowId, 1L))
+        first ! EventSourcedWorkflowActor.ExecuteManual("cdc-recovery", reply.ref)
+        reply.expectMessageType[EventSourcedWorkflowActor.ExecutionAccepted]
+        awaitActorCondition("first CDC source materialization") {
+          RestartAwareCdcSource.eventsSnapshot.contains("open-1")
+        }
+
+        testKit.stop(first)
+        firstStopped = true
+        val recovered = spawn(EventSourcedWorkflowActor(workflowId, executionEngine), s"$workflowId-after")
+        try {
+          awaitActorCondition("old CDC source release before recovered source materialization") {
+            val events = RestartAwareCdcSource.eventsSnapshot
+            events.contains("close-1") && events.contains("open-2")
+          }
+          val events = RestartAwareCdcSource.eventsSnapshot
+          events.indexOf("close-1") should be < events.indexOf("open-2")
+          eventuallySummary(recovered)(_.status shouldBe EventSourcedWorkflowActor.Running)
+        } finally {
+          testKit.stop(recovered)
+          awaitActorCondition("recovered CDC source release") {
+            RestartAwareCdcSource.eventsSnapshot.contains("close-2")
+          }
+        }
+      } finally {
+        if (!firstStopped) testKit.stop(first)
+        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(RestartAwareCdcSource)
+        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(ControllableCdcSink)
+      }
+    }
+
     "honor the configured snapshot frequency" in {
       val workflowId = "configured-snapshot-frequency"
       val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
@@ -650,6 +835,73 @@ class EventSourcedWorkflowActorRecoverySpec
         recovered ! EventSourcedWorkflowActor.ExecuteScheduled("daily", 2000L, "daily-2000", reply.ref)
         reply.expectMessage(EventSourcedWorkflowActor.AlreadyRunning(accepted.executionId))
       } finally testKit.stop(recovered)
+    }
+
+    "reconstruct completed Kafka progress from journal events for the next run" in {
+      NodeRegistry.registerSource(KafkaCheckpointSource)
+      val workflowId = "kafka-progress-recovery"
+      val firstCompletion = Promise[ExecutionResult]()
+      val initialEngine = new WorkflowExecutionEngine() {
+        override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] =
+          firstCompletion.future
+      }
+      val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
+      val entity = spawn(EventSourcedWorkflowActor(workflowId, initialEngine), "before-kafka-progress-recovery")
+      var entityStopped = false
+      val secondCompletion = Promise[ExecutionResult]()
+
+      try {
+        entity ! EventSourcedWorkflowActor.DefineWorkflow(kafkaWorkflow, 0L, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.Defined(workflowId, 1L))
+        entity ! EventSourcedWorkflowActor.ExecuteManual("run-1", reply.ref)
+        val first = reply.expectMessageType[EventSourcedWorkflowActor.ExecutionAccepted]
+        val frozenBoundary = "{\"0\":50}"
+        val boundary = SnapshotBoundary("source-1", "kafka-boundary-1", Some(frozenBoundary))
+        entity ! EventSourcedWorkflowActor.InitializeSnapshot(first.executionId, boundary, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.SnapshotInitialized(boundary))
+        val checkpoint = BatchCheckpoint(
+          "source-1",
+          "kafka-boundary-1",
+          0L,
+          BatchId.sha256(first.executionId, "source-1", "kafka-boundary-1", 0L),
+          SourceCursor(KafkaCheckpointCodec.CursorKind, "{\"0\":30}", frozenBoundary),
+          10L,
+          10L
+        )
+        entity ! EventSourcedWorkflowActor.AdvanceCheckpoint(first.executionId, checkpoint, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.CheckpointAccepted(checkpoint))
+        firstCompletion.success(ExecutionResult("failed", success = false, "planned-test-failure", None, Some(1L)))
+        eventuallySummary(entity)(_.status shouldBe EventSourcedWorkflowActor.Failed)
+        EventSourcedWorkflowActorRecoverySpec.snapshotSequenceNumber(s"workflow-$workflowId") shouldBe None
+        testKit.stop(entity)
+        entityStopped = true
+
+        val recoveredContext = Promise[ReliableRunContext]()
+        val recoveryEngine = new WorkflowExecutionEngine() {
+          override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = {
+            recoveredContext.trySuccess(runContext)
+            secondCompletion.future
+          }
+        }
+        val recovered = spawn(EventSourcedWorkflowActor(workflowId, recoveryEngine), "after-kafka-progress-recovery")
+        try {
+          recovered ! EventSourcedWorkflowActor.ExecuteManual("run-2", reply.ref)
+          val second = reply.expectMessageType[EventSourcedWorkflowActor.ExecutionAccepted]
+          second.executionId should not be first.executionId
+          val resumed = Await.result(recoveredContext.future, 3.seconds)
+          resumed.executionId shouldBe second.executionId
+          resumed.workflowRevision shouldBe 1L
+          resumed.checkpoints shouldBe Vector(checkpoint)
+        } finally {
+          secondCompletion.trySuccess(result)
+          testKit.stop(recovered)
+        }
+      } finally {
+        firstCompletion.trySuccess(result)
+        secondCompletion.trySuccess(result)
+        if (!entityStopped) testKit.stop(entity)
+        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(KafkaCheckpointSource)
+      }
     }
 
     "recover the definition, terminal state, and schedule watermark from JDBC" in {

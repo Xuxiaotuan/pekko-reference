@@ -4,36 +4,68 @@ import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchCommitResult
 import cn.xuyinyin.magic.workflow.engine.executors.{SinkExecutor, SourceExecutor, TransformExecutor}
 import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Node, Workflow}
+import cn.xuyinyin.magic.workflow.nodes.JdbcPasswordResolver
 import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, CheckpointedNodeSource}
 import com.typesafe.scalalogging.Logger
 import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.actor.typed.{ActorSystem, DispatcherSelector}
-import org.apache.pekko.stream.{Materializer, SystemMaterializer}
+import org.apache.pekko.stream.{KillSwitches, Materializer, SystemMaterializer, UniqueKillSwitch}
 import org.apache.pekko.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
+import spray.json.{JsObject, JsString}
 
-import scala.concurrent.{ExecutionContext, Future}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
+import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
 
-class WorkflowExecutionEngine()(implicit system: ActorSystem[_], ec: ExecutionContext) {
+class WorkflowExecutionEngine(
+  getenv: String => Option[String] = sys.env.get
+)(implicit system: ActorSystem[_], ec: ExecutionContext) {
   private val logger = Logger(getClass)
+  private val JdbcPasswordNodeTypes = Set(
+    "mysql.snapshot", "mysql.write", "mysql.cdc", "mysql.cdc.apply"
+  )
   private implicit val materializer: Materializer = SystemMaterializer(system).materializer
 
   private val sourceExecutor = new SourceExecutor()
   private val transformExecutor = new TransformExecutor()
   private val sinkExecutor = new SinkExecutor()
+  private val activeReliableExecutions = mutable.Map.empty[String, Vector[ReliableExecutionControl]]
+  private val activeReliableExecutionsLock = new AnyRef
   private lazy val jdbcBlockingEc: ExecutionContext =
     system.dispatchers.lookup(DispatcherSelector.fromConfig("pekko.workflow.jdbc-dispatcher"))
 
   def execute(workflow: Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
-    executeInternal(workflow, executionId, None, onLog)
+    executeInternal(workflow, executionId, None, None, onLog)
 
   def execute(workflow: Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] =
-    executeInternal(workflow, runContext.executionId, Some(runContext), onLog)
+    registerReliableExecution(runContext.executionId).flatMap { control =>
+      control.continueIfActive().flatMap { _ =>
+        val execution = try executeInternal(workflow, runContext.executionId, Some(runContext), Some(control), onLog)
+        catch { case NonFatal(exception) => Future.failed(exception) }
+        execution
+      }.transform { outcome =>
+        releaseReliableExecution(runContext.executionId, control)
+        outcome
+      }
+    }
+
+  def cancel(executionId: String): Future[Done] = {
+    val releases = activeReliableExecutionsLock.synchronized {
+      activeReliableExecutions.getOrElse(executionId, Vector.empty).map(_.cancel())
+    }
+    if (releases.isEmpty) Future.successful(Done)
+    else Future.sequence(releases).map(_ => Done)
+  }
+
+  private[engine] def activeReliableExecutionCount: Int =
+    activeReliableExecutionsLock.synchronized(activeReliableExecutions.valuesIterator.map(_.size).sum)
 
   private def executeInternal(
     workflow: Workflow,
     executionId: String,
     runContext: Option[ReliableRunContext],
+    reliableControl: Option[ReliableExecutionControl],
     onLog: String => Unit
   ): Future[ExecutionResult] = {
     val startTime = System.currentTimeMillis()
@@ -50,7 +82,16 @@ class WorkflowExecutionEngine()(implicit system: ActorSystem[_], ec: ExecutionCo
         checkpointedSource(Some(pipeline.source)) match {
           case Some(source) => checkpointedSink(Some(pipeline.sink)) match {
             case Some(sink) => runContext match {
-              case Some(context) => executeReliable(workflow, pipeline, source, sink, context, startTime, onLog)
+              case Some(context) => executeReliable(
+                workflow,
+                pipeline,
+                source,
+                sink,
+                context,
+                reliableControl.getOrElse(throw new IllegalStateException("reliable execution control is unavailable")),
+                startTime,
+                onLog
+              )
               case None => capabilityFailure(
                 workflow,
                 pipeline,
@@ -109,42 +150,137 @@ class WorkflowExecutionEngine()(implicit system: ActorSystem[_], ec: ExecutionCo
     source: CheckpointedNodeSource,
     sink: CheckpointedNodeSink,
     runContext: ReliableRunContext,
+    control: ReliableExecutionControl,
     startTime: Long,
     onLog: String => Unit
   ): Future[ExecutionResult] = {
+    val preparedSource = try prepareRuntimeNode(pipeline.source)
+    catch {
+      case NonFatal(exception) =>
+        return Future.successful(runtimeFailureResult(workflow, pipeline, pipeline.source, exception, startTime, onLog))
+    }
+    val preparedSink = try prepareRuntimeNode(pipeline.sink)
+    catch {
+      case NonFatal(exception) =>
+        return Future.successful(runtimeFailureResult(workflow, pipeline, pipeline.sink, exception, startTime, onLog))
+    }
+    val runtimeSecrets = Vector(preparedSource, preparedSink).flatMap(runtimePassword)
+    val runtimeOnLog: String => Unit = message => onLog(redactRuntimeSecrets(message, runtimeSecrets))
+    val latestSourceCheckpoint = runContext.checkpoints
+      .filter(_.sourceNodeId == pipeline.source.id)
+      .sortBy(_.batchSequence)
+      .lastOption
+
     val execution = for {
-      _ <- nodeFuture(pipeline.sink)(sink.validateReady(pipeline.sink, onLog)(jdbcBlockingEc))
+      _ <- control.continueIfActive()
+      _ <- nodeFuture(pipeline.sink)(sink.validateReady(preparedSink, runtimeOnLog)(jdbcBlockingEc))
+      _ <- control.continueIfActive()
       boundary <- runContext.boundary match {
         case Some(existing) => Future.successful(existing)
         case None =>
-          nodeFuture(pipeline.source)(source.discoverBoundary(pipeline.source, onLog)(jdbcBlockingEc))
+          nodeFuture(pipeline.source)(source.discoverBoundary(preparedSource, latestSourceCheckpoint, runtimeOnLog)(jdbcBlockingEc))
             .flatMap(boundary => workflowFuture(runContext.initializeBoundary(boundary)).map(_ => boundary))
       }
+      _ <- control.continueIfActive()
+      _ <- nodeFuture(pipeline.sink)(sink.validateSourceBoundary(preparedSink, boundary, runtimeOnLog)(jdbcBlockingEc))
+      _ <- control.continueIfActive()
       rowsProcessed <- {
         val resumeFrom = runContext.checkpoints
           .filter(checkpoint => checkpoint.sourceNodeId == pipeline.source.id && checkpoint.partitionId == boundary.partitionId)
           .sortBy(_.batchSequence)
           .lastOption
-        val transforms = createTransforms(pipeline.transforms, onLog)
+        val transforms = createTransforms(pipeline.transforms, runtimeOnLog)
         val batches = try {
-          source.createBatches(pipeline.source, runContext.executionId, boundary, resumeFrom, onLog)(jdbcBlockingEc)
+          source.createBatches(preparedSource, runContext.executionId, boundary, resumeFrom, runtimeOnLog)(jdbcBlockingEc)
             .mapError(wrapRuntimeFailure(pipeline.source))
         } catch {
           case NonFatal(ex) => Source.failed(NodeRuntimeFailure(pipeline.source, ex))
         }
-        batches
-          .mapAsync(1)(batch => processBatch(workflow, pipeline, sink, transforms, runContext, batch, onLog))
-          .runFold(0L)(_ + _)
+        val (killSwitch, rows) = batches
+          .viaMat(KillSwitches.single)(Keep.right)
+          .mapAsync(1)(batch => processBatch(
+            workflow,
+            pipeline,
+            preparedSource,
+            source,
+            preparedSink,
+            sink,
+            transforms,
+            runContext,
+            batch,
+            runtimeOnLog
+          ))
+          .toMat(Sink.fold(0L)(_ + _))(Keep.both)
+          .run()
+        control.install(killSwitch)
+        rows
       }
     } yield rowsProcessed
 
     execution
-      .map(rows => completedResult(workflow, pipeline, reportedRowsProcessed(runContext, rows), startTime, onLog))
+      .map(rows => completedResult(workflow, pipeline, reportedRowsProcessed(runContext, rows), startTime, runtimeOnLog))
       .recover {
-        case failure: NodeRuntimeFailure => runtimeFailureResult(workflow, pipeline, failure.node, failure.cause, startTime, onLog)
-        case failure: NodeSetupFailure => runtimeFailureResult(workflow, pipeline, failure.node, failure.cause, startTime, onLog)
-        case NonFatal(ex) => unknownFailureResult(workflow, pipeline, ex, startTime, onLog)
+        case failure: NodeRuntimeFailure =>
+          runtimeFailureResult(workflow, pipeline, failure.node, sanitizeRuntimeFailure(failure.cause, runtimeSecrets), startTime, runtimeOnLog)
+        case failure: NodeSetupFailure =>
+          runtimeFailureResult(workflow, pipeline, failure.node, sanitizeRuntimeFailure(failure.cause, runtimeSecrets), startTime, runtimeOnLog)
+        case NonFatal(ex) =>
+          unknownFailureResult(workflow, pipeline, sanitizeRuntimeFailure(ex, runtimeSecrets), startTime, runtimeOnLog)
       }
+  }
+
+  private def registerReliableExecution(executionId: String): Future[ReliableExecutionControl] = {
+    val (created, predecessorRelease) = activeReliableExecutionsLock.synchronized {
+      val existing = activeReliableExecutions.getOrElse(executionId, Vector.empty)
+      val created = new ReliableExecutionControl
+      activeReliableExecutions.update(executionId, existing :+ created)
+      created -> existing.lastOption.map(_.cancel()).getOrElse(Future.successful(Done))
+    }
+    predecessorRelease.map(_ => created)
+  }
+
+  private def releaseReliableExecution(executionId: String, control: ReliableExecutionControl): Unit = {
+    activeReliableExecutionsLock.synchronized {
+      activeReliableExecutions.get(executionId).foreach { existing =>
+        val remaining = existing.filterNot(_ eq control)
+        if (remaining.isEmpty) activeReliableExecutions.remove(executionId)
+        else activeReliableExecutions.update(executionId, remaining)
+      }
+    }
+    control.release()
+  }
+
+  private final class ReliableExecutionControl {
+    private val cancelled = new AtomicBoolean(false)
+    private val killSwitch = new AtomicReference[UniqueKillSwitch]()
+    private val shutdownStarted = new AtomicBoolean(false)
+    private val released = Promise[Done]()
+
+    def cancel(): Future[Done] = {
+      cancelled.set(true)
+      shutdownIfReady()
+      released.future
+    }
+
+    def continueIfActive(): Future[Done] =
+      if (cancelled.get()) Future.failed(new IllegalStateException("workflow execution cancelled"))
+      else Future.successful(Done)
+
+    def install(value: UniqueKillSwitch): Unit = {
+      if (!killSwitch.compareAndSet(null, value)) {
+        throw new IllegalStateException("reliable execution kill switch is already installed")
+      }
+      shutdownIfReady()
+    }
+
+    def release(): Unit = released.trySuccess(Done)
+
+    private def shutdownIfReady(): Unit = {
+      val current = killSwitch.get()
+      if (cancelled.get() && current != null && shutdownStarted.compareAndSet(false, true)) {
+        current.shutdown()
+      }
+    }
   }
 
   private def reportedRowsProcessed(runContext: ReliableRunContext, rows: Long): Option[Int] =
@@ -153,6 +289,9 @@ class WorkflowExecutionEngine()(implicit system: ActorSystem[_], ec: ExecutionCo
   private def processBatch(
     workflow: Workflow,
     pipeline: ValidatedPipeline,
+    preparedSource: Node,
+    source: CheckpointedNodeSource,
+    preparedSink: Node,
     sink: CheckpointedNodeSink,
     transforms: Flow[String, String, NotUsed],
     runContext: ReliableRunContext,
@@ -164,11 +303,15 @@ class WorkflowExecutionEngine()(implicit system: ActorSystem[_], ec: ExecutionCo
       .runWith(Sink.seq)
       .map(_.toVector)
       .flatMap(rows => nodeFuture(pipeline.sink)(
-        sink.commitBatch(pipeline.sink, workflow.id, runContext.executionId, batch, rows, onLog)(jdbcBlockingEc)
+        sink.commitBatch(preparedSink, workflow.id, runContext.executionId, batch, rows, onLog)(jdbcBlockingEc)
       ))
       .flatMap { result =>
         val committed = checkpoint(result)
-        workflowFuture(runContext.checkpointCommitted(committed)).map(_ => committed.targetRowsWritten)
+        workflowFuture(runContext.checkpointCommitted(committed))
+          .flatMap(_ => nodeFuture(pipeline.source)(
+            source.acknowledgeCommittedBatch(preparedSource, batch, onLog)(jdbcBlockingEc)
+          ))
+          .map(_ => committed.targetRowsWritten)
       }
 
   private def checkpoint(result: BatchCommitResult): BatchCheckpoint = result match {
@@ -192,6 +335,26 @@ class WorkflowExecutionEngine()(implicit system: ActorSystem[_], ec: ExecutionCo
 
   private def workflowFuture[A](operation: => Future[A]): Future[A] =
     try operation catch { case NonFatal(ex) => Future.failed(ex) }
+
+  private def prepareRuntimeNode(node: Node): Node =
+    if (
+      JdbcPasswordNodeTypes.contains(node.nodeType) &&
+      node.config.fields.contains("passwordEnv")
+    ) {
+      val password = JdbcPasswordResolver.resolve(node.config.fields, getenv)
+      node.copy(config = JsObject((node.config.fields - "passwordEnv") + ("password" -> JsString(password))))
+    } else node
+
+  private def runtimePassword(node: Node): Option[String] =
+    node.config.fields.get("password").collect {
+      case JsString(value) if value.nonEmpty => value
+    }
+
+  private def redactRuntimeSecrets(value: String, secrets: Vector[String]): String =
+    secrets.distinct.foldLeft(Option(value).getOrElse(""))(_.replace(_, "<redacted>"))
+
+  private def sanitizeRuntimeFailure(cause: Throwable, secrets: Vector[String]): Throwable =
+    new IllegalStateException(redactRuntimeSecrets(Option(cause.getMessage).getOrElse(cause.getClass.getSimpleName), secrets))
 
   private def checkpointedSource(node: Option[Node]): Option[CheckpointedNodeSource] =
     node.flatMap(value => NodeRegistry.findSource(value.nodeType)).collect { case source: CheckpointedNodeSource => source }

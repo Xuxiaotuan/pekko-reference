@@ -3,6 +3,7 @@ package cn.xuyinyin.magic.workflow.nodes.sources
 import cn.xuyinyin.magic.testkit.STSpec
 import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, SnapshotBoundary, SourceCursor}
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.workflow.nodes.JdbcPasswordResolver
 import com.typesafe.config.ConfigFactory
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import org.apache.pekko.actor.typed.ActorSystem
@@ -20,6 +21,7 @@ import java.util.concurrent.{CountDownLatch, Executors, TimeUnit}
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
+import scala.collection.mutable.ArrayBuffer
 
 class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = Span(2, Seconds), interval = Span(25, Millis))
@@ -42,6 +44,19 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
   }
 
   "MySQLSnapshotSourceConfig" should {
+    "resolve an environment-backed password without persisting it in the workflow node" in {
+      val node = environmentPasswordSnapshotNode()
+
+      val config = MySQLSnapshotSourceConfig.parse(
+        node,
+        name => Option.when(name == "WORKFLOW_DB_PASSWORD")("s3cr3t")
+      )
+
+      config.password shouldBe "s3cr3t"
+      node.toJson.compactPrint should include("WORKFLOW_DB_PASSWORD")
+      node.toJson.compactPrint should not include "s3cr3t"
+    }
+
     "reject missing required snapshot fields" in {
       intercept[IllegalArgumentException] {
         MySQLSnapshotSourceConfig.parse(snapshotNode())
@@ -94,10 +109,92 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
     }
   }
 
+  "JdbcPasswordResolver" should {
+    "preserve a non-empty inline password" in {
+      JdbcPasswordResolver.resolve(Map("password" -> JsString("inline-secret"))) shouldBe "inline-secret"
+    }
+
+    "resolve a passwordEnv value using the injected environment lookup" in {
+      JdbcPasswordResolver.resolve(
+        Map("passwordEnv" -> JsString("WORKFLOW_DB_PASSWORD")),
+        name => Option.when(name == "WORKFLOW_DB_PASSWORD")("s3cr3t")
+      ) shouldBe "s3cr3t"
+    }
+
+    "reject both password modes without exposing secret values" in {
+      val failure = intercept[IllegalArgumentException] {
+        JdbcPasswordResolver.resolve(
+          Map(
+            "password" -> JsString("inline-secret"),
+            "passwordEnv" -> JsString("WORKFLOW_DB_PASSWORD")
+          ),
+          _ => Some("resolved-secret")
+        )
+      }
+
+      failure.getMessage should include("password")
+      failure.getMessage should not include "inline-secret"
+      failure.getMessage should not include "resolved-secret"
+    }
+
+    "reject missing password modes without exposing environment values" in {
+      val failure = intercept[IllegalArgumentException] {
+        JdbcPasswordResolver.resolve(Map.empty, _ => Some("resolved-secret"))
+      }
+
+      failure.getMessage should include("password")
+      failure.getMessage should not include "resolved-secret"
+    }
+
+    "reject missing or empty passwordEnv values without exposing secrets" in {
+      Vector[Option[String]](None, Some("")) foreach { environmentValue =>
+        val failure = intercept[IllegalArgumentException] {
+          JdbcPasswordResolver.resolve(
+            Map("passwordEnv" -> JsString("WORKFLOW_DB_PASSWORD")),
+            _ => environmentValue
+          )
+        }
+
+        failure.getMessage should include("WORKFLOW_DB_PASSWORD")
+        failure.getMessage should not include "s3cr3t"
+      }
+    }
+  }
+
   "MySQLSnapshotSourceNode" should {
+    "pass an environment-backed password to JDBC setup without exposing it in workflow data, logs, or errors" in {
+      val node = environmentPasswordSnapshotNode()
+      val capturedPasswords = ArrayBuffer.empty[String]
+      val logs = ArrayBuffer.empty[String]
+      val source = new MySQLSnapshotSourceNode {
+        override protected[sources] def getenv(name: String): Option[String] =
+          Option.when(name == "WORKFLOW_DB_PASSWORD")("runtime-secret")
+
+        override protected[sources] def createDataSource(
+          host: String,
+          port: Int,
+          database: String,
+          username: String,
+          password: String
+        ): HikariDataSource = {
+          capturedPasswords += password
+          throw new IllegalStateException("jdbc setup failed")
+        }
+      }
+
+      val failure = intercept[IllegalStateException] {
+        Await.result(source.discoverBoundary(node, None, logs += _), 5.seconds)
+      }
+
+      capturedPasswords shouldBe Vector("runtime-secret")
+      node.toJson.compactPrint should not include "runtime-secret"
+      logs.mkString("\\n") should not include "runtime-secret"
+      failure.getMessage should not include "runtime-secret"
+    }
+
     "read numeric primary keys in ordered keyset batches and resume at the next sequence" in {
       withFixture() { fixture =>
-        val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), _ => ()), 5.seconds)
+        val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 5.seconds)
         val batches = Await.result(
           fixture.node.createBatches(fixture.snapshotNode(), "execution-1", boundary, None, _ => ()).runWith(Sink.seq),
           5.seconds
@@ -133,9 +230,20 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
       }
     }
 
+    "ignore the discovery checkpoint and preserve full-snapshot semantics" in {
+      withFixture() { fixture =>
+        val staleCheckpoint = checkpoint(sequence = 7, cursor = "2", upperBound = "5")
+
+        Await.result(
+          fixture.node.discoverBoundary(fixture.snapshotNode(), Some(staleCheckpoint), _ => ()),
+          5.seconds
+        ) shouldBe SnapshotBoundary("source-1", "pk-range-0", Some("12"))
+      }
+    }
+
     "freeze a discovered upper bound and leave empty tables without a bound" in {
       withFixture() { fixture =>
-        val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), _ => ()), 5.seconds)
+        val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 5.seconds)
         boundary shouldBe SnapshotBoundary("source-1", "pk-range-0", Some("12"))
         fixture.insert(13, "row-13")
 
@@ -147,7 +255,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
       }
 
       withFixture(initialRows = Vector.empty) { fixture =>
-        Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), _ => ()), 5.seconds) shouldBe
+        Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 5.seconds) shouldBe
           SnapshotBoundary("source-1", "pk-range-0", None)
       }
     }
@@ -158,7 +266,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
         tableSql = "CREATE TABLE source_rows (id DECIMAL(20, 0) PRIMARY KEY, payload VARCHAR(255) NOT NULL)"
       ) { fixture =>
         fixture.insertDecimal("18446744073709551615", "unsigned-bigint")
-        val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), _ => ()), 5.seconds)
+        val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 5.seconds)
         boundary.upperBound shouldBe Some("18446744073709551615")
 
         val batches = Await.result(
@@ -171,7 +279,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
 
     "close its datasource when cancelled or a batch query fails" in {
       withFixture() { fixture =>
-        val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), _ => ()), 5.seconds)
+        val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 5.seconds)
         val batchDataSource = fixture.nextDataSourceCreated()
         val (killSwitch, completed) = fixture.node
           .createBatches(fixture.snapshotNode(), "execution-1", boundary, None, _ => ())
@@ -205,7 +313,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
     "reject invalid primary-key metadata" in {
       withFixture(tableSql = "CREATE TABLE source_rows (id INT, payload VARCHAR(255) NOT NULL, PRIMARY KEY (id, payload))") { fixture =>
         intercept[IllegalArgumentException] {
-          Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), _ => ()), 5.seconds)
+          Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 5.seconds)
         }.getMessage should include("exactly one")
       }
 
@@ -214,13 +322,13 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
         tableSql = "CREATE TABLE source_rows (id INT NOT NULL, other_id INT NOT NULL PRIMARY KEY, payload VARCHAR(255) NOT NULL)"
       ) { fixture =>
         intercept[IllegalArgumentException] {
-          Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), _ => ()), 5.seconds)
+          Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 5.seconds)
         }.getMessage should include("primary key")
       }
 
       withFixture(tableSql = "CREATE TABLE source_rows (id VARCHAR(255) PRIMARY KEY, payload VARCHAR(255) NOT NULL)") { fixture =>
         intercept[IllegalArgumentException] {
-          Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), _ => ()), 5.seconds)
+          Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 5.seconds)
         }.getMessage should include("numeric")
       }
     }
@@ -234,7 +342,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
         fixture.insertMixedCase(1, "row-1")
         fixture.insertMixedCase(2, "row-2")
 
-        val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), _ => ()), 5.seconds)
+        val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 5.seconds)
         boundary shouldBe SnapshotBoundary("source-1", "pk-range-0", Some("2"))
 
         val batches = Await.result(
@@ -250,7 +358,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
       withFixture() { fixture =>
         fixture.createLookalikeTable()
 
-        Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), _ => ()), 5.seconds) shouldBe
+        Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 5.seconds) shouldBe
           SnapshotBoundary("source-1", "pk-range-0", Some("12"))
       }
     }
@@ -344,6 +452,19 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
       "chunkSize" -> JsNumber(2)
     ) ++ overrides): _*)
 
+  private def environmentPasswordSnapshotNode(): WorkflowDSL.Node =
+    snapshotNode(
+      "host" -> JsString("localhost"),
+      "port" -> JsNumber(3306),
+      "database" -> JsString("source_db"),
+      "username" -> JsString("reader"),
+      "passwordEnv" -> JsString("WORKFLOW_DB_PASSWORD"),
+      "table" -> JsString("source_rows"),
+      "columns" -> JsArray(JsString("id"), JsString("payload")),
+      "primaryKey" -> JsString("id"),
+      "chunkSize" -> JsNumber(2)
+    )
+
   private def snapshotNode(fields: (String, JsValue)*): WorkflowDSL.Node =
     WorkflowDSL.Node(
       id = "source-1",
@@ -380,6 +501,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
 
   private final class H2Fixture(initialRows: Vector[(Int, String)], tableSql: String, h2Options: String) {
     private val jdbcUrl = s"jdbc:h2:mem:mysql_snapshot_${UUID.randomUUID().toString.replace('-', '_')};MODE=MySQL;DB_CLOSE_DELAY=0$h2Options"
+    Class.forName("org.h2.Driver")
     private val inspectionConnection: Connection = DriverManager.getConnection(jdbcUrl, "sa", "")
     private var dataSources = Vector.empty[HikariDataSource]
     private var nextCreation: Option[Promise[HikariDataSource]] = None

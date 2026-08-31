@@ -34,7 +34,8 @@ val projectOrg           = "cn.xuyinyin"
 
 // Pekko 生态系统
 val pekkoVersion         = "1.1.3"
-val pekkoHttpVersion     = "1.0.1"
+val pekkoHttpVersion     = "1.1.0"
+val pekkoManagementVersion = "1.1.1"
 val pekkoConnectorsVer   = "1.1.0"
 
 // 数据处理和存储
@@ -44,6 +45,7 @@ val levelDbVersion       = "1.8"         // Event Sourcing storage
 val levelDbApiVersion    = "0.12"
 val h2Version            = "2.3.232"     // Test database
 val pekkoPersistenceJdbcVersion = "1.1.1"
+val debeziumVersion      = "3.6.1.Final"
 
 // JSON和序列化
 val jacksonVersion       = "2.17.2"      // 统一Jackson版本，避免冲突
@@ -95,6 +97,7 @@ lazy val commonSettings = Seq(
     "-Xlog-reflective-calls",    // 记录反射调用
     "-Xlint"                     // 启用所有lint检查
   ),
+  Compile / scalacOptions += "-release:17",
   
   // ================================
   // Java编译器选项
@@ -102,8 +105,8 @@ lazy val commonSettings = Seq(
   Compile / javacOptions ++= Seq(
     "-Xlint:unchecked",
     "-Xlint:deprecation",
-    "-source", "11",
-    "-target", "11"
+    "-source", "17",
+    "-target", "17"
   ),
   
   // ================================
@@ -187,7 +190,7 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       Docker / packageName    := projectName,
       Docker / version        := projectVersion,
       Docker / daemonUser     := projectName,
-      dockerBaseImage         := "openjdk:11-jre-alpine",
+      dockerBaseImage         := "eclipse-temurin:17-jre-alpine",
       dockerExposedPorts      := Seq(9906),           // HTTP API端口
       dockerUpdateLatest      := true,
       
@@ -195,7 +198,8 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       dockerCommands ++= Seq(
         Cmd("USER", "root"),
         Cmd("RUN", "ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime"),
-        Cmd("RUN", "echo 'Asia/Shanghai' > /etc/timezone")
+        Cmd("RUN", "echo 'Asia/Shanghai' > /etc/timezone"),
+        Cmd("USER", projectName)
       )
     ),
     
@@ -211,8 +215,16 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       "org.apache.pekko" %% "pekko-cluster-typed"            % pekkoVersion,
       "org.apache.pekko" %% "pekko-cluster-sharding-typed"   % pekkoVersion,
       "org.apache.pekko" %% "pekko-cluster-tools"            % pekkoVersion,
+      "org.apache.pekko" %% "pekko-discovery"                % pekkoVersion,
       "org.apache.pekko" %% "pekko-serialization-jackson"    % pekkoVersion,
       "org.apache.pekko" %% "pekko-stream"                   % pekkoVersion,
+
+      // ================================
+      // Pekko Management / Cluster Bootstrap
+      // ================================
+      "org.apache.pekko" %% "pekko-management-cluster-http"      % pekkoManagementVersion,
+      "org.apache.pekko" %% "pekko-management-cluster-bootstrap" % pekkoManagementVersion,
+      "org.apache.pekko" %% "pekko-discovery-kubernetes-api"     % pekkoManagementVersion,
       
       // ================================
       // Pekko 持久化 - Event Sourcing
@@ -237,12 +249,17 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       // ================================
       "org.apache.pekko" %% "pekko-connectors-slick" % pekkoConnectorsVer,
       "org.apache.pekko" %% "pekko-connectors-csv"   % pekkoConnectorsVer,
+      "org.apache.pekko" %% "pekko-connectors-kafka" % pekkoConnectorsVer,
       
       // ================================
       // MySQL连接器依赖
       // ================================
       "com.mysql"        % "mysql-connector-j"  % "8.0.33",        // MySQL JDBC驱动
       "com.zaxxer"       % "HikariCP"           % "5.0.1",         // 连接池
+      "io.debezium"      % "debezium-api"             % debeziumVersion,
+      "io.debezium"      % "debezium-embedded"        % debeziumVersion,
+      "io.debezium"      % "debezium-connector-mysql" % debeziumVersion,
+      "io.debezium"      % "debezium-storage-jdbc"    % debeziumVersion,
       
       // ================================
       // JSON 处理

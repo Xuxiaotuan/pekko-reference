@@ -7,8 +7,9 @@ import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
 import cn.xuyinyin.magic.workflow.events.WorkflowEvents._
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, CheckpointedNodeSource}
+import cn.xuyinyin.magic.workflow.nodes.sources.KafkaCheckpointCodec
 import org.apache.pekko.Done
-import org.apache.pekko.actor.typed.{ActorRef, Behavior}
+import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
 import org.apache.pekko.actor.typed.scaladsl.AskPattern._
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.persistence.typed.PersistenceId
@@ -18,7 +19,7 @@ import org.apache.pekko.util.Timeout
 import spray.json._
 
 import java.nio.charset.StandardCharsets
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
@@ -34,6 +35,7 @@ object EventSourcedWorkflowActor {
   private val MaxPersistedNodeResults = 100
   private val MaxPersistedMessageBytes = 4096
   private val DefaultHistoryPageSize = 50
+  private val KafkaSourceNodeType = "kafka.consumer"
 
   sealed trait Command extends CborSerializable
   sealed trait Reply extends CborSerializable
@@ -125,6 +127,12 @@ object EventSourcedWorkflowActor {
     result: Option[PersistedExecutionResult] = None
   ) extends CborSerializable
   final case class ScheduleWatermark(scheduleId: String, scheduledAt: Long) extends CborSerializable
+  final case class WorkflowSourceProgress(
+    workflowRevision: Long,
+    sourceNodeId: String,
+    sourceNodeType: String,
+    checkpoint: BatchCheckpoint
+  ) extends CborSerializable
   final case class WorkflowState(
     workflowJson: Option[String] = None,
     revision: Long = 0L,
@@ -132,7 +140,8 @@ object EventSourcedWorkflowActor {
     currentExecution: Option[ExecutionState] = None,
     recentExecutions: Vector[StoredExecutionSummary] = Vector.empty,
     lastAcceptedTriggerBySchedule: Vector[ScheduleWatermark] = Vector.empty,
-    manualRequests: Vector[ManualRequestRecord] = Vector.empty
+    manualRequests: Vector[ManualRequestRecord] = Vector.empty,
+    workflowSourceProgress: Option[WorkflowSourceProgress] = None
   ) extends CborSerializable
 
   final case class WorkflowSummary(
@@ -155,12 +164,13 @@ object EventSourcedWorkflowActor {
   private def behavior(workflowId: String, executionEngine: WorkflowExecutionEngine)(implicit ec: ExecutionContext): Behavior[Command] =
     Behaviors.setup { context =>
       val recoveryGate = new AtomicBoolean(false)
+      val activeEngineExecutionId = new AtomicReference[String]()
       val snapshotEvery = context.system.settings.config.getInt("pekko.workflow.event-sourcing.snapshot-every")
       val keepSnapshots = context.system.settings.config.getInt("pekko.workflow.event-sourcing.keep-n-snapshots")
       EventSourcedBehavior[Command, WorkflowEvent, WorkflowState](
         PersistenceId.ofUniqueId(s"workflow-$workflowId"),
         WorkflowState(),
-        commandHandler(workflowId, executionEngine, context, recoveryGate),
+        commandHandler(workflowId, executionEngine, context, recoveryGate, activeEngineExecutionId),
         eventHandler
       ).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = snapshotEvery, keepNSnapshots = keepSnapshots))
         .receiveSignal {
@@ -169,10 +179,18 @@ object EventSourcedWorkflowActor {
               recoveryGate.set(true)
               context.self ! RecoverInterrupted(execution.executionId)
             }
+          case (state, PostStop) =>
+            cancelActiveExecution(state, executionEngine, activeEngineExecutionId)
         }
     }
 
-  private def commandHandler(workflowId: String, executionEngine: WorkflowExecutionEngine, context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command], recoveryGate: AtomicBoolean)
+  private def commandHandler(
+    workflowId: String,
+    executionEngine: WorkflowExecutionEngine,
+    context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command],
+    recoveryGate: AtomicBoolean,
+    activeEngineExecutionId: AtomicReference[String]
+  )
     (state: WorkflowState, command: Command)(implicit ec: ExecutionContext): Effect[WorkflowEvent, WorkflowState] =
     if (recoveryGate.get() && !allowedDuringRecovery(command)) Effect.stash()
     else command match {
@@ -184,22 +202,24 @@ object EventSourcedWorkflowActor {
         case Left(_) => replyTo ! InitializeResponse(workflowId, "rejected"); Effect.none
         case Right(json) => Effect.persist(WorkflowDefined(json, 1L, now())).thenReply(replyTo)(_ => InitializeResponse(workflowId, "initialized"))
       }
-    case ExecuteManual(requestId, replyTo) => startManual(workflowId, state, requestId, replyTo, executionEngine, context)
-    case ExecuteScheduled(scheduleId, scheduledAt, triggerId, replyTo) => startScheduled(workflowId, state, scheduleId, scheduledAt, triggerId, replyTo, executionEngine, context)
+    case ExecuteManual(requestId, replyTo) => startManual(workflowId, state, requestId, replyTo, executionEngine, context, activeEngineExecutionId)
+    case ExecuteScheduled(scheduleId, scheduledAt, triggerId, replyTo) => startScheduled(workflowId, state, scheduleId, scheduledAt, triggerId, replyTo, executionEngine, context, activeEngineExecutionId)
     case InitializeSnapshot(executionId, boundary, replyTo) => initializeSnapshot(state, executionId, boundary, replyTo)
     case AdvanceCheckpoint(executionId, checkpoint, replyTo) => advanceCheckpoint(state, executionId, checkpoint, replyTo)
-    case Execute(replyTo) => startLegacyManual(workflowId, state, replyTo, executionEngine, context)
+    case Execute(replyTo) => startLegacyManual(workflowId, state, replyTo, executionEngine, context, activeEngineExecutionId)
     case GetSummary(replyTo) => replyTo ! WorkflowSummary(workflowId, state.revision, state.status, state.currentExecution, state.recentExecutions.map(publicSummary)); Effect.none
     case GetStatus(replyTo) => replyTo ! statusResponse(workflowId, state); Effect.none
     case GetExecutionHistory(page, pageSize, replyTo) => replyTo ! historyResponse(workflowId, state, page, pageSize); Effect.none
     case GetReliableRunState(replyTo) => replyTo ! ReliableRunState(state.currentExecution); Effect.none
     case EngineFinished(executionId, result) if state.currentExecution.exists(_.executionId == executionId) =>
+      activeEngineExecutionId.compareAndSet(executionId, null)
       val terminal: EffectBuilder[WorkflowEvent, WorkflowState] = boundedPersistedResult(result) match {
         case Right(persisted) => Effect.persist(if (result.success) ExecutionCompleted(executionId, persisted, now()) else ExecutionFailed(executionId, persisted, now()))
         case Left(reason) => Effect.persist(ExecutionFailed(executionId, failedPersistedResult(reason), now()))
       }
       releaseRecoveryGateAfter(terminal, recoveryGate)
     case EngineCrashed(executionId, message) if state.currentExecution.exists(_.executionId == executionId) =>
+      activeEngineExecutionId.compareAndSet(executionId, null)
       releaseRecoveryGateAfter(
         Effect.persist(ExecutionFailed(executionId, failedPersistedResult(message), now())),
         recoveryGate
@@ -213,7 +233,7 @@ object EventSourcedWorkflowActor {
         case Right(workflow) =>
           val current = state.currentExecution.get
           Effect.none.thenRun { (_: WorkflowState) =>
-            if (runEngine(workflow, current, executionEngine, context)) {
+            if (runEngine(workflow, current, executionEngine, context, activeEngineExecutionId)) {
               context.self ! RecoveryEngineLaunched(executionId)
             }
           }
@@ -229,7 +249,9 @@ object EventSourcedWorkflowActor {
     case RecoverInterrupted(_) =>
       recoveryGate.set(false)
       Effect.unstashAll()
-    case Stop => Effect.stop()
+    case Stop =>
+      cancelActiveExecution(state, executionEngine, activeEngineExecutionId)
+      Effect.stop()
     case _ => Effect.none
     }
 
@@ -242,16 +264,16 @@ object EventSourcedWorkflowActor {
         Effect.persist(WorkflowDefined(json, revision, now())).thenReply(replyTo)(_ => Defined(workflowId, revision))
     }
 
-  private def startManual(workflowId: String, state: WorkflowState, requestId: String, replyTo: ActorRef[Reply], executionEngine: WorkflowExecutionEngine, context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command])
+  private def startManual(workflowId: String, state: WorkflowState, requestId: String, replyTo: ActorRef[Reply], executionEngine: WorkflowExecutionEngine, context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command], activeEngineExecutionId: AtomicReference[String])
     (implicit ec: ExecutionContext): Effect[WorkflowEvent, WorkflowState] =
     if (state.workflowJson.isEmpty) immediate(replyTo, NotInitialized(workflowId))
     else state.manualRequests.find(_.requestId == requestId) match {
       case Some(record) => immediate(replyTo, DuplicateExecution(requestId, record.executionId))
       case None if state.currentExecution.nonEmpty => immediate(replyTo, AlreadyRunning(state.currentExecution.get.executionId))
-      case None => startExecution(workflowId, state, manualTrigger(requestId), replyTo, executionEngine, context)
+      case None => startExecution(workflowId, state, manualTrigger(requestId), replyTo, executionEngine, context, activeEngineExecutionId)
     }
 
-  private def startScheduled(workflowId: String, state: WorkflowState, scheduleId: String, scheduledAt: Long, triggerId: String, replyTo: ActorRef[Reply], executionEngine: WorkflowExecutionEngine, context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command])
+  private def startScheduled(workflowId: String, state: WorkflowState, scheduleId: String, scheduledAt: Long, triggerId: String, replyTo: ActorRef[Reply], executionEngine: WorkflowExecutionEngine, context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command], activeEngineExecutionId: AtomicReference[String])
     (implicit ec: ExecutionContext): Effect[WorkflowEvent, WorkflowState] =
     if (state.workflowJson.isEmpty) immediate(replyTo, NotInitialized(workflowId))
     else if (scheduleWatermark(state.lastAcceptedTriggerBySchedule, scheduleId).exists(_ >= scheduledAt)) immediate(replyTo, DuplicateExecution(triggerId, s"$scheduleId-$scheduledAt"))
@@ -259,9 +281,9 @@ object EventSourcedWorkflowActor {
       val running = state.currentExecution.get
       Effect.persist(ExecutionSkipped(s"skipped-$scheduleId-$scheduledAt", scheduledTrigger(scheduleId, scheduledAt, triggerId), "already_running", now()))
         .thenReply(replyTo)(_ => AlreadyRunning(running.executionId))
-    } else startExecution(workflowId, state, scheduledTrigger(scheduleId, scheduledAt, triggerId), replyTo, executionEngine, context)
+    } else startExecution(workflowId, state, scheduledTrigger(scheduleId, scheduledAt, triggerId), replyTo, executionEngine, context, activeEngineExecutionId)
 
-  private def startLegacyManual(workflowId: String, state: WorkflowState, replyTo: ActorRef[ExecutionResponse], executionEngine: WorkflowExecutionEngine, context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command])
+  private def startLegacyManual(workflowId: String, state: WorkflowState, replyTo: ActorRef[ExecutionResponse], executionEngine: WorkflowExecutionEngine, context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command], activeEngineExecutionId: AtomicReference[String])
     (implicit ec: ExecutionContext): Effect[WorkflowEvent, WorkflowState] =
     if (state.workflowJson.isEmpty) { replyTo ! ExecutionResponse("", "not_initialized"); Effect.none }
     else if (state.currentExecution.nonEmpty) { replyTo ! ExecutionResponse(state.currentExecution.get.executionId, "already_running"); Effect.none }
@@ -272,11 +294,11 @@ object EventSourcedWorkflowActor {
         Effect.persist(executionStarted(state, workflow, executionId, manualTrigger(s"legacy-$executionId")))
           .thenRun((newState: WorkflowState) => newState.currentExecution
             .filter(_.executionId == executionId)
-            .foreach(execution => runEngine(workflow, execution, executionEngine, context)))
+            .foreach(execution => runEngine(workflow, execution, executionEngine, context, activeEngineExecutionId)))
           .thenReply(replyTo)((_: WorkflowState) => ExecutionResponse(executionId, "started"))
     }
 
-  private def startExecution(workflowId: String, state: WorkflowState, trigger: ExecutionTrigger, replyTo: ActorRef[Reply], executionEngine: WorkflowExecutionEngine, context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command])
+  private def startExecution(workflowId: String, state: WorkflowState, trigger: ExecutionTrigger, replyTo: ActorRef[Reply], executionEngine: WorkflowExecutionEngine, context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command], activeEngineExecutionId: AtomicReference[String])
     (implicit ec: ExecutionContext): Effect[WorkflowEvent, WorkflowState] = decodeWorkflow(state) match {
     case Left(errors) => immediate(replyTo, DefinitionRejected(workflowId, errors))
     case Right(workflow) =>
@@ -284,7 +306,7 @@ object EventSourcedWorkflowActor {
       Effect.persist(executionStarted(state, workflow, executionId, trigger))
         .thenRun((newState: WorkflowState) => newState.currentExecution
           .filter(_.executionId == executionId)
-          .foreach(execution => runEngine(workflow, execution, executionEngine, context)))
+          .foreach(execution => runEngine(workflow, execution, executionEngine, context, activeEngineExecutionId)))
         .thenReply(replyTo)((_: WorkflowState) => ExecutionAccepted(executionId))
   }
 
@@ -334,7 +356,7 @@ object EventSourcedWorkflowActor {
     }
 
   private def reliableSourceNodeId(state: WorkflowState): Option[String] =
-    decodeWorkflow(state).toOption.flatMap(_.nodes.find(_.`type` == "source")).map(_.id)
+    workflowSourceNode(state).map(_.id)
 
   private def checkpointMatchesBoundary(checkpoint: BatchCheckpoint, boundary: SnapshotBoundary): Boolean =
     checkpoint.sourceNodeId == boundary.sourceNodeId &&
@@ -357,9 +379,11 @@ object EventSourcedWorkflowActor {
     workflow: WorkflowDSL.Workflow,
     execution: ExecutionState,
     executionEngine: WorkflowExecutionEngine,
-    context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command]
+    context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command],
+    activeEngineExecutionId: AtomicReference[String]
   )(implicit ec: ExecutionContext): Boolean =
     try {
+      activeEngineExecutionId.set(execution.executionId)
       val result =
         if (execution.resumable) executionEngine.execute(workflow, reliableRunContext(execution, context), _ => ())
         else executionEngine.execute(workflow, execution.executionId, _ => ())
@@ -371,8 +395,19 @@ object EventSourcedWorkflowActor {
     } catch {
       case NonFatal(error) =>
         context.self ! EngineCrashed(execution.executionId, Option(error.getMessage).getOrElse(error.getClass.getSimpleName))
-        false
+      false
     }
+
+  private def cancelActiveExecution(
+    state: WorkflowState,
+    executionEngine: WorkflowExecutionEngine,
+    activeEngineExecutionId: AtomicReference[String]
+  ): Unit = state.currentExecution.foreach { execution =>
+    if (activeEngineExecutionId.compareAndSet(execution.executionId, null)) {
+      try executionEngine.cancel(execution.executionId)
+      catch { case NonFatal(_) => () }
+    }
+  }
 
   private def reliableRunContext(
     execution: ExecutionState,
@@ -413,11 +448,19 @@ object EventSourcedWorkflowActor {
     } else effect
 
   private def eventHandler(state: WorkflowState, event: WorkflowEvent): WorkflowState = event match {
-    case WorkflowDefined(json, revision, _) => state.copy(workflowJson = Some(json), revision = revision)
+    case WorkflowDefined(json, revision, _) =>
+      state.copy(workflowJson = Some(json), revision = revision, workflowSourceProgress = None)
     case ExecutionStarted(executionId, trigger, timestamp) =>
       running(state, ExecutionState(executionId, trigger, timestamp))
     case ResumableExecutionStarted(executionId, trigger, workflowRevision, timestamp) =>
-      running(state, ExecutionState(executionId, trigger, timestamp, workflowRevision, resumable = true))
+      running(state, ExecutionState(
+        executionId,
+        trigger,
+        timestamp,
+        workflowRevision,
+        resumable = true,
+        checkpoints = seededWorkflowCheckpoints(state, workflowRevision)
+      ))
     case ExecutionSnapshotInitialized(executionId, boundary, _) => state.currentExecution match {
       case Some(current) if current.executionId == executionId => state.copy(currentExecution = Some(current.copy(boundary = Some(boundary))))
       case _ => state
@@ -425,7 +468,10 @@ object EventSourcedWorkflowActor {
     case ExecutionCheckpointAdvanced(executionId, checkpoint, _) => state.currentExecution match {
       case Some(current) if current.executionId == executionId =>
         val checkpoints = current.checkpoints.filterNot(existing => samePartition(existing, checkpoint)) :+ checkpoint
-        state.copy(currentExecution = Some(current.copy(checkpoints = checkpoints)))
+        state.copy(
+          currentExecution = Some(current.copy(checkpoints = checkpoints)),
+          workflowSourceProgress = projectedWorkflowSourceProgress(state, current, checkpoint)
+        )
       case _ => state
     }
     case ExecutionCompleted(executionId, result, timestamp) => terminal(state, executionId, result, Completed, timestamp)
@@ -489,6 +535,31 @@ object EventSourcedWorkflowActor {
       try { import WorkflowDSL.workflowFormat; Right(json.parseJson.convertTo[WorkflowDSL.Workflow]) }
       catch { case error: Exception => Left(Vector(Option(error.getMessage).getOrElse(error.getClass.getSimpleName))) }
   }
+  private def workflowSourceNode(state: WorkflowState): Option[WorkflowDSL.Node] =
+    decodeWorkflow(state).toOption.flatMap(_.nodes.find(_.`type` == "source"))
+  private def projectedWorkflowSourceProgress(
+    state: WorkflowState,
+    execution: ExecutionState,
+    checkpoint: BatchCheckpoint
+  ): Option[WorkflowSourceProgress] = workflowSourceNode(state) match {
+    case Some(source)
+        if execution.workflowRevision == state.revision &&
+          source.id == checkpoint.sourceNodeId &&
+          source.nodeType == KafkaSourceNodeType &&
+          checkpoint.cursor.kind == KafkaCheckpointCodec.CursorKind =>
+      Some(WorkflowSourceProgress(state.revision, source.id, source.nodeType, checkpoint))
+    case _ => state.workflowSourceProgress
+  }
+  private def seededWorkflowCheckpoints(state: WorkflowState, workflowRevision: Long): Vector[BatchCheckpoint] =
+    (state.workflowSourceProgress, workflowSourceNode(state)) match {
+      case (Some(progress), Some(source))
+          if progress.workflowRevision == workflowRevision &&
+            progress.sourceNodeId == source.id &&
+            progress.sourceNodeType == source.nodeType &&
+            source.nodeType == KafkaSourceNodeType =>
+        Vector(progress.checkpoint)
+      case _ => Vector.empty
+    }
   private[actors] def canonicalWorkflowJson(workflow: WorkflowDSL.Workflow): String = {
     import WorkflowDSL.workflowFormat
     canonicalJson(workflow.toJson)

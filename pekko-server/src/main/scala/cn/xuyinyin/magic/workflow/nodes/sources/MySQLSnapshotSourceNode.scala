@@ -19,9 +19,14 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource {
   override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] =
     Source.failed(new UnsupportedOperationException("mysql.snapshot requires checkpoint-aware execution"))
 
-  override def discoverBoundary(node: WorkflowDSL.Node, onLog: String => Unit)
-    (implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] = {
-    val config = MySQLSnapshotSourceConfig.parse(node)
+  protected[sources] def getenv(name: String): Option[String] = sys.env.get(name)
+
+  override def discoverBoundary(
+    node: WorkflowDSL.Node,
+    resumeFrom: Option[BatchCheckpoint],
+    onLog: String => Unit
+  )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] = {
+    val config = MySQLSnapshotSourceConfig.parse(node, getenv)
     Future {
       var dataSource: HikariDataSource = null
       var connection: Connection = null
@@ -45,7 +50,7 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource {
     resumeFrom: Option[BatchCheckpoint],
     onLog: String => Unit
   )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
-    val config = MySQLSnapshotSourceConfig.parse(node)
+    val config = MySQLSnapshotSourceConfig.parse(node, getenv)
     validateBoundary(node, boundary, resumeFrom)
 
     boundary.upperBound match {

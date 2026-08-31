@@ -8,8 +8,18 @@ import org.apache.pekko.stream.scaladsl.Source
 import scala.concurrent.{ExecutionContext, Future}
 
 trait CheckpointedNodeSource { self: NodeSource =>
+  def discoverBoundary(
+    node: WorkflowDSL.Node,
+    resumeFrom: Option[BatchCheckpoint],
+    onLog: String => Unit
+  )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] =
+    discoverBoundary(node, onLog)
+
   def discoverBoundary(node: WorkflowDSL.Node, onLog: String => Unit)
-    (implicit blockingEc: ExecutionContext): Future[SnapshotBoundary]
+    (implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] =
+    Future.failed(new UnsupportedOperationException(
+      "CheckpointedNodeSource must implement boundary discovery"
+    ))
 
   def createBatches(
     node: WorkflowDSL.Node,
@@ -18,6 +28,12 @@ trait CheckpointedNodeSource { self: NodeSource =>
     resumeFrom: Option[BatchCheckpoint],
     onLog: String => Unit
   )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed]
+
+  def acknowledgeCommittedBatch(
+    node: WorkflowDSL.Node,
+    batch: SourceBatch,
+    onLog: String => Unit
+  )(implicit blockingEc: ExecutionContext): Future[Done] = Future.successful(Done)
 }
 
 trait CheckpointedNodeSink { self: NodeSink =>
@@ -25,6 +41,12 @@ trait CheckpointedNodeSink { self: NodeSink =>
     node: WorkflowDSL.Node,
     onLog: String => Unit
   )(implicit blockingEc: ExecutionContext): Future[Done]
+
+  def validateSourceBoundary(
+    node: WorkflowDSL.Node,
+    boundary: SnapshotBoundary,
+    onLog: String => Unit
+  )(implicit blockingEc: ExecutionContext): Future[Done] = Future.successful(Done)
 
   def commitBatch(
     node: WorkflowDSL.Node,

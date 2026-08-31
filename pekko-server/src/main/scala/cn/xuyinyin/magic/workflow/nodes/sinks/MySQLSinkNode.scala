@@ -25,17 +25,6 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
 
   private val LedgerTable = "pekko_sync_batch_ledger"
 
-  private final case class SinkConfig(
-    host: String,
-    port: Int,
-    database: String,
-    table: String,
-    username: String,
-    password: String,
-    batchSize: Int,
-    mode: String
-  )
-
   private final case class LedgerRecord(
     batchId: String,
     workflowId: String,
@@ -44,10 +33,12 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
   )
   
   override def nodeType: String = "mysql.write"
+
+  protected[sinks] def getenv(name: String): Option[String] = sys.env.get(name)
   
   override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)
                         (implicit ec: ExecutionContext): Sink[String, Future[Done]] = {
-    val config = parseConfig(node)
+    val config = MySQLSinkConfig.parse(node, getenv)
 
     onLog(s"[MySQL Sink] 连接MySQL: ${config.host}:${config.port}/${config.database}")
     onLog(s"[MySQL Sink] 写入表: ${config.table} (模式: ${config.mode}, 批量: ${config.batchSize})")
@@ -69,7 +60,7 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
     node: WorkflowDSL.Node,
     onLog: String => Unit
   )(implicit blockingEc: ExecutionContext): Future[Done] = Future {
-    val config = parseConfig(node)
+    val config = MySQLSinkConfig.parse(node, getenv)
     val dataSource = createDataSource(config.host, config.port, config.database, config.username, config.password)
     var connection: Connection = null
     var statement: PreparedStatement = null
@@ -78,7 +69,8 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
       connection = dataSource.getConnection
       statement = connection.prepareStatement(
         s"SELECT batch_id, workflow_id, execution_id, source_node_id, partition_id, batch_sequence, " +
-          s"cursor_value, upper_bound, source_rows, target_rows, committed_at FROM $LedgerTable WHERE 1 = 0"
+          s"cursor_kind, cursor_value, upper_bound, source_rows, target_rows, committed_at " +
+          s"FROM $LedgerTable WHERE 1 = 0"
       )
       resultSet = statement.executeQuery()
       onLog(s"[MySQL Sink] 幂等账本已就绪: $LedgerTable")
@@ -102,7 +94,7 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
     transformedRows: Vector[String],
     onLog: String => Unit
   )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = Future {
-    val config = parseConfig(node)
+    val config = MySQLSinkConfig.parse(node, getenv)
     val dataSource = createDataSource(config.host, config.port, config.database, config.username, config.password)
     try {
       val result = commitCheckpointedBatch(dataSource, config, workflowId, executionId, batch, transformedRows)
@@ -141,38 +133,9 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
       }
     }
 
-  private def parseConfig(node: WorkflowDSL.Node): SinkConfig = {
-    def getString(key: String, default: Option[String] = None): String =
-      node.config.fields.get(key) match {
-        case Some(JsString(value)) => value
-        case None => default.getOrElse(throw new IllegalArgumentException(s"MySQL sink缺少${key}配置"))
-        case _ => throw new IllegalArgumentException(s"${key}必须是字符串类型")
-      }
-
-    def getInt(key: String, default: Int): Int =
-      node.config.fields.get(key) match {
-        case Some(JsNumber(value)) => value.toInt
-        case None => default
-        case _ => throw new IllegalArgumentException(s"${key}必须是数字类型")
-      }
-
-    val config = SinkConfig(
-      getString("host", Some("localhost")),
-      getInt("port", 3306),
-      getString("database"),
-      getString("table"),
-      getString("username"),
-      getString("password"),
-      getInt("batchSize", 1000),
-      getString("mode", Some("insert"))
-    )
-    require(config.batchSize > 0, "MySQL sink的batchSize必须大于0")
-    config
-  }
-
   private def commitCheckpointedBatch(
     dataSource: HikariDataSource,
-    config: SinkConfig,
+    config: MySQLSinkConfig,
     workflowId: String,
     executionId: String,
     batch: SourceBatch,
@@ -234,7 +197,8 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
   private def findLedger(connection: Connection, batchId: String): Option[LedgerRecord] = {
     val statement = connection.prepareStatement(
       s"SELECT workflow_id, execution_id, source_node_id, partition_id, batch_sequence, " +
-        s"cursor_value, upper_bound, source_rows, target_rows FROM $LedgerTable WHERE batch_id = ?"
+        s"cursor_kind, cursor_value, upper_bound, source_rows, target_rows " +
+        s"FROM $LedgerTable WHERE batch_id = ?"
     )
     var resultSet: ResultSet = null
     try {
@@ -247,7 +211,7 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
           resultSet.getLong("batch_sequence"),
           batchId,
           cn.xuyinyin.magic.workflow.checkpoint.SourceCursor(
-            "mysql.numeric-pk",
+            resultSet.getString("cursor_kind"),
             resultSet.getString("cursor_value"),
             resultSet.getString("upper_bound")
           ),
@@ -271,8 +235,8 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
     val statement = connection.prepareStatement(
       s"""INSERT INTO $LedgerTable
          |(batch_id, workflow_id, execution_id, source_node_id, partition_id, batch_sequence,
-         | cursor_value, upper_bound, source_rows, target_rows)
-         |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""".stripMargin
+         | cursor_kind, cursor_value, upper_bound, source_rows, target_rows)
+         |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""".stripMargin
     )
     try {
       val checkpoint = record.checkpoint
@@ -282,10 +246,11 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
       statement.setString(4, checkpoint.sourceNodeId)
       statement.setString(5, checkpoint.partitionId)
       statement.setLong(6, checkpoint.batchSequence)
-      statement.setString(7, checkpoint.cursor.value)
-      statement.setString(8, checkpoint.cursor.upperBound)
-      statement.setLong(9, checkpoint.sourceRowsScanned)
-      statement.setLong(10, checkpoint.targetRowsWritten)
+      statement.setString(7, checkpoint.cursor.kind)
+      statement.setString(8, checkpoint.cursor.value)
+      statement.setString(9, checkpoint.cursor.upperBound)
+      statement.setLong(10, checkpoint.sourceRowsScanned)
+      statement.setLong(11, checkpoint.targetRowsWritten)
       statement.executeUpdate()
     } finally closeStatement(statement)
   }
@@ -402,7 +367,7 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
     case JsNumber(numberValue) => numberValue.toString
     case JsBoolean(booleanValue) => booleanValue.toString
     case JsNull => null
-    case other => other.toString.replaceAll("\"", "")
+    case other => other.compactPrint
   }
 
   private def rollback(connection: Connection): Unit =
