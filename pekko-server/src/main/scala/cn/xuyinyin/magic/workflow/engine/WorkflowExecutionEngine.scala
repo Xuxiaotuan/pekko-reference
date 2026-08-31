@@ -445,7 +445,7 @@ class WorkflowExecutionEngine(
   private def failedResult(
     message: String,
     startTime: Long,
-    nodeResults: Vector[NodeExecutionResult] = Vector.empty
+    nodeResults: Vector[NodeExecutionResult]
   ): ExecutionResult = {
     val duration = System.currentTimeMillis() - startTime
     ExecutionResult(

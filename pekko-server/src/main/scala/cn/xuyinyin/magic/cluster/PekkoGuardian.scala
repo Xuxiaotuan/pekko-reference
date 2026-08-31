@@ -1,17 +1,14 @@
 package cn.xuyinyin.magic.cluster
 
-import cn.xuyinyin.magic.single.PekkoGc
 import cn.xuyinyin.magic.workflow.actors.{EventSourcedWorkflowActor, WorkflowSupervisor}
 import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
-import cn.xuyinyin.magic.workflow.scheduler.{SchedulerCoordinator, SchedulerManager}
+import cn.xuyinyin.magic.workflow.scheduler.SchedulerCoordinator
 import cn.xuyinyin.magic.workflow.sharding.WorkflowSharding
 import com.typesafe.scalalogging.Logger
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import org.apache.pekko.cluster.sharding.typed.ShardingEnvelope
 import org.apache.pekko.cluster.typed.{Cluster, ClusterSingleton, ClusterSingletonSettings, SingletonActor}
-
-import scala.concurrent.duration.DurationInt
 
 /**
  * @author : Xuxiaotuan
@@ -24,9 +21,7 @@ object PekkoGuardian {
   private case class GetNodeRoles(reply: ActorRef[Set[String]]) extends Command
   case class GetHealthChecker(reply: ActorRef[ActorRef[HealthChecker.Command]]) extends Command
   case class GetWorkflowSupervisor(reply: ActorRef[ActorRef[WorkflowSupervisor.Command]]) extends Command
-  case class GetSchedulerManager(reply: ActorRef[SchedulerManager]) extends Command
   case class GetSchedulerCoordinator(reply: ActorRef[ActorRef[SchedulerCoordinator.Command]]) extends Command
-  private case object CheckLeadership extends Command
 
   def apply(): Behavior[Command] = Behaviors.setup { implicit ctx =>
     val cluster = Cluster(ctx.system)
@@ -63,69 +58,22 @@ object PekkoGuardian {
     )
     logger.info("SchedulerCoordinator Cluster Singleton initialized")
 
-    // Start periodic leadership check
-    import org.apache.pekko.actor.typed.scaladsl.Behaviors.withTimers
-    withTimers { timer =>
-      timer.startTimerAtFixedRate(CheckLeadership, 5.seconds)
-      
-      // Initial check
-      managePekkoGc(cluster)
+    Behaviors.receiveMessage {
+      case GetNodeRoles(reply) =>
+        reply ! selfMember.roles
+        Behaviors.same
 
-      Behaviors.receiveMessage {
-        case CheckLeadership =>
-          managePekkoGc(cluster)
-          Behaviors.same
-          
-        case GetNodeRoles(reply) =>
-          reply ! selfMember.roles
-          Behaviors.same
-          
-        case GetHealthChecker(reply) =>
-          reply ! healthChecker
-          Behaviors.same
-        
-        case GetWorkflowSupervisor(reply) =>
-          reply ! workflowSupervisor
-          Behaviors.same
-        
-        case GetSchedulerManager(reply) =>
-          logger.warn("GetSchedulerManager is retired; use SchedulerCoordinator instead")
-          Behaviors.same
+      case GetHealthChecker(reply) =>
+        reply ! healthChecker
+        Behaviors.same
 
-        case GetSchedulerCoordinator(reply) =>
-          reply ! schedulerCoordinator
-          Behaviors.same
-      }
+      case GetWorkflowSupervisor(reply) =>
+        reply ! workflowSupervisor
+        Behaviors.same
+
+      case GetSchedulerCoordinator(reply) =>
+        reply ! schedulerCoordinator
+        Behaviors.same
     }
-  }
-  
-  private def managePekkoGc(cluster: Cluster)(implicit ctx: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command]): Unit = {
-    // TODO: PekkoGc暂时注释，学习用
-    /*
-    val currentLeader = cluster.state.leader
-    val isLeader = currentLeader.contains(cluster.selfMember.address)
-    
-    ctx.log.info(s"Leadership check - Current leader: $currentLeader, Self address: ${cluster.selfMember.address}, Is leader: $isLeader")
-    
-    if (isLeader) {
-      // This node is the leader, start PekkoGc
-      ctx.child("PekkoGcActor") match {
-        case None =>
-          ctx.log.info("This node is the leader, starting PekkoGc")
-          ctx.spawn(Behaviors.supervise(PekkoGc()).onFailure[Exception](org.apache.pekko.actor.typed.SupervisorStrategy.restart), "PekkoGcActor")
-        case Some(_) =>
-          ctx.log.debug("PekkoGc already running on this leader node")
-      }
-    } else {
-      // This node is not the leader, stop PekkoGc if it's running
-      ctx.child("PekkoGcActor") match {
-        case Some(ref) =>
-          ctx.log.info("This node is no longer the leader, stopping PekkoGc")
-          ctx.stop(ref)
-        case None =>
-          ctx.log.debug("PekkoGc not running on this follower node")
-      }
-    }
-    */
   }
 }

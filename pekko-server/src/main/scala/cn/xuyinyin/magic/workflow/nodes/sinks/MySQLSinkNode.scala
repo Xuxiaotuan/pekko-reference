@@ -4,6 +4,7 @@ import cn.xuyinyin.magic.workflow.checkpoint.{AlreadyCommitted, BatchCheckpoint,
 import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, NodeSink}
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import org.apache.pekko.Done
+import org.apache.pekko.stream.NeverMaterializedException
 import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink}
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import spray.json._
@@ -43,7 +44,7 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
     onLog(s"[MySQL Sink] 连接MySQL: ${config.host}:${config.port}/${config.database}")
     onLog(s"[MySQL Sink] 写入表: ${config.table} (模式: ${config.mode}, 批量: ${config.batchSize})")
     
-    Sink.lazyInitAsync[String, Future[Done]] { () =>
+    Sink.lazyFutureSink[String, Future[Done]] { () =>
       var dataSource: HikariDataSource = null
       try {
         dataSource = createDataSource(config.host, config.port, config.database, config.username, config.password)
@@ -53,7 +54,9 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
           if (dataSource != null) closeDataSource(dataSource)
           Future.failed(exception)
       }
-    }.mapMaterializedValue(_.flatMap(_.getOrElse(Future.successful(Done))))
+    }.mapMaterializedValue(_.recover {
+      case _: NeverMaterializedException => Future.successful(Done)
+    }.flatten)
   }
 
   override def validateReady(
