@@ -1,6 +1,5 @@
 package cn.xuyinyin.magic.parser.calcite
 
-import cn.xuyinyin.magic.common.FileUtils
 import cn.xuyinyin.magic.parser.calcite.CalciteMysqlSqlParser.parseSql
 import cn.xuyinyin.magic.testkit.STSpec
 import org.apache.calcite.config.Lex
@@ -11,6 +10,8 @@ import org.apache.calcite.sql.dialect.PostgresqlSqlDialect
 import org.apache.calcite.sql.parser.SqlParser
 import org.apache.calcite.sql.{SqlDialect, SqlNode}
 import org.apache.calcite.tools.{FrameworkConfig, Frameworks, Planner, RelBuilder}
+
+import scala.io.Source
 
 /**
  * @author : XuJiaWei
@@ -29,9 +30,9 @@ class MysqlSqlParserSpec extends STSpec {
   "calcite sql Node" should {
 
     "case 1" in {
-      val filename =
-        "/Users/xjw/magic/scala-workbench/pekko-reference/pekko-server/src/test/scala/cn/xuyinyin/magic/parser/calcite/test.sql"
-      val sql = FileUtils.readFileContents(filename)
+      val source = Source.fromResource("calcite/test.sql")
+      val sql = try source.mkString
+      finally source.close()
 
       // Step 1: Parse SQL to SqlNode
       val parser: SqlParser = parseSql(sql)
@@ -138,7 +139,7 @@ class MysqlSqlParserSpec extends STSpec {
         .build()
 
       // 创建转换器
-      val dialect = new PostgresqlSqlDialect(SqlDialect.EMPTY_CONTEXT)
+      val dialect = PostgresqlSqlDialect.DEFAULT
       val converter = new RelToSqlConverter(dialect) // 正确构造方法
 
       // 执行转换

@@ -1,6 +1,5 @@
 package cn.xuyinyin.magic.parser.calcite
 
-import cn.xuyinyin.magic.common.FileUtils
 import cn.xuyinyin.magic.parser.calcite.CalciteMysqlSqlParser.parseSql
 import cn.xuyinyin.magic.testkit.STSpec
 import org.apache.calcite.DataContext
@@ -20,6 +19,8 @@ import org.apache.calcite.sql.parser.SqlParser
 import org.apache.calcite.sql.parser.impl.SqlParserImpl
 import org.apache.calcite.sql.{SqlDialect, SqlExplainFormat, SqlExplainLevel, SqlNode}
 import org.apache.calcite.tools.{FrameworkConfig, Frameworks, Planner}
+
+import scala.io.Source
 
 // 定义一个简单的 EMP 表（仅用于验证生成计划，实际数据为空）
 class EmpTable extends AbstractTable with ScannableTable {
@@ -164,10 +165,10 @@ class BigSqlSpec extends STSpec {
       println(optimizedPgSql)
     }
 
-    "large mysql to pg" in {
-      val filename =
-        "/Users/xujiawei/Downloads/large.sql"
-      val sql = FileUtils.readFileContents(filename)
+    "repository fixture mysql to pg" in {
+      val source = Source.fromResource("calcite/big-mysql.sql")
+      val sql = try source.mkString
+      finally source.close()
       println(s"原始 SQL 长度：${sql.length}")
 
       // 1. 配置解析器，注意设置 MySQL 的相关配置
@@ -178,9 +179,12 @@ class BigSqlSpec extends STSpec {
 
       // 2. 校验 SQL（此步骤需要提前构造 schema、operatorTable、typeFactory 等，下面仅示意）
       // Frameworks.configBuilder 可帮助构造 Planner 的配置，这里假设你已经定义好 schema
+      val rootSchema = Frameworks.createRootSchema(true)
+      rootSchema.add("MYSCHEMA", new BigMySchema())
       val config: FrameworkConfig = Frameworks
         .newConfigBuilder()
-        // .defaultSchema(yourSchema)
+        .parserConfig(CalciteMysqlSqlParser.parserConfig)
+        .defaultSchema(rootSchema.getSubSchema("MYSCHEMA"))
         .build()
       val planner: Planner = Frameworks.getPlanner(config)
 
@@ -215,6 +219,9 @@ class BigSqlSpec extends STSpec {
 
       println(s"转换后的 PostgreSQL SQL 长度：${postgresSql.length}")
       println(postgresSql)
+      postgresSql should include("INNER JOIN")
+      postgresSql should include("\"MYSCHEMA\".\"EMP\"")
+      postgresSql should include("\"MYSCHEMA\".\"DEPT\"")
     }
   }
 }

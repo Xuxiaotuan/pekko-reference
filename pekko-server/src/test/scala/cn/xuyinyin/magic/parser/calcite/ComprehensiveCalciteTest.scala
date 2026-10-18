@@ -145,22 +145,22 @@ class ComprehensiveCalciteTest extends STSpec {
 
     "Table join operations generate proper join conditions" in {
       val relBuilder: RelBuilder = RelBuilder.create(config)
-      // 扫描员工表和部门表，并为它们设置别名
-      val employee   = relBuilder.scan("my_table").as("e")
-      val department = relBuilder.scan("my_department").as("d")
-
-      // 执行内连接操作，连接条件是员工表的 `dept_id` 字段与部门表的 `id` 字段相等
+      // RelBuilder is mutable: keep both inputs on one stack and address their real schema fields explicitly.
       val join = relBuilder
+        .scan("my_table")
+        .as("e")
+        .scan("my_department")
+        .as("d")
         .join(
           JoinRelType.INNER,
           relBuilder.equals(
-            employee.field("id"),       // 员工表的部门 ID 字段
-            department.field("dept_id") // 部门表的主键字段
+            relBuilder.field(2, 0, "id"),
+            relBuilder.field(2, 1, "dept_id")
           )
         )
-        .project(                       // 选择需要输出的字段
-          employee.field("name"),       // 员工姓名
-          department.field("dept_name") // 部门名称
+        .project(
+          relBuilder.field("e", "name"),
+          relBuilder.field("d", "dept_name")
         )
         .build()
 
@@ -168,10 +168,10 @@ class ComprehensiveCalciteTest extends STSpec {
       val sql = toSql(join) // 假设 toSql 是一个将逻辑计划转换为 SQL 的方法
       println("Generated SQL: " + sql)
 
-      // 验证生成的 SQL 是否正确
-      sql should include("INNER JOIN \"employee\" AS \"e\"")           // 验证是否包含正确的 JOIN 语句
-      sql should include("ON \"e\".\"dept_id\" = \"d\".\"id\"")        // 验证连接条件是否正确
-      sql should include("SELECT \"e\".\"name\", \"d\".\"dept_name\"") // 验证 SELECT 字段是否正确
+      sql shouldBe
+        """SELECT "my_table"."name", "my_department"."dept_name"
+          |FROM "my_schema"."my_table"
+          |INNER JOIN "my_schema"."my_department" ON "my_table"."id" = "my_department"."dept_id"""".stripMargin
     }
 
     // 测试 5: 自定义函数处理
