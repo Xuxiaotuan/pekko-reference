@@ -1,88 +1,146 @@
-# 三：真实 MySQL 故障实验，批次重放为什么会走向两个结果
+# 三：怎样证明恢复失败——真实 MySQL、Actor Journal 与批次重放实验
 
-第二篇指出：目标已经提交、Actor 还没有持久化 Checkpoint 时，恢复能否成功，取决于重放能否匹配目标账本。只用 mock 返回一次成功、再返回一次失败，无法回答真实 Debezium 重启后会交出什么批次。
+第二篇给出了一条可被推翻的假设：当前批次 ID 由回调序号生成，如果恢复后回调重新分组，同一个 ID 就可能指向不同内容。源码能说明这条路径存在，却还不能回答真实 Debezium 会交出什么、目标事务是否已经提交、Actor 是否真的从 Journal 恢复。
 
-我们为此运行了真实 MySQL Source、真实 MySQL Sink 和 JDBC Actor Journal，在两个独立 JVM 之间恢复。**结果是：1 条完整重放成功；16 条改为每批 1 条后，相同 batchId 触发账本冲突，Actor 进入失败状态，后续数据未能追平。** 本篇整理的是 2026-10-18 已执行实验及原始证据；写作阶段核对材料，没有重新运行实验或修改恢复协议。
+本篇把这几个问题变成可观察的实验。我们固定“目标已提交、Actor Checkpoint 未持久化”的窗口，在两个 JVM 之间恢复。**同一条事件完整重放时，目标去重成功；原来的 16 条回调恢复成 1 条时，账本冲突导致 Actor 持久化失败，流水线停止追平。**
 
-[系列目录](README.md)给出版本口径；[原始报告](../experiments/2026-10-18-cdc-journal-window.md)给出测试入口和复跑命令。
+这里整理的是 2026-10-18 已执行的真实 MySQL 实验。重写时核对测试源码、验证证据包全部 54 个内部文件哈希，并从保存的完整行数据独立复算结果；没有把复算写成重新启动数据库做实验。[原始报告与复跑入口](../experiments/2026-10-18-cdc-journal-window.md)、[本轮复算程序与结果](../experiments/2026-10-18-series-review/README.md)均保留。
 
-## 1. 先定义我们究竟要证明什么
+## 1. 先区分需要证明的三个命题
 
-实验问题被限定为：T 中已经有本批的持久提交，J 中还没有，D 保持在该批之前的恢复状态。此时终止进程，再让原工作流从真实 Journal 恢复，观察目标是否重复执行、Actor 是否推进、数据能否追平。
+一次恢复看起来“成功”，可能只意味着进程启动了。一次测试显示“通过”，也可能意味着预期失败被正确复现。本文分开检查三个命题：
 
-“数据库最终行数相同”不是充分验收条件。我们同时记录原始批次、恢复批次、三份进度、目标 DML 审计，以及源目标全表逐字段差异。这样可以区分三种现象：重放被正确去重；重放被拒绝导致停机；系统继续运行却把错误数据当成成功。
+**持久状态命题：**进程死亡时，目标确实已有本批事务，Journal 确实还没有对应确认，D 确实仍保存旧恢复状态。
 
-实验使用 MySQL 8.4.11，ROW/FULL binlog、GTID ON；Pekko 1.1.3，Debezium 3.6.1.Final，Microsoft OpenJDK 17.0.14。正式窗口实验的子 JVM 固定 UTC。每组独立数据库，源表 64 行、6 列：`id,label,amount,note,updated_at,revision`，包含 Unicode、NULL、空串、DECIMAL(18,4) 和 DATETIME(6)。
+**重放命题：**新进程从真实 Journal 和真实 D 恢复，交出的首批与旧批是什么关系；Sink 是否再次执行业务 DML，还是拒绝或去重。
 
-Source、Sink 和 Journal 位于同一个隔离 MySQL 实例，但使用各自的表与连接、独立事务。它不是跨机部署测试。Actor 快照阈值设为 100000，本轮没有触发 Snapshot Store，验证的是 Journal 重放。
+**收敛命题：**恢复后继续产生变更，源停止写入并等待处理后，目标是否与源全量逐字段一致。
 
-## 2. 用提交后的闸门固定窗口
+三个命题缺一不可。没有第一个，就不知道注入的是哪个故障窗口；没有第二个，不能把去重成功与碰巧写出相同终值区分开；没有第三个，可能只是恢复了进程，却没有恢复同步能力。
 
-测试子类先调用生产 Sink 的 `super.commitBatch`。这个 Future 成功后，生产 Sink 已经完成目标事务提交。测试再输出 `CUTPOINT`，向上返回一个永不完成的 Promise。
+这次实验不验证源事务在目标的整体原子可见。原始一个 SQL 更新多行，可以被 Debezium 分成多个回调，再分别成为目标事务。它也不验证多节点接管：两个 JVM 前后运行，始终只有一个主动执行者。
 
-这会让生产 Engine 停在 `commitBatch` 的完成边界，尚不能调用 `checkpointCommitted`。它没有替换 Actor 的持久化回调，也没有伪造恢复 Checkpoint。测试代码分别位于[子进程设施](../../pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcJournalWindowProcess.scala)和[实验编排](../../pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcJournalWindowSpec.scala)。
+## 2. 为什么选择真实系统，而不是只 mock 一个 Future
 
-```mermaid
-sequenceDiagram
-    participant S as 真实 Debezium Source
-    participant E as 生产 Engine
-    participant T as 真实 MySQL Sink
-    participant J as Actor Journal
-    S->>E: 批次 n
-    E->>T: commitBatch
-    T->>T: 账本与 DML 同事务 COMMIT
-    T-->>E: 测试闸门截住完成结果
-    Note over E,J: n 尚未发送 AdvanceCheckpoint
-    Note over S,J: 读取 T/J/D，确认 n 没有 Source ACK
-    Note over S,J: Runtime.halt(86) 终止整个 JVM
-    Note over S,J: 新 JVM 从相同 Journal 恢复原 executionId
+实验链路使用生产 `EventSourcedWorkflowActor`、`WorkflowExecutionEngine`、MySQL CDC Source 和 MySQL Apply Sink。Source 连接真实 MySQL binlog，Journal 使用真实 JDBC 持久化，目标使用真实事务与批次账本。
+
+环境固定如下：
+
+| 项目 | 值与边界 |
+|---|---|
+| 生产源码 | 实验 HEAD `ad58cf3`；相关生产源码与公开 `d88ec80` 一致 |
+| 核心依赖 | Pekko 1.1.3、Debezium 3.6.1.Final |
+| 数据库 | MySQL 8.4.11，ROW/FULL binlog，GTID ON |
+| JVM | Microsoft OpenJDK 17.0.14，正式窗口实验固定 UTC |
+| 表 | 64 行，6 列；主键、Unicode、NULL/空串、DECIMAL(18,4)、DATETIME(6)、revision |
+| 连接与事务 | Source、Sink、Journal 在同一隔离实例，但使用各自连接和事务 |
+| Actor 恢复 | 同 workflowId、persistenceId、executionId；新 JVM 重放 Journal |
+| Snapshot Store | 阈值设为 100000，本次没有触发 |
+
+真实组件解决的是 mock 无法回答的问题：一次重启是否改变了实际回调分组；JDBC 事务提交后是否真的能查到账本；Journal 序列化出来的内容是否与恢复状态一致。
+
+同时，真实组件不意味着生产覆盖。单实例、单目标、小数据集减少了变量，方便解释因果；它没有模拟网络分区、主库切换或大规模恢复拥塞。
+
+## 3. 用因果闸门固定窗口，而不是靠睡眠碰运气
+
+想截获 T 已提交而 J 未提交，最直接的办法似乎是提交后 sleep 再杀进程。但这种方式不能保证测试线程醒来时，Actor 尚未完成持久化。
+
+本实验在测试 Sink 子类中先调用生产 `super.commitBatch`。只有真实 Future 成功后，才输出 `CUTPOINT`，并向上返回一个永不完成的 Promise。[子进程设施][test-process]
+
+```text
+真实 Sink.commitBatch
+  → 账本与业务 DML COMMIT
+  → 生产 Future 成功
+  → 测试记录 CUTPOINT
+  → 测试返回未完成 Promise
+      └─ Engine 的下一个 flatMap 无法调用 checkpointCommitted
 ```
 
-闸门生效前，先等待初始快照和一条 streaming 标记变更完成，做基线全表对账，并确认 T/J/D 与 ACK 已对齐。闸门生效后再断言 T 比 J 多一批，批次包含本轮 revision=1 变更，且没有该批的 `ACK_BEGIN`。
+这个闸门把一次瞬间窗口变成可稳定读取的状态。它没有伪造 Sink 提交，没有给 Actor 构造恢复 Checkpoint，也没有替换 Journal。它只延迟生产 Engine 得知“目标提交成功”。
 
-随后执行 `Runtime.halt(86)`，避免优雅关闭帮忙推进 offset。崩溃后再次读取 D，确认与切点完全相同。恢复进程使用同一 workflowId、persistenceId 和 executionId；从实际 Journal 恢复的 Checkpoint 与故障前记录逐项比较。
+门槛还包括本批确实含有我们刚写入的 revision=1 事件。否则可能截住初始快照或此前尚未完成的空批次，把不相关数据误当成故障样本。
 
-T 来自真实账本 SQL，J 同时来自 Actor 查询和反序列化后的 Journal payload，D 来自真实 JDBC offset 表。不同 PID 与 Journal writer UUID 则证明这是新进程接续，不是原内存状态继续运行。
+### 3.1 注入前，先消除历史在途批次
 
-## 3. 成功对照：同一条事件仍组成同一批
+实验先等初始快照完整对账成功，再更新一条 streaming 标记数据，确认已经进入日志阶段。接着等待四项条件同时成立：最新 T 的 batchId 等于 J 的 batchId；对应 ACK 已返回；真实 D 等于该 Checkpoint 的完整 offset；源目标仍然一致。
 
-成功组的证据目录是 `verified/exact-replay-256621e3d9a6`。原进程 PID=88833，恢复进程 PID=89042；executionId 保持不变。
+这道 ARM 前屏障很关键。若此前的 ACK/flush 还在途，切点时读取到的旧 D 可能属于更早的未完成工作，而不是目标批次造成的恢复间隙。[编排源码][test-spec]
 
-原批次只有一条 UPDATE。故障切点为 T/J=6/5。恢复时把 Debezium `max.batch.size` 设为 1，实际收到的仍是同一条完整事件，同一 cursor 和同一 batchId：
+只有达到屏障，父进程才发送 ARM 并执行故障用 UPDATE。闸门触发后，再检查 `T.sequence = n`、`J.sequence = n−1`，Actor 查询和 Journal 反序列化结果一致，且目标 batchId 没有 `ACK_BEGIN`。
+
+### 3.2 为什么终止整个 JVM
+
+如果只停止 Actor 或调用 ActorSystem 优雅关闭，关闭流程可能促成 offset flush，改变我们要观察的 D。实验使用 `Runtime.halt(86)` 立即结束子 JVM，父进程检查退出码，再读取 offset 表，要求 D 与切点时相同。
+
+这模拟的是进程突然终止，不是数据库断电。数据库本身继续运行，T 的持久事务也继续可查询。实验没有检验 MySQL 存储设备掉电后的持久性参数。
+
+恢复使用新 JVM。不同 PID、不同 Journal writer UUID，以及相同 executionId 的记录，排除了“原进程内存还在，只是线程继续执行”的解释。更直接的检查是：Source 的 `createBatches` 收到的恢复 Checkpoint，必须等于故障前真实 Journal 中那一份。
+
+## 4. 证据必须来自不同观察面
+
+本次没有把所有状态都从一个应用日志里读出来，而是组合了下列证据：
+
+| 观察对象 | 实际来源 | 排除什么误判 |
+|---|---|---|
+| T | 独立 SQL 查询账本与目标业务表 | 日志说 committed，但数据库没有结果 |
+| J | Actor 查询 + Journal payload 反序列化 | 内存状态、日志或回复被误当成持久状态 |
+| D | JDBC offset 表原始 key/value | ACK 方法返回被误当成 flush 成功 |
+| 重放内容 | 生产 Source 输出的完整规范化事件与 cursor | 只因主键相同就断言是同一事件 |
+| 业务副作用 | 目标 AFTER INSERT/UPDATE/DELETE 审计触发器 | 相同最终行值掩盖重复 DML |
+| 最终状态 | 独立 JDBC 全表逐字段比较 | 行数相同掩盖缺行、多行和字段错误 |
+
+这些观测不是跨 T/J/D 的原子读。之所以能解释切点，是因为闸门阻断了本批继续推进；最终对账则在源停止产生新业务变更后进行。若生产环境一直写入，不能直接照搬两次不同时间的读结果来判断复制错误。
+
+审计触发器也有边界：它覆盖目标 MySQL 内本次配置的业务 DML，不覆盖外部 HTTP、消息通知或另一数据库的副作用。它与目标事务一起提交，适合区分这次目标重放是否再次执行了操作。
+
+## 5. 完整重放：账本怎样把 T 领先 J 的缺口补上
+
+成功组证据目录为 `verified/exact-replay-256621e3d9a6`。原进程 PID=88833，恢复进程 PID=89042。
+
+原批只有一条 UPDATE。切点为 T/J=6/5。恢复进程将真实 Debezium 的 `max.batch.size` 设为 1，实际输出的仍是同一条完整事件，cursor 完全相同，batchId 也相同：
 
 ```text
 50e99579f48e916e6a2a19bf8da8e2ea92e8d544c5e48c6b0707e4f8b762582d
 ```
 
-Sink 查到账本元数据相同，返回 `AlreadyCommitted`。Actor 随后把 J 补到 6，再确认 Source。这是现有代码已经具备的行为。
+此时恢复路径可以逐步解释：
 
-我们在目标表安装事务内的 AFTER INSERT/UPDATE/DELETE 审计触发器。审计条数为：
+```text
+J=5 → Source 从序号 6 编号
+D 仍旧 → Debezium 再次交出同一事件
+T 已有第 6 批 → 账本元数据完全相同 → AlreadyCommitted
+Actor 将第 6 批写入 Journal → Source ACK → 后续继续
+```
+
+目标审计条数形成了一条重要证据链：
 
 ```text
 基线 65 → 原批提交后 66 → 重放后 66 → 后续三个变更后 69
 ```
 
-“重放后仍为 66”说明这次重复批没有再次执行目标业务 DML。之后分别更新 id=1、删除 id=64、插入 id=65，流水线继续推进。最终 T/J=9/9，源与目标都是 64 行，全部 6 列逐字段一致，D 与最后确认的 sourceOffset 一致。
+重放前后都是 66，说明这次 `AlreadyCommitted` 路径没有重新执行目标业务 DML。它比“最终值相同”更强，但仍只覆盖这个目标事务副作用。
 
-这个结果支持的是固定窗口中**同批重放的去重与追平**。它没有覆盖任意批次合并、Schema 变化、跨节点接管或源事务整体原子可见。
+然后执行三个新变更：更新 id=1、删除 id=64、插入 id=65。最终 T/J=9/9，源目标各 64 行，六列全部一致，实际 D 与最后确认的 sourceOffset 一致。
 
-## 4. 失败对照：16 条事件恢复成单条回调
+**实验结论：**在这个固定窗口、相同完整批次重放的条件下，现有代码能够消化重复提交并继续追平。它没有证明任意重分批成立，也没有验证 J 已前进而 D 滞后的另一窗口。
 
-失败组的证据目录是 `verified/split-replay-e0fec7eecef7`。原进程 PID=89353，恢复进程 PID=89418。
+## 6. 拆批重放：失败发生在保护检查，而不是静默丢行
 
-原阶段允许 `max.batch.size=16`，对 64 行执行一个 UPDATE。闸门要求实际批次至少含两条业务记录；本次捕获到 16 条。故障切点为 T/J=5/4。暂停期间再更新 id=1、删除 id=64、插入 id=65，形成确定的待追平数据。
+失败组目录为 `verified/split-replay-e0fec7eecef7`。原进程 PID=89353，恢复进程 PID=89418。
 
-恢复进程通过测试 Engine factory 把真实 Debezium `max.batch.size` 改成 1。测试没有手工拆分 SourceRecord，没有伪造 offset。实际恢复首批确实只有一条，且完整规范化事件等于旧 16 条批次中的第一条。
+源端对 64 行执行一个 UPDATE。原阶段允许真实 Debezium 每批最多 16 条，闸门只在实际业务批次至少两条时触发；本次截获 16 条。切点 T/J=5/4。暂停期间再产生与成功组相同类型的三个尾部变更。
 
-两批共享相同 batchId：
+恢复时，测试 Engine factory 只把真实 `max.batch.size` 改成 1。没有手工拆分 SourceRecord，没有重写 offset，也没有伪造一条失败事件。恢复后的实际首批只有一条，完整规范化内容等于原 16 条中的第一条。
+
+同一执行从 J=4 推导出下一批序号 5，因此 batchId 再次是：
 
 ```text
 837cc2dd6a2f0627a151956ca59ba2c2be635574ffed6dacd1d7110213b65c24
 ```
 
-但账本需要比较的内容不同：
+但账本元数据已经不相等：
 
-| 字段 | T 中已提交的批次 | 恢复首批 |
+| 字段 | 已提交批次 | 恢复首批 |
 |---|---:|---:|
 | batchSequence | 5 | 5 |
 | sourceRows / targetRows | 16 / 16 | 1 / 1 |
@@ -91,17 +149,33 @@ Sink 查到账本元数据相同，返回 `AlreadyCommitted`。Actor 随后把 J
 | cursor.offset.event | 2 | 2 |
 | cursor.offset.row | 16 | 1 |
 
-完整 map 包括更多字段，保存在证据 JSON 中。这里只截取能说明分歧的字段，不能据此忽略 GTID 或其他恢复上下文。
+第一条业务事件的 `source.position=1391108, source.row=0`，还与用于恢复的 cursor 位置不同。第二篇解释过这两个层级；这里只报告样本值，不把它们简化成一个“最大 pos”。完整 GTID 等字段保留在 JSON 中。
 
-Sink 返回 `conflicting MySQL CDC ledger identity`。Actor 随后持久化 `ExecutionFailed`；最终状态是 failed，T/J 停在 5/4。目标审计保持 81→81，没有观察到失败重放新增业务 DML。D 在切点、进程终止后与失败终态保持相同完整值。
+真实 Sink 报 `conflicting MySQL CDC ledger identity`。Actor 随后持久化 `ExecutionFailed`，终态为 failed，T/J 停在 5/4。目标审计 81→81，没有增加新的业务 DML；D 在切点、进程终止后、失败终态保持相同完整值。
 
-这是一个明确的**可用性与追平失败**：系统拒绝了冲突，但没有自动协调两种批次划分。它不是 Reader 静默丢弃行的证据，也不是数据永久不可恢复的证明。本轮没有手工改账本让它继续。
+这条因果链说明：旧事件确实到达了生产 Source；失败发生在提交身份校验，保护检查阻止了冲突批次继续推进。因此它应被称为**重分批导致的恢复停机与追平失败**，不能叫 Reader 静默漏行，也不能据此宣称数据永久不可恢复。
 
-## 5. 同为 64 行，仍然不是同一份数据
+### 这是不是一个“改配置才会出现”的人为问题
 
-失败组最后源、目标都为 64 行，但全量比较发现：目标缺少 id=65，多出 id=64；共同主键中有 48 行存在差异，合计 216 处字段差异。
+实验确实主动改变了批大小。因此它证明的命题是：当前协议不能容忍本次允许的真实重新分批。它没有证明保持相同配置时，自然重新分批发生的频率，也没有测量这种故障在生产中多常见。
 
-| 字段 | 差异数量 |
+但“回调边界可以变化”本来就是协议必须选择的适用范围。若项目要把批大小配置变更排除在恢复契约之外，就应明确拒绝不兼容恢复；若希望支持这类调整，则需要稳定于回调划分的业务身份。不能把实验条件删掉，再把结论说得更广；也不能因为条件受控，就忽略它确实反驳了无条件恢复保证。
+
+## 7. 全量逐字段对账，怎样避免“64 行等于 64 行”的错觉
+
+失败组最终两边都是 64 行。如果只验收 COUNT(*)，结果会显示一致。实际集合却不同：源包含 id=65，目标还保留 id=64。
+
+比较程序先建立主键索引，再分三部分：
+
+```text
+缺失键 = 源主键集合 − 目标主键集合
+多余键 = 目标主键集合 − 源主键集合
+字段差异 = 对共同主键，逐列比较源值与目标值
+```
+
+最终缺少 65、多出 64。48 个共同主键有字段差异，共 216 处：
+
+| 字段 | 差异数 |
 |---|---:|
 | amount | 48 |
 | label | 48 |
@@ -110,28 +184,50 @@ Sink 返回 `conflicting MySQL CDC ledger identity`。Actor 随后持久化 `Exe
 | updated_at | 47 |
 | 合计 | 216 |
 
-这些差异不能归因成“重放污染了 216 个字段”。故障切点只提交了原 UPDATE 的首批 16 行，其余记录尚未应用，暂停时还有三个新变更。恢复停止使这些待处理差异保留下来。
+注意这个总数的含义：它只统计共同主键上的字段差异。缺失和多余的整行另外记录，没有把每行六列再算入 216。
 
-比较器通过独立 JDBC 连接，在 REPEATABLE READ 事务中完整读取两张表；不复用 CDC 的解码与转换逻辑。源停止写入后进行最终核对，按主键匹配所有行，再比较全部六列。DECIMAL 保留十进制文本和 scale，NULL 与空串分别记录，保留字符串空格和 DATETIME 微秒。
+为什么不是 48×5？不同字段有可能本来就是 NULL，或者尾部更新使某个值恰好相同。验收应比较实际字段值，不能用“受影响行数×列数”代替逐项计算。
 
-这种方法可以减少“同步和比较共用同一个错误转换函数”的风险，但它仍只覆盖这六种列定义、同一个 MySQL 实例和本次数据集。不能推广成所有 MySQL 类型或跨数据库表示都已验证。
+更重要的是，216 处差异不能归因为“失败重放污染了 216 个字段”。切点时，原 64 行 UPDATE 仅提交首批 16 行，其余事件尚未应用；暂停期间又增加三个变更。账本拒绝后，这些待同步差异持续存在。审计不增长支持的是“拒绝没有新增目标 DML”，不支持“停止同步时目标已经完整”。
 
-## 6. 前置失败也属于证据
+### 独立比较器如何处理类型
 
-第一次使用默认 JVM 时区运行时，基线就失败了：64 行 DATETIME 从源 `2026-10-18 01:02:03.654321` 写成目标 `2026-10-17 17:02:03.654321`，相差 8 小时。它发生在故障注入之前，不能算进恢复协议的故障结果。
+比较器通过独立 JDBC 查询，在 REPEATABLE READ 事务中读取源表和目标表全部数据，不使用 CDC 的解码函数。使用相同表定义与 `getString` 读取列值，保存 DECIMAL 的文本与 scale，区分 NULL 和空串，保留 Unicode、空格和 DATETIME 微秒。
 
-正式窗口实验将子 JVM 固定为 UTC，以隔离这个变量；生产时间转换代码没有修复。文章不能只展示最后的成功日志，然后写“六列在默认部署下已正确同步”。原始失败、全量数据及 SQL 导出都保留在证据包。
+这减少了流水线与比较器共享同一个转换错误的风险。本轮仍只是六个列定义的比较，不是所有 MySQL 数据类型的兼容性证明。若换成跨数据库目标，需要额外定义时区、精度、JSON、二进制和字符排序等比较口径。
 
-另一次 UTC 拆批用例因为初始快照超过 60 秒等待期限而未进入故障窗口。之后只把初始等待上限增至 180 秒，并增加 ARM 前的 T/J/D/ACK 屏障，没有放宽逐字段一致性要求。
+重写时新增的 [verify_evidence.py](../experiments/2026-10-18-series-review/verify_evidence.py)只读取不可变证据包，重新按主键计算缺失、多余和每个字段差异，并检查其与原报告相符。这提供了可重复的材料核验，没有新增一次 CDC 运行证据。
 
-最终测试日志为 `2 succeeded, 0 failed`。其中一个测试断言的是失败复现成立。因此这句话表示实验结果符合预期，不能翻译成“恢复协议已经正确”或“项目全部测试通过”。
+## 8. 前置失败必须保留，否则会高估恢复能力
 
-## 7. 这次实验如何影响下一步
+最早的默认 JVM 时区实验在故障注入前就失败了：64 行 DATETIME 从源 `2026-10-18 01:02:03.654321` 写成目标 `2026-10-17 17:02:03.654321`，偏移 8 小时。
 
-实验证明，当前协议把回调分组当作稳定恢复单位的假设，在允许调整真实批大小的场景下不成立。还没有证明保持相同配置时自然拆批的频率，也没有覆盖 J 已推进而 D 滞后的窗口。
+这不是恢复窗口造成的错误。若基线已错，之后的失败无法单独归因给批次重放。正式窗口实验固定子 JVM 为 UTC，隔离这个变量；生产时间转换代码没有修改，默认时区问题仍未修复。
 
-下一步应该讨论身份与提交证据，保留当前事务账本、Journal 和全量对账设施。仅仅增加重试次数，仍会遇到同一账本冲突；绕过冲突，又会失去已经存在的保护。
+另一次 UTC 拆批实验未进入窗口：初始快照接近 60 秒等待上限时才开始输出，采集时仅有 62/64 行。随后把基线等待上限改为 180 秒，并补充 ARM 前的持久进度屏障。接受标准仍是全表一致，没有改成“多数行成功”。这些失败样本也在归档中。
 
-[完整报告](../experiments/2026-10-18-cdc-journal-window.md)、[证据包](../experiments/evidence/2026-10-18-cdc-journal-window.tar.gz)和 [SHA256](../experiments/evidence/2026-10-18-cdc-journal-window.tar.gz.sha256)可用于独立核对。未验证项包括初始快照恢复、Snapshot Store、Sharding 接管、网络分区、COMMIT 回复丢失、DDL、Paimon、主库切换及日志清理。
+最终测试日志 `2 succeeded, 0 failed` 的准确翻译是：成功对照符合预期，失败反例也符合预期。它不是“两个恢复场景都正确”，不是修复验收，更不是整个仓库的测试结果。
 
-上一篇：[沿源码理解 T/J/D](02-source-and-recovery-contract.md)；下一篇：[把实验变成协议约束](04-protocol-and-validation.md)。
+## 9. 从反例得到协议约束，而不是立即删掉保护
+
+本次实验反驳的是一个具体隐含前提：在当前恢复策略下，回调序号可以无条件充当稳定批次身份。原批内容与恢复内容变化后，账本保护能识别冲突，但缺少安全继续的协议。
+
+它没有证明可以安全取消账本比较。取消比较可能让原 16 条的账本被当作只有 e1 的确认，或者使重复历史事件再次覆盖新状态。也没有证明“多重试几次”会改变两次批次含义不一致的事实。
+
+下一步需要把确认依据从偶然的传输分组中剥离，同时保留目标事务原子性、冲突拒绝与真实状态查询。第四篇会从不变量推导这项改造，不把一次失败复现直接升级为一份已经正确的新实现。
+
+| 本篇支持 | 仍未验证 |
+|---|---|
+| 指定 T 已提交/J 未持久化窗口能够稳定截获 | COMMIT 回复丢失、J 已持久化/D 滞后 |
+| 单事件完整重放成功并继续全量收敛 | 任意自然拆批、合批及其发生频率 |
+| 真实 16→1 重分批触发冲突并停止追平 | 修复后的重分批恢复 |
+| 数据值与目标 DML 审计可分别核对 | 外部副作用 exactly-once、源事务整体可见性 |
+| 新 JVM 从真实 Journal 恢复 | Snapshot Store、Sharding、分区接管、旧 owner |
+| 当前小数据集与固定 UTC 条件 | DDL、日志清理、主库切换、70 万表容量 |
+
+[原始证据包](../experiments/evidence/2026-10-18-cdc-journal-window.tar.gz)与 [SHA256](../experiments/evidence/2026-10-18-cdc-journal-window.tar.gz.sha256)保存完整日志、数据库导出和行数据。
+
+上一篇：[三个进度的恢复契约](02-source-and-recovery-contract.md)；下一篇：[从重放不变量构造恢复协议](04-protocol-and-validation.md)。
+
+[test-process]: ../../pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcJournalWindowProcess.scala
+[test-spec]: ../../pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcJournalWindowSpec.scala
