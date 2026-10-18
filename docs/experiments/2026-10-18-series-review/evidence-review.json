@@ -1,0 +1,138 @@
+{
+  "kind": "historical_evidence_recalculation_not_database_rerun",
+  "archive_sha256": "6ed9a39afef5f70c591d9a1545f5b9cd034ead88e3d02495304562afa9b52e0d",
+  "verified_internal_files": 54,
+  "cases": {
+    "verified/exact-replay-256621e3d9a6": {
+      "cut_T": 6,
+      "cut_J": 5,
+      "final_T": 9,
+      "final_J": 9,
+      "original_rows": 1,
+      "replay_rows": 1,
+      "same_batch_id": true,
+      "old_cursor": {
+        "offset": {
+          "event": 2,
+          "file": "mysql-bin.000003",
+          "gtids": "64cff9ec-cad9-11f1-83bf-fa023874add2:1-828",
+          "pos": 1046878,
+          "row": 1,
+          "server_id": 741818,
+          "ts_sec": 1792318107
+        },
+        "version": 1
+      },
+      "new_cursor": {
+        "offset": {
+          "event": 2,
+          "file": "mysql-bin.000003",
+          "gtids": "64cff9ec-cad9-11f1-83bf-fa023874add2:1-828",
+          "pos": 1046878,
+          "row": 1,
+          "server_id": 741818,
+          "ts_sec": 1792318107
+        },
+        "version": 1
+      },
+      "first_event_source": {
+        "connectorId": "window_256621e3d9a6",
+        "database": "pekko_test_cdc_window_256621e3d9a6",
+        "eventTimestampMillis": 1792318107414,
+        "file": "mysql-bin.000003",
+        "position": 1047102,
+        "row": 0,
+        "snapshot": false,
+        "table": "source_rows"
+      },
+      "audit": [
+        65,
+        66,
+        66,
+        69
+      ],
+      "final_status": "running",
+      "comparison": {
+        "source_rows": 64,
+        "target_rows": 64,
+        "missing": [],
+        "extra": [],
+        "field_differences": 0,
+        "different_common_rows": 0,
+        "by_field": {},
+        "equal": true
+      },
+      "journal_writers": 2
+    },
+    "verified/split-replay-e0fec7eecef7": {
+      "cut_T": 5,
+      "cut_J": 4,
+      "final_T": 5,
+      "final_J": 4,
+      "original_rows": 16,
+      "replay_rows": 1,
+      "same_batch_id": true,
+      "old_cursor": {
+        "offset": {
+          "event": 2,
+          "file": "mysql-bin.000003",
+          "gtids": "64cff9ec-cad9-11f1-83bf-fa023874add2:1-1067",
+          "pos": 1390884,
+          "row": 16,
+          "server_id": 741818,
+          "ts_sec": 1792318165
+        },
+        "version": 1
+      },
+      "new_cursor": {
+        "offset": {
+          "event": 2,
+          "file": "mysql-bin.000003",
+          "gtids": "64cff9ec-cad9-11f1-83bf-fa023874add2:1-1067",
+          "pos": 1390884,
+          "row": 1,
+          "server_id": 741818,
+          "ts_sec": 1792318165
+        },
+        "version": 1
+      },
+      "first_event_source": {
+        "connectorId": "window_e0fec7eecef7",
+        "database": "pekko_test_cdc_window_e0fec7eecef7",
+        "eventTimestampMillis": 1792318165858,
+        "file": "mysql-bin.000003",
+        "position": 1391108,
+        "row": 0,
+        "snapshot": false,
+        "table": "source_rows"
+      },
+      "audit": [
+        65,
+        81,
+        81
+      ],
+      "final_status": "failed",
+      "comparison": {
+        "source_rows": 64,
+        "target_rows": 64,
+        "missing": [
+          "65"
+        ],
+        "extra": [
+          "64"
+        ],
+        "field_differences": 216,
+        "different_common_rows": 48,
+        "by_field": {
+          "amount": 48,
+          "label": 48,
+          "note": 25,
+          "revision": 48,
+          "updated_at": 47
+        },
+        "equal": false
+      },
+      "journal_writers": 2
+    }
+  }
+}
