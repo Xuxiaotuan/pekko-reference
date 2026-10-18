@@ -1,0 +1,59 @@
+{
+  "scenarios": [
+    {
+      "scenario": "split-pair",
+      "pids": [
+        33916,
+        33931,
+        33938
+      ],
+      "callback_sizes": [
+        1,
+        1
+      ],
+      "delayed_ack_gate": {
+        "currentCallback": 1,
+        "callback": 0,
+        "thread": "pool-1-thread-1",
+        "pid": 33931,
+        "seq": 14,
+        "kind": "AFTER_DELAYED_ACK_GATE"
+      },
+      "assembly_before_confirmation_D_unchanged": true,
+      "delayed_old_handle_called_on_later_callback": true,
+      "all_raw_callbacks_ACKed_in_order": true,
+      "post_ACK_restart_delivers_new_change": true,
+      "scope": "TEST assembler/coverage controller + real Engine/Bridge/JDBC D; no production Source Stream, Actor, Journal, Sink or target protocol"
+    },
+    {
+      "scenario": "chained-pairs",
+      "pids": [
+        33949,
+        33963,
+        33979
+      ],
+      "callback_sizes": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "delayed_ack_gate": {
+        "currentCallback": 1,
+        "callback": 0,
+        "thread": "pool-1-thread-1",
+        "pid": 33963,
+        "seq": 19,
+        "kind": "AFTER_DELAYED_ACK_GATE"
+      },
+      "assembly_before_confirmation_D_unchanged": true,
+      "delayed_old_handle_called_on_later_callback": true,
+      "all_raw_callbacks_ACKed_in_order": true,
+      "post_ACK_restart_delivers_new_change": true,
+      "scope": "TEST assembler/coverage controller + real Engine/Bridge/JDBC D; no production Source Stream, Actor, Journal, Sink or target protocol"
+    }
+  ],
+  "coverage_source": "manual test signal, not a target commit or Actor Journal",
+  "production_modified": false,
+  "scope": "source/Bridge probe only"
+}

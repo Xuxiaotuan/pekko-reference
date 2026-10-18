@@ -62,13 +62,21 @@ Reader 一侧也保留独立状态。[`MySqlSourceReader.snapshotState`][flink-r
 目标事务 T → Actor Journal 确认 J → Source ACK → Debezium offset D
 ```
 
-第二篇说明了这条顺序保护什么，第三篇证明它在重新分批下仍会失败。第四篇提出事件身份与目标覆盖证据，其正确性仍依赖实现稳定身份、顺序、原子事务、保留策略和所有权约束。
+第二篇说明了这条顺序保护什么，第三篇证明它在重新分批下仍会失败。第四篇据此提出完整物理行分组、成员身份、目标组证据与原始回调前缀确认；正确性仍依赖稳定身份、顺序、原子事务、保留策略和所有权约束。
 
 Flink 的托管状态则通过 Checkpoint 建立执行图的恢复关系：Source 的读取状态与算子状态共同参与快照，失败后回到兼容的恢复切面，再处理之后的数据。这使业务开发者不必为每个有状态算子重新设计独立 Journal 与源位点如何协调。[状态化流处理](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/concepts/stateful-stream-processing/)
 
 不过，外部数据库不会因为 Flink 内部状态恢复就自动回滚。最终提交语义取决于 Sink 是否参与相应的事务、提交或幂等协议，必须逐个连接器判断。[Connector 容错保证](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/connectors/datastream/guarantees/) 一个普通外部调用可能在 Checkpoint 之后执行成功，恢复重放时又执行一次。
 
 因此，合理的对照不是“Pekko 没有一致性，Flink 天然全链路 exactly-once”，而是：Flink 已有一套托管状态的协调运行时，外部 Sink 契约仍需验收；Pekko 项目当前需要自己承担更大部分的数据恢复协议。
+
+### 小到一个主键修改，也有应用必须承担的恢复责任
+
+2026-10-19 的[真实身份实验](../experiments/2026-10-19-source-record-identity/README.md)发现，同一次主键修改的 d/c 共享完整 restart offset。只确认 d 后恢复，c 不再交付；稳定 eventId 无法补救源不再交付的成员。工程责任因而扩展到完整性分组，而不是只增加一张去重表。
+
+[真实 Engine/Bridge 探针](../experiments/2026-10-19-deferred-ack/README.md)进一步验证：在 Bridge 前装配完整组、暂存半组并返回回调，再按原始回调前缀调用保留句柄，能够通过两个固定跨界场景。实际 D 在测试覆盖信号前不推进；旧句柄在后续回调中串行调用。这是可继续实现的组件门槛，尚未接入真实 T/J，也没有新协议的全量目标对账。
+
+这类边界不会因为 Actor 更轻就消失，也不能据此断言另一框架在同一故障窗口已经通过。比较仍要回到具体版本、恢复单位与实测证据。生产分组实现、关闭/迟到 ACK 和目标组原子性都保留为未完成工作。
 
 ### 有状态计算会显著改变取舍
 
@@ -158,7 +166,7 @@ Flink 的恢复同样要承担状态加载、Source 重读和 Sink 协调成本�
 |---|---|---|---|
 | 表级控制 | 持久 workflow Actor、按 ID 分片 | 细粒度命令契约、配额、钝化与唤醒 | 多表作业分组及外部控制平台；不是每表必有独立 Job |
 | 执行资源 | 本地 Stream、每单表 Engine、共享阻塞池 | 捕获与 writer 预算、等待与取消、慢表隔离 | 并行子任务、共享运行时资源、背压；仍需配置预算 |
-| 恢复 | T/J/D 独立持久，16→1 实测停机 | 稳定身份、覆盖证据、所有权和旧点恢复 | 托管状态 Checkpoint 与连接器恢复；外部 Sink 语义需另验 |
+| 恢复 | T/J/D 独立持久，16→1 实测停机；源/Bridge 分组探针另行完成 | 完整组覆盖、原始回调前缀、所有权和旧点恢复；生产新协议未实现 | 托管状态 Checkpoint 与连接器恢复；外部 Sink 语义需另验 |
 | 全量到增量 | Debezium initial snapshot 与独立分页 Source | split、水位、回填和阶段切换协议 | 现成的 snapshot/binlog split 状态机，具体前提仍需验证 |
 | Schema | 身份、类型及兼容性检查 | 数据版本、排空边界、DDL 幂等恢复 | Schema 事件链与具体 Sink 的能力约束 |
 | 目标系统 | 本系列实测 MySQL Apply | 每种 Sink 都需提交与重放契约 | 连接器生态可复用；不能把一种 Sink 结果推广给全部 |
