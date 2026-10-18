@@ -356,6 +356,8 @@ Bridge 的 `publish` 会等待批次确认，Engine 中的 `mapAsync(1)` 又限�
 
 下一篇：[一次提交，三份进度——沿源码推导 Pekko CDC 的恢复契约](02-source-and-recovery-contract.md)。它要继续回答：当控制状态、目标提交和源确认分别持久化时，哪些顺序可以保留，哪些崩溃窗口必须靠重放协议解决。
 
+2026-10-19 又补充了[身份与 ACK 边界](../experiments/2026-10-19-source-record-identity/README.md)及[真实 Engine/Bridge 跨回调探针](../experiments/2026-10-19-deferred-ack/README.md)。后者在测试装配器内避免了半组进入等待，但没有改变生产 Bridge 的等待行为或共享池配置，也没有测量 Actor 容量。这些源侧结果不扩大本篇的资源结论。
+
 ## 附录：沿着本文结论读源码
 
 建议按执行问题阅读，避免先被包目录淹没：

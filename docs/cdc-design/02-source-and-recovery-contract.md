@@ -193,6 +193,14 @@ Skip(D) ⊆ Covered(T)
 
 这里的集合是推理模型，不是当前代码中已有的数据结构；对被明确过滤的记录，还需要有合法处理规则。它比 `D ≤ J ≤ T` 更准确，因为没有假装不同类型的进度可以直接排序。
 
+### source.row 加 op 解决身份，不自动解决 ACK
+
+2026-10-19 的真实 SourceRecord 实验补充了一个更细的边界：39 条同事务记录在重启、拆批和合批后，候选定位元组与规范化内容一致；主键修改的 d/c 则共享 file/source.pos/source.row 和完整 restart offset。去掉 op，两个成员就碰撞。仅确认 d、让 D 持久化后重启，c 没有再次交付。[身份实验](../experiments/2026-10-19-source-record-identity/README.md)
+
+这意味着读取恢复上下文的粒度可能大于一个逻辑 SourceRecord。即使给 c 分配稳定 ID，它不再到达时，去重账本也无能为力。Source ACK 必须以完整物理行组的覆盖为条件；仅看当前回调是否提交还不够。
+
+另一个[真实 Engine/Bridge 探针](../experiments/2026-10-19-deferred-ack/README.md)在 Bridge 前配齐 d/c，再用测试信号确认覆盖，成功从后续回调延迟调用旧句柄，且实际 D 没有在覆盖前推进。它没有目标或 Journal，不能改写本篇对生产协议的结论。具体分组和原始回调前缀确认见[第四篇](04-protocol-and-validation.md)。
+
 ## 9. 按持久化事实划分故障窗口
 
 下表先描述源码允许的分支，再标明实测范围。任何“调用失败”都需要进一步判断事务最终是否提交。
