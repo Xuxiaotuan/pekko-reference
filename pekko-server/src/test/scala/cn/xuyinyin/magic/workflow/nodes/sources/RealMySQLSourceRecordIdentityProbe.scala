@@ -88,7 +88,7 @@ object RealMySQLSourceRecordIdentityProbe {
     case _ => false
   }
 
-  private[sources] def encode(record: SourceRecord, connectorId: String): JsValue = {
+  private[workflow] def encode(record: SourceRecord, connectorId: String): JsValue = {
     val normalized = MySQLCdcEnvelope.decode(record, connectorId) match {
       case Right(Some(envelope)) => envelope.canonicalJson.parseJson
       case Right(None) => JsNull

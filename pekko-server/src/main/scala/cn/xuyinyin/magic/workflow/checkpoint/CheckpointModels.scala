@@ -23,7 +23,9 @@ final case class SourceBatch(
   batchSequence: Long,
   batchId: String,
   cursor: SourceCursor,
-  rows: Vector[String]
+  rows: Vector[String],
+  // Reader-session capability, deliberately absent from durable BatchCheckpoint/SourceCursor.
+  acknowledgementId: Option[String] = None
 )
 
 final case class BatchCheckpoint(

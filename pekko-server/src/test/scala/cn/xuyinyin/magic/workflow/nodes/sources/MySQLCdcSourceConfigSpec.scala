@@ -39,6 +39,13 @@ class MySQLCdcSourceConfigSpec extends STSpec {
   }
 
   "MySQLCdcSourceConfig" should {
+    "reject group mode without an explicit trusted streaming baseline" in {
+      intercept[IllegalArgumentException] {
+        parse("groupProtocol" -> JsObject("replicationId" -> JsString("orders"),
+          "generation" -> JsString("g1"), "sourceLineage" -> JsString("fixed-server-uuid")))
+      }.getMessage should include("initializedTarget")
+    }
+
     "parse a complete CDC source node" in {
       parse() shouldBe MySQLCdcSourceConfig(
         connectorId = "orders-cdc-v1",
