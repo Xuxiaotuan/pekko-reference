@@ -38,7 +38,7 @@ sbt \
 共享一个临时 file-H2 JDBC schema，并实际终止承载 entity / Singleton 的节点。
 它们不是 probe-only 的多节点替身。
 
-`quick-test.sh` 只执行 Validator、完整组装配和 Apply Sink 的 54 项本地检查，
+`quick-test.sh` 只执行 Validator、完整组装配和 Apply Sink 三组本地检查，
 不代表真实 MySQL 恢复验证。完整 `test` 保留既有 Calcite 套件，不通过排除它们宣称全库通过。
 
 ```bash
@@ -58,6 +58,13 @@ sbt checkDeps
 [B 阶段记录](docs/experiments/2026-10-19-stage-b-console/README.md)。
 列表仍枚举 Journal ID 并查询 Actor；不提供全局任务总数或稳定快照分页。
 SQL/通用 DAG 演示不再进入产品路由；未知指标不再返回固定数值。
+
+## 写入热路径与查询上限
+
+CDC Sink 在一次事务内复用语句并保留逐条事件顺序；列表查询限制请求数与未完成 ask，
+失败、超时后也不提前归还仍在运行的 ask 额度。配置及兼容边界见[配置指南](docs/CONFIGURATION.md#列表查询的资源上限)。
+本轮 Protobuf 调整保留 Calcite 测试，实际结果见[优化记录](docs/experiments/2026-10-20-hot-path-query/README.md)。
+这些改动没有解决 C2 的失败终态策略，也没有提供 70 万任务容量结论。
 
 ## MySQL schema
 

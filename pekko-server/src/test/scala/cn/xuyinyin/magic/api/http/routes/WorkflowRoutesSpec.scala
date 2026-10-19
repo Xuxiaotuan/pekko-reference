@@ -19,6 +19,25 @@ class WorkflowRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRou
       HttpErrorMapping.status(new java.sql.SQLException("down")) shouldBe StatusCodes.ServiceUnavailable
       HttpErrorMapping.status(new RuntimeException("bug")) shouldBe StatusCodes.InternalServerError
     }
+    "return explicit overload and deadline statuses for list queries" in {
+      val typedSystem = system.toTyped
+      val supervisor = typedSystem.systemActorOf(Behaviors.ignore[WorkflowSupervisor.Command], s"list-errors-${java.util.UUID.randomUUID()}")
+      val failures = Vector(
+        new java.util.concurrent.RejectedExecutionException("workflow query capacity exhausted") -> StatusCodes.ServiceUnavailable,
+        new java.util.concurrent.TimeoutException("workflow list deadline") -> StatusCodes.GatewayTimeout
+      )
+      failures.foreach { case (failure, expected) =>
+        val query = new cn.xuyinyin.magic.workflow.query.WorkflowQueryService(typedSystem, supervisor)(typedSystem.executionContext) {
+          override def list(page: Int, requestedPageSize: Int) = scala.concurrent.Future.failed(failure)
+        }
+        val routes = new EnhancedWorkflowRoutes(supervisor, Some(query))(typedSystem, typedSystem.executionContext).routes
+        Get("/api/v1/workflows?page=0&pageSize=50") ~> routes ~> check {
+          status shouldBe expected
+          responseAs[String].parseJson.asJsObject.fields("operation") shouldBe JsString("list")
+        }
+      }
+    }
+
     "return Created only after the entity confirms the definition" in {
       val typedSystem = system.toTyped
       val supervisor = typedSystem.systemActorOf(Behaviors.receiveMessage[WorkflowSupervisor.Command] {

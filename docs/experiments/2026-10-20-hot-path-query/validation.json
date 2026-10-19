@@ -1,0 +1,54 @@
+{
+  "focusedTests": 67,
+  "focusedSuites": 8,
+  "defaultModule": {
+    "passed": 462,
+    "failed": 0,
+    "abortedSuites": 0,
+    "exitCode": 0,
+    "gate": "PASS",
+    "scope": "Local default test gate, excludes ExternalIntegration"
+  },
+  "ui": {
+    "tests": 5,
+    "build": "PASS",
+    "browserE2E": "not rerun; no UI production source changes"
+  },
+  "formalRealCases": 10,
+  "convergedWindows": 7,
+  "knownRecoveryFailure": "C2 FAIL_TERMINAL",
+  "realReleaseCases": 2,
+  "protectedHistoricalFiles": 96,
+  "protectedMismatches": [],
+  "package": {
+    "artifact": "pekko-server/target/scala-2.13/pekko-reference_2.13-0.1.jar",
+    "sha256": "40443670da131689f73c963d546bde65207c6cca6d523d967ed97ef2ccde2bfa",
+    "distribution": "pekko-server/target/universal/stage",
+    "libraryJars": 193,
+    "newProductionClassPresent": true,
+    "testFixturesAbsent": true,
+    "protobuf": {
+      "protobufVersion": "4.33.4",
+      "protobufFile": "com.google.protobuf.protobuf-java-4.33.4.jar",
+      "protobufSha256": "3ca892fd6ea8b37d01bb6917dbc0bf2637548b756753f65a28d4f1d4d982347f",
+      "legacyShimsPresent": true,
+      "resolvedRuntimeCount": 1,
+      "generatedMessageRoundTrips": "Avatica and MySQL Connector/J tested",
+      "boundary": "Message compatibility and local distribution inventory; not a security scan or complete X Protocol integration test"
+    },
+    "boundary": "Local packageBin and Universal/stage; real CDC tests used Test Classpath, not this distribution"
+  },
+  "efficiency": {
+    "layer": "H2 Connection.prepareStatement calls",
+    "events": 64,
+    "targetBefore": 64,
+    "targetAfter": 1,
+    "groupSelectAfter": 1,
+    "groupInsertAfter": 1,
+    "notMeasured": [
+      "MySQL roundtrip reduction",
+      "throughput speedup",
+      "700k-task capacity"
+    ]
+  }
+}

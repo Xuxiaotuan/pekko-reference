@@ -9,7 +9,10 @@ import spray.json._
 
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
-import java.sql.{Connection, DriverManager, Types}
+import java.sql.{Connection, DriverManager, PreparedStatement, Types}
+import java.lang.reflect.{InvocationHandler, InvocationTargetException, Method, Proxy}
+import java.util.concurrent.ConcurrentLinkedQueue
+import scala.jdk.CollectionConverters._
 import java.time.{Instant, LocalTime}
 import java.util.UUID
 import java.util.concurrent.{CyclicBarrier, Executors, TimeUnit}
@@ -81,6 +84,26 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
   }
 
   "MySQLCdcApplySinkNode" should {
+    "reuse transaction-scoped statements without reordering group effects" in withFixture() { f =>
+      val events = (1L to 64L).map { id =>
+        val event = f.event(CdcOperation.Create, id, afterStatus = Some(s"row-$id"))
+        event.copy(source = event.source.copy(position = Some(100L + id)))
+      }.toVector
+      val batch = f.groupBatch(events, 0)
+      Await.result(f.node.commitBatch(f.sinkNode, "workflow-cdc", "execution-cdc", batch, batch.rows, _ => ()), 5.seconds) shouldBe a[Committed]
+      val prepared = f.preparedStatements.iterator().asScala.toVector
+      val data = prepared.filter { case (sql, _) => sql.startsWith("INSERT INTO \"target_rows\"") }
+      data.size shouldBe 1
+      info(s"CDC_STATEMENT_REUSE_OBSERVED events=${events.size} targetPrepares=${data.size} groupSelectPrepares=${prepared.count(_._1.startsWith("SELECT evidence"))} groupInsertPrepares=${prepared.count(_._1.startsWith("INSERT INTO pekko_sync_cdc_group_ledger("))}")
+      prepared.count(_._1 == "SELECT evidence FROM pekko_sync_cdc_group_ledger WHERE group_id = ? FOR UPDATE") shouldBe 1
+      prepared.count(_._1.startsWith("INSERT INTO pekko_sync_cdc_group_ledger(")) shouldBe 1
+      prepared.foreach { case (_, statement) => statement.isClosed shouldBe true }
+      events.indices.foreach(i => f.selectStatus(i + 1L) shouldBe Some(s"row-${i + 1L}"))
+      f.preparedStatements.clear()
+      Await.result(f.node.commitBatch(f.sinkNode, "workflow-cdc", "execution-cdc", batch, batch.rows, _ => ()), 5.seconds) shouldBe a[AlreadyCommitted]
+      f.preparedStatements.iterator().asScala.toVector.count(_._1.startsWith("INSERT INTO")) shouldBe 0
+    }
+
     "deduplicate complete groups after splitting and merging deliveries using current checkpoint metadata" in withFixture() { f =>
       val first = f.event(CdcOperation.Create, 1, afterStatus = Some("old"))
       val b = f.event(CdcOperation.Update, 1, beforeStatus = Some("old"), afterStatus = Some("new"))
@@ -121,6 +144,7 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       def commit(batch: SourceBatch) = Await.result(f.node.commitBatch(f.sinkNode, "workflow-cdc", "execution-cdc",
         batch, batch.rows, _ => ()), 5.seconds)
       intercept[IllegalStateException](commit(pair("invalid")))
+      f.preparedStatements.iterator().asScala.foreach { case (_, statement) => statement.isClosed shouldBe true }
       f.selectStatus(1) shouldBe Some("old")
       f.selectStatus(2) shouldBe None
       val result = commit(pair("valid")).asInstanceOf[Committed]
@@ -692,12 +716,21 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       database = databaseName,
       username = "sa"
     )
+    val preparedStatements = new ConcurrentLinkedQueue[(String, PreparedStatement)]()
     val node: MySQLCdcApplySinkNode = new MySQLCdcApplySinkNode {
       override protected[sinks] def getenv(name: String): Option[String] =
         Option.when(name == "TARGET_PASSWORD")("runtime-secret")
 
       override protected[sinks] def openConnection(config: MySQLCdcApplyConfig): Connection = {
-        DriverManager.getConnection(url, "sa", "")
+        val actual = DriverManager.getConnection(url, "sa", "")
+        Proxy.newProxyInstance(getClass.getClassLoader, Array(classOf[Connection]), new InvocationHandler {
+          override def invoke(proxy: Any, method: Method, args: Array[AnyRef]): AnyRef = {
+            val result = try method.invoke(actual, Option(args).getOrElse(Array.empty[AnyRef]): _*)
+            catch { case e: InvocationTargetException => throw e.getCause }
+            if (method.getName == "prepareStatement") preparedStatements.add(args(0).toString -> result.asInstanceOf[PreparedStatement])
+            result
+          }
+        }).asInstanceOf[Connection]
       }
 
       override protected[sinks] def beforeLedgerClaim(batchId: String): Unit = claimHook(batchId)

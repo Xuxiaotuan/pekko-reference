@@ -104,7 +104,10 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
         connection = openConnection(config)
         val target = resolveTarget(connection, config)
         validateCompatibility(identity, target)
-        val planned = envelopes.map(envelope => plan(envelope, identity, target))
+        // Validate every event before any ledger claim, including replayed groups.
+        val plannedGroups = groups.map(_.map(group =>
+          group -> group.members.map { case (_, envelope) => plan(envelope, identity, target) }))
+        val planned = if (groups.isEmpty) envelopes.map(envelope => plan(envelope, identity, target)) else Vector.empty
         val checkpoint = BatchCheckpoint(
           batch.sourceNodeId,
           batch.partitionId,
@@ -118,26 +121,26 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
         connection.setAutoCommit(false)
         val result = if (groups.nonEmpty) {
           validateGroupLedger(connection, target.name)
-          var appliedGroups = 0
-          groups.get.foreach { group =>
-            val evidence = MySQLCdcGroup.canonical(JsObject("identity" -> batch.cursor.upperBound.parseJson,
-              "targetTable" -> JsString(target.name), "group" -> group.canonicalJson.parseJson))
-            val existing = using(connection.prepareStatement(
-              "SELECT evidence FROM pekko_sync_cdc_group_ledger WHERE group_id = ? FOR UPDATE")) { statement =>
-              statement.setString(1, group.groupId)
-              using(statement.executeQuery())(rows => Option.when(rows.next())(rows.getString(1)))
+          val appliedGroups = using(new JdbcStatementScope(connection)) { statements =>
+            var applied = 0
+            plannedGroups.get.foreach { case (group, events) =>
+              val evidence = MySQLCdcGroup.canonical(JsObject("identity" -> batch.cursor.upperBound.parseJson,
+                "targetTable" -> JsString(target.name), "group" -> group.canonicalJson.parseJson))
+              val select = statements.prepare("SELECT evidence FROM pekko_sync_cdc_group_ledger WHERE group_id = ? FOR UPDATE")
+              select.setString(1, group.groupId)
+              val existing = using(select.executeQuery())(rows => Option.when(rows.next())(rows.getString(1)))
+              existing match {
+                case Some(value) =>
+                  if (value != evidence) throw new IllegalStateException(s"conflicting CDC group evidence: ${group.groupId}")
+                case None =>
+                  val insert = statements.prepare("INSERT INTO pekko_sync_cdc_group_ledger(group_id,evidence) VALUES (?,?)")
+                  insert.setString(1, group.groupId); insert.setString(2, evidence); insert.executeUpdate()
+                  events.foreach(applyEvent(statements, target, _))
+                  applied += 1
+              }
             }
-            existing match {
-              case Some(value) =>
-                if (value != evidence) throw new IllegalStateException(s"conflicting CDC group evidence: ${group.groupId}")
-              case None =>
-                using(connection.prepareStatement("INSERT INTO pekko_sync_cdc_group_ledger(group_id,evidence) VALUES (?,?)")) { statement =>
-                  statement.setString(1, group.groupId); statement.setString(2, evidence); statement.executeUpdate()
-                }
-                group.members.foreach { case (_, e) => applyEvent(connection, target, plan(e, identity, target)) }
-                appliedGroups += 1
-            }
-          }
+            applied
+          } // All statements close before COMMIT; a close failure still rolls this transaction back.
           connection.commit()
           safeLog(onLog, s"CDC complete groups covered batchId=${batch.batchId} newGroups=$appliedGroups replayedGroups=${groups.get.size - appliedGroups}")
           if (appliedGroups > 0) Committed(checkpoint) else AlreadyCommitted(checkpoint)
@@ -164,12 +167,14 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
                   case None => throw new IllegalStateException("MySQL CDC ledger claim failed", sql)
                 }
               case None =>
-                planned.foreach(applyEvent(connection, target, _))
+                using(new JdbcStatementScope(connection)) { statements =>
+                  planned.foreach(applyEvent(statements, target, _))
+                }
                 connection.commit()
                 Committed(checkpoint)
             }
         }
-        safeLog(onLog, s"MySQL CDC delivery covered batchId=${batch.batchId} events=${planned.size}")
+        safeLog(onLog, s"MySQL CDC delivery covered batchId=${batch.batchId} events=${envelopes.size}")
         result
       } catch {
         case error: IllegalStateException =>
@@ -309,7 +314,7 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
     }
   }
 
-  private def applyEvent(connection: Connection, target: TargetTable, event: PlannedEvent): Unit = event match {
+  private def applyEvent(statements: JdbcStatementScope, target: TargetTable, event: PlannedEvent): Unit = event match {
     case Upsert(values) =>
       val columns = values.map(_._1)
       val nonKey = columns.filterNot(_.name.equalsIgnoreCase(target.primaryKey.name))
@@ -318,16 +323,14 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
       ) else Vector(s"${target.quoted(target.primaryKey.name)}=VALUES(${target.quoted(target.primaryKey.name)})")
       val sql = s"INSERT INTO ${target.quoted(target.name)} (${columns.map(c => target.quoted(c.name)).mkString(", ")}) " +
         s"VALUES (${Vector.fill(columns.size)("?").mkString(", ")}) ON DUPLICATE KEY UPDATE ${assignments.mkString(", ")}"
-      using(connection.prepareStatement(sql)) { statement =>
-        values.zipWithIndex.foreach { case ((_, value), index) => set(statement, index + 1, value) }
-        statement.executeUpdate()
-      }
+      val statement = statements.prepare(sql)
+      values.zipWithIndex.foreach { case ((_, value), index) => set(statement, index + 1, value) }
+      statement.executeUpdate()
     case Delete(key) =>
       val sql = s"DELETE FROM ${target.quoted(target.name)} WHERE ${target.quoted(target.primaryKey.name)} = ?"
-      using(connection.prepareStatement(sql)) { statement =>
-        set(statement, 1, key)
-        statement.executeUpdate()
-      }
+      val statement = statements.prepare(sql)
+      set(statement, 1, key)
+      statement.executeUpdate()
   }
 
   private def bindValue(column: TargetColumn, value: JsValue): BoundValue = {

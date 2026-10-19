@@ -1,0 +1,77 @@
+{
+  "date": "2026-10-20",
+  "java": "Microsoft OpenJDK 17.0.14",
+  "pekko": "1.1.3",
+  "debezium": "3.6.1.Final",
+  "protobuf": "4.33.4",
+  "container": "pekko-cdc-stage-c-20261019",
+  "image": "sha256:cc52b8b5900d106bc482241091cfa7496d830280868e19aca8a24e8e7086568e",
+  "arguments": [
+    "--server-id=170019",
+    "--log-bin=mysql-bin",
+    "--binlog-format=ROW",
+    "--binlog-row-image=FULL",
+    "--gtid-mode=ON",
+    "--enforce-gtid-consistency=ON"
+  ],
+  "formalRuns": [
+    {
+      "scenario": "N0",
+      "runDirectory": "N0-af142d285dac",
+      "schema": "pekko_test_cdc_window_af142d285dac"
+    },
+    {
+      "scenario": "J1",
+      "runDirectory": "J1-b1d1fb842197",
+      "schema": "pekko_test_cdc_window_b1d1fb842197"
+    },
+    {
+      "scenario": "J2",
+      "runDirectory": "J2-751111d458d2",
+      "schema": "pekko_test_cdc_window_751111d458d2"
+    },
+    {
+      "scenario": "C1",
+      "runDirectory": "C1-39318251a3e4",
+      "schema": "pekko_test_cdc_window_39318251a3e4"
+    },
+    {
+      "scenario": "C2",
+      "runDirectory": "C2-6282bef70faa",
+      "schema": "pekko_test_cdc_window_6282bef70faa"
+    },
+    {
+      "scenario": "C0",
+      "runDirectory": "C0-fde6793adef7",
+      "schema": "pekko_test_cdc_window_fde6793adef7"
+    },
+    {
+      "scenario": "K1",
+      "runDirectory": "K1-fc4caba2b878",
+      "schema": "pekko_test_cdc_window_fc4caba2b878"
+    },
+    {
+      "scenario": "K2",
+      "runDirectory": "K2-e8612a240dde",
+      "schema": "pekko_test_cdc_window_e8612a240dde"
+    },
+    {
+      "scenario": "sessions/none",
+      "runDirectory": "none-7ba6e8649b45",
+      "schema": "pekko_test_cdc_window_7ba6e8649b45"
+    },
+    {
+      "scenario": "sessions/cancel-T",
+      "runDirectory": "cancel-T-911e3528ee90",
+      "schema": "pekko_test_cdc_window_911e3528ee90"
+    }
+  ],
+  "executionResult": {
+    "exitCode": 0,
+    "seconds": 262.1395061016083,
+    "container": "pekko-cdc-stage-c-20261019",
+    "loopbackPort": "32799",
+    "protobuf": "4.33.4"
+  },
+  "testBoundary": "Default test excludes ExternalIntegration; formal ten cases ran explicitly through Test Classpath; no staged-distribution deployment claimed"
+}

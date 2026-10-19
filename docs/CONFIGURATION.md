@@ -109,7 +109,8 @@ export PEKKO_TEST_MYSQL_USER='pekko_test'
 export PEKKO_TEST_MYSQL_PASSWORD='replace-me'
 
 sbt \
-  'set pekkoServer / Test / testOptions := Seq()' \
+  'project pekko-server' \
+  'set Test / testOptions := Seq()' \
   'pekko-server/testOnly cn.xuyinyin.magic.workflow.integration.MySQLPersistenceRecoverySpec -- -n cn.xuyinyin.magic.tags.ExternalIntegration'
 ```
 
@@ -117,3 +118,48 @@ session override 只影响本次 sbt 会话；若不先清除默认 exclude，in
 同一 tag 会导致 0 tests。测试不建库、不删库、不清表，只写唯一 persistence id，
 并验证 Journal、Snapshot 和恢复。schema 初始化与最终删除由测试操作者在专用
 环境中完成。
+
+
+## 列表查询的资源上限
+
+`application.conf`、开发、生产和测试配置都提供 `pekko.workflow.query`：
+
+| 配置 | 默认值 | 含义 |
+|---|---|---|
+| `summary-parallelism` | 8 | 每个列表流最多同时向 Actor 发起多少个摘要 ask；结果保留输入 ID 顺序 |
+| `max-concurrent-lists` | 4 | 同一 QueryService 实例允许的列表请求数；没有额外等待队列 |
+| `timeout` | 5s | ID 枚举和摘要查询整个流的完成预算 |
+| `summary-timeout` | 5s | 单个 ask 的等待预算 |
+
+同一服务实例的未完成 ask 总量还受两项并发配置乘积限制，默认最多 32 个。
+列表超时或失败后，已经发出的 ask 继续占用其额度，直到回复、失败或 ask 自身超时；
+不能靠反复取消列表释放额度，再堆积新的 ask。参数必须为正，乘积必须能表示为 Int。
+
+额度用尽返回 HTTP 503，整体超时返回 HTTP 504；分页 DTO 仍为 `{page,pageSize,items}`，
+没有隐藏的部分成功页。前端可保留旧结果并提示刷新失败。此上限按服务实例生效，
+不是集群全局限流或租户公平调度。
+
+这里取消的是查询流，不能据此宣称已中断数据库执行中的 SQL 或 Actor 已开始的恢复。
+查询仍通过 `currentPersistenceIds` 丢弃深页前面的 ID，并询问分片实体，可能唤醒冷任务。
+没有稳定跨页快照、独立任务目录或 70 万任务容量保证。
+
+## CDC 目标写入的语句生命周期
+
+`mysql.cdc.apply` 每个批次连接内复用相同 SQL 的 PreparedStatement：完整组账本查询、
+账本插入、目标 upsert 和 delete。所有参数逐次绑定，每条事件仍按原顺序执行，
+不使用 JDBC executeBatch，也不合并跨完整组的事务。
+
+语句只活在此次事务内，COMMIT 前关闭；关闭失败仍尝试其他语句的关闭并回滚。
+没有为每张表创建常驻连接池，没有跨执行或跨批次缓存目标 Schema，目标元数据仍逐批校验。
+`prepareStatement` 调用减少不等于 executeUpdate 次数或数据库网络往返同比减少。
+
+## Protobuf 依赖兼容性
+
+构建将 `protobuf-java` 固定为 4.33.4。原先 MySQL Connector/J 的传递 4.26.1
+不含 Avatica 旧生成代码需要的 GeneratedMessageV3；新版本保留对应兼容层。
+本轮同时验证 Avatica 和 Connector/J 生成消息的序列化往返，并重新运行 Calcite 套件。
+没有降级 Connector/J 或改变 CDC 事件/Journal 序列化格式。
+
+版本依据：[Protobuf v33.4](https://github.com/protocolbuffers/protobuf/releases/tag/v33.4)、
+[生成代码与 runtime 的兼容边界](https://protobuf.dev/support/cross-version-runtime-guarantee/)。
+完整本轮结果见[写入热路径和查询优化记录](experiments/2026-10-20-hot-path-query/README.md)。

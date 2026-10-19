@@ -23,7 +23,7 @@
 | `workflow/nodes/sources/` | MySQL/Kafka 读取、Debezium 回调、Bridge 和完整组装配 | 原始回调、完整组和交付批次是不同边界 |
 | `workflow/nodes/cdc/` | 事件身份、信封、完整组及 cursor 表示 | 身份不依赖运行期批次大小 |
 | `workflow/nodes/sinks/` | 目标写入、事务与目标账本 | 目标提交成功不能单独推出端到端恢复成功 |
-| `workflow/query/` | 定义摘要、历史查询 | 当前分页仍可能唤醒实体，不是独立任务目录 |
+| `workflow/query/` | 有界列表查询、摘要与历史查询 | 列表和未完成 ask 均有额度；仍扫描 ID 并可能唤醒实体，不是独立任务目录 |
 | `workflow/scheduler/` | 持久化调度、触发去重和暂停/恢复 | 暂停调度不等于取消运行会话 |
 
 ## 前端与示例
@@ -41,4 +41,11 @@
 
 最近的实现记录：[A：示例与构建收敛](experiments/2026-10-19-stage-a-convergence/README.md)、[B：接口与管理界面](experiments/2026-10-19-stage-b-console/README.md)、[C：会话与资源释放](experiments/2026-10-19-stage-c-sessions/README.md)。
 
-当前已确认的限制仍包括 C2 COMMIT 回复丢失后持久化失败终态、两个 Calcite 套件中止，以及未经证明的 DDL、多 owner、共享 Reader 和 70 万表容量。结构整理不改变这些结论。此次拆分及回归材料见[结构整理记录](experiments/2026-10-20-code-structure/README.md)。
+当前已确认的限制仍包括 C2 COMMIT 回复丢失后持久化失败终态，以及未经证明的 DDL、多 owner、共享 Reader 和 70 万表容量。结构整理不改变这些结论。此次拆分及回归材料见[结构整理记录](experiments/2026-10-20-code-structure/README.md)。
+
+
+写入热路径在 `nodes/sinks/JdbcStatementScope.scala` 内管理一次事务的语句；
+`MySQLCdcApplySinkNode` 负责完整组、目标事务和账本，语句复用不决定事件身份或 ACK。
+`WorkflowQueryService` 对列表及未结束 ask 分别计数，查询失败不能提前清空 ask 额度。
+Protobuf 兼容调整及原有 Calcite 中止的最新回归见[本轮优化记录](experiments/2026-10-20-hot-path-query/README.md)，
+各次历史实验仍以其原始源码和环境为准。

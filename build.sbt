@@ -20,6 +20,7 @@ val pekkoConnectorsVer   = "1.1.0"
 
 // 数据处理和存储
 val calciteVersion       = "1.39.0"      // SQL parser
+val protobufVersion     = "4.33.4"      // Avatica 3.x and Connector/J 4.x generated-code compatibility
 val h2Version            = "2.3.232"     // Test database
 val pekkoPersistenceJdbcVersion = "1.1.1"
 val debeziumVersion      = "3.6.1.Final"
@@ -134,6 +135,7 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       // Jackson版本管理 - 解决Scala模块兼容性问题
       // ================================
       dependencyOverrides ++= Seq(
+        "com.google.protobuf" % "protobuf-java" % protobufVersion,
         "com.fasterxml.jackson.core"     % "jackson-databind"              % jacksonVersion,
         "com.fasterxml.jackson.core"     % "jackson-core"                  % jacksonVersion,
         "com.fasterxml.jackson.core"     % "jackson-annotations"           % jacksonVersion,
