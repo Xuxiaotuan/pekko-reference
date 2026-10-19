@@ -4,7 +4,7 @@
 
 答案不能是“找最大的进度”。三份状态描述的对象不同：目标保存已产生的业务效果，Journal 保存工作流接受的确认，Debezium offset 保存读取器的恢复上下文。**可靠恢复需要重建它们之间的对应关系，而不是把三个数改成一样。** 本篇沿现有源码，推导这份对应关系在何处成立、在何处依赖未被保证的假设。
 
-项目生产源码固定为 `d88ec80`，Pekko 1.1.3、Debezium 3.6.1.Final。Debezium 上游源码固定到 `63371830ceff75437f95c775b91eeeaf55a056c1`。版本与证据分层见[目录](README.md)。正文中的故障时序是源码推演；第三篇的真实实验只覆盖其中一个窗口。
+旧批次账本分析固定为 `d88ec80`；新增完整组模式固定为 `65ab541`。Pekko 1.1.3、Debezium 3.6.1.Final 不变。Debezium 上游源码固定到 `63371830ceff75437f95c775b91eeeaf55a056c1`。版本与证据分层见[目录](README.md)。下文先保留旧协议的因果分析，再沿新模式源码说明改动；第三篇分别给出旧协议反例与新协议指定窗口的真实验收。其他故障时序仍标为源码推演。
 
 ## 1. 先定义三个“已经完成”
 
@@ -15,11 +15,11 @@ sourceNodeId, partitionId, batchSequence, batchId,
 cursor(kind, value, upperBound), sourceRowsScanned, targetRowsWritten
 ```
 
-这个结构同时出现在目标账本和 Actor 状态里，但两处保存它的时机不同。
+旧模式将这个结构同时放入批次账本与 Actor 状态。新模式的 T 改存稳定组及成员内容证据，J 仍保存当前交付的 Checkpoint；不能再把 T 的“组数”与 J 的交付序号直接相等比较。
 
 | 记号 | 持久化对象 | “完成”的含义 |
 |---|---|---|
-| T | MySQL 业务表与 `pekko_sync_batch_ledger` | 该目标事务已经提交；账本记下这次提交的身份和元数据 |
+| T | MySQL 业务表与该模式的账本：旧 `pekko_sync_batch_ledger` / 新 `pekko_sync_cdc_group_ledger` | 该目标事务已提交；新模式证明完整组及成员内容，不持久化本次传输批次作为去重身份 |
 | J | Journal 中的 `ExecutionCheckpointAdvanced` | 工作流已接受这项提交结果，并能在 Actor 恢复时重建它 |
 | D | Debezium JDBC offset store | Connector 重启时可加载这份读取恢复上下文 |
 
@@ -29,9 +29,9 @@ D 更不能直接改写成“第几批”。它可能包含 file、pos、GTID、
 
 需要再分清三个同名的 Checkpoint：本文的 Actor Checkpoint 是应用进度事件；Pekko Snapshot 是加速 Actor 状态恢复的持久化快照；Flink Checkpoint 则协调其执行图中的恢复状态。[Flink 状态恢复说明](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/concepts/stateful-stream-processing/)不能直接套在这段 Actor 代码上。`Effect.persist` 的成功，不会顺便把外部 MySQL、Source 和所有 Stream 缓冲保存成一致切面。
 
-## 2. 批次在进入 Sink 前，已经带上了两种不同身份
+## 2. 旧模式怎样把回调序号变成批次身份
 
-从 [`MySQLCdcSourceNode.CdcResource`][source] 开始。构造资源时，Source 同时初始化 `callbackSequence` 和 `outputSequence`。如果 J 中已有 Checkpoint，两者都从 `J.batchSequence + 1` 开始；否则从 0 开始。
+以下先沿旧版本 [`MySQLCdcSourceNode.CdcResource`][source] 阅读，新模式的装配路径见第 9 节。构造资源时，Source 同时初始化 `callbackSequence` 和 `outputSequence`。如果 J 中已有 Checkpoint，两者都从 `J.batchSequence + 1` 开始；否则从 0 开始。
 
 Debezium 每调用一次 `handleBatch`，Source 取一个回调序号，生成批次 ID，再解码其中的 SourceRecord：
 
@@ -51,7 +51,7 @@ Bridge 还会分配一个 `deliveryToken`。这个 token 关联内存中的队�
 
 这不是单纯的计数细节。未来设计确认前缀时，必须为被过滤的记录定义处理结果，不能把“零条业务 DML”理解成“Source 没有向前读取”。
 
-## 3. T 的事务边界：效果与账本一起提交
+## 3. 旧批次账本的 T 边界：效果与账本一起提交
 
 [`WorkflowExecutionEngine.processBatch`][engine] 先处理本批 rows，再依次等待三个 Future：
 
@@ -111,15 +111,15 @@ Pekko 等待 Journal 写入响应期间会暂存普通命令，持久化完成�
 
 还有一个范围限制：Actor 接受的是符合本地状态机的 Checkpoint，校验函数本身不会去目标 MySQL 查询 T。`J ⇒ T` 的依据来自 Engine 先提交 Sink 再发命令的调用关系，以及消息来源和协议约束，不是 `Effect.persist` 天然能证明外部事务已完成。
 
-## 5. Source ACK 与 D 落盘之间，还隔着一条真实路径
+## 5. SDK 确认与 D 落盘之间，还隔着一条真实路径
 
-Source 的确认注册表找到当前 Bridge 与 deliveryToken 后，调用 `bridge.acknowledge`。Bridge 将该批标记为已认领确认，再执行 [`DebeziumRecordCommitHandle`][engine-access]：遍历原始回调记录调用 `markProcessed`，最后调用 `markBatchFinished`。成功返回后，Bridge 才完成发布方等待的 Promise。
+旧模式的确认注册表找到当前 Bridge 与 deliveryToken 后，调用 `bridge.acknowledge`。Bridge 将该批标记为已认领确认，再执行 [`DebeziumRecordCommitHandle`][engine-access]：遍历原始回调记录调用 `markProcessed`，最后调用 `markBatchFinished`。成功返回后，Bridge 才完成发布方等待的 Promise。
 
 这里存在三个观察点：
 
 ```text
 A1：项目开始调用确认句柄
-A2：markProcessed / markBatchFinished 返回，项目 ACK Future 完成
+A2：markProcessed / markBatchFinished 返回；旧模式的项目 ACK Future 随之完成
 D ：offset store 中已持久保存对应恢复状态
 ```
 
@@ -148,9 +148,9 @@ D → Connector 的日志恢复起点、事务内跳过信息、快照恢复上�
 
 如果执行已经持久化成失败终态，事件处理器会清理当前执行，保留终态摘要。它不再等同于“运行中断后自动接续”。第三篇失败组的 Actor 重启语义，不能用“进程总会自动重试”概括。
 
-## 7. 一个最小反例：分组改变，身份没有改变
+## 7. 旧模式的最小反例：分组改变，身份没有改变
 
-用 bₙ 表示第一次运行的第 n 个回调。当前 ID 公式只依赖执行、分区和 n，可以记为：
+用 bₙ 表示第一次运行的第 n 个回调。旧模式的 ID 公式只依赖执行、分区和 n，可以记为：
 
 ```text
 I(bₙ) = H(executionId, sourceNodeId, partitionId, n)
@@ -199,9 +199,35 @@ Skip(D) ⊆ Covered(T)
 
 这意味着读取恢复上下文的粒度可能大于一个逻辑 SourceRecord。即使给 c 分配稳定 ID，它不再到达时，去重账本也无能为力。Source ACK 必须以完整物理行组的覆盖为条件；仅看当前回调是否提交还不够。
 
-另一个[真实 Engine/Bridge 探针](../experiments/2026-10-19-deferred-ack/README.md)在 Bridge 前配齐 d/c，再用测试信号确认覆盖，成功从后续回调延迟调用旧句柄，且实际 D 没有在覆盖前推进。它没有目标或 Journal，不能改写本篇对生产协议的结论。具体分组和原始回调前缀确认见[第四篇](04-protocol-and-validation.md)。
+另一个[真实 Engine/Bridge 探针](../experiments/2026-10-19-deferred-ack/README.md)在 Bridge 前配齐 d/c，再用测试信号确认覆盖，成功从后续回调延迟调用旧句柄，且实际 D 没有在覆盖前推进。它没有目标或 Journal，只能作为组件证据；后续生产改造另有真实 T/J/Sink 验收，不能倒过来把该探针称为端到端实验。具体分组和原始回调前缀确认见[第四篇](04-protocol-and-validation.md)。
 
-## 9. 按持久化事实划分故障窗口
+## 9. 新模式把“交付连续”与“源事件稳定”拆开
+
+**源码结论，版本 `65ab541`。** [Source 的新路径][group-source]在 Bridge 前调用 [MySQLCdcGroupAssembler][group-assembler]。普通变更形成单成员组；主键 DELETE 带 newkey 时暂存，必须等到相邻 CREATE，并核对物理位置、分区、Schema、完整 restart offset 和双向键对应关系。A 可以不调用原始句柄就返回，B 因而能够到达；只有完整组才进入 Bridge。
+
+```text
+raw callback A: [u0,d1] → 交付 [g0] → T/J 覆盖；保留 A，不 ACK d1
+raw callback B: [c1,d2] → 配齐 g1 → T/J 覆盖 → 可确认原始 A
+                         保留 B 的 d2，返回以等待下一个回调
+```
+
+交付序号只在发布完整组时递增，继续满足 Actor 的 J+1 校验。稳定 [groupId/eventId][group-model] 则由复制代次、固定源谱系和 file/source.pos/source.row、成员角色决定，不含 executionId 或回调大小。新 Sink 用完整组证据去重，批次 ID 只承担本次交付的 Journal 顺序。
+
+[新 Sink][group-sink]先解析全部组并验证 Schema/类型，再在同一连接事务中按源顺序查组账本：相同组及规范化证据一致就跳过整个组；不同则回滚整次交付；不存在则写组证据并执行全组 DML。主键 d/c 与证据一起提交，不产生持久的“只完成 d”。目标表与组账本要求 InnoDB，但这不保证整笔源事务的多个组同时可见。
+
+重放全部命中时返回 `AlreadyCommitted(本次Checkpoint)`；混合旧/新组返回本次覆盖的 Checkpoint，而不是旧组最初的批次元数据。Actor/Engine 的持久化与顺序实现没有改动。Checkpoint 的行数按逻辑成员计数，包含本次覆盖的重复成员，不能用 `targetRowsWritten` 断言新增 DML 数。
+
+### 新 Source ACK 的 Future 已不代表原始 SDK 句柄返回
+
+Stream 在 T/J 成功后确认本次交付，只调用 Bridge 的无 SDK 操作代理，解除发布等待。装配器在有序回调路径恢复执行，记录覆盖，再按原始回调连续前缀调用 SDK 句柄。因此新模式中“项目 ACK Future 返回”“原始 SDK markBatchFinished 返回”“观测到 D 持久化”是三个不同事实，旧模式 A2 的对应关系不能直接照搬。
+
+`SourceBatch.acknowledgementId` 是只在内存中存在的会话能力，不进入持久 cursor/Checkpoint；注册表同时核对 batchId。交付 cursor 取最后一个完整组的成员 offset，不取尚未配齐的回调末尾 DELETE。关闭、旧会话迟到确认和错误 batchId 的检查有单测，但完整作业的共享池耗尽/取消仍未验。
+
+新模式显式声明 replicationId、generation、sourceLineage 和可信初始化，boundary 为 v2、cursor 为 `mysql.binlog.groups.v1`；启动检查 server UUID 与已有持久 streaming D。它不创建新的 snapshot 协议，旧 Checkpoint 不可透明续接，也不把 T 的最大 cursor 写回 D。初始化声明不是自动全表校验，server UUID 也不证明日志从未重置。
+
+**真实实验结果：**三组分别固定 reader 16→1、1→max128（实际首个恢复交付 72 组/73 成员）及主键 [d][c] 的 T 已提交/J 未持久化窗口。各组最终 64 行×6 字段零差异，已提交组重放没有新增审计，后续新写继续收敛。[原始材料与范围](../experiments/2026-10-19-group-recovery/README.md)
+
+## 10. 按持久化事实划分故障窗口
 
 下表先描述源码允许的分支，再标明实测范围。任何“调用失败”都需要进一步判断事务最终是否提交。
 
@@ -209,16 +235,16 @@ Skip(D) ⊆ Covered(T)
 |---|---|---|---|
 | T 的事务尚未提交 | 本批 T/J 都没有 | D 是否允许重读，事务是否确实回滚 | 源码分析，未固定此窗口实测 |
 | COMMIT 已成功，回复丢失 | 调用方不确定，T 可能已有 | 能否查询相同身份、确认实际事务结果 | 未实测；不能默认回滚 |
-| T 已提交，J 尚未持久化 | T 领先 J，D 仍可更旧 | 重放身份能否识别既有目标效果 | 第三篇真实成功与失败对照 |
+| T 已提交，J 尚未持久化 | T 已有完整组，J 未记录本次交付，D 仍旧 | 重放身份能否识别既有目标效果 | 第三篇保留旧对照，新增三组完整组真实恢复通过 |
 | J 已持久化，回复未被 Engine 接收 | T/J 已有，Source 尚未确认 | 查询/恢复 J，避免以超时覆盖持久事实 | 未固定实测 |
-| J 已持久化，D 尚未更新 | T/J 已有，D 重读旧事件 | 旧事件被新序号重新标记时如何去重 | 源码风险，未固定实测 |
+| J 已持久化，D 尚未更新 | T/J 已有，D 重读旧事件 | 旧事件被新交付序号标记时如何去重 | 新组身份源码路径可处理重复；该真实窗口仍未固定实测 |
 | ACK 返回，offset flush 未成功 | 调用日志已确认，D 仍旧 | 恢复仍需容忍重复；监控不能只看 ACK | 上游源码分支，未注入实测 |
 
-尤其要区分第三行和第五行。在第三行，恢复从 J+1 编号，可能碰到已经存在的旧批 ID；第五行中，J 已前进，旧事件可能获得新 ID，账本反而不会按原 ID 命中。把第三行的成功重放实验推广到第五行，是错误的证据扩张。
+尤其要区分第三行和第五行。在第三行，恢复从 J+1 编号，可能碰到已经存在的旧批 ID；第五行在旧模式中，J 已前进，旧事件可能获得新批次 ID，批次账本不会按原 ID 命中；新模式的稳定组身份与该交付编号分离。把第三行的成功重放实验推广到第五行，是错误的证据扩张。
 
-当前实现最有价值的基础是：目标效果与账本同事务、Actor 确认在持久化后返回、Source ACK 位于两者之后。它们建立了正常执行的因果顺序。需要补足的则是：恢复后如何用稳定的业务身份解释重复读取，以及如何协调已经存在于 T、但不完全反映在 J/D 中的事实。
+两代实现都保留目标证据与 DML 同事务、Actor 确认在持久化后返回的基础。新模式已将业务去重移到完整组，并按覆盖确认原始回调前缀；尚未覆盖的真实窗口不能因为这条源码路径看起来可行就标为通过。
 
-下一篇不急着改协议，而是用真实数据库与 Journal 固定第三个窗口，证明回调划分变化确实能破坏当前隐含假设。
+下一篇先用旧版本证明隐含假设失效，再给出新版本在相同类别持久化窗口下的恢复证据。
 
 上一篇：[Actor 的执行模型与资源优势](01-why-pekko-for-resident-cdc.md)；下一篇：[故障实验的因果证据](03-real-mysql-journal-failure.md)。
 
@@ -233,3 +259,11 @@ Skip(D) ⊆ Covered(T)
 [engine-access]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/DebeziumEngineAccess.scala#L41
 [async-engine]: https://github.com/debezium/debezium/blob/63371830ceff75437f95c775b91eeeaf55a056c1/debezium-embedded/src/main/java/io/debezium/embedded/async/AsyncEmbeddedEngine.java#L1384
 [binlog-offset]: https://github.com/debezium/debezium/blob/63371830ceff75437f95c775b91eeeaf55a056c1/debezium-connector-binlog/src/main/java/io/debezium/connector/binlog/BinlogOffsetContext.java#L71
+
+[group-source]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcSourceNode.scala#L169
+
+[group-assembler]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcGroupAssembler.scala#L34
+
+[group-model]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/cdc/MySQLCdcGroup.scala#L36
+
+[group-sink]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sinks/MySQLCdcApplySinkNode.scala#L83

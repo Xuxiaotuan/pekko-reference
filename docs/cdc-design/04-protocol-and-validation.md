@@ -4,7 +4,7 @@
 
 我们真正需要的是一个性质：**同一段源历史，无论怎样分成传输批次、在允许的提交窗口崩溃多少次，都应得到规定的目标效果；重复读取不应重复制造业务效果。** 本篇从这个性质推导身份、目标事务、Actor 确认和源进度的契约。
 
-生产源码仍为 `d88ec80`。2026-10-19 补充了两层真实证据：[SourceRecord 身份及 ACK 反例](../experiments/2026-10-19-source-record-identity/README.md)、[延迟句柄与跨回调装配探针](../experiments/2026-10-19-deferred-ack/README.md)。后者使用真实 Engine/Bridge 和手动覆盖信号，没有目标事务或 Actor Journal。下文据此把设计收敛到完整物理行分组；组账本与真实 T/J/D 新协议仍为 `evidence_incomplete`。[源码与证据范围](README.md)
+旧协议分析固定为 `d88ec80`，完整组生产实现固定为 [`65ab541`](https://github.com/Xuxiaotuan/pekko-reference/tree/65ab5410c32933d0aa3d23510e6c62252d84009b)。2026-10-19 的[身份反例](../experiments/2026-10-19-source-record-identity/README.md)和[手动覆盖探针](../experiments/2026-10-19-deferred-ack/README.md)先收窄设计，后续[真实 Source/Actor Journal/Sink 实验](../experiments/2026-10-19-group-recovery/README.md)再验收指定恢复窗口。本文分别标出已实现契约、条件性证明和未验证扩展，不再把完整组路径全部列为待实现。
 
 ## 1. 先写出事件历史，才能谈“同一批”
 
@@ -30,7 +30,7 @@ S* = Apply(en, … Apply(e2, Apply(e1, S0)) …)
 
 ## 2. 逻辑事件、完整分组与交付身份各自承担什么职责
 
-当前 [`BatchId`][models] 对 executionId、sourceNodeId、partitionId 和 callbackSequence 做散列，适合标识本次执行中的传输批次。它缺少的不是散列强度，而是与稳定源事件的对应。
+旧 [`BatchId`][models] 对 executionId、sourceNodeId、partitionId 和序号做散列。新模式保留这个公式，但序号按完整交付递增，用于 Journal 连续性，不再承担 T 的业务去重。缺少稳定源身份的问题由 groupId/eventId 解决，不能靠增加哈希强度解决。
 
 新协议需要区分：
 
@@ -39,9 +39,9 @@ S* = Apply(en, … Apply(e2, Apply(e1, S0)) …)
 | deliveryToken | 关联本读取会话的一次完整交付与覆盖信号 | 可以变化，不能作为跨进程去重键 |
 | groupId | 标识一个物理行变更及其全部必要逻辑分量 | 不受回调边界影响，完整后才允许确认 |
 | eventId | 标识一条可重放的源事件或操作分量 | 同一事件不变，不同事件不混淆 |
-| commitToken | 标识目标已经持久提交的覆盖证据 | 可被重复查询、重复确认，不要求等于回调序号 |
+| 目标覆盖证据（设计上可称 commitToken） | 证明某完整组及成员内容已提交 | 最小实现直接保存组证据，不新增一个独立 commitToken 字段或批次收据表 |
 
-当前 Bridge 已有 deliveryToken，可以保留其局部关联用途。groupId、目标覆盖凭据及稳定 eventId 都需要新增生产契约；下文测试中的局部元组不等于这些契约已经实现。
+Bridge 的 deliveryToken 保留为局部关联。生产 [MySQLCdcGroup][group-model]已定义组与成员的固定编码；T 保存完整规范化证据，J 保存本次交付的 Checkpoint；Source 另用内存 acknowledgementId 隔离会话。Actor/Engine 的持久化模型没有新增独立覆盖收据，也没有扫描 T 最大值来重建 J。
 
 ### 2.1 主键、payload 哈希和末尾 cursor 为什么都不够
 
@@ -69,11 +69,11 @@ groupId   = namespace + sourceLineage + db + table + file + source.pos + source.
 eventId   = groupId + componentRole
 ```
 
-普通 c/u/d 是单成员组；带主键关联 headers 的 DELETE/CREATE 是双成员组。componentRole 区分 single.create/update/delete 和 pk.delete/create。配对时校验同一 groupId、分区、Schema、共享 offset，以及 newkey/oldkey 与对应 key 的双向一致性。缺少必要成员或配对冲突必须拒绝。
+普通 c/u/d 是单成员组；带主键关联 headers 的 DELETE/CREATE 是双成员组。生产 componentRole 编码为 `single.c/u/d` 或有序的 `pk.d, pk.c`；上面的表达式描述组成关系，实际 ID 是固定 canonical JSON 数组的 SHA-256。配对时校验同一 groupId、分区、Schema、共享 offset，以及 newkey/oldkey 与对应 key 的双向一致性。缺少必要成员或配对冲突必须拒绝。
 
 第一版还限定 Debezium 3.6.1.Final、ORDERED、一个处理线程、无改变记录结构的 SMT，并保留主键关联 headers、关闭 tombstone。没有 newkey 的普通 DELETE 与被错误剥离 header 的主键 DELETE，仅凭剩余字段未必可区分；不能承诺任意消息变换后仍可发现所有不完整组。
 
-本次源谱系由固定实例和未重置的日志历史约束，不能把 server_uuid 当作完整谱系协议。headers、generation、身份版本和规范化内容的生产编码仍需实现；snapshot 的 r 事件也不直接套用这套 streaming 规则。[当前 Envelope][envelope]尚未保留主键配对 headers。
+本次源谱系由固定实例和未重置的日志历史约束，不能把 server_uuid 当作完整谱系协议。生产编码已实现：装配器直接读取原始 SourceRecord headers 完成配对，Envelope v1 本身不新增 headers 字段；组包装保存明确的成员角色与规范化 Envelope。snapshot 的 r 事件在新模式中拒绝，不套用这套 streaming 规则。
 
 ### 2.3 owner epoch 与复制 generation 不能混用
 
@@ -85,29 +85,27 @@ owner epoch 表示当前哪一任执行者有写权限。节点接管时它应�
 
 ## 3. 目标事务：把完整组的效果与证据绑在一起
 
-设计的最小目标事务如下。它是协议伪代码，没有写入生产 Sink：
+以下伪代码对应 [生产组 Sink][group-sink]。目标表与组账本要求 InnoDB；generation/Schema 来自固定边界，单 writer 是部署前提，当前没有 owner fencing：
 
 ```text
+解析并校验边界、全部组成员、Schema/类型，构造 DML 计划
 BEGIN
-  验证当前 owner / generation / Schema 契约
-  按源顺序遍历本次交付的完整组：
-    若 groupId 已有证据：
-      校验全部成员 eventId、内容与语义版本相同
-      不重复应用整个组
-    否则：
-      按组内顺序应用全部成员效果
-      保存完整组、成员身份及内容证据
-  保存本次结果的覆盖凭据 commitToken
+  按源顺序遍历完整组：
+    SELECT evidence WHERE group_id = ? FOR UPDATE
+    若已有且完整规范化证据一致：跳过全组 DML
+    若已有但不一致：ROLLBACK 并失败
+    若没有：写入组证据，再应用全组成员 DML
 COMMIT
+返回本次交付的 Checkpoint（不是旧组最初的批次 Checkpoint）
 ```
 
-原有 [`MySQLCdcApplySinkNode`][sink] 已把目标 DML 和批次账本放在同一事务里。这个边界可以保留。需要变化的是去重粒度与提交凭据的含义。普通组的一条事件可以独立重放；主键组则先配齐 d/c，再查询完整组证据。两者都不要求重新组成旧的 16 条传输批次。
+原有 [`MySQLCdcApplySinkNode`][sink] 的事务边界得以保留，新模式改用 `pekko_sync_cdc_group_ledger`，证据包括完整边界 identity、目标表名、组身份、全部成员 eventId 与规范化内容。旧批次账本路径仍保留，但不作为新模式的去重依据。普通组的一条事件可以独立重放；主键组则先配齐 d/c，再查询完整组证据。两者都不要求重新组成旧的 16 条传输批次。
 
 主键组的 DELETE、CREATE 和组账本在同一目标事务内提交，不保存“只完成 DELETE”的持久组状态。这只保证组内原子性，不保证整笔源事务的所有组原子可见。
 
 检查与写入必须形成一个原子决定。若只是事务外查询“groupId 不存在”，两个 writer 都可能通过检查。第一阶段的单 writer 限制减少并发问题，目标唯一约束仍应是最终防线；引入多 owner 后，还必须结合 fencing。
 
-遇到相同 groupId、不同成员集合或规范化内容时，整批事务回滚并进入可诊断阻塞。不能选择“以新内容为准”，因为此时无法知道是身份冲突、Schema 解释变化还是源历史发生变化。生产实现若用摘要替代完整内容比较，还需固定规范化规则与摘要版本；有限模型直接比较内容，不验证真实摘要方案。
+遇到相同 groupId、不同成员集合或规范化内容时，整次交付回滚并沿原失败路径停止，保留诊断证据。不能选择“以新内容为准”，因为此时无法知道是身份冲突、Schema 解释变化还是源历史发生变化。当前实现比较完整 canonical 内容，不以 payload 哈希代替发生身份。若后续改用摘要，仍需固定摘要规则和版本；有限模型没有验证该替代方案。
 
 ### 3.1 从原子性推出“每个事件至多应用一次”
 
@@ -155,7 +153,7 @@ J 仍然是工作流意图和生命周期的权威来源，例如是否启用、
 
 ### 4.3 回调返回与允许推进 D，是两个不同的动作
 
-当前 Bridge.publish 会等待确认。若先发布半组 d，再等下个回调里的 c，等待本身就会阻止配对。因此建议在 Bridge 前装配完整组，尾部半组留在装配器里；只有完整组进入 Bridge。
+当前 Bridge.publish 会等待确认。若先发布半组 d，再等下个回调里的 c，等待本身就会阻止配对。因此生产 [MySQLCdcGroupAssembler][group-assembler]在 Bridge 前装配完整组，尾部半组留在装配器里；只有完整组进入 Bridge。
 
 ```text
 回调 A: [u0, d1]
@@ -173,43 +171,42 @@ J 仍然是工作流意图和生命周期的权威来源，例如是否启用、
 
 2026-10-19 的真实探针让 `[d] [c]` 和 `[u,d] [c,d] [c,d] [c,u]` 经由测试装配器进入**未修改的生产 Bridge**，均完成交付。第二组的实际原始 ACK 为 0→1→2→3，待确认回调最多 2 个；旧 A 句柄确实在 B 回调中调用。覆盖前崩溃后 D 等于基线，恢复仍能配对；全部确认后的第三个 JVM 又读到新变更。[延迟确认原始证据](../experiments/2026-10-19-deferred-ack/README.md)
 
-这个探针的覆盖信号来自手动 CONFIRM，没有目标事务或 Actor Journal。它验证句柄生命周期和有限交付路径的活性，不能证明生产 T/J 覆盖已经建立，也没有实现字节预算、证据清理或关闭竞争。
+这个历史探针的覆盖信号来自手动 CONFIRM，没有 T/J。后续生产路径才由 Engine 的真实 T→J 成功触发 Bridge 代理完成，发布等待解除后由回调线程把组记入 covered；代理本身不调用 SDK。新生产实验验证了 [d][c] 完整组在 T/J 缺口恢复；不能把它倒灌为历史手动探针的端到端能力。
 
 ### 4.4 确认串行化、cursor 与会话边界
 
-固定版本 committer 的实现不是线程安全的。建议 Stream 侧只发送完整交付的覆盖信号，解除 Bridge 等待；原始 markProcessed/markBatchFinished 在有序回调路径串行执行。探针走的就是这条路径，不支持任意线程或关闭后调用的推断。
+固定版本 committer 的实现不是线程安全的。生产 Stream 侧只调用完整交付的无 SDK 操作代理，解除 Bridge 等待；原始 markProcessed/markBatchFinished 由装配器在有序回调路径串行执行。每次确认检查队首原始回调的全部组是否已覆盖，确认后只保留后续回调仍引用的覆盖记录。SDK 调用与 close 由 ackLock 排序：已认领调用可以先完成，关闭生效后不再开始新的原始确认。
 
 原始 A 句柄可以在 B 句柄之前推进 D，即使 CREATE 位于 B：此时 d/c 的完整组已经覆盖。需要禁止的是“只覆盖 d 就推进共享 offset”，不是强行要求两个原始句柄同时执行。
 
-交付 cursor 必须取已交付完整组的安全末尾，不能继续直接使用原回调 records.last；它可能是尚未配齐的 DELETE。回调观察序号与交付序号也要分离。局部确认关联使用读取会话加 deliveryToken，避免旧会话的迟到信号命中新会话。
+交付 cursor 必须取已交付完整组的安全末尾，不能继续直接使用原回调 records.last；它可能是尚未配齐的 DELETE。回调观察序号与交付序号也要分离。`SourceBatch.acknowledgementId` 是内存会话标识，注册项同时核对 batchId，再关联 Bridge token；它不进入持久 cursor/Checkpoint。旧会话迟到或错误 batchId 不会消费新会话的确认项。交付序号从 J+1 继续，原始回调可以只保留半组而不产生交付。
 
-装配器至多保留一个尾部半组，并限制记录和字节预算。缺失配对、异常顺序、超大记录或关闭时应失败并保留旧 D；不能把超时解释为半组完整。探针只验证两个小样本的待确认回调数量，没有证明生产缓存或 SDK 队列的总内存上限。
+生产装配器限制原始待确认回调不超过 2 个、每回调记录数不超过配置上限，保留内容按 16 MiB 编码体积计预算，并清除已无引用的覆盖记录。下一条记录不匹配时失败；若没有后续回调，半组保持未确认，不靠超时宣布完整。预算、配对错误、关闭等待和迟到 ACK 有单测，不能据此声称完整 MySQL 作业取消已验收，更不能把预算称为整个 JVM/SDK 内存上限。
 
 ## 5. 恢复状态机：先协调事实，再恢复交付
 
-当前 [`EventSourcedWorkflowActor`][actor] 能从 Journal 恢复执行并重新启动 Engine。可以保留这个入口，但恢复后不宜立即把旧 J 当成唯一事实启动下一批编号。
-
-建议的状态转换是：
+现有 [`EventSourcedWorkflowActor`][actor] 的恢复入口保留。最小实现不新增 Actor 协调态：J 负责执行意图、固定边界和下一交付编号，D 负责重读，T 负责确认完整组效果。实际顺序为：
 
 ```text
-恢复工作流意图与 generation
-  → 获取并确认本任所有权
-  → 校验源谱系、目标身份与 Schema
-  → 查询目标提交证据，协调 J 的缺口
-  → 从 D 重放，装配完整物理行分组
-  → 完整组目标去重/提交 → J 确认覆盖
-  → 解除完整交付等待 → 按原始回调连续前缀调用 Source ACK
+恢复工作流意图、固定边界/generation 与下一交付编号
+  → 校验配置中的 server UUID、Schema 和已有 streaming D
+  → 从 D 重放，在 Bridge 前装配完整物理行组
+  → 查询 T 中各组证据：旧组跳过，新组提交
+  → J 持久化本次交付 Checkpoint
+  → Bridge 代理解除等待 → 原始回调连续前缀串行 ACK
+
+单 writer 为前提；本轮没有获取/提升 owner epoch 的步骤
 ```
 
-这些是协议状态，不是现有类名。最小阶段选择从 D 重放、命中目标组证据后补齐 J，不先实现扫描整个目标账本的启动协调器。未确认的内存半组与旧句柄在重启时丢弃；旧协议若已把 D 推过缺失成员，新协议不能凭空补回它，不做透明升级。
+这是 Source/Sink 接入现有 Engine 的调用顺序，不是新增 Actor 状态类。最小阶段选择从 D 重放、命中目标组证据后补齐 J，不实现扫描整个目标账本的启动协调器。未确认的内存半组与旧句柄在重启时丢弃；旧协议若已把 D 推过缺失成员，新协议不能凭空补回它，不做透明升级。
 
-若 T 已提交、J 尚未确认，协调过程可以把经过验证的目标凭据补入 J，也可以在重放到达后按事件命中证据再确认。两条路径都不能仅拿 T 的最大序号越过未证明的区间。
+若 T 已提交、J 尚未确认，当前只采用重放到达后命中组证据再确认的路径；直接查询 T 并补写 J 的独立协调器仍是后续选择。已经全命中的交付也返回当前 Checkpoint，因此不要求恢复原回调划分。
 
-若 J 已确认、D 仍旧，恢复读取会再次交出旧事件。稳定 eventId 仍命中 T，因而不受新的回调序号影响。这正是当前批次 ID 方案最难处理、而新契约必须覆盖的窗口。
+若 J 已确认、D 仍旧，恢复读取会再次交出旧事件。按新源码，稳定组身份仍可命中 T，不受新交付编号影响；但本轮没有固定这个真实窗口。它是需要后续验收的源码推演，不能从 T 已提交/J 未持久化样本直接升级为实测结论。
 
-若目标 COMMIT 回复丢失，调用方先进入结果不确定状态，查询相同提交身份或逐事件证据。查不到不一定意味着永远没提交，查询需要遵循目标事务隔离与最终结果可观察的契约；不能在旧请求仍可能提交时无限发起不受约束的新写入。
+若目标 COMMIT 回复丢失，完善协议需要先判定结果不确定，再查询相同组证据；当前没有新增专门的结果不确定协调态或自动查询重试器。查不到不一定意味着永远没提交，查询需要遵循目标事务隔离与最终结果可观察的契约；不能在旧请求仍可能提交时无限发起不受约束的新写入。
 
-如果源日志已清理、源谱系不匹配、证据缺失或同身份内容冲突，应进入可解释的阻塞状态，保留事实供修复。恢复的“活性”不能建立在跳过未知数据的基础上。
+如果源日志已清理、源谱系不匹配、证据缺失或同身份内容冲突，应拒绝未知数据并保留证据。当前校验/冲突沿原 Engine 失败路径处理，没有新增一个名为 blocked 的持久 Actor 状态。恢复的“活性”不能建立在跳过未知数据的基础上。
 
 直接把 T 的最大 cursor 写回 Debezium offset store 并不是上述流程的一部分。T 保存的是提交覆盖，D 还包含读取器恢复上下文；未经证明的 seek 加速可能跳过事件或破坏事务内跳过状态。
 
@@ -261,14 +258,15 @@ Schema 变化也会改变事件解释。旧 Schema 数据仍在 writer 缓冲时
 
 ## 9. 怎样把证明义务落实到现有类
 
-| 现有组件 | 保留的机制 | 真正需要变化的契约 |
+| 组件 | 已保留 / 已实现 | 本轮没有实现 |
 |---|---|---|
-| Source / Envelope | 真实 Debezium、规范化、完整恢复 offset | 原始配对 headers、成员身份、完整组装配、阶段与身份版本 |
-| Bridge / 确认协调 | deliveryToken、完整交付等待、局部容量限制 | 半组在 Bridge 前暂存；原始回调连续前缀确认；串行 committer、会话隔离与取消 |
-| Apply Sink | DML 与证据同事务、类型检查、冲突拒绝 | 完整组去重与原子提交、覆盖凭据、目标所有权校验 |
-| ExecutionEngine | 顺序处理、错误归属、取消入口 | 不再用回调编号推断业务覆盖，处理未知提交结果 |
-| EventSourced Actor | 持久生命周期、executionId 校验、恢复入口 | 协调态、目标凭据确认、generation 与人工阻塞语义 |
-| 测试设施 | 真 MySQL/Journal、闸门、强制退出、全表比较 | 扩展故障窗口与反例，分别验收活性和安全性 |
+| Source / Envelope / Group | 直接读取配对 headers，固定成员角色/身份，完整组装配；Envelope v1 仍作成员内容 | snapshot 组身份、新谱系迁移与 DDL |
+| Bridge / 原始确认 | Bridge 不变；半组在前暂存；发布完整组；会话隔离；原始前缀串行确认及局部关闭保护 | 共享池耗尽时的完整作业取消保证、SDK 全局缓存预算 |
+| Apply Sink | 组证据与全组 DML 同事务、InnoDB 校验、内容冲突回滚、当前交付 Checkpoint | owner fencing、独立持久 commitToken 表、未知提交结果协调器 |
+| Engine / Actor | 原 T→J→Source 顺序、J+1、生命周期与现有失败/恢复入口；boundary 持久绑定 generation | 新 Actor 协调状态、自动旧协议迁移、扫描目标最大进度 |
+| 测试设施 | 真 MySQL/Journal/Sink、COMMIT 后闸门、新 JVM、原始回调与 ACK、全字段/审计对账 | 其余故障窗口、集群接管与容量验收 |
+
+新模式显式要求 `initializedTarget=true` 与已有持久 streaming D，配置包含稳定 replicationId/generation/sourceLineage；启动对照 `@@server_uuid`，并拒绝旧版本 Checkpoint。boundary v2 与 `mysql.binlog.groups.v1` 区分旧模式；`snapshot.mode=no_data` 不代表可以丢失 D 后从当前时间继续。初始化声明依赖操作者建立可信全量基线，代码不自动证明源目标全表一致。旧 batch ledger 为兼容现有 readiness 仍需保留，新组账本按独立 DDL 预先创建。具体启用步骤见[生产实验报告](../experiments/2026-10-19-group-recovery/README.md)。
 
 第一篇已复现的共享阻塞池饥饿，也必须计入活性条件。数学上允许事件重试，不代表执行池里真的有线程执行提交和关闭。协议证明与资源验证不能各自假定另一方永远工作。
 
@@ -278,23 +276,26 @@ Schema 变化也会改变事件解释。旧 Schema 数据仍在 writer 缓冲时
 
 | 固定窗口或变体 | 必须核实的事实 | 期望的新协议行为 | 当前证据 |
 |---|---|---|---|
-| 主键组跨回调与延迟句柄 | 原始 d/c、返回/进入顺序、覆盖信号和实际 D | 完整组覆盖前不确认，旧句柄按前缀串行调用 | 两组真实 Engine/Bridge 探针完成；覆盖为测试信号，无 T/J |
+| 主键组跨回调与延迟句柄 | 原始 d/c、返回/进入顺序、覆盖信号和实际 D | 完整组覆盖前不确认，旧句柄按前缀串行调用 | 历史手动探针单独保留；新增真实生产 [d][c] 恢复有 T/J/D、审计与全字段对账 |
 | 主键仅 d 确认后的旧恢复点 | 实际 D 与恢复记录 | 新协议不能制造这种不完整覆盖 | 身份探针实测 c 不再交付；不是 Sink 丢行验收 |
-| T 已提交，J 未持久化；1→1、16→1、1→16 | T 中原事件覆盖与恢复事件身份 | 旧事件不重写，新事件继续，最终全表一致 | 旧协议真实 1→1 成功、16→1 失败；新协议未实现 |
-| J 已持久化，D 未更新 | Journal 实际有凭据，D 仍旧 | 旧日志重读不重复产生效果 | 模型仅覆盖重复事件；真实窗口未测 |
+| T 已提交，J 未持久化；拆批、合批、主键组 | T 中完整组覆盖、恢复记录与实际分批 | 旧组不重写，新组继续，最终全表一致 | 新协议 16→1、1→max128（实际 72 组/73 成员）、[d][c] 三组通过；每组 64 行×6 字段零差异 |
+| J 已持久化，D 未更新 | Journal 实际有凭据，D 仍旧 | 旧日志重读不重复产生效果 | 组身份源码可消化重复；该真实窗口仍未固定实测 |
 | COMMIT 成功、客户端回复丢失 | 独立查询目标事务事实 | 查询后协调，不凭异常猜回滚 | 未测 |
 | ACK 返回但 flush 失败 | ACK 日志与实际 D 分开读取 | 容忍更旧重放，告警可辨识 | 上游源码分支；未注入 |
-| 相同 eventId、不同内容 | 原始记录、规范化版本和账本 | 整批回滚并阻塞，不吞掉冲突 | 抽象模型拒绝；真实编码未测 |
+| 相同组身份、不同内容 | 规范化成员与目标证据 | 整次交付回滚并失败，不吞掉冲突 | H2 上真实 Sink 代码拒绝并回滚；未伪装成真实 MySQL 故障注入 |
+| 关闭/迟到 ACK、配对错误、预算 | 线程等待、确认能力及 SDK 调用次数 | 取消解除等待；错误输入不提前确认 | 相关单测通过；未验证共享池耗尽的完整 MySQL 作业 |
 | owner 交接时旧请求晚到 | epoch 与目标提交线性化位置 | 拒绝接管后的旧 owner 写入 | 未测 |
 | 慢表完成有洞，共享 Source 继续 | 每路提交与持久 spool/前缀 | 不跳过未处理事件，资源有明确上限 | 模型有越洞反例；共享实现未做 |
 | 账本清理后恢复旧点 | 允许的最老恢复点与被删证据 | 拒绝非法旧恢复或仍正确去重 | 模型有提前清理反例；真实未测 |
 | 旧 Schema 缓冲未清空时 DDL | 缓冲版本、DDL 事实、J 的位置 | 不错解释旧数据，DDL 可安全协调 | 本项目未测 |
 
-下一轮完整生产验收还要固定：收到半组即崩溃、组内 DML 后 COMMIT 前崩溃、T 已提交/J 未持久化、J 已持久化/原始句柄未调用、两个句柄之间崩溃，以及关闭/迟到 ACK、错误配对和预算耗尽。前两组源侧探针没有替这些场景提供目标证据。
+**本次真实结果：**三组恢复都在 T 已提交/J 未持久化处退出，再从真实 Journal/D 恢复。普通场景恢复后审计为 139，后续新写后 140；主键场景为 68→68→69，已提交组没有重放副作用。实际 D 与最新 J 的 offset 对齐后，全表 64 行、六字段一致。源码实现、102 项相关检查与 4 项真实套件的完整说明见[报告](../experiments/2026-10-19-group-recovery/README.md)；其中第四项只是 MyISAM 拒绝，不是第四组恢复。全库 414 项通过、两个 Calcite 套件缺类中止，不能称全库全绿。
+
+后续仍需固定：收到半组即崩溃、组内 DML 后 COMMIT 前崩溃、J 已持久化/原始句柄未调用、两个原始句柄之间崩溃、COMMIT 回复丢失及 ACK flush 失败。关闭/迟到 ACK 与预算目前只有组件检查；前两组 Reader/Bridge 探针不能替这些新生产窗口提供目标证据。
 
 这份矩阵的通过标准不是“没有异常”。冲突输入应该安全拒绝；正常重复应该恢复推进；每个结果都要与预先规定的行为一致。
 
-本文给出的协议仍然有严格边界，但它已经能够回答为什么重新分批不应改变业务结果、为什么仅有最大进度不够、以及每一处代码变化需要什么证据。下一篇将这些责任放回 70 万表场景，比较自建 Pekko CDC 与使用 Flink CDC 分别承担的成本。
+本文的最小实现与样本验收仍有严格边界，但它们已经能够回答为什么重新分批不应改变业务结果、为什么仅有最大进度不够、以及每一处代码变化需要什么证据。下一篇将这些责任放回 70 万表场景，比较自建 Pekko CDC 与使用 Flink CDC 分别承担的成本。
 
 上一篇：[真实故障实验](03-real-mysql-journal-failure.md)；下一篇：[Pekko 与 Flink CDC 的取舍](05-pekko-vs-flink-cdc.md)。
 
@@ -304,3 +305,7 @@ Schema 变化也会改变事件解释。旧 Schema 数据仍在 writer 缓冲时
 [actor]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala#L164
 [engine-register]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/WorkflowExecutionEngine.scala#L232
 [snapshot-source]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLSnapshotSourceNode.scala#L25
+
+[group-model]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/cdc/MySQLCdcGroup.scala#L36
+[group-assembler]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcGroupAssembler.scala#L34
+[group-sink]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sinks/MySQLCdcApplySinkNode.scala#L83
