@@ -6,7 +6,7 @@
 
 本文沿 Pekko 1.1.3 和 `pekko-reference` 的实际调用链回答这些问题。70 万表是业务背景，尚未做这个规模的容量测试。本轮补做的是本地执行机制实验；文中分别标明**源码结论、模型推导、实验结果和未验证边界**，不把机制成立换算成容量达标。
 
-版本固定为 Pekko **1.1.3**，上游提交 `38facf752b4e7d5fb43ed7c671eb91888b41bd10`；项目生产源码引用公开提交 `d88ec80f2a7166cfdaddf1284cc268a68bc62e28`。本轮机制实验运行时工作区 HEAD 为 `72088fe`，相关生产源码与该公开基线一致。实验使用 Scala 2.13.12、JDK 17；[完整实验材料](../experiments/2026-10-18-actor-execution/README.md)记录环境和输出。
+版本固定为 Pekko **1.1.3**，上游提交 `38facf752b4e7d5fb43ed7c671eb91888b41bd10`；本篇 Actor 与资源机制引用 `d88ec80f2a7166cfdaddf1284cc268a68bc62e28`；新增完整组生产路径固定为 `65ab541`。后者保留本文讨论的 Actor、Bridge 阻塞和共享池配置，不应把恢复改造当成资源扩容。本轮机制实验运行时工作区 HEAD 为 `72088fe`，相关生产源码与该公开基线一致。实验使用 Scala 2.13.12、JDK 17；[完整实验材料](../experiments/2026-10-18-actor-execution/README.md)记录环境和输出。
 
 ## 1. 70 万个任务，究竟是哪一种“同时存在”
 
@@ -312,6 +312,15 @@ Bridge 的 `publish` 会等待批次确认，Engine 中的 `mapAsync(1)` 又限�
 
 更重要的是，资源共享与可靠确认相互影响。当前顺序是 Sink 提交、Actor Checkpoint 持久化、Source ACK。等待确认会拉长资源持有时间，却承担着恢复协议的职责。若为了释放资源而提前 ACK，问题就从调度变成了故障后能否重放。下一篇讨论的 T/J/D，正是这个边界。
 
+### 8.4 完整组恢复增加了什么资源成本
+
+**源码结论：**新增 [MySQLCdcGroupAssembler][group-assembler] 保留原始回调与至多一个尾部半组；完整组经 T/J 覆盖后，才在有序回调路径确认原始前缀。源码限制待确认回调不超过 2 个、记录数不超过配置上限，保留内容采用 16 MiB 编码体积预算，并清除已无回调引用的覆盖集合。这不是 SDK 队列、解码峰值或整个 JVM 的堆上限；每个运行中的 Source 仍有自己的装配状态。
+
+目标还新增组账本写入与完整成员证据存储，混合旧/新组恢复时也要查账本。这些成本换来不依赖回调划分的恢复依据，但本次没有测量其吞吐、内存斜率或海量表累积成本。
+
+**真实实验结果：**三组真实 Source/Actor Journal/Sink 恢复均完成 64 行、6 字段全量对账，已提交组没有重复审计副作用。它没有启动 70 万表，没有修复共享 JDBC 池的空读取占用，也没有改变 remember/钝化策略。单个 Source 取消等待的单测，不等于大量真实作业同时饥饿时关闭路径已经验证。[实验范围](../experiments/2026-10-19-group-recovery/README.md)
+
+
 ## 9. 70 万表场景下，Actor 优势成立的条件
 
 到这里，可以给出比“Actor 天然适合海量任务”更精确的判断。
@@ -350,13 +359,14 @@ Bridge 的 `publish` 会等待批次确认，Engine 中的 `mapAsync(1)` 又限�
 | remember 与自动钝化是否同时生效 | 源码 + 三套配置解析实验 | 当前配置选择 NoPassivationStrategy | 线上实际配置、集群钝化和迁移运行结果 |
 | 空读取是否可能耗尽共享线程池 | 项目源码 + 真 Bridge / 真 Dispatcher 组件实验 | 受控窗口下，同池后续工作无法进入执行 | 完整 MySQL 作业是否进入同一窗口、取消是否及时 |
 | 每表 Engine 是否仍有独立执行资源 | 项目源码 | 每个启动的实例有外层单线程 runner | Debezium 总线程数、连接数与容量曲线 |
-| Journal 与目标提交能否恢复一致 | [已有真实 MySQL / Journal 报告](../experiments/2026-10-18-cdc-journal-window.md) | 仅该报告中明确记录的成功与失败窗口 | Sharding、70 万表、全协议端到端保证 |
+| Journal 与目标提交能否恢复一致 | 旧协议反例 + [完整组生产恢复](../experiments/2026-10-19-group-recovery/README.md) | 新协议拆批、合批、主键跨回调的 T 已提交/J 未持久化样本通过 | Sharding、70 万表、所有故障窗口的端到端保证 |
 
-本轮没有修改生产代码，没有部署集群，也没有重新运行上一轮 MySQL 故障实验。已有故障实验支持的是特定恢复窗口的结论，不是本文的规模判断。
+上面的 Actor/Dispatcher 机制实验没有部署集群，也没有重跑 MySQL。后续 `65ab541` 已接入完整组生产恢复，并完成新的真实 MySQL 实验；它支持的是指定故障窗口，不改变本文的规模判断。
 
 下一篇：[一次提交，三份进度——沿源码推导 Pekko CDC 的恢复契约](02-source-and-recovery-contract.md)。它要继续回答：当控制状态、目标提交和源确认分别持久化时，哪些顺序可以保留，哪些崩溃窗口必须靠重放协议解决。
 
 2026-10-19 又补充了[身份与 ACK 边界](../experiments/2026-10-19-source-record-identity/README.md)及[真实 Engine/Bridge 跨回调探针](../experiments/2026-10-19-deferred-ack/README.md)。后者在测试装配器内避免了半组进入等待，但没有改变生产 Bridge 的等待行为或共享池配置，也没有测量 Actor 容量。这些源侧结果不扩大本篇的资源结论。
+
 
 ## 附录：沿着本文结论读源码
 
@@ -396,3 +406,5 @@ Bridge 的 `publish` 会等待批次确认，Engine 中的 `mapAsync(1)` 又限�
 [project-bridge]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/DebeziumBatchBridge.scala#L36
 [project-engine-access]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/DebeziumEngineAccess.scala#L185
 [project-batch]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/WorkflowExecutionEngine.scala#L289
+
+[group-assembler]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcGroupAssembler.scala#L34
