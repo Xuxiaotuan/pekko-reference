@@ -3,9 +3,7 @@ import { Layout, Menu, theme } from 'antd'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   DashboardOutlined,
-  CodeOutlined,
   ClusterOutlined,
-  BarChartOutlined,
   ApartmentOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
@@ -26,17 +24,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     {
       key: '/dashboard',
       icon: <DashboardOutlined />,
-      label: '仪表盘',
+      label: '服务状态',
     },
     {
-      key: '/sql',
-      icon: <CodeOutlined />,
-      label: 'SQL控制台',
-    },
-    {
-      key: '/tasks',
-      icon: <BarChartOutlined />,
-      label: '任务监控',
+      key: '/schedules',
+      icon: <ApartmentOutlined />,
+      label: '调度计划',
     },
     {
       key: '/cluster',
@@ -46,7 +39,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     {
       key: '/workflows',
       icon: <ApartmentOutlined />,
-      label: '工作流编辑器',
+      label: 'CDC / 工作流',
     },
   ]
 
@@ -57,7 +50,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider 
-        collapsible 
+        collapsible
+        breakpoint="lg"
+        collapsedWidth={64}
+        onBreakpoint={broken => setCollapsed(broken)}
         collapsed={collapsed} 
         onCollapse={setCollapsed}
         style={{
@@ -91,7 +87,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           onClick={handleMenuClick}
         />
       </Sider>
-      <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'margin-left 0.2s' }}>
+      <Layout style={{ marginLeft: collapsed ? 64 : 200, transition: 'margin-left 0.2s' }}>
         <Header 
           style={{ 
             padding: '0 24px', 
@@ -102,12 +98,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
           }}
         >
-          <h2 style={{ margin: 0 }}>Pekko DataFusion Arrow</h2>
+          <h2 style={{ margin: 0, fontSize: 18 }}>Pekko CDC / Workflow</h2>
           <div style={{ fontSize: 14, color: token.colorTextSecondary }}>
-            v0.2.0
+            管理预览
           </div>
         </Header>
-        <Content style={{ margin: '24px 16px', padding: 24, minHeight: 280 }}>
+        <Content style={{ margin: 16, padding: 8, minHeight: 280, minWidth: 0 }}>
           {children}
         </Content>
       </Layout>

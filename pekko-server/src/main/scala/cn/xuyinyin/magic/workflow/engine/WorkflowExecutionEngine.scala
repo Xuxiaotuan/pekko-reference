@@ -9,17 +9,18 @@ import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, Checkpointed
 import com.typesafe.scalalogging.Logger
 import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.actor.typed.{ActorSystem, DispatcherSelector}
-import org.apache.pekko.stream.{KillSwitches, Materializer, SystemMaterializer, UniqueKillSwitch}
+import org.apache.pekko.stream.{KillSwitches, Materializer, SystemMaterializer}
 import org.apache.pekko.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import spray.json.{JsObject, JsString}
 
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
-import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
+import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 class WorkflowExecutionEngine(
-  getenv: String => Option[String] = sys.env.get
+  getenv: String => Option[String] = sys.env.get,
+  val nodeRegistry: NodeRegistry = NodeRegistry.builtins()
 )(implicit system: ActorSystem[_], ec: ExecutionContext) {
   private val logger = Logger(getClass)
   private val JdbcPasswordNodeTypes = Set(
@@ -27,39 +28,46 @@ class WorkflowExecutionEngine(
   )
   private implicit val materializer: Materializer = SystemMaterializer(system).materializer
 
-  private val sourceExecutor = new SourceExecutor()
+  private val sourceExecutor = new SourceExecutor(nodeRegistry)
   private val transformExecutor = new TransformExecutor()
-  private val sinkExecutor = new SinkExecutor()
-  private val activeReliableExecutions = mutable.Map.empty[String, Vector[ReliableExecutionControl]]
-  private val activeReliableExecutionsLock = new AnyRef
+  private val sinkExecutor = new SinkExecutor(nodeRegistry)
+  private val reliableExecutions = new ReliableExecutionSessions(logger)
   private lazy val jdbcBlockingEc: ExecutionContext =
     system.dispatchers.lookup(DispatcherSelector.fromConfig("pekko.workflow.jdbc-dispatcher"))
+
+  private lazy val closeEc: ExecutionContext =
+    system.dispatchers.lookup(DispatcherSelector.fromConfig("pekko.workflow.session-close-dispatcher"))
 
   def execute(workflow: Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
     executeInternal(workflow, executionId, None, None, onLog)
 
   def execute(workflow: Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] =
-    registerReliableExecution(runContext.executionId).flatMap { control =>
+    reliableExecutions.register(runContext.executionId).flatMap { control =>
       control.continueIfActive().flatMap { _ =>
         val execution = try executeInternal(workflow, runContext.executionId, Some(runContext), Some(control), onLog)
         catch { case NonFatal(exception) => Future.failed(exception) }
         execution
-      }.transform { outcome =>
-        releaseReliableExecution(runContext.executionId, control)
-        outcome
+      }.transformWith { outcome =>
+        control.drainAndClose().transform {
+          case Success(_) =>
+            reliableExecutions.release(runContext.executionId, control)
+            outcome
+          case Failure(error) =>
+            val safe = control.sanitizeCloseFailure(error)
+            control.closeFailure.set(safe)
+            Failure(safe)
+        }
       }
     }
 
-  def cancel(executionId: String): Future[Done] = {
-    val releases = activeReliableExecutionsLock.synchronized {
-      activeReliableExecutions.getOrElse(executionId, Vector.empty).map(_.cancel())
-    }
-    if (releases.isEmpty) Future.successful(Done)
-    else Future.sequence(releases).map(_ => Done)
-  }
+  def cancel(executionId: String): Future[Done] = reliableExecutions.cancel(executionId)
 
-  private[engine] def activeReliableExecutionCount: Int =
-    activeReliableExecutionsLock.synchronized(activeReliableExecutions.valuesIterator.map(_.size).sum)
+  /** A timeout is an observation, never permission to replace an unreleased session. */
+  def cancelWithin(executionId: String, timeout: FiniteDuration =
+    system.settings.config.getDuration("pekko.workflow.session-control-wait-timeout").toMillis.millis
+  ): Future[WorkflowExecutionEngine.ReleaseStatus] = reliableExecutions.cancelWithin(executionId, timeout)(cancel(executionId))
+
+  private[engine] def activeReliableExecutionCount: Int = reliableExecutions.activeCount
 
   private def executeInternal(
     workflow: Workflow,
@@ -72,7 +80,7 @@ class WorkflowExecutionEngine(
     logger.info(s"Starting workflow execution: ${workflow.id}")
     onLog(s"开始执行工作流: ${workflow.name}")
 
-    WorkflowValidator.validate(workflow) match {
+    WorkflowValidator.validate(workflow, nodeRegistry) match {
       case Left(errors) =>
         val message = errors.map(_.message).mkString("; ")
         onLog(s"执行失败: $message")
@@ -165,6 +173,7 @@ class WorkflowExecutionEngine(
         return Future.successful(runtimeFailureResult(workflow, pipeline, pipeline.sink, exception, startTime, onLog))
     }
     val runtimeSecrets = Vector(preparedSource, preparedSink).flatMap(runtimePassword)
+    control.sanitizeCloseFailure = error => sanitizeRuntimeFailure(error, runtimeSecrets)
     val runtimeOnLog: String => Unit = message => onLog(redactRuntimeSecrets(message, runtimeSecrets))
     val latestSourceCheckpoint = runContext.checkpoints
       .filter(_.sourceNodeId == pipeline.source.id)
@@ -179,7 +188,8 @@ class WorkflowExecutionEngine(
         case Some(existing) => Future.successful(existing)
         case None =>
           nodeFuture(pipeline.source)(source.discoverBoundary(preparedSource, latestSourceCheckpoint, runtimeOnLog)(jdbcBlockingEc))
-            .flatMap(boundary => workflowFuture(runContext.initializeBoundary(boundary)).map(_ => boundary))
+            .flatMap(boundary => control.continueIfActive()
+              .flatMap(_ => workflowFuture(runContext.initializeBoundary(boundary))).map(_ => boundary))
       }
       _ <- control.continueIfActive()
       _ <- nodeFuture(pipeline.sink)(sink.validateSourceBoundary(preparedSink, boundary, runtimeOnLog)(jdbcBlockingEc))
@@ -191,14 +201,16 @@ class WorkflowExecutionEngine(
           .lastOption
         val transforms = createTransforms(pipeline.transforms, runtimeOnLog)
         val batches = try {
-          source.createBatches(preparedSource, runContext.executionId, boundary, resumeFrom, runtimeOnLog)(jdbcBlockingEc)
-            .mapError(wrapRuntimeFailure(pipeline.source))
+          val session = source.openBatches(preparedSource, runContext.executionId, boundary, resumeFrom, runtimeOnLog, closeEc)(jdbcBlockingEc)
+          control.installSession(session)
+          session.source
+                      .mapError(wrapRuntimeFailure(pipeline.source))
         } catch {
           case NonFatal(ex) => Source.failed(NodeRuntimeFailure(pipeline.source, ex))
         }
         val (killSwitch, rows) = batches
           .viaMat(KillSwitches.single)(Keep.right)
-          .mapAsync(1)(batch => processBatch(
+          .mapAsync(1)(batch => control.processBatch(processBatch(
             workflow,
             pipeline,
             preparedSource,
@@ -209,7 +221,7 @@ class WorkflowExecutionEngine(
             runContext,
             batch,
             runtimeOnLog
-          ))
+          )))
           .toMat(Sink.fold(0L)(_ + _))(Keep.both)
           .run()
         control.install(killSwitch)
@@ -227,60 +239,6 @@ class WorkflowExecutionEngine(
         case NonFatal(ex) =>
           unknownFailureResult(workflow, pipeline, sanitizeRuntimeFailure(ex, runtimeSecrets), startTime, runtimeOnLog)
       }
-  }
-
-  private def registerReliableExecution(executionId: String): Future[ReliableExecutionControl] = {
-    val (created, predecessorRelease) = activeReliableExecutionsLock.synchronized {
-      val existing = activeReliableExecutions.getOrElse(executionId, Vector.empty)
-      val created = new ReliableExecutionControl
-      activeReliableExecutions.update(executionId, existing :+ created)
-      created -> existing.lastOption.map(_.cancel()).getOrElse(Future.successful(Done))
-    }
-    predecessorRelease.map(_ => created)
-  }
-
-  private def releaseReliableExecution(executionId: String, control: ReliableExecutionControl): Unit = {
-    activeReliableExecutionsLock.synchronized {
-      activeReliableExecutions.get(executionId).foreach { existing =>
-        val remaining = existing.filterNot(_ eq control)
-        if (remaining.isEmpty) activeReliableExecutions.remove(executionId)
-        else activeReliableExecutions.update(executionId, remaining)
-      }
-    }
-    control.release()
-  }
-
-  private final class ReliableExecutionControl {
-    private val cancelled = new AtomicBoolean(false)
-    private val killSwitch = new AtomicReference[UniqueKillSwitch]()
-    private val shutdownStarted = new AtomicBoolean(false)
-    private val released = Promise[Done]()
-
-    def cancel(): Future[Done] = {
-      cancelled.set(true)
-      shutdownIfReady()
-      released.future
-    }
-
-    def continueIfActive(): Future[Done] =
-      if (cancelled.get()) Future.failed(new IllegalStateException("workflow execution cancelled"))
-      else Future.successful(Done)
-
-    def install(value: UniqueKillSwitch): Unit = {
-      if (!killSwitch.compareAndSet(null, value)) {
-        throw new IllegalStateException("reliable execution kill switch is already installed")
-      }
-      shutdownIfReady()
-    }
-
-    def release(): Unit = released.trySuccess(Done)
-
-    private def shutdownIfReady(): Unit = {
-      val current = killSwitch.get()
-      if (cancelled.get() && current != null && shutdownStarted.compareAndSet(false, true)) {
-        current.shutdown()
-      }
-    }
   }
 
   private def reportedRowsProcessed(runContext: ReliableRunContext, rows: Long): Option[Int] =
@@ -357,10 +315,10 @@ class WorkflowExecutionEngine(
     new IllegalStateException(redactRuntimeSecrets(Option(cause.getMessage).getOrElse(cause.getClass.getSimpleName), secrets))
 
   private def checkpointedSource(node: Option[Node]): Option[CheckpointedNodeSource] =
-    node.flatMap(value => NodeRegistry.findSource(value.nodeType)).collect { case source: CheckpointedNodeSource => source }
+    node.flatMap(value => nodeRegistry.findSource(value.nodeType)).collect { case source: CheckpointedNodeSource => source }
 
   private def checkpointedSink(node: Option[Node]): Option[CheckpointedNodeSink] =
-    node.flatMap(value => NodeRegistry.findSink(value.nodeType)).collect { case sink: CheckpointedNodeSink => sink }
+    node.flatMap(value => nodeRegistry.findSink(value.nodeType)).collect { case sink: CheckpointedNodeSink => sink }
 
   private def capabilityFailure(
     workflow: Workflow,
@@ -533,4 +491,11 @@ class WorkflowExecutionEngine(
 
   private final case class NodeSetupFailure(node: Node, cause: Throwable)
     extends RuntimeException(cause)
+}
+
+object WorkflowExecutionEngine {
+  sealed trait ReleaseStatus
+  case object Released extends ReleaseStatus
+  case object TimedOut extends ReleaseStatus
+  case object CloseFailed extends ReleaseStatus
 }

@@ -1,0 +1,37 @@
+{
+  "scope": "Real local staged Pekko backend with file-H2 JDBC Journal + Vite + browser; HTTP fault proxy forwards to the same backend. This is NOT a new real-MySQL CDC recovery run.",
+  "frontendContractTestsPassed": 5,
+  "backendFocusedTestsPassed": 11,
+  "fullModule": {
+    "passed": 422,
+    "completedSuites": 67,
+    "abortedSuites": [
+      "MysqlSqlParserSpec",
+      "ComprehensiveCalciteTest"
+    ],
+    "exitCode": 1
+  },
+  "frontendProductionBuild": "PASS with existing Vite CJS and chunk size warnings",
+  "backendPackageAndStage": "PASS",
+  "browserSnapshots": 39,
+  "snapshotNote": "Includes before-fix observations; not a count of independent passing automated tests",
+  "protectedFilesUnchanged": 258,
+  "historicalChecksumManifestsPassed": 7,
+  "observedFailuresResolved": [
+    "pending requestId lost when button unmounted",
+    "legal workflow id new collided with import route"
+  ],
+  "notValidated": [
+    "New MySQL Source/Journal/Sink recovery run",
+    "DDL, multiple owners, shared readers",
+    "70w workflow directory performance, stable snapshot pagination",
+    "Production availability or deployment"
+  ],
+  "knownBoundaries": [
+    "C2 remains historical FAIL_TERMINAL; no protocol change",
+    "Current list still enumerates Journal IDs and asks actors",
+    "Recent history is bounded to 50 entries, not full audit",
+    "Schedule API does not enforce workflow type; UI manages existing schedules only",
+    "Pending request IDs are per browser tab/session; not shared across tabs/users and not durable after closing the tab"
+  ]
+}

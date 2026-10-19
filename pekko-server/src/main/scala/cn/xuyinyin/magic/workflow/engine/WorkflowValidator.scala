@@ -14,7 +14,7 @@ final case class ValidatedPipeline(source: Node, transforms: Vector[Node], sink:
 object WorkflowValidator {
   private val supportedTransformTypes = TransformExecutor.supportedTypes
 
-  def validate(workflow: Workflow): Either[Vector[WorkflowValidationError], ValidatedPipeline] = {
+  def validate(workflow: Workflow, registry: NodeRegistry = NodeRegistry.builtins()): Either[Vector[WorkflowValidationError], ValidatedPipeline] = {
     val errors = mutable.ArrayBuffer.empty[WorkflowValidationError]
     val nodesById = workflow.nodes.groupBy(_.id)
 
@@ -37,13 +37,13 @@ object WorkflowValidator {
     workflow.nodes.filterNot(node => knownRoles.contains(node.`type`)).foreach { node =>
       errors += WorkflowValidationError("unsupported_node_role", s"Unsupported node role: ${node.`type`}")
     }
-    sources.filterNot(node => NodeRegistry.supportedSourceTypes.contains(node.nodeType)).foreach { node =>
+    sources.filterNot(node => registry.supportedSourceTypes.contains(node.nodeType)).foreach { node =>
       errors += WorkflowValidationError("unsupported_node_type", s"Unsupported source type: ${node.nodeType}")
     }
     transforms.filterNot(node => supportedTransformTypes.contains(node.nodeType)).foreach { node =>
       errors += WorkflowValidationError("unsupported_node_type", s"Unsupported transform type: ${node.nodeType}")
     }
-    sinks.filterNot(node => NodeRegistry.supportedSinkTypes.contains(node.nodeType)).foreach { node =>
+    sinks.filterNot(node => registry.supportedSinkTypes.contains(node.nodeType)).foreach { node =>
       errors += WorkflowValidationError("unsupported_node_type", s"Unsupported sink type: ${node.nodeType}")
     }
 

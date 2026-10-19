@@ -1,6 +1,7 @@
 package cn.xuyinyin.magic.workflow.nodes.sources
 
 import java.util.concurrent.{ArrayBlockingQueue, CompletableFuture, ExecutionException}
+import scala.concurrent.{Future, Promise}
 
 trait CdcBatchCommitHandle {
   def markProcessedAndFinished(): Unit
@@ -40,6 +41,29 @@ final class DebeziumBatchBridge {
   private var claimed = Option.empty[BatchEntry]
   private var taking = false
   private var nextToken = 1L
+  private var asyncTaker = Option.empty[Promise[BridgedCdcBatch]]
+
+  /** Empty CDC streams retain a promise, never a JDBC worker thread. */
+  def takeAsync(): Future[BridgedCdcBatch] = monitor.synchronized {
+    if (closed) return Future.failed(closedFailure())
+    require(asyncTaker.isEmpty && !taking, "a Debezium reader is already waiting")
+    val waiter = Promise[BridgedCdcBatch]()
+    asyncTaker = Some(waiter)
+    deliverAsync()
+    waiter.future
+  }
+
+  private def deliverAsync(): Unit = {
+    if (asyncTaker.nonEmpty && active.isEmpty && claimed.isEmpty && !taking) {
+      Option(queue.poll()).flatten.foreach { entry =>
+        val waiter = asyncTaker.get
+        asyncTaker = None
+        active = Some(entry)
+        monitor.notifyAll()
+        waiter.trySuccess(BridgedCdcBatch(entry.deliveryToken, entry.batchId, entry.rows, entry.cursorValue))
+      }
+    }
+  }
 
   def publish(
     batchId: String,
@@ -66,6 +90,7 @@ final class DebeziumBatchBridge {
           pending -= entry.deliveryToken
           throw new IllegalStateException("Debezium queue capacity was lost during admission")
         }
+        deliverAsync()
       }
     } catch {
       case error: InterruptedException =>
@@ -112,6 +137,7 @@ final class DebeziumBatchBridge {
         monitor.synchronized {
           taking = false
           monitor.notifyAll()
+          deliverAsync()
         }
         Thread.currentThread().interrupt()
         throw new IllegalStateException("interrupted while taking Debezium batch", error)
@@ -138,6 +164,7 @@ final class DebeziumBatchBridge {
           claimed = None
           entry.completion.complete(())
           monitor.notifyAll()
+          deliverAsync()
         }
       }
     } catch {
@@ -147,6 +174,7 @@ final class DebeziumBatchBridge {
             claimed = None
             entry.completion.completeExceptionally(error)
             monitor.notifyAll()
+            deliverAsync()
           }
         }
         throw error
@@ -170,12 +198,15 @@ final class DebeziumBatchBridge {
       if (!closed) {
         closed = true
         val cause = closedFailure()
+        asyncTaker.foreach(_.tryFailure(cause))
+        asyncTaker = None
         pending.values.foreach(_.completion.completeExceptionally(cause))
         pending = Map.empty
         active = None
         queue.clear()
         queue.offer(None)
         monitor.notifyAll()
+        deliverAsync()
       }
     }
   }
@@ -198,6 +229,7 @@ final class DebeziumBatchBridge {
         queue.remove(Some(entry))
         entry.completion.completeExceptionally(cause)
         monitor.notifyAll()
+        deliverAsync()
       }
     }
 

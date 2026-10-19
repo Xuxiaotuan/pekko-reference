@@ -1,3 +1,5 @@
+> 2026-10-19 B 阶段兼容修正：集群接口不再返回固定活跃分片数/实体数/本机归属，相关字段允许 null 并带 availability/reason；`/monitoring/metrics` 返回 503 unavailable，`/metrics` 保留。当前客户端迁移以 [B 阶段兼容说明](experiments/2026-10-19-stage-b-console/README.md) 为准。下文保留历史版本说明，不代表旧占位值是实测结果。
+
 # 迁移指南：从v0.4到v0.5
 
 本文档提供从v0.4（单节点架构）到v0.5（分布式Cluster Sharding架构）的迁移指南。

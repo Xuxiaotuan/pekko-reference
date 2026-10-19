@@ -43,6 +43,29 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
     super.afterAll()
   }
 
+  "managed snapshot resource close" should {
+    "preserve cleanup failure after acquiring a connection but rejecting metadata" in {
+      withFixture(Vector(1 -> "a")) { fixture =>
+        val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 3.seconds)
+        fixture.failClose = true
+        val node = fixture.snapshotNode("table" -> JsString("missing_table"))
+        val session = fixture.node.openBatches(node, "partial-acquire", boundary, None, _ => (), ec)
+        intercept[Exception] { Await.result(session.source.runWith(Sink.ignore), 3.seconds) }
+        Await.result(session.close().failed, 3.seconds) shouldBe a[cn.xuyinyin.magic.workflow.nodes.base.SourceAcquisitionCleanupFailed]
+      }
+    }
+    "report a datasource close exception rather than declaring release" in {
+      withFixture(Vector(1 -> "a")) { fixture =>
+        val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 3.seconds)
+        fixture.failClose = true
+        val session = fixture.node.openBatches(fixture.snapshotNode(), "close-failure", boundary, None, _ => (), ec)
+        Await.result(session.source.take(1).runWith(Sink.seq), 3.seconds).size shouldBe 1
+        Await.result(session.close().failed, 3.seconds).getMessage shouldBe "test datasource close failure"
+        fixture.lastDataSource.isClosed shouldBe true
+      }
+    }
+  }
+
   "MySQLSnapshotSourceConfig" should {
     "resolve an environment-backed password without persisting it in the workflow node" in {
       val node = environmentPasswordSnapshotNode()
@@ -503,6 +526,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
     private val jdbcUrl = s"jdbc:h2:mem:mysql_snapshot_${UUID.randomUUID().toString.replace('-', '_')};MODE=MySQL;DB_CLOSE_DELAY=0$h2Options"
     Class.forName("org.h2.Driver")
     private val inspectionConnection: Connection = DriverManager.getConnection(jdbcUrl, "sa", "")
+    var failClose = false
     private var dataSources = Vector.empty[HikariDataSource]
     private var nextCreation: Option[Promise[HikariDataSource]] = None
 
@@ -539,7 +563,12 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
       config.setPassword("")
       config.setMaximumPoolSize(1)
       config.setMinimumIdle(0)
-      val dataSource = new HikariDataSource(config)
+      val dataSource = new HikariDataSource(config) {
+        override def close(): Unit = {
+          super.close()
+          if (failClose) throw new IllegalStateException("test datasource close failure")
+        }
+      }
       dataSources :+= dataSource
       nextCreation.foreach(_.trySuccess(dataSource))
       nextCreation = None

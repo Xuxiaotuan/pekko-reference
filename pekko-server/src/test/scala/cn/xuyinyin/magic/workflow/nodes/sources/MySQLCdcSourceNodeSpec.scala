@@ -281,6 +281,103 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
   }
 
+  "managed MySQL CDC sessions" should {
+    "keep the JDBC worker available with sixteen idle materialized CDC readers" in {
+      val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
+      val worker = ExecutionContext.fromExecutor(executor)
+      val factory = new FakeEngineFactory(Vector.fill(16)(EnginePlan(Vector.empty)))
+      val source = testSource(factory, () => validMetadata.connection())
+      val sessions = Vector.tabulate(16)(i => source.openBatches(cdcNode(), s"idle-$i", expectedBoundary, None, _ => (), ec)(worker))
+      val queues = sessions.map(_.source.runWith(Sink.queue()))
+      val reads = queues.map(_.pull())
+      try {
+        eventually(factory.createCalls.get == 16)
+        Await.result(Future(42)(worker), 2.seconds) shouldBe 42
+        reads.forall(!_.isCompleted) shouldBe true
+        queues.foreach(_.cancel())
+        Await.result(Future.sequence(sessions.map(_.close())), 5.seconds)
+        factory.engines.foreach(_.closed.get shouldBe true)
+        reads.foreach(f => Await.ready(f, 2.seconds))
+      } finally { queues.foreach(_.cancel()); sessions.foreach(_.close()); executor.shutdownNow() }
+    }
+
+    for (halfOnly <- Vector(false, true)) {
+      s"release safely when cancellation meets ${if (halfOnly) "a PK half" else "a claimed raw ACK"}" in {
+        import cn.xuyinyin.magic.workflow.checkpoint.{BatchCommitResult, Committed}
+        import cn.xuyinyin.magic.workflow.engine.{ReliableRunContext, WorkflowExecutionEngine}
+        import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+        import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, NodeSink}
+        val d = record("d", Some(row(42, "old")), None, snapshot = false, position = 200)
+        val base = record("c", None, Some(row(43, "old")), snapshot = false, position = 200)
+        val newKey = new Struct(keySchema).put("id", 43)
+        val c = new SourceRecord(base.sourcePartition(), base.sourceOffset(), base.topic(), keySchema,
+          newKey, base.valueSchema(), base.value())
+        d.headers().add("__debezium.newkey", newKey, keySchema)
+        c.headers().add("__debezium.oldkey", d.key(), keySchema)
+        val ackEntered = Promise[Done]()
+        val releaseAck = new CountDownLatch(1)
+        val halfRetained = Promise[Done]()
+        val factory = new FakeEngineFactory(Vector(EnginePlan(
+          if (halfOnly) Vector(Vector(d)) else Vector(Vector(d), Vector(c)),
+          onAck = () => { ackEntered.trySuccess(Done); releaseAck.await() })))
+        val source = testSource(factory, () => validMetadata.connection())
+        val protocol = JsObject("replicationId" -> JsString("orders"), "generation" -> JsString("g1"),
+          "sourceLineage" -> JsString("fixed-server-uuid"), "initializedTarget" -> JsBoolean(true))
+        val node = cdcNode().copy(config = JsObject(cdcNode().config.fields + ("groupProtocol" -> protocol)))
+        val boundary = expectedBoundary.copy(upperBound = Some(canonical(JsObject(
+          expectedStreamIdentity.parseJson.asJsObject.fields ++ Map("version" -> JsNumber(2),
+            "groupProtocol" -> JsObject((protocol.fields - "initializedTarget") + ("version" -> JsNumber(1))))))))
+        val commits = new AtomicInteger
+        val sink = new NodeSink with CheckpointedNodeSink {
+          val nodeType = "mysql.cdc.apply"
+          def createSink(n: WorkflowDSL.Node, log: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] = Sink.ignore
+          def validateReady(n: WorkflowDSL.Node, log: String => Unit)(implicit ec: ExecutionContext): Future[Done] = Future.successful(Done)
+          def commitBatch(n: WorkflowDSL.Node, w: String, e: String, b: SourceBatch, rows: Vector[String], log: String => Unit)
+            (implicit ec: ExecutionContext): Future[BatchCommitResult] = {
+            commits.incrementAndGet()
+            Future.successful(Committed(BatchCheckpoint(b.sourceNodeId, b.partitionId, b.batchSequence, b.batchId, b.cursor, 2, 2)))
+          }
+        }
+        val engine = new WorkflowExecutionEngine(_ => Some(sourceSecret), NodeRegistry.builtins().withSource(source).withSink(sink))
+        val workflow = cn.xuyinyin.magic.workflow.WorkflowFixtures.mysqlCdcWorkflow.copy(nodes = List(node,
+          cn.xuyinyin.magic.workflow.WorkflowFixtures.mysqlCdcWorkflow.nodes.last))
+        val context = ReliableRunContext(s"managed-$halfOnly", 1, Some(boundary), Vector.empty,
+          _ => Future.successful(Done), _ => Future.successful(Done))
+        val running = engine.execute(workflow, context, message => {
+          if (message.startsWith("CDC primary-key half retained")) halfRetained.trySuccess(Done)
+          ()
+        })
+        try {
+          if (halfOnly) Await.result(halfRetained.future, 3.seconds) else Await.result(ackEntered.future, 3.seconds)
+          if (!halfOnly) {
+            Await.result(engine.cancelWithin(context.executionId, 100.millis), 3.seconds) shouldBe WorkflowExecutionEngine.TimedOut
+            factory.engines.head.closed.get shouldBe false
+          }
+          releaseAck.countDown()
+          Await.result(engine.cancelWithin(context.executionId, 3.seconds), 5.seconds) shouldBe WorkflowExecutionEngine.Released
+          Await.result(running, 3.seconds)
+          factory.engines.head.closed.get shouldBe true
+          commits.get shouldBe (if (halfOnly) 0 else 1)
+          if (halfOnly) factory.engines.head.handles.asScala.foreach(_.calls.get shouldBe 0)
+          else factory.engines.head.handles.asScala.foreach(_.calls.get should be <= 1)
+        } finally { releaseAck.countDown(); engine.cancel(context.executionId) }
+      }
+    }
+
+    "preserve failed cleanup when engine startup throws before returning its resource" in {
+      val factory = new DebeziumEngineFactory {
+        def create(p: Properties): DebeziumEngineAccess = new DebeziumEngineAccess {
+          def start(c: DebeziumBatchConsumer): Future[Done] = throw new IllegalStateException("startup failed")
+          def close(): Unit = throw new IllegalStateException("cleanup failed")
+        }
+      }
+      val source = testSource(factory, () => validMetadata.connection())
+      val session = source.openBatches(cdcNode(), "startup-failure", expectedBoundary, None, _ => (), ec)
+      intercept[IllegalStateException] { Await.result(session.source.runWith(Sink.ignore), 3.seconds) }
+      Await.result(session.close().failed, 3.seconds) shouldBe a[cn.xuyinyin.magic.workflow.nodes.base.SourceAcquisitionCleanupFailed]
+    }
+  }
+
   "MySQLCdcSourceNode streaming" should {
     "assemble a PK group across callbacks before delivery and release only the covered raw prefix" in {
       val d = record("d", Some(row(42, "old")), None, snapshot = false, position = 200)
@@ -1113,15 +1210,17 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
   private final class EnginePlan(
     val batches: Vector[Vector[SourceRecord]],
     val terminalFailure: Option[Throwable],
-    val completesWithoutClose: Boolean
+    val completesWithoutClose: Boolean,
+    val onAck: () => Unit
   )
 
   private object EnginePlan {
     def apply(
       batches: Vector[Vector[SourceRecord]],
       terminalFailure: Option[Throwable] = None,
-      completesWithoutClose: Boolean = false
-    ): EnginePlan = new EnginePlan(batches, terminalFailure, completesWithoutClose)
+      completesWithoutClose: Boolean = false,
+      onAck: () => Unit = () => ()
+    ): EnginePlan = new EnginePlan(batches, terminalFailure, completesWithoutClose, onAck)
   }
 
   private final class FakeEngineFactory(plans: Vector[EnginePlan]) extends DebeziumEngineFactory {
@@ -1159,7 +1258,7 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
               case _ => ()
             }
             plan.batches.foreach { records =>
-              val handle = new FakeCommitHandle
+              val handle = new FakeCommitHandle(plan.onAck)
               handles.add(handle)
               consumer.handleBatch(records, handle)
             }
@@ -1193,11 +1292,11 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
   }
 
-  private final class FakeCommitHandle extends CdcBatchCommitHandle {
+  private final class FakeCommitHandle(onAck: () => Unit = () => ()) extends CdcBatchCommitHandle {
     val calls = new AtomicInteger(0)
     override def markProcessedAndFinished(): Unit = {
       calls.incrementAndGet()
-      ()
+      onAck()
     }
   }
 

@@ -1,6 +1,10 @@
 package cn.xuyinyin.magic.workflow.nodes.sources
 
 import com.typesafe.config.ConfigFactory
+import cn.xuyinyin.magic.workflow.nodes.base.{SourceAcquisitionCleanupFailed, SourceResourceScope}
+import org.apache.pekko.Done
+import scala.concurrent.Promise
+import scala.util.control.NonFatal
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization.StringDeserializer
@@ -17,6 +21,8 @@ import scala.jdk.CollectionConverters._
 final case class KafkaRecord(partition: Int, offset: Long, value: String)
 
 private[sources] trait KafkaClientAccess {
+  def inSession(resources: SourceResourceScope): KafkaClientAccess = this
+
   def partitionOffsets(topic: ResolvedKafkaTopic, reset: KafkaOffsetReset)
     (implicit ec: ExecutionContext): Future[Vector[KafkaPartitionBoundary]]
 
@@ -67,7 +73,8 @@ private object DefaultKafkaPartitionPollerFactory extends KafkaPartitionPollerFa
       }
     } catch {
       case failure: Throwable =>
-        consumer.close(settings.getCloseTimeout)
+        try consumer.close(settings.getCloseTimeout)
+        catch { case NonFatal(cleanup) => throw new SourceAcquisitionCleanupFailed(failure, cleanup) }
         throw failure
     }
   }
@@ -79,8 +86,11 @@ private final class KafkaPollingState(
 )
 
 private[sources] final class PekkoKafkaClientAccess(
-  pollerFactory: KafkaPartitionPollerFactory = DefaultKafkaPartitionPollerFactory
+  pollerFactory: KafkaPartitionPollerFactory = DefaultKafkaPartitionPollerFactory,
+  resources: Option[SourceResourceScope] = None
 ) extends KafkaClientAccess {
+  override def inSession(scope: SourceResourceScope): KafkaClientAccess = new PekkoKafkaClientAccess(pollerFactory, Some(scope))
+
   override def partitionOffsets(topic: ResolvedKafkaTopic, reset: KafkaOffsetReset)
     (implicit ec: ExecutionContext): Future[Vector[KafkaPartitionBoundary]] = Future {
     val settings = consumerSettings(topic, clientId = s"${groupId(topic)}-metadata")
@@ -115,10 +125,26 @@ private[sources] final class PekkoKafkaClientAccess(
       val settings = consumerSettings(topic, clientId = s"${groupId(topic)}-$partition")
       val topicPartition = new TopicPartition(topic.topic, partition)
       Source.unfoldResource[Vector[KafkaRecord], KafkaPollingState](
-        create = () => new KafkaPollingState(
-          pollerFactory.open(settings, topicPartition, startOffset),
-          startOffset
-        ),
+        create = () => {
+          val closed = Promise[Done]()
+          // Reserve before opening; close stays on the poller's own stream thread.
+          resources.foreach { scope =>
+            scope.acquire(() => Future.successful(closed), (p: Promise[Done]) => p.future).value.foreach(_.get)
+          }
+          try {
+            val underlying = pollerFactory.open(settings, topicPartition, startOffset)
+            new KafkaPollingState(new KafkaPartitionPoller {
+              def poll(): KafkaPoll = underlying.poll()
+              def close(): Unit = try {
+                underlying.close()
+                closed.trySuccess(Done)
+              } catch { case NonFatal(e) => closed.tryFailure(e); throw e }
+            }, startOffset)
+          } catch {
+            case e: SourceAcquisitionCleanupFailed => closed.tryFailure(e); throw e
+            case NonFatal(e) => closed.trySuccess(Done); throw e
+          }
+        },
         read = state => {
           if (state.position >= endOffset) None
           else {

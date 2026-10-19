@@ -1,7 +1,7 @@
 package cn.xuyinyin.magic.workflow.integration
 
 import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, SnapshotBoundary, SourceCursor}
-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+import cn.xuyinyin.magic.workflow.TestNodeRegistry
 import cn.xuyinyin.magic.workflow.engine.{ExecutionResult, ReliableRunContext, WorkflowExecutionEngine}
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Edge, Node, Position, Workflow, WorkflowMetadata}
 import cn.xuyinyin.magic.workflow.nodes.sources.{MySQLCdcSourceNode, MySQLCdcStateConfig}
@@ -21,6 +21,8 @@ import scala.util.control.NonFatal
 
 /** Separate JVM used by [[RealMySQLCdcRecoverySpec]]. */
 object RealMySQLCdcProcess {
+  private val testRegistry = new TestNodeRegistry
+
   private val SourceNodeId = "source-1"
 
   private final case class Arguments(
@@ -75,8 +77,8 @@ object RealMySQLCdcProcess {
           settings.offsetFlushIntervalMillis
         )
       )
-      NodeRegistry.registerSource(source)
-      engine = new WorkflowExecutionEngine()(system, executionContext)
+      testRegistry.registerSource(source)
+      engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)(system, executionContext)
       val checkpoint = arguments.mode match {
         case "snapshot-and-stream" => None
         case _ => Some(loadCheckpoint(settings, arguments))

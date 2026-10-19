@@ -2,7 +2,7 @@ package cn.xuyinyin.magic.workflow.engine
 
 import cn.xuyinyin.magic.tags.ExternalIntegration
 import cn.xuyinyin.magic.workflow.checkpoint.{AlreadyCommitted, BatchCheckpoint, BatchCommitResult, Committed, SnapshotBoundary, SourceBatch}
-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+import cn.xuyinyin.magic.workflow.TestNodeRegistry
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Edge, Node, Position, Workflow, WorkflowMetadata}
 import cn.xuyinyin.magic.workflow.nodes.sinks.MySQLSinkNode
 import org.apache.pekko.Done
@@ -43,6 +43,8 @@ object RealMySQLReliableFullSyncSpec {
 }
 
 class RealMySQLReliableFullSyncSpec extends AnyWordSpec with Matchers {
+  private val testRegistry = new TestNodeRegistry
+
   import RealMySQLReliableFullSyncSpec._
 
   "the reliable full-sync path" should {
@@ -63,10 +65,10 @@ class RealMySQLReliableFullSyncSpec extends AnyWordSpec with Matchers {
       createSchema(settings, schema)
       try {
         initializeSchema(settings, schema, sourceRows)
-        NodeRegistry.registerSink(observingSink)
+        testRegistry.registerSink(observingSink)
         testKit = ActorTestKit(s"real-mysql-reliable-${UUID.randomUUID()}")
         implicit val executionContext: ExecutionContext = testKit.system.executionContext
-        val engine = new WorkflowExecutionEngine()(testKit.system, executionContext)
+        lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)(testKit.system, executionContext)
         val workflow = fullSyncWorkflow(workflowId, settings, schema)
 
         val interrupted = Await.result(
@@ -132,7 +134,7 @@ class RealMySQLReliableFullSyncSpec extends AnyWordSpec with Matchers {
         )
       } finally {
         if (testKit != null) testKit.shutdownTestKit()
-        NodeRegistry.unregisterSink(observingSink.nodeType, observingSink)
+        testRegistry.unregisterSink(observingSink.nodeType, observingSink)
         dropSchema(settings, schema)
       }
     }

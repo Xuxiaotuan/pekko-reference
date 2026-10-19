@@ -37,6 +37,19 @@ class KafkaSourceSpec extends STSpec {
   }
 
   "KafkaSource" should {
+    "retain unconfirmed cleanup when opening a session poller fails" in {
+      val scope = new cn.xuyinyin.magic.workflow.nodes.base.SourceResourceScope
+      val failure = new cn.xuyinyin.magic.workflow.nodes.base.SourceAcquisitionCleanupFailed(
+        new IllegalStateException("seek failed"), new IllegalStateException("consumer close failed"))
+      val factory = new KafkaPartitionPollerFactory {
+        def open(settings: org.apache.pekko.kafka.ConsumerSettings[String, String],
+          partition: org.apache.kafka.common.TopicPartition, start: Long): KafkaPartitionPoller = throw failure
+      }
+      val access = new PekkoKafkaClientAccess(factory).inSession(scope)
+      val stream = access.records(ResolvedKafkaTopic("topic", "127.0.0.1:9092"), 0, 0, 1).runWith(Sink.ignore)
+      Await.result(stream.failed, 3.seconds) shouldBe failure
+      Await.result(scope.close().failed, 3.seconds) shouldBe failure
+    }
     "consume partitions in numeric order and emit deterministic batches" in {
       val access = FakeKafkaClientAccess(
         boundaries = Vector(

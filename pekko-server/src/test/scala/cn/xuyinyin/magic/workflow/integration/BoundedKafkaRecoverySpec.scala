@@ -1,13 +1,3 @@
-package cn.xuyinyin.magic.workflow.engine {
-  import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
-  import cn.xuyinyin.magic.workflow.nodes.base.{NodeSink, NodeSource}
-
-  private[workflow] object BoundedKafkaRecoveryRegistryCleanup {
-    def unregister(source: NodeSource): Unit = NodeRegistry.unregisterSource(source.nodeType, source)
-    def unregister(sink: NodeSink): Unit = NodeRegistry.unregisterSink(sink.nodeType, sink)
-  }
-}
-
 package cn.xuyinyin.magic.workflow.nodes.sources {
   import org.apache.pekko.NotUsed
   import org.apache.pekko.stream.scaladsl.Source
@@ -71,8 +61,8 @@ package cn.xuyinyin.magic.workflow.integration {
 
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
 import cn.xuyinyin.magic.workflow.checkpoint._
-import cn.xuyinyin.magic.workflow.engine.{BoundedKafkaRecoveryRegistryCleanup, WorkflowExecutionEngine}
-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
+import cn.xuyinyin.magic.workflow.TestNodeRegistry
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, CheckpointedNodeSource, NodeSink}
 import cn.xuyinyin.magic.workflow.nodes.sources.{InMemoryKafkaFixture, KafkaRecord}
@@ -137,13 +127,15 @@ class BoundedKafkaRecoverySpec
     with AnyWordSpecLike
     with OptionValues
     with Matchers {
+  private val testRegistry = new TestNodeRegistry
+
   import BoundedKafkaRecoverySpec._
 
   private implicit val ec: ExecutionContext = system.executionContext
 
   "bounded Kafka reliable execution" should {
     "replay a committed unacknowledged batch and seed only new records into the next schedule" in {
-      val builtIn = NodeRegistry.findSource("kafka.consumer").value
+      val builtIn = testRegistry.findSource("kafka.consumer").value
       builtIn shouldBe a[CheckpointedNodeSource]
       val legacyFailure = intercept[UnsupportedOperationException] {
         Await.result(builtIn.createSource(kafkaNode, _ => ()).runWith(Sink.seq), 2.seconds)
@@ -152,14 +144,14 @@ class BoundedKafkaRecoverySpec
 
       val kafka = new InMemoryKafkaFixture(initialRecords)
       val sink = new CheckpointLedgerSink
-      NodeRegistry.registerSource(kafka.source)
-      NodeRegistry.registerSink(sink)
+      testRegistry.registerSource(kafka.source)
+      testRegistry.registerSink(sink)
 
       var firstEntity: Option[org.apache.pekko.actor.typed.ActorRef[EventSourcedWorkflowActor.Command]] = None
       var recoveredEntity: Option[org.apache.pekko.actor.typed.ActorRef[EventSourcedWorkflowActor.Command]] = None
       try {
         val workflowId = s"bounded-kafka-${java.util.UUID.randomUUID()}"
-        val engine = new WorkflowExecutionEngine()
+        lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
         val first = spawn(EventSourcedWorkflowActor(workflowId, engine), s"$workflowId-before-crash")
         firstEntity = Some(first)
         val replies = createTestProbe[EventSourcedWorkflowActor.Reply]()
@@ -242,8 +234,8 @@ class BoundedKafkaRecoverySpec
         firstEntity.foreach(entity => testKit.stop(entity))
         recoveredEntity.foreach(entity => testKit.stop(entity))
         sink.releaseSecondBatch()
-        BoundedKafkaRecoveryRegistryCleanup.unregister(kafka.source)
-        BoundedKafkaRecoveryRegistryCleanup.unregister(sink)
+        testRegistry.unregister(kafka.source)
+        testRegistry.unregister(sink)
       }
     }
   }

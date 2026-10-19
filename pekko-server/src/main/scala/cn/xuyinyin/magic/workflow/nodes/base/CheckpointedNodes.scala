@@ -29,6 +29,13 @@ trait CheckpointedNodeSource { self: NodeSource =>
     onLog: String => Unit
   )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed]
 
+  /** Sources with asynchronous resource cleanup override this execution-session entry point. */
+  def openBatches(
+    node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
+    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext
+  )(implicit blockingEc: ExecutionContext): BatchSourceSession =
+    BatchSourceSession(createBatches(node, executionId, boundary, resumeFrom, onLog), () => Future.successful(Done))
+
   def acknowledgeCommittedBatch(
     node: WorkflowDSL.Node,
     batch: SourceBatch,

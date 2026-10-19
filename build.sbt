@@ -1,27 +1,7 @@
-/*
- * ================================
- * Pekko Reference - Build Configuration
- * ================================
- * 
- * 这是一个基于Pekko的分布式系统项目，包含以下功能：
- * - Pekko Cluster: 分布式集群管理
- * - Pekko HTTP: REST API服务
- * - DataFusion集成: 通过Arrow Flight与Rust DataFusion服务通信
- * - 工作流引擎: 支持复杂的数据处理工作流
- * - Event Sourcing: 基于LevelDB的事件溯源
- * 
- * 主要模块：
- * - pekko-server: 主服务模块，包含所有核心功能
- * 
- * 构建要求：
- * - Scala 2.13.12
- * - JDK 11+
- * - SBT 1.9+
- * 
- * 运行方式：
- * - 开发环境: sbt runServer
- * - 生产环境: sbt dockerBuild
- * - 运行测试: sbt testAll
+/* Pekko CDC/workflow service: Typed, Sharding, JDBC persistence, Streams and HTTP.
+ * Production main: cn.xuyinyin.magic.PekkoServer; Scala 2.13 / Java 17.
+ * Historical Actor/CDC/CRDT examples live in Test and are excluded from release JARs.
+ * Commands: runServer, testAll, dockerBuild, checkDeps.
  */
 
 // ================================
@@ -39,10 +19,7 @@ val pekkoManagementVersion = "1.1.1"
 val pekkoConnectorsVer   = "1.1.0"
 
 // 数据处理和存储
-val arrowVersion         = "18.0.0"      // Arrow Flight for DataFusion integration
 val calciteVersion       = "1.39.0"      // SQL parser
-val levelDbVersion       = "1.8"         // Event Sourcing storage
-val levelDbApiVersion    = "0.12"
 val h2Version            = "2.3.232"     // Test database
 val pekkoPersistenceJdbcVersion = "1.1.1"
 val debeziumVersion      = "3.6.1.Final"
@@ -62,12 +39,6 @@ val prometheusVersion    = "0.16.0"
 val scalatestVersion     = "3.2.19"      // 统一ScalaTest版本
 val scalacheckVersion    = "1.17.0"
 val scalatestPlusVersion = "3.2.17.0"
-
-// 网络和RPC
-val grpcVersion          = "1.70.0"
-
-// 工具库
-val commonsPoolVersion   = "2.12.0"
 
 // ================================
 // 全局构建设置
@@ -234,10 +205,6 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       "org.apache.pekko" %% "pekko-persistence-jdbc"   % pekkoPersistenceJdbcVersion,
       "com.github.alonsodomin.cron4s" %% "cron4s-core" % "0.8.2",
       
-      // LevelDB存储引擎
-      "org.fusesource.leveldbjni" % "leveldbjni-all" % levelDbVersion,
-      "org.iq80.leveldb"          % "leveldb"        % levelDbApiVersion,
-      
       // ================================
       // Pekko HTTP - REST API
       // ================================
@@ -247,8 +214,8 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       // ================================
       // Pekko Connectors - 数据集成
       // ================================
-      "org.apache.pekko" %% "pekko-connectors-slick" % pekkoConnectorsVer,
-      "org.apache.pekko" %% "pekko-connectors-csv"   % pekkoConnectorsVer,
+      // Only the historical Slick examples/tests use this connector; JDBC persistence supplies Slick core.
+      "org.apache.pekko" %% "pekko-connectors-slick" % pekkoConnectorsVer % Test,
       "org.apache.pekko" %% "pekko-connectors-kafka" % pekkoConnectorsVer,
       
       // ================================
@@ -286,24 +253,6 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       "org.apache.calcite" % "calcite-server" % calciteVersion exclude ("org.slf4j", "slf4j-api") exclude ("commons-logging", "commons-logging"),
       
       // ================================
-      // DataFusion 集成 - Arrow Flight
-      // ================================
-      "org.apache.arrow" % "flight-core"        % arrowVersion,
-      "org.apache.arrow" % "arrow-memory-netty" % arrowVersion,
-      "org.apache.arrow" % "arrow-vector"       % arrowVersion,
-      
-      // ================================
-      // gRPC 支持
-      // ================================
-      "io.grpc" % "grpc-netty" % grpcVersion,
-      "io.grpc" % "grpc-stub"  % grpcVersion,
-      
-      // ================================
-      // 连接池管理
-      // ================================
-      "org.apache.commons" % "commons-pool2" % commonsPoolVersion,
-      
-      // ================================
       // 测试依赖
       // ================================
       "org.apache.pekko"  %% "pekko-stream-testkit"      % pekkoVersion     % Test,
@@ -311,7 +260,6 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       "org.apache.pekko"  %% "pekko-actor-testkit-typed" % pekkoVersion     % Test,
       "org.apache.pekko"  %% "pekko-persistence-testkit" % pekkoVersion     % Test,
       "org.apache.pekko"  %% "pekko-http-testkit"        % pekkoHttpVersion % Test,
-      "org.scalatest"     %% "scalatest"                 % scalatestVersion % Test,
       "org.scalatestplus" %% "scalacheck-1-17"           % scalatestPlusVersion % Test,
       "org.scalacheck"    %% "scalacheck"                % scalacheckVersion    % Test,
       "com.h2database"     % "h2"                        % h2Version        % Runtime,
@@ -335,10 +283,10 @@ lazy val root = (project in file("."))
     // ================================
     // 自定义任务别名 - 提供便捷命令
     // ================================
-    addCommandAlias("runServer", "pekkoServer/run"),
+    addCommandAlias("runServer", "pekko-server/run"),
     addCommandAlias("testAll", "test"),
-    addCommandAlias("dockerBuild", "pekkoServer/docker:publishLocal"),
-    addCommandAlias("dockerPublish", "pekkoServer/docker:publish"),
-    addCommandAlias("checkDeps", "pekkoServer/dependencyTree"),
-    addCommandAlias("cleanAll", "clean; pekkoServer/clean")
+    addCommandAlias("dockerBuild", "pekko-server/Docker/publishLocal"),
+    addCommandAlias("dockerPublish", "pekko-server/Docker/publish"),
+    addCommandAlias("checkDeps", "pekko-server/dependencyTree"),
+    addCommandAlias("cleanAll", "clean; pekko-server/clean")
   )

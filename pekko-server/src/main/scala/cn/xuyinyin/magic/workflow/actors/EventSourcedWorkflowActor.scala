@@ -195,10 +195,10 @@ object EventSourcedWorkflowActor {
     if (recoveryGate.get() && !allowedDuringRecovery(command)) Effect.stash()
     else command match {
     case DefineWorkflow(_, _, replyTo) if state.currentExecution.nonEmpty => immediate(replyTo, AlreadyRunning(state.currentExecution.get.executionId))
-    case DefineWorkflow(workflowJson, expectedRevision, replyTo) => validateDefinition(workflowId, state, workflowJson, expectedRevision, replyTo)
+    case DefineWorkflow(workflowJson, expectedRevision, replyTo) => validateDefinition(workflowId, state, workflowJson, expectedRevision, replyTo, executionEngine.nodeRegistry)
     case Initialize(workflowJson, replyTo) =>
       if (state.revision != 0L) { replyTo ! InitializeResponse(workflowId, "initialized"); Effect.none }
-      else canonicalAndValidateJson(workflowJson) match {
+      else canonicalAndValidateJson(workflowJson, executionEngine.nodeRegistry) match {
         case Left(_) => replyTo ! InitializeResponse(workflowId, "rejected"); Effect.none
         case Right(json) => Effect.persist(WorkflowDefined(json, 1L, now())).thenReply(replyTo)(_ => InitializeResponse(workflowId, "initialized"))
       }
@@ -255,9 +255,9 @@ object EventSourcedWorkflowActor {
     case _ => Effect.none
     }
 
-  private def validateDefinition(workflowId: String, state: WorkflowState, workflowJson: String, expectedRevision: Long, replyTo: ActorRef[Reply]): Effect[WorkflowEvent, WorkflowState] =
+  private def validateDefinition(workflowId: String, state: WorkflowState, workflowJson: String, expectedRevision: Long, replyTo: ActorRef[Reply], registry: NodeRegistry): Effect[WorkflowEvent, WorkflowState] =
     if (expectedRevision != state.revision) { replyTo ! RevisionConflict(workflowId, expectedRevision, state.revision); Effect.none }
-    else canonicalAndValidateJson(workflowJson) match {
+    else canonicalAndValidateJson(workflowJson, registry) match {
       case Left(errors) => replyTo ! DefinitionRejected(workflowId, errors); Effect.none
       case Right(json) =>
         val revision = state.revision + 1L
@@ -291,7 +291,7 @@ object EventSourcedWorkflowActor {
       case Left(_) => replyTo ! ExecutionResponse("", "definition_invalid"); Effect.none
       case Right(workflow) =>
         val executionId = newExecutionId()
-        Effect.persist(executionStarted(state, workflow, executionId, manualTrigger(s"legacy-$executionId")))
+        Effect.persist(executionStarted(state, workflow, executionId, manualTrigger(s"legacy-$executionId"), executionEngine.nodeRegistry))
           .thenRun((newState: WorkflowState) => newState.currentExecution
             .filter(_.executionId == executionId)
             .foreach(execution => runEngine(workflow, execution, executionEngine, context, activeEngineExecutionId)))
@@ -303,22 +303,22 @@ object EventSourcedWorkflowActor {
     case Left(errors) => immediate(replyTo, DefinitionRejected(workflowId, errors))
     case Right(workflow) =>
       val executionId = newExecutionId()
-      Effect.persist(executionStarted(state, workflow, executionId, trigger))
+      Effect.persist(executionStarted(state, workflow, executionId, trigger, executionEngine.nodeRegistry))
         .thenRun((newState: WorkflowState) => newState.currentExecution
           .filter(_.executionId == executionId)
           .foreach(execution => runEngine(workflow, execution, executionEngine, context, activeEngineExecutionId)))
         .thenReply(replyTo)((_: WorkflowState) => ExecutionAccepted(executionId))
   }
 
-  private def executionStarted(state: WorkflowState, workflow: WorkflowDSL.Workflow, executionId: String, trigger: ExecutionTrigger): WorkflowEvent =
-    if (isReliable(workflow)) ResumableExecutionStarted(executionId, trigger, state.revision, now())
+  private def executionStarted(state: WorkflowState, workflow: WorkflowDSL.Workflow, executionId: String, trigger: ExecutionTrigger, registry: NodeRegistry): WorkflowEvent =
+    if (isReliable(workflow, registry)) ResumableExecutionStarted(executionId, trigger, state.revision, now())
     else ExecutionStarted(executionId, trigger, now())
 
-  private def isReliable(workflow: WorkflowDSL.Workflow): Boolean = {
+  private def isReliable(workflow: WorkflowDSL.Workflow, registry: NodeRegistry): Boolean = {
     val source = workflow.nodes.find(_.`type` == "source")
     val sink = workflow.nodes.find(_.`type` == "sink")
-    source.flatMap(node => NodeRegistry.findSource(node.nodeType)).exists(_.isInstanceOf[CheckpointedNodeSource]) &&
-      sink.flatMap(node => NodeRegistry.findSink(node.nodeType)).exists(_.isInstanceOf[CheckpointedNodeSink])
+    source.flatMap(node => registry.findSource(node.nodeType)).exists(_.isInstanceOf[CheckpointedNodeSource]) &&
+      sink.flatMap(node => registry.findSink(node.nodeType)).exists(_.isInstanceOf[CheckpointedNodeSink])
   }
 
   private def initializeSnapshot(state: WorkflowState, executionId: String, boundary: SnapshotBoundary, replyTo: ActorRef[Reply]): Effect[WorkflowEvent, WorkflowState] =
@@ -404,7 +404,7 @@ object EventSourcedWorkflowActor {
     activeEngineExecutionId: AtomicReference[String]
   ): Unit = state.currentExecution.foreach { execution =>
     if (activeEngineExecutionId.compareAndSet(execution.executionId, null)) {
-      try executionEngine.cancel(execution.executionId)
+      try executionEngine.cancelWithin(execution.executionId)
       catch { case NonFatal(_) => () }
     }
   }
@@ -569,7 +569,7 @@ object EventSourcedWorkflowActor {
     case JsArray(values) => values.map(canonicalJson).mkString("[", ",", "]")
     case other => other.compactPrint
   }
-  private def canonicalAndValidate(workflow: WorkflowDSL.Workflow): Either[Vector[String], String] = {
+  private def canonicalAndValidate(workflow: WorkflowDSL.Workflow, registry: NodeRegistry): Either[Vector[String], String] = {
     val json = canonicalWorkflowJson(workflow)
     try {
       import WorkflowDSL.workflowFormat
@@ -578,18 +578,18 @@ object EventSourcedWorkflowActor {
         Option.when(decoded.nodes.size > MaxWorkflowNodes)(s"workflow node count exceeds $MaxWorkflowNodes"),
         Option.when(utf8Bytes(json) > MaxWorkflowJsonBytes)(s"workflow canonical JSON exceeds $MaxWorkflowJsonBytes bytes")
       ).flatten
-      val validation = WorkflowValidator.validate(decoded).left.map(_.map(_.message))
+      val validation = WorkflowValidator.validate(decoded, registry).left.map(_.map(_.message))
       if (bounds.nonEmpty) Left(bounds) else validation.map(_ => json)
     } catch {
       case error: Exception => Left(Vector(Option(error.getMessage).getOrElse(error.getClass.getSimpleName)))
     }
   }
-  private def canonicalAndValidateJson(workflowJson: String): Either[Vector[String], String] =
+  private def canonicalAndValidateJson(workflowJson: String, registry: NodeRegistry): Either[Vector[String], String] =
     if (utf8Bytes(workflowJson) > MaxWorkflowJsonBytes) Left(Vector(s"workflow canonical JSON exceeds $MaxWorkflowJsonBytes bytes"))
     else {
       try {
         import WorkflowDSL.workflowFormat
-        canonicalAndValidate(workflowJson.parseJson.convertTo[WorkflowDSL.Workflow])
+        canonicalAndValidate(workflowJson.parseJson.convertTo[WorkflowDSL.Workflow], registry)
       } catch {
         case error: Exception => Left(Vector(Option(error.getMessage).getOrElse(error.getClass.getSimpleName)))
       }

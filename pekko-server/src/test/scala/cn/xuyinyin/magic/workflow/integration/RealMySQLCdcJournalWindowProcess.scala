@@ -3,7 +3,7 @@ package cn.xuyinyin.magic.workflow.integration
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
 import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchCommitResult, SnapshotBoundary, SourceBatch}
 import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+import cn.xuyinyin.magic.workflow.TestNodeRegistry
 import cn.xuyinyin.magic.workflow.events.WorkflowEvents.ExecutionCheckpointAdvanced
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
 import cn.xuyinyin.magic.workflow.nodes.sinks.MySQLCdcApplySinkNode
@@ -28,6 +28,8 @@ import scala.util.{Failure, Success}
   * and a recovery max.batch.size override live in this separate test JVM.
   */
 object RealMySQLCdcJournalWindowProcess {
+  private val testRegistry = new TestNodeRegistry
+
   import CdcJournalWindowSupport._
 
   def main(args: Array[String]): Unit = {
@@ -61,18 +63,19 @@ object RealMySQLCdcJournalWindowProcess {
         DebeziumEngineFactory.real.create(properties)
       }
     }
-    NodeRegistry.registerSource(new MySQLCdcSourceNode(observedFactory, () =>
+    testRegistry.registerSource(new MySQLCdcSourceNode(observedFactory, () =>
       MySQLCdcStateConfig(settings.url(schema), settings.user, settings.password,
         "debezium_offset_storage", "debezium_database_history", 0)) {
-      override def createBatches(node: Node, executionId: String, boundary: SnapshotBoundary,
-        resumeFrom: Option[BatchCheckpoint], onLog: String => Unit)
-        (implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
+      override def openBatches(node: Node, executionId: String, boundary: SnapshotBoundary,
+        resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext)
+        (implicit blockingEc: ExecutionContext): cn.xuyinyin.magic.workflow.nodes.base.BatchSourceSession = {
         emit("READER_RESUME", "executionId" -> JsString(executionId),
           "checkpoint" -> resumeFrom.map(checkpointJson).getOrElse(JsNull))
-        super.createBatches(node, executionId, boundary, resumeFrom, onLog).map { batch =>
+        val session = super.openBatches(node, executionId, boundary, resumeFrom, onLog, closeEc)
+        session.copy(source = session.source.map { batch =>
           emit("SOURCE_BATCH", "batch" -> batchJson(batch))
           batch
-        }
+        })
       }
       override def acknowledgeCommittedBatch(node: Node, batch: SourceBatch, onLog: String => Unit)
         (implicit blockingEc: ExecutionContext): Future[Done] = {
@@ -83,7 +86,7 @@ object RealMySQLCdcJournalWindowProcess {
         }
       }
     })
-    NodeRegistry.registerSink(new MySQLCdcApplySinkNode {
+    testRegistry.registerSink(new MySQLCdcApplySinkNode {
       override def commitBatch(node: Node, workflowId: String, executionId: String, batch: SourceBatch,
         transformedRows: Vector[String], onLog: String => Unit)
         (implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = {
@@ -103,7 +106,7 @@ object RealMySQLCdcJournalWindowProcess {
           }
       }
     })
-    val engine = new WorkflowExecutionEngine()(kit.system, ec)
+    lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)(kit.system, ec)
     val actor = kit.spawn(EventSourcedWorkflowActor(workflowId, engine)(ec), "workflow")
     if (mode == "fresh") {
       val replies = kit.createTestProbe[EventSourcedWorkflowActor.Reply]()

@@ -2,7 +2,7 @@ package cn.xuyinyin.magic.workflow.nodes.sources
 
 import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
-import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSource, NodeSource}
+import cn.xuyinyin.magic.workflow.nodes.base.{BatchSourceSession, SourceResourceScope, CheckpointedNodeSource, NodeSource}
 import org.apache.kafka.clients.consumer.OffsetOutOfRangeException
 import org.apache.pekko.NotUsed
 import org.apache.pekko.stream.{Attributes, FlowShape, Inlet, Outlet}
@@ -67,7 +67,19 @@ class KafkaSource(
     boundary: SnapshotBoundary,
     resumeFrom: Option[BatchCheckpoint],
     onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
+  )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] =
+    batches(node, executionId, boundary, resumeFrom, onLog, clientAccess)
+
+  override def openBatches(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
+    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext)
+    (implicit blockingEc: ExecutionContext): BatchSourceSession = {
+    val resources = new SourceResourceScope
+    BatchSourceSession(batches(node, executionId, boundary, resumeFrom, onLog, clientAccess.inSession(resources)), () => resources.close())
+  }
+
+  private def batches(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
+    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, access: KafkaClientAccess)
+    (implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
     val config = KafkaSourceConfig.parse(node)
     val encodedBoundary = boundary.upperBound.getOrElse(
       throw new IllegalArgumentException("Kafka boundary is missing its upper bound"))
@@ -98,7 +110,7 @@ class KafkaSource(
       val events = Source(decodedBoundary.partitions.sortBy(_.partition))
         .flatMapConcat { partition =>
           val start = initial.nextOffsets(partition.partition)
-          clientAccess.records(resolved, partition.partition, start, partition.endOffset)
+          access.records(resolved, partition.partition, start, partition.endOffset)
             .mapError {
               case failure: OffsetOutOfRangeException =>
                 val translated = new OffsetOutOfRangeException(

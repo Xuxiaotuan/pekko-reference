@@ -6,6 +6,7 @@ import cn.xuyinyin.magic.workflow.scheduler.SchedulerCoordinator
 import org.apache.pekko.actor.typed.{ActorRef, ActorSystem}
 import org.apache.pekko.actor.typed.scaladsl.AskPattern._
 import org.apache.pekko.cluster.Cluster
+import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import org.apache.pekko.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import org.apache.pekko.http.scaladsl.server.Directives.{complete, get, path, pathEndOrSingleSlash, pathPrefix, concat}
 import org.apache.pekko.http.scaladsl.server.Route
@@ -131,16 +132,10 @@ object HttpRoutes {
           },
           path("metrics") {
             get {
-              val metricsInfo = 
-                """
-                  |System Metrics:
-                  |- Memory Used: 128 MB
-                  |- CPU Usage: 15%
-                  |- Disk Free: 45 GB
-                  |- Network Latency: 1ms
-                  |- Active Actors: 12
-                  |""".stripMargin
-              complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, metricsInfo))
+              complete(StatusCodes.ServiceUnavailable -> spray.json.JsObject(
+                "availability" -> spray.json.JsString("unavailable"),
+                "reason" -> spray.json.JsString("System metrics are not collected by this endpoint; /metrics exposes the existing Prometheus registry")
+              ))
             }
           }
         )

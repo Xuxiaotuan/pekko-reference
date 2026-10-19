@@ -57,12 +57,12 @@ class MySQLBatchSyncIntegrationTest extends AnyFlatSpec with Matchers with Befor
 
   "NodeRegistry" should "包含MySQL连接器" taggedAs(ExternalIntegration) in {
     // 验证Source连接器已注册
-    val sourceOpt = cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry.findSource("mysql.query")
+    val sourceOpt = cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry.builtins().findSource("mysql.query")
     sourceOpt shouldBe defined
     sourceOpt.get.getClass.getName should include("MySQLSourceNode")
     
     // 验证Sink连接器已注册
-    val sinkOpt = cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry.findSink("mysql.write")
+    val sinkOpt = cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry.builtins().findSink("mysql.write")
     sinkOpt shouldBe defined
     sinkOpt.get.getClass.getName should include("MySQLSinkNode")
     
@@ -70,7 +70,7 @@ class MySQLBatchSyncIntegrationTest extends AnyFlatSpec with Matchers with Befor
   }
 
   "MySQLSourceNode" should "读取数据库数据" taggedAs(ExternalIntegration) in {
-    val source = cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+    val source = cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry.builtins()
       .findSource("mysql.query")
       .getOrElse(fail("MySQL Source未找到"))
     

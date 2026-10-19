@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-20",
+  "container": "pekko-cdc-stage-c-20261019",
+  "image": "sha256:cc52b8b5900d106bc482241091cfa7496d830280868e19aca8a24e8e7086568e",
+  "arguments": [
+    "--server-id=170019",
+    "--log-bin=mysql-bin",
+    "--binlog-format=ROW",
+    "--binlog-row-image=FULL",
+    "--gtid-mode=ON",
+    "--enforce-gtid-consistency=ON"
+  ],
+  "java": "Microsoft OpenJDK 17.0.14",
+  "pekko": "1.1.3",
+  "debezium": "3.6.1.Final",
+  "formalRuns": [
+    {
+      "scenario": "N0",
+      "runDirectory": "N0-b81bf8f073d3",
+      "schema": "pekko_test_cdc_window_b81bf8f073d3"
+    },
+    {
+      "scenario": "J1",
+      "runDirectory": "J1-02b931891770",
+      "schema": "pekko_test_cdc_window_02b931891770"
+    },
+    {
+      "scenario": "J2",
+      "runDirectory": "J2-7e0eb1082bc8",
+      "schema": "pekko_test_cdc_window_7e0eb1082bc8"
+    },
+    {
+      "scenario": "C1",
+      "runDirectory": "C1-ee19837751b6",
+      "schema": "pekko_test_cdc_window_ee19837751b6"
+    },
+    {
+      "scenario": "C2",
+      "runDirectory": "C2-c7b12e810828",
+      "schema": "pekko_test_cdc_window_c7b12e810828"
+    },
+    {
+      "scenario": "C0",
+      "runDirectory": "C0-b7050ca5224a",
+      "schema": "pekko_test_cdc_window_b7050ca5224a"
+    },
+    {
+      "scenario": "K1",
+      "runDirectory": "K1-38692f8a4ce3",
+      "schema": "pekko_test_cdc_window_38692f8a4ce3"
+    },
+    {
+      "scenario": "K2",
+      "runDirectory": "K2-578861fd2cf3",
+      "schema": "pekko_test_cdc_window_578861fd2cf3"
+    },
+    {
+      "scenario": "sessions/none",
+      "runDirectory": "none-0a6b2a957005",
+      "schema": "pekko_test_cdc_window_0a6b2a957005"
+    },
+    {
+      "scenario": "sessions/cancel-T",
+      "runDirectory": "cancel-T-573ee06d6fc7",
+      "schema": "pekko_test_cdc_window_573ee06d6fc7"
+    }
+  ],
+  "executionResult": {
+    "exitCode": 0,
+    "seconds": 253.6646111011505,
+    "container": "pekko-cdc-stage-c-20261019",
+    "loopbackPort": "32798"
+  },
+  "exploratory": "Interrupted early run and two failing recovery tests before preserving virtual cancel dispatch; not counted as formal coverage"
+}

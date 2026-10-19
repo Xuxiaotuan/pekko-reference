@@ -1,18 +1,9 @@
-package cn.xuyinyin.magic.workflow.engine {
-  import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
-  import cn.xuyinyin.magic.workflow.nodes.base.NodeSource
-
-  private[workflow] object ActorSpecNodeRegistryCleanup {
-    def unregister(source: NodeSource): Unit = NodeRegistry.unregisterSource(source.nodeType, source)
-  }
-}
-
 package cn.xuyinyin.magic.workflow.actors {
 
 import cn.xuyinyin.magic.workflow.WorkflowFixtures
 import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
 import cn.xuyinyin.magic.workflow.engine.{ExecutionResult, NodeExecutionResult, ReliableRunContext, WorkflowExecutionEngine}
-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+import cn.xuyinyin.magic.workflow.TestNodeRegistry
 import cn.xuyinyin.magic.workflow.events.WorkflowEvents._
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSource, NodeSource}
@@ -61,6 +52,8 @@ class EventSourcedWorkflowActorSpec
     with AnyWordSpecLike
     with OptionValues
     with Matchers {
+  private val testRegistry = new TestNodeRegistry
+
 
   private implicit val executionContext: scala.concurrent.ExecutionContext = system.executionContext
 
@@ -104,7 +97,7 @@ class EventSourcedWorkflowActorSpec
     reliableWorkflow.nodes.updated(0, reliableWorkflow.nodes.head.copy(nodeType = TestKafkaSource.nodeType))
   )
 
-  private def engineReturning(result: ExecutionResult): WorkflowExecutionEngine = new WorkflowExecutionEngine() {
+  private def engineReturning(result: ExecutionResult): WorkflowExecutionEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
     override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
       Future.successful(result)
   }
@@ -195,10 +188,10 @@ class EventSourcedWorkflowActorSpec
     }
 
     "persist one immutable boundary and monotonically advance reliable checkpoints" in {
-      NodeRegistry.registerSource(TestSnapshotSource)
+      testRegistry.registerSource(TestSnapshotSource)
       try {
         val completion = Promise[ExecutionResult]()
-        val pendingEngine = new WorkflowExecutionEngine() {
+        lazy val pendingEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
           override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] = completion.future
           override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = completion.future
         }
@@ -282,15 +275,15 @@ class EventSourcedWorkflowActorSpec
         running.resumable shouldBe true
         running.boundary shouldBe Some(boundary)
         running.checkpoints shouldBe Vector(sequence1)
-      } finally cn.xuyinyin.magic.workflow.engine.ActorSpecNodeRegistryCleanup.unregister(TestSnapshotSource)
+      } finally testRegistry.unregister(TestSnapshotSource)
     }
 
     "carry an accepted Kafka checkpoint from a failed execution into the next run" in {
-      NodeRegistry.registerSource(TestKafkaSource)
+      testRegistry.registerSource(TestKafkaSource)
       val firstCompletion = Promise[ExecutionResult]()
       val secondCompletion = Promise[ExecutionResult]()
       val completions = mutable.Queue(firstCompletion, secondCompletion)
-      val pendingEngine = new WorkflowExecutionEngine() {
+      lazy val pendingEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
         private def nextResult(): Future[ExecutionResult] = completions.dequeue().future
         override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
           nextResult()
@@ -334,16 +327,16 @@ class EventSourcedWorkflowActorSpec
         firstCompletion.trySuccess(failed)
         secondCompletion.trySuccess(succeeded)
         testKit.stop(actor)
-        cn.xuyinyin.magic.workflow.engine.ActorSpecNodeRegistryCleanup.unregister(TestKafkaSource)
+        testRegistry.unregister(TestKafkaSource)
       }
     }
 
     "keep a MySQL checkpoint scoped to its execution" in {
-      NodeRegistry.registerSource(TestSnapshotSource)
+      testRegistry.registerSource(TestSnapshotSource)
       val firstCompletion = Promise[ExecutionResult]()
       val secondCompletion = Promise[ExecutionResult]()
       val completions = mutable.Queue(firstCompletion, secondCompletion)
-      val pendingEngine = new WorkflowExecutionEngine() {
+      lazy val pendingEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
         private def nextResult(): Future[ExecutionResult] = completions.dequeue().future
         override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
           nextResult()
@@ -385,16 +378,16 @@ class EventSourcedWorkflowActorSpec
         firstCompletion.trySuccess(failed)
         secondCompletion.trySuccess(succeeded)
         testKit.stop(actor)
-        cn.xuyinyin.magic.workflow.engine.ActorSpecNodeRegistryCleanup.unregister(TestSnapshotSource)
+        testRegistry.unregister(TestSnapshotSource)
       }
     }
 
     "clear Kafka progress when a new workflow revision is defined" in {
-      NodeRegistry.registerSource(TestKafkaSource)
+      testRegistry.registerSource(TestKafkaSource)
       val firstCompletion = Promise[ExecutionResult]()
       val secondCompletion = Promise[ExecutionResult]()
       val completions = mutable.Queue(firstCompletion, secondCompletion)
-      val pendingEngine = new WorkflowExecutionEngine() {
+      lazy val pendingEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
         private def nextResult(): Future[ExecutionResult] = completions.dequeue().future
         override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
           nextResult()
@@ -438,7 +431,7 @@ class EventSourcedWorkflowActorSpec
         firstCompletion.trySuccess(failed)
         secondCompletion.trySuccess(succeeded)
         testKit.stop(actor)
-        cn.xuyinyin.magic.workflow.engine.ActorSpecNodeRegistryCleanup.unregister(TestKafkaSource)
+        testRegistry.unregister(TestKafkaSource)
       }
     }
 
@@ -464,7 +457,7 @@ class EventSourcedWorkflowActorSpec
     }
 
     "persist a definition before acknowledging it and reject execution before initialization" in {
-      val emptyEntity = spawn(EventSourcedWorkflowActor("workflow-1", executionEngine = null), "empty-workflow")
+      val emptyEntity = spawn(EventSourcedWorkflowActor("workflow-1", executionEngine = engineReturning(succeeded)), "empty-workflow")
       val executeReply = createTestProbe[EventSourcedWorkflowActor.Reply]()
       emptyEntity ! EventSourcedWorkflowActor.ExecuteManual("request-1", executeReply.ref)
       executeReply.expectMessage(EventSourcedWorkflowActor.NotInitialized("workflow-1"))
@@ -573,7 +566,7 @@ class EventSourcedWorkflowActorSpec
 
     "deduplicate retained manual requests and reject a concurrent schedule run" in {
       val completion = Promise[ExecutionResult]()
-      val engine = new WorkflowExecutionEngine() {
+      lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
         override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] = completion.future
       }
       val workflowId = "idempotency"

@@ -1,0 +1,319 @@
+{
+  "migrations": [
+    {
+      "before": "pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/actors/WorkflowActor.scala",
+      "after": "pekko-server/src/test/scala/examples/legacy/cn/xuyinyin/magic/workflow/actors/WorkflowActor.scala",
+      "sha256": "3ffa374684bfee5b45389f076eb6256c2cafc2d1a24b2759b5351c94a7d7c16f",
+      "lines": 276
+    },
+    {
+      "before": "pekko-server/src/main/scala/cn/xuyinyin/magic/common/DDataHelper.scala",
+      "after": "pekko-server/src/test/scala/examples/legacy/cn/xuyinyin/magic/common/DDataHelper.scala",
+      "sha256": "83b3115ad3aa39243a3103024c904ff00337ad8bbceafa3f11f95d8ecbec5046",
+      "lines": 114
+    },
+    {
+      "before": "pekko-server/src/main/scala/cn/xuyinyin/magic/single/PNCounterCache.scala",
+      "after": "pekko-server/src/test/scala/examples/legacy/cn/xuyinyin/magic/single/PNCounterCache.scala",
+      "sha256": "d41305deb11908e43685fd358f02c89b59b403d7fb31638e7c78f5da94f8b27e",
+      "lines": 112
+    },
+    {
+      "before": "pekko-server/src/main/scala/cn/xuyinyin/magic/single/PekkoGc.scala",
+      "after": "pekko-server/src/test/scala/examples/legacy/cn/xuyinyin/magic/single/PekkoGc.scala",
+      "sha256": "9ae33b4fc468d4881adea1481a2be7f45cb9371b6738200782be683c80f210f9",
+      "lines": 57
+    },
+    {
+      "before": "pekko-server/src/main/scala/cn/xuyinyin/magic/stream/PekkoStreamUtils.scala",
+      "after": "pekko-server/src/test/scala/examples/legacy/cn/xuyinyin/magic/stream/PekkoStreamUtils.scala",
+      "sha256": "e88d382c416f276e6656f81651342175cd33f68f9655e16499a5e9a593310afe",
+      "lines": 85
+    },
+    {
+      "before": "pekko-server/src/main/scala/cn/xuyinyin/magic/stream/cdc/SimpleCdcStreamDemo.scala",
+      "after": "pekko-server/src/test/scala/examples/legacy/cn/xuyinyin/magic/stream/cdc/SimpleCdcStreamDemo.scala",
+      "sha256": "6e365d185a497a06b8a8ba33948d25adae1d7eb69763cab7060b312a6ea6f56d",
+      "lines": 327
+    },
+    {
+      "before": "pekko-server/src/main/scala/cn/xuyinyin/magic/stream/cdc/BasicCdcDemo.scala",
+      "after": "pekko-server/src/test/scala/examples/legacy/cn/xuyinyin/magic/stream/cdc/BasicCdcDemo.scala",
+      "sha256": "97880edf58f0d190b6001b7d6de9abff3dfd5d1ba726c3b078986c9606349aa3",
+      "lines": 270
+    },
+    {
+      "before": "pekko-server/src/main/scala/cn/xuyinyin/magic/stream/cdc/models/CdcModels.scala",
+      "after": "pekko-server/src/test/scala/examples/legacy/cn/xuyinyin/magic/stream/cdc/models/CdcModels.scala",
+      "sha256": "5e18a8b4ed1b26f3aae788597b35982ca838a2ef2a8f9a93363e1f9383ecae39",
+      "lines": 92
+    },
+    {
+      "before": "pekko-server/src/main/scala/cn/xuyinyin/magic/stream/cdc/watermark/WatermarkManager.scala",
+      "after": "pekko-server/src/test/scala/examples/legacy/cn/xuyinyin/magic/stream/cdc/watermark/WatermarkManager.scala",
+      "sha256": "7d6f14ef32e56a22c41a5731df8b6fe8795341b593f25b6ae6589a30978b7cda",
+      "lines": 158
+    },
+    {
+      "before": "pekko-server/src/main/scala/cn/xuyinyin/magic/stream/cdc/simulator/CdcDataSimulator.scala",
+      "after": "pekko-server/src/test/scala/examples/legacy/cn/xuyinyin/magic/stream/cdc/simulator/CdcDataSimulator.scala",
+      "sha256": "145ef5cff48f8112ccd4b275124fd41754379b77aa3fff4120b57a3fe9dc9d83",
+      "lines": 249
+    },
+    {
+      "before": "pekko-server/src/main/scala/cn/xuyinyin/magic/stream/cdc/sync/SimpleFullSyncProcessor.scala",
+      "after": "pekko-server/src/test/scala/examples/legacy/cn/xuyinyin/magic/stream/cdc/sync/SimpleFullSyncProcessor.scala",
+      "sha256": "90370825adeb5ebd3fe5b7ba2664a5dc37f28ea561cacc40e184eb4bc283fcf5",
+      "lines": 179
+    },
+    {
+      "before": "pekko-server/src/main/scala/cn/xuyinyin/magic/stream/cdc/sync/SimpleIncrementalSyncProcessor.scala",
+      "after": "pekko-server/src/test/scala/examples/legacy/cn/xuyinyin/magic/stream/cdc/sync/SimpleIncrementalSyncProcessor.scala",
+      "sha256": "0ca343147e74d3502977cdf92c125ca2b146ab03764d2df0a664bbd363d3ea83",
+      "lines": 245
+    }
+  ],
+  "protectedFiles": 252,
+  "protectedMismatches": [],
+  "productionJar": {
+    "file": "pekko-reference_2.13-0.1.jar",
+    "sha256": "43d889086ba0db9b398b8dd783ca03ac711fc4ac0d4dc59d9690d000757c6b76",
+    "legacyClassesAbsent": true,
+    "retainedClasses": [
+      "cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.class",
+      "cn/xuyinyin/magic/workflow/scheduler/SchedulerCoordinator.class",
+      "cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcSourceNode.class",
+      "cn/xuyinyin/magic/workflow/nodes/sinks/MySQLCdcApplySinkNode.class"
+    ],
+    "migratedTypePrefixes": [
+      "cn/xuyinyin/magic/workflow/actors/WorkflowActor",
+      "cn/xuyinyin/magic/common/DDataHelper",
+      "cn/xuyinyin/magic/single/PNGCounterCache",
+      "cn/xuyinyin/magic/single/PekkoGc",
+      "cn/xuyinyin/magic/stream/PekkoStreamUtils",
+      "cn/xuyinyin/magic/stream/PriorityWorkerPoolShape",
+      "cn/xuyinyin/magic/stream/cdc/SimpleCdcStreamDemo",
+      "cn/xuyinyin/magic/stream/cdc/WatermarkStreamAlgorithmDemo",
+      "cn/xuyinyin/magic/stream/cdc/BasicCdcDemo",
+      "cn/xuyinyin/magic/stream/cdc/WatermarkAlgorithmDemo",
+      "cn/xuyinyin/magic/stream/cdc/models/CdcEventType",
+      "cn/xuyinyin/magic/stream/cdc/models/INSERT",
+      "cn/xuyinyin/magic/stream/cdc/models/UPDATE",
+      "cn/xuyinyin/magic/stream/cdc/models/DELETE",
+      "cn/xuyinyin/magic/stream/cdc/models/CdcEvent",
+      "cn/xuyinyin/magic/stream/cdc/models/WatermarkEvent",
+      "cn/xuyinyin/magic/stream/cdc/models/SyncStatus",
+      "cn/xuyinyin/magic/stream/cdc/models/FULL_SYNC",
+      "cn/xuyinyin/magic/stream/cdc/models/INCREMENTAL_SYNC",
+      "cn/xuyinyin/magic/stream/cdc/models/PAUSED",
+      "cn/xuyinyin/magic/stream/cdc/models/SyncConfig",
+      "cn/xuyinyin/magic/stream/cdc/models/SyncResult",
+      "cn/xuyinyin/magic/stream/cdc/models/User",
+      "cn/xuyinyin/magic/stream/cdc/models/Order",
+      "cn/xuyinyin/magic/stream/cdc/watermark/WatermarkManager",
+      "cn/xuyinyin/magic/stream/cdc/watermark/WatermarkStatus",
+      "cn/xuyinyin/magic/stream/cdc/watermark/WatermarkEventHandler",
+      "cn/xuyinyin/magic/stream/cdc/simulator/CdcDataSimulator",
+      "cn/xuyinyin/magic/stream/cdc/simulator/DataStats",
+      "cn/xuyinyin/magic/stream/cdc/sync/SimpleFullSyncProcessor",
+      "cn/xuyinyin/magic/stream/cdc/sync/SyncProgress",
+      "cn/xuyinyin/magic/stream/cdc/sync/SimpleIncrementalSyncProcessor",
+      "cn/xuyinyin/magic/stream/cdc/sync/IncrementalSyncStatus"
+    ]
+  },
+  "binaryBaselineComparison": "not claimed: initial pre-change JAR copy selected a stale artifact; only current explicitly named packageBin JAR is asserted",
+  "dependencyComparison": {
+    "before": {
+      "jars": 237,
+      "bytes": 162130891
+    },
+    "after": {
+      "jars": 192,
+      "bytes": 143736316
+    },
+    "removed": [
+      "animal-sniffer-annotations-1.24.jar",
+      "annotations-4.1.1.4.jar",
+      "arrow-format-18.0.0.jar",
+      "arrow-memory-core-18.0.0.jar",
+      "arrow-memory-netty-18.0.0.jar",
+      "arrow-memory-netty-buffer-patch-18.0.0.jar",
+      "arrow-vector-18.0.0.jar",
+      "commons-codec-1.17.1.jar",
+      "error_prone_annotations-2.30.0.jar",
+      "flatbuffers-java-24.3.25.jar",
+      "flight-core-18.0.0.jar",
+      "grpc-api-1.70.0.jar",
+      "grpc-context-1.70.0.jar",
+      "grpc-core-1.70.0.jar",
+      "grpc-netty-1.70.0.jar",
+      "grpc-protobuf-1.65.0.jar",
+      "grpc-protobuf-lite-1.65.0.jar",
+      "grpc-stub-1.70.0.jar",
+      "grpc-util-1.70.0.jar",
+      "gson-2.11.0.jar",
+      "guava-33.3.1-jre.jar",
+      "javax.annotation-api-1.3.2.jar",
+      "leveldb-0.12.jar",
+      "leveldb-api-0.12.jar",
+      "leveldbjni-all-1.8.jar",
+      "netty-buffer-4.1.114.Final.jar",
+      "netty-codec-4.1.114.Final.jar",
+      "netty-codec-http-4.1.110.Final.jar",
+      "netty-codec-http2-4.1.110.Final.jar",
+      "netty-codec-socks-4.1.110.Final.jar",
+      "netty-common-4.1.114.Final.jar",
+      "netty-handler-4.1.114.Final.jar",
+      "netty-handler-proxy-4.1.110.Final.jar",
+      "netty-resolver-4.1.114.Final.jar",
+      "netty-tcnative-boringssl-static-2.0.66.Final-linux-aarch_64.jar",
+      "netty-tcnative-boringssl-static-2.0.66.Final-linux-x86_64.jar",
+      "netty-tcnative-boringssl-static-2.0.66.Final-osx-aarch_64.jar",
+      "netty-tcnative-boringssl-static-2.0.66.Final-osx-x86_64.jar",
+      "netty-tcnative-boringssl-static-2.0.66.Final-windows-x86_64.jar",
+      "netty-tcnative-boringssl-static-2.0.66.Final.jar",
+      "netty-tcnative-classes-2.0.66.Final.jar",
+      "netty-transport-4.1.114.Final.jar",
+      "netty-transport-native-unix-common-4.1.114.Final.jar",
+      "pekko-connectors-csv_2.13-1.1.0.jar",
+      "pekko-connectors-slick_2.13-1.1.0.jar",
+      "perfmark-api-0.27.0.jar",
+      "proto-google-common-protos-2.29.0.jar",
+      "protobuf-java-util-3.25.4.jar"
+    ],
+    "added": [
+      "commons-codec-1.16.0.jar",
+      "error_prone_annotations-2.28.0.jar",
+      "guava-33.3.0-jre.jar"
+    ],
+    "criticalUnchanged": {
+      "debezium": [
+        "debezium-api-3.6.1.Final.jar",
+        "debezium-embedded-3.6.1.Final.jar",
+        "debezium-connector-mysql-3.6.1.Final.jar",
+        "debezium-storage-jdbc-3.6.1.Final.jar",
+        "debezium-util-3.6.1.Final.jar",
+        "debezium-connector-common-3.6.1.Final.jar",
+        "debezium-connect-plugins-3.6.1.Final.jar",
+        "debezium-connector-binlog-3.6.1.Final.jar",
+        "debezium-storage-kafka-3.6.1.Final.jar",
+        "debezium-storage-file-3.6.1.Final.jar",
+        "debezium-ddl-parser-3.6.1.Final.jar",
+        "debezium-config-3.6.1.Final.jar",
+        "debezium-openlineage-api-3.6.1.Final.jar"
+      ],
+      "mysql-connector-j": [
+        "mysql-connector-j-9.1.0.jar"
+      ],
+      "pekko-persistence": [
+        "pekko-persistence-typed_2.13-1.1.3.jar",
+        "pekko-persistence-query_2.13-1.1.3.jar",
+        "pekko-persistence-jdbc_2.13-1.1.1.jar",
+        "pekko-persistence_2.13-1.1.3.jar"
+      ],
+      "jackson": [
+        "pekko-serialization-jackson_2.13-1.1.3.jar",
+        "jackson-databind-2.17.2.jar",
+        "jackson-core-2.17.2.jar",
+        "jackson-annotations-2.17.2.jar",
+        "jackson-module-scala_2.13-2.17.3.jar",
+        "jackson-datatype-jdk8-2.17.2.jar",
+        "jackson-datatype-jsr310-2.17.2.jar",
+        "jackson-module-parameter-names-2.17.3.jar",
+        "jackson-dataformat-cbor-2.17.3.jar",
+        "jackson-dataformat-yaml-2.15.4.jar",
+        "jackson-jakarta-rs-json-provider-2.21.2.jar",
+        "jackson-module-blackbird-2.21.2.jar",
+        "jackson-jakarta-rs-base-2.21.2.jar",
+        "jackson-module-jakarta-xmlbind-annotations-2.21.2.jar"
+      ],
+      "h2-": [
+        "h2-2.3.232.jar",
+        "httpcore5-h2-5.3.1.jar"
+      ]
+    }
+  },
+  "examples": {
+    "BasicCdcDemo": 0,
+    "SimpleCdcStreamDemo": 0,
+    "WatermarkAlgorithmDemo": 0,
+    "WatermarkStreamAlgorithmDemo": 0
+  },
+  "startup": {
+    "mode": "stage",
+    "remotePort": 52394,
+    "httpPort": 52395,
+    "responses": {
+      "/health/live": {
+        "status": 200,
+        "body": "\n                  |Liveness Probe:\n                  |- Status: OK\n                  |- Timestamp: 1792412667156\n"
+      },
+      "/health/ready": {
+        "status": 200,
+        "body": "memberUp=true shardingInitialized=true jdbcAvailable=true"
+      },
+      "/api/v1/workflows": {
+        "status": 200,
+        "body": "{\"items\":[],\"page\":0,\"pageSize\":50}"
+      },
+      "/api/v1/schedules": {
+        "status": 200,
+        "body": "{\"count\":0,\"schedules\":[]}"
+      }
+    },
+    "elapsedSeconds": 2.78,
+    "controlledStop": true
+  },
+  "aliasStartup": {
+    "mode": "alias",
+    "remotePort": 51101,
+    "httpPort": 51102,
+    "responses": {
+      "/health/live": {
+        "status": 200,
+        "body": "\n                  |Liveness Probe:\n                  |- Status: OK\n                  |- Timestamp: 1792412371785\n"
+      },
+      "/health/ready": {
+        "status": 200,
+        "body": "memberUp=true shardingInitialized=true jdbcAvailable=true"
+      },
+      "/api/v1/workflows": {
+        "status": 200,
+        "body": "{\"items\":[],\"page\":0,\"pageSize\":50}"
+      },
+      "/api/v1/schedules": {
+        "status": 200,
+        "body": "{\"count\":0,\"schedules\":[]}"
+      }
+    },
+    "elapsedSeconds": 8.3,
+    "controlledStop": true
+  },
+  "checks": {
+    "quickTestPassed": 54,
+    "fullModulePassed": 410,
+    "fullModuleAborted": [
+      "MySQLPerformanceTest",
+      "HealthRoutesSpec",
+      "MysqlSqlParserSpec",
+      "ComprehensiveCalciteTest"
+    ],
+    "fullModuleExit": 1,
+    "isolatedPortSuites": {
+      "cn.xuyinyin.magic.connectors.mysql.MySQLPerformanceTest": 0,
+      "cn.xuyinyin.magic.api.http.routes.HealthRoutesSpec": 0
+    },
+    "isolatedPortTestsPassed": 8,
+    "realWindowAssertionsPassed": 8,
+    "realConverged": 7,
+    "realAutomaticRecoveryFailure": [
+      "C2"
+    ]
+  },
+  "limitations": [
+    "No capacity or memory/throughput comparison",
+    "No DDL, multiple owners, shared reader or protocol change",
+    "Calcite full module gate remains evidence_incomplete",
+    "Docker build/publish were inspected, not executed"
+  ]
+}

@@ -1,20 +1,10 @@
-package cn.xuyinyin.magic.workflow.engine {
-  import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
-  import cn.xuyinyin.magic.workflow.nodes.base.{NodeSink, NodeSource}
-
-  private[workflow] object RecoverySpecNodeRegistryCleanup {
-    def unregister(source: NodeSource): Unit = NodeRegistry.unregisterSource(source.nodeType, source)
-    def unregister(sink: NodeSink): Unit = NodeRegistry.unregisterSink(sink.nodeType, sink)
-  }
-}
-
 package cn.xuyinyin.magic.workflow.actors {
 
 import cn.xuyinyin.magic.workflow.WorkflowFixtures
 import cn.xuyinyin.magic.common.CborSerializable
 import cn.xuyinyin.magic.workflow.checkpoint._
 import cn.xuyinyin.magic.workflow.engine.{ExecutionResult, NodeExecutionResult, ReliableRunContext, WorkflowExecutionEngine}
-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+import cn.xuyinyin.magic.workflow.TestNodeRegistry
 import cn.xuyinyin.magic.workflow.events.WorkflowEvents.ExecutionTrigger
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, CheckpointedNodeSource, NodeSink, NodeSource}
@@ -156,6 +146,8 @@ class EventSourcedWorkflowActorRecoverySpec
     with AnyWordSpecLike
     with OptionValues
     with Matchers {
+  private val testRegistry = new TestNodeRegistry
+
 
   private implicit val executionContext: scala.concurrent.ExecutionContext = system.executionContext
   private val result = ExecutionResult(
@@ -311,7 +303,7 @@ class EventSourcedWorkflowActorRecoverySpec
     override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] = Sink.ignore
   }
 
-  private def engine: WorkflowExecutionEngine = new WorkflowExecutionEngine() {
+  private def engine: WorkflowExecutionEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
     override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
       Future.successful(result)
   }
@@ -372,13 +364,13 @@ class EventSourcedWorkflowActorRecoverySpec
 
   "EventSourcedWorkflowActor recovery" should {
     "keep a MySQL CDC manual execution running and reject a concurrent manual start" in {
-      NodeRegistry.registerSource(ControllableCdcSource)
-      NodeRegistry.registerSink(ControllableCdcSink)
+      testRegistry.registerSource(ControllableCdcSource)
+      testRegistry.registerSink(ControllableCdcSink)
       val reliableInvocation = Promise[ReliableRunContext]()
       val pending = Promise[ExecutionResult]()
       val cancellation = Promise[Done]()
       val cancelCalls = new AtomicInteger(0)
-      val cdcEngine = new WorkflowExecutionEngine() {
+      lazy val cdcEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
         override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
           Future.failed(new AssertionError("MySQL CDC entered legacy execution"))
         override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = {
@@ -417,18 +409,18 @@ class EventSourcedWorkflowActorRecoverySpec
         cancelCalls.get shouldBe 1
       } finally {
         testKit.stop(entity)
-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(ControllableCdcSource)
-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(ControllableCdcSink)
+        testRegistry.unregister(ControllableCdcSource)
+        testRegistry.unregister(ControllableCdcSink)
       }
     }
 
     "release the old MySQL CDC source before recovering the same execution in-process" in {
       RestartAwareCdcSource.reset()
-      NodeRegistry.registerSource(RestartAwareCdcSource)
-      NodeRegistry.registerSink(ControllableCdcSink)
-      val executionEngine = new WorkflowExecutionEngine(name =>
+      testRegistry.registerSource(RestartAwareCdcSource)
+      testRegistry.registerSink(ControllableCdcSink)
+      lazy val executionEngine = new WorkflowExecutionEngine(name =>
         Option.when(Set("MYSQL_CDC_PASSWORD", "DB_PASSWORD").contains(name))("actor-runtime-secret")
-      )
+      , nodeRegistry = testRegistry.snapshot)
       val workflowId = "mysql-cdc-in-process-recovery"
       val first = spawn(EventSourcedWorkflowActor(workflowId, executionEngine), s"$workflowId-before")
       val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
@@ -461,8 +453,8 @@ class EventSourcedWorkflowActorRecoverySpec
         }
       } finally {
         if (!firstStopped) testKit.stop(first)
-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(RestartAwareCdcSource)
-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(ControllableCdcSink)
+        testRegistry.unregister(RestartAwareCdcSource)
+        testRegistry.unregister(ControllableCdcSink)
       }
     }
 
@@ -499,11 +491,11 @@ class EventSourcedWorkflowActorRecoverySpec
     }
 
     "select reliable execution from the currently registered source and sink capabilities" in {
-      NodeRegistry.registerSource(CustomCheckpointSource)
-      NodeRegistry.registerSink(CustomCheckpointSink)
+      testRegistry.registerSource(CustomCheckpointSource)
+      testRegistry.registerSink(CustomCheckpointSink)
       val reliableInvocation = Promise[ReliableRunContext]()
       val pending = Promise[ExecutionResult]()
-      val capabilityEngine = new WorkflowExecutionEngine() {
+      lazy val capabilityEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
         override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
           Future.failed(new AssertionError("custom checkpoint nodes entered legacy execution"))
         override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = {
@@ -529,18 +521,18 @@ class EventSourcedWorkflowActorRecoverySpec
         state.receiveMessage().currentExecution.value.resumable shouldBe true
       } finally {
         testKit.stop(entity)
-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(CustomCheckpointSource)
-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(CustomCheckpointSink)
+        testRegistry.unregister(CustomCheckpointSource)
+        testRegistry.unregister(CustomCheckpointSink)
       }
     }
 
     "fail a recovered resumable execution when its registered source loses checkpoint capability" in {
       CapabilityLostLegacySource.reset()
-      NodeRegistry.registerSource(CustomCheckpointSource)
-      NodeRegistry.registerSink(CustomCheckpointSink)
+      testRegistry.registerSource(CustomCheckpointSource)
+      testRegistry.registerSink(CustomCheckpointSink)
       val initialContext = Promise[ReliableRunContext]()
       val initialPending = Promise[ExecutionResult]()
-      val initialEngine = new WorkflowExecutionEngine() {
+      lazy val initialEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
         override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = {
           initialContext.trySuccess(runContext)
           initialPending.future
@@ -571,8 +563,8 @@ class EventSourcedWorkflowActorRecoverySpec
         testKit.stop(entity)
         entityStopped = true
 
-        NodeRegistry.registerSource(CapabilityLostLegacySource)
-        val recovered = spawn(EventSourcedWorkflowActor(workflowId, new WorkflowExecutionEngine()), "after-source-capability-loss")
+        testRegistry.registerSource(CapabilityLostLegacySource)
+        val recovered = spawn(EventSourcedWorkflowActor(workflowId, new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)), "after-source-capability-loss")
         try {
           eventuallySummary(recovered) { summary =>
             summary.status shouldBe EventSourcedWorkflowActor.Failed
@@ -583,18 +575,18 @@ class EventSourcedWorkflowActorRecoverySpec
         } finally testKit.stop(recovered)
       } finally {
         if (!entityStopped) testKit.stop(entity)
-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(CustomCheckpointSource)
-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(CapabilityLostLegacySource)
-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(CustomCheckpointSink)
+        testRegistry.unregister(CustomCheckpointSource)
+        testRegistry.unregister(CapabilityLostLegacySource)
+        testRegistry.unregister(CustomCheckpointSink)
       }
     }
 
     "keep builtin names non-resumable when the current registrations are legacy nodes" in {
-      NodeRegistry.registerSource(BuiltinNamedLegacySource)
-      NodeRegistry.registerSink(BuiltinNamedLegacySink)
+      testRegistry.registerSource(BuiltinNamedLegacySource)
+      testRegistry.registerSink(BuiltinNamedLegacySink)
       val legacyInvocation = Promise[String]()
       val pending = Promise[ExecutionResult]()
-      val routingEngine = new WorkflowExecutionEngine() {
+      lazy val routingEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
         override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] = {
           legacyInvocation.trySuccess(executionId)
           pending.future
@@ -619,7 +611,7 @@ class EventSourcedWorkflowActorRecoverySpec
         entityStopped = true
 
         val recoveryCalls = new AtomicInteger(0)
-        val recoveryEngine = new WorkflowExecutionEngine() {
+        lazy val recoveryEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
           override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] = {
             recoveryCalls.incrementAndGet()
             Future.successful(result)
@@ -636,8 +628,8 @@ class EventSourcedWorkflowActorRecoverySpec
         } finally testKit.stop(recovered)
       } finally {
         if (!entityStopped) testKit.stop(entity)
-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(BuiltinNamedLegacySource)
-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(BuiltinNamedLegacySink)
+        testRegistry.unregister(BuiltinNamedLegacySource)
+        testRegistry.unregister(BuiltinNamedLegacySink)
       }
     }
 
@@ -678,7 +670,7 @@ class EventSourcedWorkflowActorRecoverySpec
       val persistenceId = s"workflow-$workflowId"
       val invocation = new java.util.concurrent.atomic.AtomicInteger(0)
       val pending = Promise[ExecutionResult]()
-      val snapshotEngine = new WorkflowExecutionEngine() {
+      lazy val snapshotEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
         override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
           if (invocation.incrementAndGet() <= 49) Future.successful(result) else pending.future
       }
@@ -732,7 +724,7 @@ class EventSourcedWorkflowActorRecoverySpec
 
     "turn an interrupted recovered execution into failed before accepting a new schedule run" in {
       val pending = Promise[ExecutionResult]()
-      val pendingEngine = new WorkflowExecutionEngine() {
+      lazy val pendingEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
         override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] = pending.future
       }
       val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
@@ -757,7 +749,7 @@ class EventSourcedWorkflowActorRecoverySpec
 
     "gate externally queued commands until recovered interruption is terminal" in {
       val pending = Promise[ExecutionResult]()
-      val pendingEngine = new WorkflowExecutionEngine() {
+      lazy val pendingEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
         override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] = pending.future
       }
       val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
@@ -780,7 +772,7 @@ class EventSourcedWorkflowActorRecoverySpec
       val workflowId = "resumable-recovery"
       val initialContext = Promise[ReliableRunContext]()
       val initialPending = Promise[ExecutionResult]()
-      val initialEngine = new WorkflowExecutionEngine() {
+      lazy val initialEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
         override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = {
           initialContext.trySuccess(runContext)
           initialPending.future
@@ -815,7 +807,7 @@ class EventSourcedWorkflowActorRecoverySpec
       val recoveredContext = Promise[ReliableRunContext]()
       val duplicateAck = Promise[Done]()
       val recoveredPending = Promise[ExecutionResult]()
-      val recoveryEngine = new WorkflowExecutionEngine() {
+      lazy val recoveryEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
         override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = {
           recoveredContext.trySuccess(runContext)
           val acknowledged = runContext.checkpointCommitted(checkpoint0)
@@ -838,10 +830,10 @@ class EventSourcedWorkflowActorRecoverySpec
     }
 
     "reconstruct completed Kafka progress from journal events for the next run" in {
-      NodeRegistry.registerSource(KafkaCheckpointSource)
+      testRegistry.registerSource(KafkaCheckpointSource)
       val workflowId = "kafka-progress-recovery"
       val firstCompletion = Promise[ExecutionResult]()
-      val initialEngine = new WorkflowExecutionEngine() {
+      lazy val initialEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
         override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] =
           firstCompletion.future
       }
@@ -877,7 +869,7 @@ class EventSourcedWorkflowActorRecoverySpec
         entityStopped = true
 
         val recoveredContext = Promise[ReliableRunContext]()
-        val recoveryEngine = new WorkflowExecutionEngine() {
+        lazy val recoveryEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
           override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = {
             recoveredContext.trySuccess(runContext)
             secondCompletion.future
@@ -900,7 +892,7 @@ class EventSourcedWorkflowActorRecoverySpec
         firstCompletion.trySuccess(result)
         secondCompletion.trySuccess(result)
         if (!entityStopped) testKit.stop(entity)
-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(KafkaCheckpointSource)
+        testRegistry.unregister(KafkaCheckpointSource)
       }
     }
 

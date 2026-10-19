@@ -1,0 +1,488 @@
+--- before/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/WorkflowExecutionEngine.scala
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/WorkflowExecutionEngine.scala
+@@ -5,20 +5,18 @@
+ import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+ import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Node, Workflow}
+ import cn.xuyinyin.magic.workflow.nodes.JdbcPasswordResolver
+-import cn.xuyinyin.magic.workflow.nodes.base.{BatchSourceSession, CheckpointedNodeSink, CheckpointedNodeSource}
++import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, CheckpointedNodeSource}
+ import com.typesafe.scalalogging.Logger
+ import org.apache.pekko.{Done, NotUsed}
+ import org.apache.pekko.actor.typed.{ActorSystem, DispatcherSelector}
+-import org.apache.pekko.stream.{KillSwitches, Materializer, SystemMaterializer, UniqueKillSwitch}
++import org.apache.pekko.stream.{KillSwitches, Materializer, SystemMaterializer}
+ import org.apache.pekko.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
+ import spray.json.{JsObject, JsString}
+ 
+-import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
+-import scala.collection.mutable
+-import scala.concurrent.{ExecutionContext, Future, Promise}
++import scala.concurrent.{ExecutionContext, Future}
+ import scala.util.control.NonFatal
+ import scala.concurrent.duration._
+-import scala.util.{Failure, Success, Try}
++import scala.util.{Failure, Success}
+ 
+ class WorkflowExecutionEngine(
+   getenv: String => Option[String] = sys.env.get,
+@@ -33,8 +31,7 @@
+   private val sourceExecutor = new SourceExecutor(nodeRegistry)
+   private val transformExecutor = new TransformExecutor()
+   private val sinkExecutor = new SinkExecutor(nodeRegistry)
+-  private val activeReliableExecutions = mutable.Map.empty[String, Vector[ReliableExecutionControl]]
+-  private val activeReliableExecutionsLock = new AnyRef
++  private val reliableExecutions = new ReliableExecutionSessions(logger)
+   private lazy val jdbcBlockingEc: ExecutionContext =
+     system.dispatchers.lookup(DispatcherSelector.fromConfig("pekko.workflow.jdbc-dispatcher"))
+ 
+@@ -45,7 +42,7 @@
+     executeInternal(workflow, executionId, None, None, onLog)
+ 
+   def execute(workflow: Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] =
+-    registerReliableExecution(runContext.executionId).flatMap { control =>
++    reliableExecutions.register(runContext.executionId).flatMap { control =>
+       control.continueIfActive().flatMap { _ =>
+         val execution = try executeInternal(workflow, runContext.executionId, Some(runContext), Some(control), onLog)
+         catch { case NonFatal(exception) => Future.failed(exception) }
+@@ -53,7 +50,7 @@
+       }.transformWith { outcome =>
+         control.drainAndClose().transform {
+           case Success(_) =>
+-            releaseReliableExecution(runContext.executionId, control)
++            reliableExecutions.release(runContext.executionId, control)
+             outcome
+           case Failure(error) =>
+             val safe = control.sanitizeCloseFailure(error)
+@@ -63,38 +60,14 @@
+       }
+     }
+ 
+-  def cancel(executionId: String): Future[Done] = {
+-    val releases = activeReliableExecutionsLock.synchronized {
+-      activeReliableExecutions.getOrElse(executionId, Vector.empty).map(_.cancel())
+-    }
+-    if (releases.isEmpty) Future.successful(Done)
+-    else Future.sequence(releases).map(_ => Done)
+-  }
++  def cancel(executionId: String): Future[Done] = reliableExecutions.cancel(executionId)
+ 
+   /** A timeout is an observation, never permission to replace an unreleased session. */
+   def cancelWithin(executionId: String, timeout: FiniteDuration =
+     system.settings.config.getDuration("pekko.workflow.session-control-wait-timeout").toMillis.millis
+-  ): Future[WorkflowExecutionEngine.ReleaseStatus] = {
+-    import WorkflowExecutionEngine._
+-    val controls = activeReliableExecutionsLock.synchronized {
+-      activeReliableExecutions.getOrElse(executionId, Vector.empty)
+-    }
+-    val result = Promise[ReleaseStatus]()
+-    val timer = system.scheduler.scheduleOnce(timeout, new Runnable {
+-      def run(): Unit = {
+-        val status = if (controls.exists(_.closeFailure.get() != null)) CloseFailed else TimedOut
+-        if (result.trySuccess(status)) logger.warn(s"Execution session not released: executionId=$executionId status=$status")
+-      }
+-    })(ec)
+-    cancel(executionId).onComplete {
+-      case Success(_) => if (result.trySuccess(Released)) timer.cancel()
+-      case Failure(_) => if (result.trySuccess(CloseFailed)) timer.cancel()
+-    }
+-    result.future
+-  }
+-
+-  private[engine] def activeReliableExecutionCount: Int =
+-    activeReliableExecutionsLock.synchronized(activeReliableExecutions.valuesIterator.map(_.size).sum)
++  ): Future[WorkflowExecutionEngine.ReleaseStatus] = reliableExecutions.cancelWithin(executionId, timeout)(cancel(executionId))
++
++  private[engine] def activeReliableExecutionCount: Int = reliableExecutions.activeCount
+ 
+   private def executeInternal(
+     workflow: Workflow,
+@@ -268,103 +241,6 @@
+       }
+   }
+ 
+-  private def registerReliableExecution(executionId: String): Future[ReliableExecutionControl] = {
+-    val (created, predecessorRelease) = activeReliableExecutionsLock.synchronized {
+-      val existing = activeReliableExecutions.getOrElse(executionId, Vector.empty)
+-      val created = new ReliableExecutionControl
+-      activeReliableExecutions.update(executionId, existing :+ created)
+-      created -> existing.lastOption.map(_.cancel()).getOrElse(Future.successful(Done))
+-    }
+-    predecessorRelease.map(_ => created)
+-  }
+-
+-  private def releaseReliableExecution(executionId: String, control: ReliableExecutionControl): Unit = {
+-    activeReliableExecutionsLock.synchronized {
+-      activeReliableExecutions.get(executionId).foreach { existing =>
+-        val remaining = existing.filterNot(_ eq control)
+-        if (remaining.isEmpty) activeReliableExecutions.remove(executionId)
+-        else activeReliableExecutions.update(executionId, remaining)
+-      }
+-    }
+-    control.release()
+-  }
+-
+-  private final class ReliableExecutionControl {
+-    private val cancelled = new AtomicBoolean(false)
+-    private val killSwitch = new AtomicReference[UniqueKillSwitch]()
+-    private val shutdownStarted = new AtomicBoolean(false)
+-    private val released = Promise[Done]()
+-    val closeFailure = new AtomicReference[Throwable]()
+-    @volatile var sanitizeCloseFailure: Throwable => Throwable = error => error
+-    private var sessions = Vector.empty[BatchSourceSession]
+-    private var inFlight = Set.empty[Promise[Done]]
+-    private var draining = false
+-
+-    def installSession(session: BatchSourceSession): Unit = synchronized {
+-      require(!draining, "execution session is draining")
+-      sessions :+= session
+-    }
+-
+-    def processBatch(work: => Future[Long]): Future[Long] = {
+-      val finished = Promise[Done]()
+-      val admitted = synchronized {
+-        if (cancelled.get() || draining) false
+-        else { inFlight += finished; true }
+-      }
+-      if (!admitted) Future.successful(0L)
+-      else {
+-        val running = try work catch { case NonFatal(e) => Future.failed(e) }
+-        running.transform { outcome =>
+-          synchronized { inFlight -= finished; finished.trySuccess(Done) }
+-          outcome
+-        }
+-      }
+-    }
+-
+-    def drainAndClose(): Future[Done] = {
+-      val (pending, resources) = synchronized {
+-        draining = true
+-        inFlight.toVector.map(_.future) -> sessions
+-      }
+-      Future.sequence(pending).flatMap { _ =>
+-        Future.sequence(resources.map(s => s.close().map[Either[Throwable, Done]](Right(_))
+-          .recover { case NonFatal(e) => Left(e) })).flatMap { outcomes =>
+-          outcomes.collectFirst { case Left(e) => e } match {
+-            case Some(e) => Future.failed(e)
+-            case None => Future.successful(Done)
+-          }
+-        }
+-      }
+-    }
+-
+-
+-    def cancel(): Future[Done] = {
+-      cancelled.set(true)
+-      shutdownIfReady()
+-      released.future
+-    }
+-
+-    def continueIfActive(): Future[Done] =
+-      if (cancelled.get()) Future.failed(new IllegalStateException("workflow execution cancelled"))
+-      else Future.successful(Done)
+-
+-    def install(value: UniqueKillSwitch): Unit = {
+-      if (!killSwitch.compareAndSet(null, value)) {
+-        throw new IllegalStateException("reliable execution kill switch is already installed")
+-      }
+-      shutdownIfReady()
+-    }
+-
+-    def release(): Unit = released.trySuccess(Done)
+-
+-    private def shutdownIfReady(): Unit = {
+-      val current = killSwitch.get()
+-      if (cancelled.get() && current != null && shutdownStarted.compareAndSet(false, true)) {
+-        current.shutdown()
+-      }
+-    }
+-  }
+-
+   private def reportedRowsProcessed(runContext: ReliableRunContext, rows: Long): Option[Int] =
+     Option.when(runContext.checkpoints.isEmpty && rows.isValidInt)(rows.toInt)
+ 
+--- before/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/base/BatchSourceSession.scala
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/base/BatchSourceSession.scala
+@@ -4,16 +4,10 @@
+ import org.apache.pekko.{Done, NotUsed}
+ import org.apache.pekko.stream.scaladsl.Source
+ import scala.concurrent.{ExecutionContext, Future, Promise}
+-import scala.util.{Failure, Success}
+ import scala.util.control.NonFatal
+ 
+ /** Execution-local resources, deliberately absent from checkpoints and source identities. */
+ final case class BatchSourceSession(source: Source[SourceBatch, NotUsed], close: () => Future[Done])
+-
+-final class SourceAcquisitionCleanupFailed(cause: Throwable, cleanup: Throwable)
+-  extends IllegalStateException("source acquisition failed and resource release is unconfirmed", cause) {
+-  addSuppressed(cleanup)
+-}
+ 
+ object BatchSourceSession {
+   /** Managed streams defer physical close until the Engine has drained its in-flight batch. */
+@@ -49,43 +43,3 @@
+     BatchSourceSession(source, () => close())
+   }
+ }
+-
+-/** Reserves ownership before asynchronous acquisition; late resources cannot escape close. */
+-final class SourceResourceScope {
+-  private var closers = Vector.empty[() => Future[Done]]
+-  private var closing = false
+-  private val released = Promise[Done]()
+-
+-  def acquire[R](create: () => Future[R], closeResource: R => Future[Done]): Future[R] = {
+-    val opened = Promise[R]()
+-    synchronized {
+-      if (closing) return Future.failed(new IllegalStateException("source session is closing"))
+-      closers :+= (() => opened.future.transformWith {
+-        case Success(resource) => try closeResource(resource) catch { case NonFatal(e) => Future.failed(e) }
+-        case Failure(e: SourceAcquisitionCleanupFailed) => Future.failed(e)
+-        case Failure(_) => Future.successful(Done)
+-      }(ExecutionContext.parasitic))
+-    }
+-    try create().onComplete(opened.tryComplete)(ExecutionContext.parasitic)
+-    catch { case NonFatal(e) => opened.tryFailure(e) }
+-    opened.future
+-  }
+-
+-  def close(): Future[Done] = {
+-    val pending = synchronized {
+-      if (closing) None else { closing = true; Some(closers) }
+-    }
+-    pending.foreach { entries =>
+-      implicit val ec: ExecutionContext = ExecutionContext.parasitic
+-      // Observe all closes, including when one fails; never short-circuit release accounting.
+-      Future.sequence(entries.map(f => f().map[Either[Throwable, Done]](Right(_)).recover { case NonFatal(e) => Left(e) }))
+-        .foreach { outcomes =>
+-          outcomes.collectFirst { case Left(e) => e } match {
+-            case Some(error) => released.tryFailure(error)
+-            case None => released.trySuccess(Done)
+-          }
+-        }
+-    }
+-    released.future
+-  }
+-}
+--- /dev/null
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/ReliableExecutionSessions.scala
+@@ -0,0 +1,75 @@
++package cn.xuyinyin.magic.workflow.engine
++
++import com.typesafe.scalalogging.Logger
++import org.apache.pekko.Done
++import org.apache.pekko.actor.typed.ActorSystem
++
++import scala.collection.mutable
++import scala.concurrent.{ExecutionContext, Future, Promise}
++import scala.concurrent.duration._
++import scala.util.{Failure, Success}
++
++/** Engine-local session ownership. Replacements wait for actual predecessor release;
++  * a control-plane observation timeout never opens the fence.
++  */
++private[engine] final class ReliableExecutionSessions(logger: Logger)(
++  implicit system: ActorSystem[_], ec: ExecutionContext
++) {
++  private val activeReliableExecutions = mutable.Map.empty[String, Vector[ReliableExecutionControl]]
++  private val activeReliableExecutionsLock = new AnyRef
++
++  def cancel(executionId: String): Future[Done] = {
++    val releases = activeReliableExecutionsLock.synchronized {
++      activeReliableExecutions.getOrElse(executionId, Vector.empty).map(_.cancel())
++    }
++    if (releases.isEmpty) Future.successful(Done)
++    else Future.sequence(releases).map(_ => Done)
++  }
++
++  /** A timeout is an observation, never permission to replace an unreleased session. */
++  def cancelWithin(executionId: String, timeout: FiniteDuration)(
++    requestCancel: => Future[Done]
++  ): Future[WorkflowExecutionEngine.ReleaseStatus] = {
++    import WorkflowExecutionEngine._
++    val controls = activeReliableExecutionsLock.synchronized {
++      activeReliableExecutions.getOrElse(executionId, Vector.empty)
++    }
++    val result = Promise[ReleaseStatus]()
++    val timer = system.scheduler.scheduleOnce(timeout, new Runnable {
++      def run(): Unit = {
++        val status = if (controls.exists(_.closeFailure.get() != null)) CloseFailed else TimedOut
++        if (result.trySuccess(status)) logger.warn(s"Execution session not released: executionId=$executionId status=$status")
++      }
++    })(ec)
++    requestCancel.onComplete {
++      case Success(_) => if (result.trySuccess(Released)) timer.cancel()
++      case Failure(_) => if (result.trySuccess(CloseFailed)) timer.cancel()
++    }
++    result.future
++  }
++
++  def activeCount: Int =
++    activeReliableExecutionsLock.synchronized(activeReliableExecutions.valuesIterator.map(_.size).sum)
++
++  def register(executionId: String): Future[ReliableExecutionControl] = {
++    val (created, predecessorRelease) = activeReliableExecutionsLock.synchronized {
++      val existing = activeReliableExecutions.getOrElse(executionId, Vector.empty)
++      val created = new ReliableExecutionControl
++      activeReliableExecutions.update(executionId, existing :+ created)
++      created -> existing.lastOption.map(_.cancel()).getOrElse(Future.successful(Done))
++    }
++    predecessorRelease.map(_ => created)
++  }
++
++  def release(executionId: String, control: ReliableExecutionControl): Unit = {
++    activeReliableExecutionsLock.synchronized {
++      activeReliableExecutions.get(executionId).foreach { existing =>
++        val remaining = existing.filterNot(_ eq control)
++        if (remaining.isEmpty) activeReliableExecutions.remove(executionId)
++        else activeReliableExecutions.update(executionId, remaining)
++      }
++    }
++    control.release()
++  }
++
++}
+--- /dev/null
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/ReliableExecutionControl.scala
+@@ -0,0 +1,88 @@
++package cn.xuyinyin.magic.workflow.engine
++
++import cn.xuyinyin.magic.workflow.nodes.base.BatchSourceSession
++import org.apache.pekko.Done
++import org.apache.pekko.stream.UniqueKillSwitch
++
++import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
++import scala.concurrent.{ExecutionContext, Future, Promise}
++import scala.util.control.NonFatal
++
++/** One execution's batch admission, drain, and physical release confirmation.
++  * Does not decide T/J/ACK ordering or persist workflow state.
++  */
++private[engine] final class ReliableExecutionControl(implicit ec: ExecutionContext) {
++  private val cancelled = new AtomicBoolean(false)
++  private val killSwitch = new AtomicReference[UniqueKillSwitch]()
++  private val shutdownStarted = new AtomicBoolean(false)
++  private val released = Promise[Done]()
++  val closeFailure = new AtomicReference[Throwable]()
++  @volatile var sanitizeCloseFailure: Throwable => Throwable = error => error
++  private var sessions = Vector.empty[BatchSourceSession]
++  private var inFlight = Set.empty[Promise[Done]]
++  private var draining = false
++
++  def installSession(session: BatchSourceSession): Unit = synchronized {
++    require(!draining, "execution session is draining")
++    sessions :+= session
++  }
++
++  def processBatch(work: => Future[Long]): Future[Long] = {
++    val finished = Promise[Done]()
++    val admitted = synchronized {
++      if (cancelled.get() || draining) false
++      else { inFlight += finished; true }
++    }
++    if (!admitted) Future.successful(0L)
++    else {
++      val running = try work catch { case NonFatal(e) => Future.failed(e) }
++      running.transform { outcome =>
++        synchronized { inFlight -= finished; finished.trySuccess(Done) }
++        outcome
++      }
++    }
++  }
++
++  def drainAndClose(): Future[Done] = {
++    val (pending, resources) = synchronized {
++      draining = true
++      inFlight.toVector.map(_.future) -> sessions
++    }
++    Future.sequence(pending).flatMap { _ =>
++      Future.sequence(resources.map(s => s.close().map[Either[Throwable, Done]](Right(_))
++        .recover { case NonFatal(e) => Left(e) })).flatMap { outcomes =>
++        outcomes.collectFirst { case Left(e) => e } match {
++          case Some(e) => Future.failed(e)
++          case None => Future.successful(Done)
++        }
++      }
++    }
++  }
++
++
++  def cancel(): Future[Done] = {
++    cancelled.set(true)
++    shutdownIfReady()
++    released.future
++  }
++
++  def continueIfActive(): Future[Done] =
++    if (cancelled.get()) Future.failed(new IllegalStateException("workflow execution cancelled"))
++    else Future.successful(Done)
++
++  def install(value: UniqueKillSwitch): Unit = {
++    if (!killSwitch.compareAndSet(null, value)) {
++      throw new IllegalStateException("reliable execution kill switch is already installed")
++    }
++    shutdownIfReady()
++  }
++
++  def release(): Unit = released.trySuccess(Done)
++
++  private def shutdownIfReady(): Unit = {
++    val current = killSwitch.get()
++    if (cancelled.get() && current != null && shutdownStarted.compareAndSet(false, true)) {
++      current.shutdown()
++    }
++  }
++}
+--- /dev/null
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/base/SourceResourceScope.scala
+@@ -0,0 +1,51 @@
++package cn.xuyinyin.magic.workflow.nodes.base
++
++import org.apache.pekko.Done
++import scala.concurrent.{ExecutionContext, Future, Promise}
++import scala.util.{Failure, Success}
++import scala.util.control.NonFatal
++
++final class SourceAcquisitionCleanupFailed(cause: Throwable, cleanup: Throwable)
++  extends IllegalStateException("source acquisition failed and resource release is unconfirmed", cause) {
++  addSuppressed(cleanup)
++}
++
++/** Reserves ownership before asynchronous acquisition; late resources cannot escape close. */
++final class SourceResourceScope {
++  private var closers = Vector.empty[() => Future[Done]]
++  private var closing = false
++  private val released = Promise[Done]()
++
++  def acquire[R](create: () => Future[R], closeResource: R => Future[Done]): Future[R] = {
++    val opened = Promise[R]()
++    synchronized {
++      if (closing) return Future.failed(new IllegalStateException("source session is closing"))
++      closers :+= (() => opened.future.transformWith {
++        case Success(resource) => try closeResource(resource) catch { case NonFatal(e) => Future.failed(e) }
++        case Failure(e: SourceAcquisitionCleanupFailed) => Future.failed(e)
++        case Failure(_) => Future.successful(Done)
++      }(ExecutionContext.parasitic))
++    }
++    try create().onComplete(opened.tryComplete)(ExecutionContext.parasitic)
++    catch { case NonFatal(e) => opened.tryFailure(e) }
++    opened.future
++  }
++
++  def close(): Future[Done] = {
++    val pending = synchronized {
++      if (closing) None else { closing = true; Some(closers) }
++    }
++    pending.foreach { entries =>
++      implicit val ec: ExecutionContext = ExecutionContext.parasitic
++      // Observe all closes, including when one fails; never short-circuit release accounting.
++      Future.sequence(entries.map(f => f().map[Either[Throwable, Done]](Right(_)).recover { case NonFatal(e) => Left(e) }))
++        .foreach { outcomes =>
++          outcomes.collectFirst { case Left(e) => e } match {
++            case Some(error) => released.tryFailure(error)
++            case None => released.trySuccess(Done)
++          }
++        }
++    }
++    released.future
++  }
++}

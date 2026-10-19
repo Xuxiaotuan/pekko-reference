@@ -15,16 +15,16 @@ import scala.concurrent.{ExecutionContext, Future}
  * @author : Xuxiaotuan
  * @since : 2024-11-15
  */
-class SinkExecutor extends NodeExecutor {
+class SinkExecutor(registry: NodeRegistry = NodeRegistry.builtins()) extends NodeExecutor {
   
-  override def supportedTypes: Set[String] = NodeRegistry.supportedSinkTypes
+  override def supportedTypes: Set[String] = registry.supportedSinkTypes
   
   /**
    * 创建Sink (使用NodeRegistry)
    */
   def createSink(node: WorkflowDSL.Node, onLog: String => Unit)
                 (implicit ec: ExecutionContext): Sink[String, Future[Done]] = {
-    NodeRegistry.findSink(node.nodeType) match {
+    registry.findSink(node.nodeType) match {
       case Some(nodeSink) =>
         nodeSink.createSink(node, onLog)
       case None =>

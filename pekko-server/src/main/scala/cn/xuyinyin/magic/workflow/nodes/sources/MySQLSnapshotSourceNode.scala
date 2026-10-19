@@ -2,7 +2,7 @@ package cn.xuyinyin.magic.workflow.nodes.sources
 
 import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
-import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSource, NodeSource}
+import cn.xuyinyin.magic.workflow.nodes.base.{BatchSourceSession, CheckpointedNodeSource, NodeSource, SourceAcquisitionCleanupFailed}
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.stream.scaladsl.Source
@@ -49,22 +49,34 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource {
     boundary: SnapshotBoundary,
     resumeFrom: Option[BatchCheckpoint],
     onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
+  )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] =
+    batchSession(node, executionId, boundary, resumeFrom, onLog, blockingEc, managed = false).source
+
+  override def openBatches(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
+    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext)
+    (implicit blockingEc: ExecutionContext): BatchSourceSession =
+    batchSession(node, executionId, boundary, resumeFrom, onLog, closeEc, managed = true)
+
+  private def batchSession(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
+    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext, managed: Boolean)
+    (implicit blockingEc: ExecutionContext): BatchSourceSession = {
     val config = MySQLSnapshotSourceConfig.parse(node, getenv)
     validateBoundary(node, boundary, resumeFrom)
 
     boundary.upperBound match {
-      case None => Source.empty
+      case None => BatchSourceSession(Source.empty, () => Future.successful(Done))
       case Some(upperBound) =>
         val initialCursor = resumeFrom.map(_.cursor.value)
         val initialSequence = resumeFrom.map(_.batchSequence + 1L).getOrElse(0L)
-        Source.unfoldResourceAsync[SourceBatch, BatchReader](
+        BatchSourceSession.resource[BatchReader](
           create = () => Future(openBatchReader(config, upperBound, initialCursor, initialSequence))(blockingEc),
           read = reader => Future(reader.nextBatch(node.id, executionId))(blockingEc),
-          close = reader => Future {
+          closeResource = reader => Future {
             reader.close()
             Done
-          }(blockingEc)
+          }(closeEc),
+          managed = managed,
+          drainReads = true
         )
     }
   }
@@ -103,8 +115,12 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource {
       new BatchReader(config, projection, dataSource, connection, upperBound, cursor, sequence)
     } catch {
       case error: Throwable =>
-        close(connection)
-        close(dataSource)
+        var cleanup: Exception = null
+        Vector[AutoCloseable](connection, dataSource).filter(_ != null).foreach { resource =>
+          try resource.close()
+          catch { case e: Exception => if (cleanup == null) cleanup = e else cleanup.addSuppressed(e) }
+        }
+        if (cleanup != null) throw new SourceAcquisitionCleanupFailed(error, cleanup)
         throw error
     }
   }
@@ -327,8 +343,12 @@ object MySQLSnapshotSourceNode {
     }
 
     override def close(): Unit = {
-      close(connection)
-      close(dataSource)
+      var failure: Exception = null
+      Vector[AutoCloseable](connection, dataSource).filter(_ != null).foreach { resource =>
+        try resource.close()
+        catch { case e: Exception => if (failure == null) failure = e else failure.addSuppressed(e) }
+      }
+      if (failure != null) throw failure
     }
 
     private def rowAsJson(resultSet: ResultSet): String = {

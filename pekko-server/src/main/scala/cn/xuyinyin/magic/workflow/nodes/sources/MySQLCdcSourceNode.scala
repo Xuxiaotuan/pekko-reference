@@ -2,7 +2,7 @@ package cn.xuyinyin.magic.workflow.nodes.sources
 
 import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
-import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSource, NodeSource}
+import cn.xuyinyin.magic.workflow.nodes.base.{BatchSourceSession, CheckpointedNodeSource, NodeSource, SourceAcquisitionCleanupFailed}
 import cn.xuyinyin.magic.workflow.nodes.cdc.{MySQLCdcEnvelope, MySQLCdcGroupProtocol}
 import com.typesafe.config.ConfigFactory
 import org.apache.kafka.connect.source.SourceRecord
@@ -172,7 +172,17 @@ class MySQLCdcSourceNode(
     boundary: SnapshotBoundary,
     resumeFrom: Option[BatchCheckpoint],
     onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
+  )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] =
+    batchSession(node, executionId, boundary, resumeFrom, onLog, blockingEc, managed = false).source
+
+  override def openBatches(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
+    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext)
+    (implicit blockingEc: ExecutionContext): BatchSourceSession =
+    batchSession(node, executionId, boundary, resumeFrom, onLog, closeEc, managed = true)
+
+  private def batchSession(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
+    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext, managed: Boolean)
+    (implicit blockingEc: ExecutionContext): BatchSourceSession = {
     val config = parseConfig(node)
     validateBoundary(node, config, boundary, resumeFrom)
     val state = loadStateConfig()
@@ -187,7 +197,7 @@ class MySQLCdcSourceNode(
       case None => 0L
     }
 
-    Source.unfoldResourceAsync[SourceBatch, CdcResource](
+    BatchSourceSession.resource[CdcResource](
       create = () => Future {
         var connection: Connection = null
         try {
@@ -204,11 +214,12 @@ class MySQLCdcSourceNode(
         onLog(s"MySQL CDC engine starting connectorId=${config.connectorId} database=${config.database} table=${config.table}")
         new CdcResource(node.id, executionId, config, identity, firstSequence, properties, onLog)
       }(blockingEc),
-      read = resource => Future(resource.nextBatch())(blockingEc),
-      close = resource => Future {
+      read = resource => resource.nextBatchAsync(),
+      closeResource = resource => Future {
         resource.close()
         Done
-      }(blockingEc)
+      }(closeEc),
+      managed = managed
     )
   }
 
@@ -294,7 +305,7 @@ class MySQLCdcSourceNode(
         assembler.foreach(_.close())
         bridge.close()
         try engine.close()
-        catch { case NonFatal(_) => () }
+        catch { case NonFatal(cleanup) => throw new SourceAcquisitionCleanupFailed(error, cleanup) }
         throw error
     }
 
@@ -309,9 +320,8 @@ class MySQLCdcSourceNode(
       bridge.close()
     }(ExecutionContext.parasitic)
 
-    def nextBatch(): Option[SourceBatch] = {
-      try {
-        val bridged = bridge.take()
+    def nextBatchAsync(): Future[Option[SourceBatch]] = {
+      bridge.takeAsync().map { bridged =>
         val sequence = outputSequence.get()
         val expectedBatchId = BatchId.sha256(
           executionId,
@@ -343,7 +353,7 @@ class MySQLCdcSourceNode(
           rows = bridged.rows,
           acknowledgementId = Option.when(assembler.nonEmpty)(acknowledgementKey)
         ))
-      } catch {
+      }(ExecutionContext.parasitic).recover {
         case error: IllegalStateException =>
           terminal.get() match {
             case Failure(cause) => throw cause
@@ -351,7 +361,7 @@ class MySQLCdcSourceNode(
             case null if closed.get() => None
             case _ => throw error
           }
-      }
+      }(ExecutionContext.parasitic)
     }
 
     override def close(): Unit = {

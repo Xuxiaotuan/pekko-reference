@@ -1,3 +1,38 @@
+# Pekko CDC / Workflow 管理界面
+
+当前 B 阶段支持：分页摘要、完整 Workflow DSL JSON 创建、请求执行、最近最多 50 条执行记录，以及已有调度计划的暂停/恢复。
+不提供既有定义编辑/删除、日志、完整 Journal 浏览、SQL 执行或任意 DAG。
+
+```bash
+# Java 17：仓库根目录启动后端
+sbt runServer
+
+# 另一个终端，已有前端依赖的环境
+cd xxt-ui
+npm run dev
+npm test
+npm run build
+```
+
+默认开发代理指向 `http://localhost:8080`；隔离联调可用
+`PEKKO_API_TARGET=http://127.0.0.1:<backend-port> npm run dev -- --host 127.0.0.1 --port <ui-port>`。
+生产静态站点必须为 `/api`、`/health` 配置指向后端的反向代理，Vite 的开发代理不是生产部署。
+
+- 列表：`/workflows`，消费 `{page,pageSize,items}`；没有全局总数/排序/快照保证。
+- 创建：`/workflows/new/import`；201 仅表示定义已保存，不自动执行、初始化目标或注册调度。
+- 摘要：`/workflows/:id`；不能当完整定义读取或编辑。
+- 执行：202 是接受；未知回复按工作流在当前标签页会话保留 requestId，刷新/导航后重试仍复用。
+  标签页关闭、独立标签页或其他用户不共享此身份；后端去重保留上限未改变。
+- 调度：`/schedules`；暂停计划不停止当前执行。新建/编辑仍使用已有后端 API，本页不提供入口。
+- 监控：`/dashboard` 和 `/cluster`；错误/未采集明确显示未知，不用 0 冒充测量值。
+
+[本轮真实联调、HTTP 故障证据与未验证范围](../docs/experiments/2026-10-19-stage-b-console/README.md)。
+这不是生产部署、真实 MySQL CDC 恢复或 70 万任务容量证明。
+
+---
+
+以下为 B 阶段前的历史说明，含当时演示能力，不作为当前可用功能清单。
+
 # XXT-UI
 
 XXT - Pekko DataFusion Arrow 前端展示层

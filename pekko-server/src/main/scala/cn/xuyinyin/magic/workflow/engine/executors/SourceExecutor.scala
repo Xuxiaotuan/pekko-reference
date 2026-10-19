@@ -13,15 +13,15 @@ import org.apache.pekko.stream.scaladsl.Source
  * @author : Xuxiaotuan
  * @since : 2024-11-15
  */
-class SourceExecutor extends NodeExecutor {
+class SourceExecutor(registry: NodeRegistry = NodeRegistry.builtins()) extends NodeExecutor {
   
-  override def supportedTypes: Set[String] = NodeRegistry.supportedSourceTypes
+  override def supportedTypes: Set[String] = registry.supportedSourceTypes
   
   /**
    * 创建Source (使用NodeRegistry)
    */
   def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] = {
-    NodeRegistry.findSource(node.nodeType) match {
+    registry.findSource(node.nodeType) match {
       case Some(nodeSource) =>
         nodeSource.createSource(node, onLog)
       case None =>

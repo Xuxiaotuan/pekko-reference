@@ -65,3 +65,20 @@ export interface ExecutionResult {
   message: string;
   output: Record<string, any>;
 }
+
+// HTTP query DTOs are deliberately separate from the submitted Workflow DSL.
+export interface WorkflowListItem { workflowId: string; revision: number; status: string }
+export interface WorkflowPage { page: number; pageSize: number; items: WorkflowListItem[] }
+export interface WorkflowSummary extends WorkflowListItem { recentExecutions: { executionId: string; status: string }[] }
+export interface DefinitionCreated { workflowId: string; revision: number }
+export interface ExecutionAccepted { workflowId: string; executionId: string }
+export interface NodeExecutionDetail {
+  nodeId: string; nodeType: string; status: string
+  startTime?: number | null; endTime?: number | null; duration?: number | null
+  recordsProcessed?: number | null; error?: string | null
+}
+export interface ExecutionDetail {
+  executionId: string; workflowName: string; startTime: number; status: string
+  endTime?: number | null; duration?: number | null; nodes: NodeExecutionDetail[]
+}
+export interface ExecutionHistoryData { workflowId: string; executions: ExecutionDetail[] }

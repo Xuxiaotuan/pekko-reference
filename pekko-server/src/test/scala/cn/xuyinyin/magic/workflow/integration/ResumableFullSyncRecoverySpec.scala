@@ -1,18 +1,8 @@
-package cn.xuyinyin.magic.workflow.engine {
-  import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
-  import cn.xuyinyin.magic.workflow.nodes.base.{NodeSink, NodeSource}
-
-  private[workflow] object ResumableRecoveryRegistryCleanup {
-    def unregister(source: NodeSource): Unit = NodeRegistry.unregisterSource(source.nodeType, source)
-    def unregister(sink: NodeSink): Unit = NodeRegistry.unregisterSink(sink.nodeType, sink)
-  }
-}
-
 package cn.xuyinyin.magic.workflow.integration {
 
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
 import cn.xuyinyin.magic.workflow.checkpoint.{AlreadyCommitted, BatchCheckpoint, BatchCommitResult, Committed, SourceBatch}
-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+import cn.xuyinyin.magic.workflow.TestNodeRegistry
 import cn.xuyinyin.magic.workflow.engine.{ExecutionResult, ReliableRunContext, WorkflowExecutionEngine}
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Edge, Node, Position, Workflow, WorkflowMetadata}
 import cn.xuyinyin.magic.workflow.nodes.sinks.MySQLSinkNode
@@ -46,6 +36,8 @@ object ResumableFullSyncRecoverySpec {
 }
 
 class ResumableFullSyncRecoverySpec extends AnyWordSpec with Matchers with Eventually {
+  private val testRegistry = new TestNodeRegistry
+
   import ResumableFullSyncRecoverySpec._
 
   implicit val patience: PatienceConfig = PatienceConfig(timeout = Span(45, Seconds), interval = Span(250, Millis))
@@ -60,8 +52,8 @@ class ResumableFullSyncRecoverySpec extends AnyWordSpec with Matchers with Event
       val sourceRows = Vector(1 -> "row-1", 2 -> "row-2", 5 -> "row-5", 9 -> "row-9", 12 -> "row-12")
       val source = new H2SnapshotSource
       val sink = new H2ObservingSink
-      val originalSource = NodeRegistry.findSource(source.nodeType).get
-      val originalSink = NodeRegistry.findSink(sink.nodeType).get
+      val originalSource = testRegistry.findSource(source.nodeType).get
+      val originalSink = testRegistry.findSink(sink.nodeType).get
       val sequenceZeroCommitted = Promise[BatchCheckpoint]()
       val finalCheckpointPersisted = Promise[BatchCheckpoint]()
       val releaseFinalCheckpoint = Promise[Done]()
@@ -73,8 +65,8 @@ class ResumableFullSyncRecoverySpec extends AnyWordSpec with Matchers with Event
       try {
         initializeSource(sourceUrl, sourceRows)
         initializeTarget(targetUrl)
-        NodeRegistry.registerSource(source)
-        NodeRegistry.registerSink(sink)
+        testRegistry.registerSource(source)
+        testRegistry.registerSink(sink)
 
         Vector(database.url, sourceUrl, targetUrl).foreach { url =>
           url should startWith("jdbc:h2:file:")
@@ -137,6 +129,11 @@ class ResumableFullSyncRecoverySpec extends AnyWordSpec with Matchers with Event
         )
 
         val node1Address = Cluster(node1.system).selfMember.address
+        // The artificial J gate must abort when its owner stops, as a failed Actor ask would.
+        // Keep the ActorSystem alive until Engine resource release has actually completed.
+        region1 ! ShardingEnvelope(workflowId, EventSourcedWorkflowActor.Stop)
+        Await.result(node1Engine.ownerRelease.future, 10.seconds)
+        source.openDataSources shouldBe 0
         MultiNodeTestSupport.terminate(node1)
         MultiNodeTestSupport.downFrom(node2, node1Address)
         eventually {
@@ -202,16 +199,16 @@ class ResumableFullSyncRecoverySpec extends AnyWordSpec with Matchers with Event
             sink.openDataSources shouldBe 0
           }
         } finally {
-          cn.xuyinyin.magic.workflow.engine.ResumableRecoveryRegistryCleanup.unregister(source)
-          cn.xuyinyin.magic.workflow.engine.ResumableRecoveryRegistryCleanup.unregister(sink)
+          testRegistry.unregister(source)
+          testRegistry.unregister(sink)
           MultiNodeTestSupport.cleanupDatabase(database)
         }
       }
 
       node1.system.whenTerminated.isCompleted shouldBe true
       node2.system.whenTerminated.isCompleted shouldBe true
-      NodeRegistry.findSource(source.nodeType).get should be theSameInstanceAs originalSource
-      NodeRegistry.findSink(sink.nodeType).get should be theSameInstanceAs originalSink
+      testRegistry.findSource(source.nodeType).get should be theSameInstanceAs originalSource
+      testRegistry.findSink(sink.nodeType).get should be theSameInstanceAs originalSink
       source.openDataSources shouldBe 0
       sink.openDataSources shouldBe 0
       Files.exists(database.directory) shouldBe false
@@ -222,8 +219,15 @@ class ResumableFullSyncRecoverySpec extends AnyWordSpec with Matchers with Event
   private final class BeforeCheckpointGateEngine(signal: Promise[BatchCheckpoint])(
     implicit system: ActorSystem[_],
     executionContext: ExecutionContext
-  ) extends WorkflowExecutionEngine() {
+  ) extends WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
     private val blocked = Promise[Done]()
+    val ownerRelease = Promise[Done]()
+    override def cancel(executionId: String): Future[Done] = {
+      val released = super.cancel(executionId)
+      blocked.tryFailure(new IllegalStateException("test owner stopped before checkpoint confirmation"))
+      released.onComplete(ownerRelease.tryComplete)(ExecutionContext.parasitic)
+      released
+    }
     private val intercepted = new AtomicBoolean(false)
 
     override def execute(
@@ -252,7 +256,7 @@ class ResumableFullSyncRecoverySpec extends AnyWordSpec with Matchers with Event
   )(
     implicit system: ActorSystem[_],
     executionContext: ExecutionContext
-  ) extends WorkflowExecutionEngine() {
+  ) extends WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
     private val intercepted = new AtomicBoolean(false)
 
     override def execute(
