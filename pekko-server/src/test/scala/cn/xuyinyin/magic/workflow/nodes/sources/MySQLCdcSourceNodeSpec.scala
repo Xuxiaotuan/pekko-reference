@@ -282,6 +282,62 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
   }
 
   "MySQLCdcSourceNode streaming" should {
+    "assemble a PK group across callbacks before delivery and release only the covered raw prefix" in {
+      val d = record("d", Some(row(42, "old")), None, snapshot = false, position = 200)
+      val base = record("c", None, Some(row(43, "old")), snapshot = false, position = 200)
+      val newKey = new Struct(keySchema).put("id", 43)
+      val c = new SourceRecord(base.sourcePartition(), base.sourceOffset(), base.topic(), keySchema,
+        newKey, base.valueSchema(), base.value())
+      d.headers().add("__debezium.newkey", newKey, keySchema)
+      c.headers().add("__debezium.oldkey", d.key(), keySchema)
+      val factory = new FakeEngineFactory(Vector(EnginePlan(Vector(Vector(d), Vector(c)))))
+      val source = testSource(factory, () => validMetadata.connection())
+      val protocol = JsObject("replicationId" -> JsString("orders"), "generation" -> JsString("g1"),
+        "sourceLineage" -> JsString("fixed-server-uuid"), "initializedTarget" -> JsBoolean(true))
+      val node = cdcNode().copy(config = JsObject(cdcNode().config.fields + ("groupProtocol" -> protocol)))
+      val boundary = expectedBoundary.copy(upperBound = Some(canonical(JsObject(
+        expectedStreamIdentity.parseJson.asJsObject.fields ++ Map("version" -> JsNumber(2),
+          "groupProtocol" -> JsObject((protocol.fields - "initializedTarget") + ("version" -> JsNumber(1))))))))
+      val queue = source.createBatches(node, "execution-1", boundary, None, _ => ()).runWith(Sink.queue())
+      try {
+        val batch = pull(queue)
+        batch.rows.size shouldBe 1
+        batch.rows.head.parseJson.asJsObject.fields("members").asInstanceOf[JsArray].elements.size shouldBe 2
+        factory.engines.head.handles.asScala.map(_.calls.get()).toVector shouldBe Vector(0, 0)
+        Await.result(source.acknowledgeCommittedBatch(node, batch, _ => ()), 2.seconds)
+        eventually(factory.engines.head.handles.asScala.forall(_.calls.get() == 1))
+      } finally queue.cancel()
+    }
+
+    "reject a closed group session ACK without consuming a new session at the same delivery sequence" in {
+      val records = Vector(record("u", Some(row(42, "old")), Some(row(42, "new")), snapshot = false, position = 200))
+      val factory = new FakeEngineFactory(Vector(EnginePlan(Vector(records)), EnginePlan(Vector(records))))
+      val source = testSource(factory, () => validMetadata.connection())
+      val protocol = JsObject("replicationId" -> JsString("orders"), "generation" -> JsString("g1"),
+        "sourceLineage" -> JsString("fixed-server-uuid"), "initializedTarget" -> JsBoolean(true))
+      val node = cdcNode().copy(config = JsObject(cdcNode().config.fields + ("groupProtocol" -> protocol)))
+      val boundary = expectedBoundary.copy(upperBound = Some(canonical(JsObject(
+        expectedStreamIdentity.parseJson.asJsObject.fields ++ Map("version" -> JsNumber(2),
+          "groupProtocol" -> JsObject((protocol.fields - "initializedTarget") + ("version" -> JsNumber(1))))))))
+      val firstQueue = source.createBatches(node, "same-execution", boundary, None, _ => ()).runWith(Sink.queue())
+      val old = pull(firstQueue)
+      firstQueue.cancel()
+      eventually(factory.engines.head.closed.get())
+      val newQueue = source.createBatches(node, "same-execution", boundary, None, _ => ()).runWith(Sink.queue())
+      try {
+        val current = pull(newQueue)
+        current.batchId shouldBe old.batchId
+        current.cursor shouldBe old.cursor // Session identity belongs to delivery, not the durable source cursor.
+        current.acknowledgementId should not be old.acknowledgementId
+        intercept[IllegalStateException](Await.result(source.acknowledgeCommittedBatch(node,
+          current.copy(batchId = "wrong-delivery"), _ => ()), 2.seconds))
+        intercept[IllegalStateException](Await.result(source.acknowledgeCommittedBatch(node, old, _ => ()), 2.seconds))
+        factory.engines(1).handles.asScala.head.calls.get() shouldBe 0
+        Await.result(source.acknowledgeCommittedBatch(node, current, _ => ()), 2.seconds)
+        eventually(factory.engines(1).handles.asScala.head.calls.get() == 1)
+      } finally newQueue.cancel()
+    }
+
     "emit canonical ordered batches at sequence zero and acknowledge each callback exactly once" in {
       val firstRecords = Vector(record("r", None, Some(row(42, "new")), snapshot = true, position = 100L))
       val secondRecords = Vector(
@@ -302,7 +358,7 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
         expectedStreamIdentity
       )
       first.productElementNames.toVector shouldBe Vector(
-        "sourceNodeId", "partitionId", "batchSequence", "batchId", "cursor", "rows"
+        "sourceNodeId", "partitionId", "batchSequence", "batchId", "cursor", "rows", "acknowledgementId"
       )
       first.productElementNames.toVector should not contain "deliveryToken"
       val firstEnvelope = parse(first.rows.head)
@@ -814,6 +870,12 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
   }
 
+  private def canonical(value: JsValue): String = value match {
+    case JsObject(f) => f.toVector.sortBy(_._1).map { case (k,v) => JsString(k).compactPrint + ":" + canonical(v) }.mkString("{", ",", "}")
+    case JsArray(v) => v.map(canonical).mkString("[", ",", "]")
+    case v => v.compactPrint
+  }
+
   private def cdcNode(): WorkflowDSL.Node = WorkflowDSL.Node(
     id = "source-1",
     `type` = "source",
@@ -841,8 +903,11 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     override protected[sources] def getenv(name: String): Option[String] =
       Option.when(name == "MYSQL_CDC_PASSWORD")(sourceSecret)
 
-    override protected[sources] def openMetadataConnection(config: MySQLCdcSourceConfig): Connection =
-      connection()
+    override protected[sources] def openMetadataConnection(config: MySQLCdcSourceConfig): Connection = connection()
+    override protected[sources] def verifySourceLineage(connection: Connection, expected: String): Unit = {
+      expected shouldBe "fixed-server-uuid"
+    }
+    override protected[sources] def verifyStreamingState(properties: Properties): Unit = ()
   }
 
   private def checkpoint(boundary: SnapshotBoundary, sequence: Long): BatchCheckpoint = BatchCheckpoint(

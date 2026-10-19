@@ -81,6 +81,55 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
   }
 
   "MySQLCdcApplySinkNode" should {
+    "deduplicate complete groups after splitting and merging deliveries using current checkpoint metadata" in withFixture() { f =>
+      val first = f.event(CdcOperation.Create, 1, afterStatus = Some("old"))
+      val b = f.event(CdcOperation.Update, 1, beforeStatus = Some("old"), afterStatus = Some("new"))
+        .copy(source = first.source.copy(position = Some(200)))
+      val c = f.event(CdcOperation.Create, 2, afterStatus = Some("tail"))
+        .copy(source = first.source.copy(position = Some(300)))
+      def commit(batch: SourceBatch) = Await.result(f.node.commitBatch(f.sinkNode, "workflow-cdc", "execution-cdc",
+        batch, batch.rows, _ => ()), 5.seconds)
+      commit(f.groupBatch(Vector(first, b), 0)) shouldBe a[Committed]
+      val replay = f.groupBatch(Vector(first), 1)
+      commit(replay).asInstanceOf[AlreadyCommitted].checkpoint.batchSequence shouldBe 1
+      // Reapplying the older after image would regress this row.
+      f.selectStatus(1) shouldBe Some("new")
+      commit(f.groupBatch(Vector(b, c), 2)) shouldBe a[Committed]
+      f.selectStatus(1) shouldBe Some("new")
+      f.selectStatus(2) shouldBe Some("tail")
+      val conflict = first.copy(after = Some(f.image(1, "corrupt")))
+      val fresh = f.event(CdcOperation.Create, 3, afterStatus = Some("rollback-me"))
+        .copy(source = first.source.copy(position = Some(400)))
+      intercept[IllegalStateException](commit(f.groupBatch(Vector(fresh, conflict), 3))).getMessage should include("conflict")
+      f.selectStatus(3) shouldBe None
+      f.selectStatus(1) shouldBe Some("new")
+      f.ledgerCount shouldBe 0 // Legacy delivery ledger must not become the v2 deduplication authority.
+    }
+
+    "commit or roll back both PK members with their group evidence and count logical members" in withFixture(
+      targetDdl = compatibleTarget.dropRight(1) + ", CHECK (status <> 'invalid'))"
+    ) { f =>
+      f.insertTarget(1, "old")
+      val d = f.event(CdcOperation.Delete, 1, beforeStatus = Some("old"))
+      def pair(status: String): SourceBatch = {
+        val batch = f.groupBatch(Vector(d), 0)
+        val id = batch.rows.head.parseJson.asJsObject.fields("groupId").asInstanceOf[JsString].value
+        val c = f.event(CdcOperation.Create, 2, afterStatus = Some(status))
+        batch.copy(rows = Vector(cn.xuyinyin.magic.workflow.nodes.cdc.MySQLCdcGroup(id,
+          Vector("pk.d" -> d, "pk.c" -> c)).canonicalJson))
+      }
+      def commit(batch: SourceBatch) = Await.result(f.node.commitBatch(f.sinkNode, "workflow-cdc", "execution-cdc",
+        batch, batch.rows, _ => ()), 5.seconds)
+      intercept[IllegalStateException](commit(pair("invalid")))
+      f.selectStatus(1) shouldBe Some("old")
+      f.selectStatus(2) shouldBe None
+      val result = commit(pair("valid")).asInstanceOf[Committed]
+      result.checkpoint.sourceRowsScanned shouldBe 2
+      result.checkpoint.targetRowsWritten shouldBe 2
+      f.selectStatus(1) shouldBe None
+      f.selectStatus(2) shouldBe Some("valid")
+    }
+
     "consume an engine-prepared runtime password through the real sink parser" in {
       val connectionAttempted = new java.util.concurrent.atomic.AtomicBoolean(false)
       val sink = new MySQLCdcApplySinkNode {
@@ -728,6 +777,27 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       )
     }
 
+    def groupBatch(events: Vector[MySQLCdcEnvelope], sequence: Long): SourceBatch = {
+      val protocol = JsObject("version" -> JsNumber(1), "replicationId" -> JsString("orders"),
+        "generation" -> JsString("g1"), "sourceLineage" -> JsString("fixed-server-uuid"))
+      val identity = canonicalJson(JsObject(boundary().upperBound.get.parseJson.asJsObject.fields ++ Map(
+        "version" -> JsNumber(2), "groupProtocol" -> protocol)))
+      val rows = events.map { e =>
+        val physical = JsArray(Vector(protocol, JsString(e.source.database), JsString(e.source.table),
+          JsString(e.source.file.get), JsNumber(e.source.position.get), JsNumber(e.source.row.get)))
+        val id = sha256(canonicalJson(physical))
+        val role = "single." + e.op.code
+        val eventId = sha256(canonicalJson(JsArray(Vector(JsString(id), JsString(role)))))
+        val member = JsObject("eventId" -> JsString(eventId),
+          "role" -> JsString(role), "envelope" -> e.canonicalJson.parseJson)
+        canonicalJson(JsObject("version" -> JsNumber(1), "groupId" -> JsString(id),
+          "members" -> JsArray(Vector(member))))
+      }
+      batch(Vector.empty).copy(batchSequence = sequence,
+        batchId = BatchId.sha256("execution-cdc", "source-cdc", "mysql-cdc:orders-cdc-v1", sequence),
+        cursor = SourceCursor("mysql.binlog.groups.v1", "{\"version\":1}", identity), rows = rows)
+    }
+
     def targetCount: Int = count("target_rows")
     def ledgerCount: Int = count("pekko_sync_batch_ledger")
     def ledgerCount(batchId: String): Int = scalarInt(
@@ -801,6 +871,8 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       val statement = keeper.createStatement()
       try {
         statement.execute(targetDdl)
+        statement.execute("CREATE TABLE pekko_sync_cdc_group_ledger (group_id VARCHAR(64) PRIMARY KEY, " +
+          "evidence CHARACTER LARGE OBJECT NOT NULL, committed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
         statement.execute(
           """CREATE TABLE pekko_sync_batch_ledger (
             | batch_id VARCHAR(64) PRIMARY KEY,

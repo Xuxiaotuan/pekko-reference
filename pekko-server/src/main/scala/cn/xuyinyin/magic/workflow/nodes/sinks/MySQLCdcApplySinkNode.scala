@@ -3,7 +3,7 @@ package cn.xuyinyin.magic.workflow.nodes.sinks
 import cn.xuyinyin.magic.workflow.checkpoint.{AlreadyCommitted, BatchCheckpoint, BatchCommitResult, Committed, SnapshotBoundary, SourceBatch}
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, NodeSink}
-import cn.xuyinyin.magic.workflow.nodes.cdc.{CdcOperation, MySQLCdcEnvelope}
+import cn.xuyinyin.magic.workflow.nodes.cdc.{CdcOperation, MySQLCdcEnvelope, MySQLCdcGroup, MySQLCdcGroupProtocol}
 import org.apache.pekko.Done
 import org.apache.pekko.stream.scaladsl.Sink
 import spray.json._
@@ -70,6 +70,7 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
         connection = openConnection(config)
         val target = resolveTarget(connection, config)
         validateCompatibility(identity, target)
+        if (identity.groupProtocol.nonEmpty) validateGroupLedger(connection, target.name)
         safeLog(onLog, s"MySQL CDC apply source boundary validated database=${identity.database} table=${identity.table}")
         Done
       } catch {
@@ -93,7 +94,11 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
         throw new IllegalStateException("CDC transformed row count does not match source row count")
       }
       val identity = parseBatchIdentity(batch)
-      val envelopes = transformedRows.map(parseEnvelope)
+      val groups = identity.groupProtocol.map { protocol =>
+        require(transformedRows == batch.rows, "CDC group transformations are not supported")
+        transformedRows.map(MySQLCdcGroup.parse(_, protocol))
+      }
+      val envelopes = groups.map(_.flatMap(_.members.map(_._2))).getOrElse(transformedRows.map(parseEnvelope))
       var connection: Connection = null
       try {
         connection = openConnection(config)
@@ -106,12 +111,37 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
           batch.batchSequence,
           batch.batchId,
           batch.cursor,
-          batch.rows.size.toLong,
-          transformedRows.size.toLong
+          envelopes.size.toLong,
+          envelopes.size.toLong
         )
         val expected = LedgerRecord(batch.batchId, workflowId, executionId, checkpoint)
         connection.setAutoCommit(false)
-        val result = findLedger(connection, batch.batchId) match {
+        val result = if (groups.nonEmpty) {
+          validateGroupLedger(connection, target.name)
+          var appliedGroups = 0
+          groups.get.foreach { group =>
+            val evidence = MySQLCdcGroup.canonical(JsObject("identity" -> batch.cursor.upperBound.parseJson,
+              "targetTable" -> JsString(target.name), "group" -> group.canonicalJson.parseJson))
+            val existing = using(connection.prepareStatement(
+              "SELECT evidence FROM pekko_sync_cdc_group_ledger WHERE group_id = ? FOR UPDATE")) { statement =>
+              statement.setString(1, group.groupId)
+              using(statement.executeQuery())(rows => Option.when(rows.next())(rows.getString(1)))
+            }
+            existing match {
+              case Some(value) =>
+                if (value != evidence) throw new IllegalStateException(s"conflicting CDC group evidence: ${group.groupId}")
+              case None =>
+                using(connection.prepareStatement("INSERT INTO pekko_sync_cdc_group_ledger(group_id,evidence) VALUES (?,?)")) { statement =>
+                  statement.setString(1, group.groupId); statement.setString(2, evidence); statement.executeUpdate()
+                }
+                group.members.foreach { case (_, e) => applyEvent(connection, target, plan(e, identity, target)) }
+                appliedGroups += 1
+            }
+          }
+          connection.commit()
+          safeLog(onLog, s"CDC complete groups covered batchId=${batch.batchId} newGroups=$appliedGroups replayedGroups=${groups.get.size - appliedGroups}")
+          if (appliedGroups > 0) Committed(checkpoint) else AlreadyCommitted(checkpoint)
+        } else findLedger(connection, batch.batchId) match {
           case Some(existing) =>
             connection.rollback()
             if (existing == expected) AlreadyCommitted(existing.checkpoint)
@@ -139,7 +169,7 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
                 Committed(checkpoint)
             }
         }
-        safeLog(onLog, s"MySQL CDC batch applied batchId=${batch.batchId} events=${planned.size}")
+        safeLog(onLog, s"MySQL CDC delivery covered batchId=${batch.batchId} events=${planned.size}")
         result
       } catch {
         case error: IllegalStateException =>
@@ -432,6 +462,24 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
     case other => statement.setObject(index, other.value, other.jdbcType)
   }
 
+  private def validateGroupLedger(connection: Connection, targetTable: String): Unit = {
+    require(connection.getMetaData.supportsTransactions(), "CDC group protocol requires transactional storage")
+    if (connection.getMetaData.getDatabaseProductName.equalsIgnoreCase("MySQL")) {
+      Vector(targetTable, "pekko_sync_cdc_group_ledger").foreach { table =>
+        using(connection.prepareStatement("SELECT ENGINE FROM information_schema.tables WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?")) { statement =>
+          statement.setString(1, table)
+          using(statement.executeQuery()) { rows =>
+            if (!rows.next() || !"InnoDB".equalsIgnoreCase(rows.getString(1)))
+              throw new IllegalStateException(s"CDC group protocol requires InnoDB for $table")
+          }
+        }
+      }
+    }
+    using(connection.prepareStatement(
+      "SELECT group_id,evidence,committed_at FROM pekko_sync_cdc_group_ledger WHERE 1 = 0"
+    ))(_.executeQuery().close())
+  }
+
   private def validateLedger(connection: Connection): Unit = using(connection.prepareStatement(
     s"SELECT batch_id, workflow_id, execution_id, source_node_id, partition_id, batch_sequence, " +
       s"cursor_kind, cursor_value, upper_bound, source_rows, target_rows, committed_at FROM $LedgerTable WHERE 1 = 0"
@@ -491,11 +539,14 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
   }
 
   private def parseBatchIdentity(batch: SourceBatch): StreamIdentity = {
-    if (!batch.partitionId.startsWith("mysql-cdc:") || batch.cursor.kind != "mysql.binlog.v1") {
+    if (!batch.partitionId.startsWith("mysql-cdc:") || !Set("mysql.binlog.v1", MySQLCdcGroupProtocol.CursorKind).contains(batch.cursor.kind)) {
       throw new IllegalStateException("CDC batch partition or cursor kind is unsupported")
     }
     if (batch.cursor.upperBound.isEmpty) throw new IllegalStateException("CDC batch stream identity is missing")
     val identity = parseIdentity(batch.cursor.upperBound)
+    if ((batch.cursor.kind == MySQLCdcGroupProtocol.CursorKind) != identity.groupProtocol.nonEmpty) {
+      throw new IllegalStateException("CDC cursor protocol does not match stream identity")
+    }
     if (batch.partitionId != s"mysql-cdc:${identity.connectorId}") {
       throw new IllegalStateException("CDC batch partition does not match connector")
     }
@@ -518,8 +569,10 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
   private def parseIdentity(json: String): StreamIdentity = {
     val fields = try json.parseJson.asJsObject.fields
     catch { case NonFatal(_) => throw new IllegalStateException("CDC stream identity is malformed") }
-    val expected = Set("version", "connectorId", "database", "table", "primaryKey", "columns", "schemaFingerprint")
-    if (fields.keySet != expected || fields.get("version") != Some(JsNumber(1))) {
+    val grouped = fields.get("version").contains(JsNumber(2))
+    val expected = Set("version", "connectorId", "database", "table", "primaryKey", "columns", "schemaFingerprint") ++
+      (if (grouped) Set("groupProtocol") else Set.empty[String])
+    if (fields.keySet != expected || (!grouped && fields.get("version") != Some(JsNumber(1)))) {
       throw new IllegalStateException("CDC stream identity version or fields are invalid")
     }
     def required(name: String): String = fields.get(name) match {
@@ -566,7 +619,8 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
       requireIdentifier(required("table"), "source table"),
       primaryKey,
       columns,
-      fingerprint
+      fingerprint,
+      if (grouped) Some(MySQLCdcGroupProtocol.parse(fields("groupProtocol"))) else None
     )
   }
 
@@ -685,7 +739,8 @@ object MySQLCdcApplySinkNode {
     table: String,
     primaryKey: String,
     columns: Vector[SourceColumn],
-    schemaFingerprint: String
+    schemaFingerprint: String,
+    groupProtocol: Option[MySQLCdcGroupProtocol]
   )
 
   private final case class TargetColumn(

@@ -2,6 +2,7 @@ package cn.xuyinyin.magic.workflow.nodes.sources
 
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import cn.xuyinyin.magic.workflow.nodes.JdbcPasswordResolver
+import cn.xuyinyin.magic.workflow.nodes.cdc.MySQLCdcGroupProtocol
 import spray.json._
 
 final case class MySQLCdcSourceConfig(
@@ -14,7 +15,8 @@ final case class MySQLCdcSourceConfig(
   password: String,
   serverId: Long,
   maxBatchSize: Int,
-  pollIntervalMillis: Int
+  pollIntervalMillis: Int,
+  groupProtocol: Option[MySQLCdcGroupProtocol] = None
 )
 
 object MySQLCdcSourceConfig {
@@ -52,7 +54,15 @@ object MySQLCdcSourceConfig {
       password = password,
       serverId = serverId(fields),
       maxBatchSize = requiredPositiveInt(fields, "maxBatchSize"),
-      pollIntervalMillis = requiredPositiveInt(fields, "pollIntervalMillis")
+      pollIntervalMillis = requiredPositiveInt(fields, "pollIntervalMillis"),
+      groupProtocol = fields.get("groupProtocol").map { value =>
+        val f = value.asJsObject.fields
+        require(f.get("initializedTarget").contains(JsBoolean(true)),
+          "CDC group protocol requires initializedTarget=true and a trusted streaming baseline")
+        require(f.keySet == Set("replicationId", "generation", "sourceLineage", "initializedTarget"),
+          "invalid CDC group protocol configuration fields")
+        MySQLCdcGroupProtocol.parse(JsObject((f - "initializedTarget") + ("version" -> JsNumber(1))))
+      }
     )
 
   private def requiredString(fields: Map[String, JsValue], key: String): String =
