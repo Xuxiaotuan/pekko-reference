@@ -100,6 +100,16 @@ class EnhancedWorkflowRoutes(
 
   private def workflowSummaryJson(summary: EventSourcedWorkflowActor.WorkflowSummary): JsObject = JsObject(
     "workflowId" -> JsString(summary.workflowId), "revision" -> JsNumber(summary.revision), "status" -> JsString(summary.status.value),
+    "currentExecution" -> summary.currentExecution.map(e => JsObject(
+      "executionId" -> JsString(e.executionId),
+      "recovery" -> e.recovery.map(r => JsObject(
+        "phase" -> JsString(r.phase), "attemptsStarted" -> JsNumber(r.attemptsStarted),
+        "nextAttempt" -> JsNumber(r.nextAttempt), "notBefore" -> JsNumber(r.notBefore),
+        "reasonCode" -> JsString(r.reasonCode), "stage" -> JsString(r.stage),
+        "primaryFailureCode" -> r.failure.map(f => JsString(f.code)).getOrElse(JsNull),
+        "batchId" -> r.failure.flatMap(_.batchId).map(JsString(_)).getOrElse(JsNull)
+      )).getOrElse(JsNull)
+    )).getOrElse(JsNull),
     "recentExecutions" -> JsArray(summary.recentExecutions.map(execution => JsObject("executionId" -> JsString(execution.executionId), "status" -> JsString(execution.status))))
   )
 }

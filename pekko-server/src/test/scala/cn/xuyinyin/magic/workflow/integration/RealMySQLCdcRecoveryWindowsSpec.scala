@@ -10,7 +10,8 @@ import java.nio.file.{Files, Path}
 import java.util.UUID
 import scala.concurrent.duration._
 
-/** Disposable MySQL only. Raw records/ACKs, target ledger/audit, real serialized Actor Journal,
+/** Seven historical windows; original C2 failure evidence stays immutable in docs/experiments.
+  * Disposable MySQL only. Raw records/ACKs, target ledger/audit, real serialized Actor Journal,
   * durable D and independent six-field table comparisons are retained per scenario.
   */
 class RealMySQLCdcRecoveryWindowsSpec extends AnyWordSpec with Matchers {
@@ -19,7 +20,7 @@ class RealMySQLCdcRecoveryWindowsSpec extends AnyWordSpec with Matchers {
   "the remaining real complete-group recovery windows" should {
     for ((scenario, originalSize, recoveredSize) <- Vector(
       ("N0",16,16), ("J1",16,1), ("J2",1,128), ("C1",16,1),
-      ("C2",16,1), ("C0",16,1), ("K1",1,1), ("K2",1,128))) {
+      ("C0",16,1), ("K1",1,1), ("K2",1,128))) {
       s"retain independent T/J/D and all fields for $scenario" taggedAs ExternalIntegration in {
         if (!sys.env.get("RUN_MYSQL_CDC_RECOVERY_WINDOWS").contains("1"))
           cancel("external_blocked: isolated loopback MySQL required")
@@ -130,7 +131,7 @@ class RealMySQLCdcRecoveryWindowsSpec extends AnyWordSpec with Matchers {
           val oldRaw = original.events.filter(_.fields("kind") == JsString("RAW_ACK_RETURNED"))
           val cutAudit = atCut.fields("audit").asInstanceOf[JsArray].elements
           val baseAudit = baseline.fields("audit").asInstanceOf[JsArray].elements
-          if (Set("C0","C1","C2").contains(scenario)) jAtCut shouldBe jBefore
+          if (Set("C0","C1").contains(scenario)) jAtCut shouldBe jBefore
           if (Set("J1","J2","K1","K2").contains(scenario)) jAtCut.fields("sequence").convertTo[Long] should be > jBefore.fields("sequence").convertTo[Long]
           if (scenario == "C0") { atCut.fields("T") shouldBe baseline.fields("T"); cutAudit shouldBe baseAudit }
           else atCut.fields("T").asInstanceOf[JsArray].elements.size should be > baseline.fields("T").asInstanceOf[JsArray].elements.size
@@ -149,12 +150,6 @@ class RealMySQLCdcRecoveryWindowsSpec extends AnyWordSpec with Matchers {
           }
           if (scenario == "J1") original.events.filter(_.fields("kind") == JsString("ACK_RETURNED"))
             .exists(_.fields("batchId") == cut.fields("batch").asJsObject.fields("batchId")) shouldBe false
-          if (scenario == "C2") {
-            original.send("DROP_RESPONSE")
-            original.awaitEvent("SINK_FAILED")
-            awaitCondition("real COMMIT exception reaches durable Actor failure") { original.state().fields("status") == JsString("failed") }
-            write(dir,"failure-settled.json",groupEvidence(original))
-          }
           original.send("CRASH"); original.exit() shouldBe 86
           if (offsetBlocker != null) {
             // Do not release the lock while an old asynchronous JDBC offset writer could still commit.
@@ -168,48 +163,29 @@ class RealMySQLCdcRecoveryWindowsSpec extends AnyWordSpec with Matchers {
           recovered = start("recover",recoveredSize,"none","recovered.log")
           recovered.awaitEvent("PROCESS_READY")
           var firstReplay: JsValue = JsNull
-          if (scenario == "C2") {
-            val state = recovered.state()
-            state.fields("status") shouldBe JsString("failed")
-            state.fields("executionId") shouldBe JsNull
-            state.fields("journal").asInstanceOf[JsArray].elements.exists(_.asJsObject.fields("eventType") == JsString("ExecutionFailed")) shouldBe true
-            write(dir,"after-restart.json",groupEvidence(recovered))
-            withConnection(settings,schema)(executeSql(_,"UPDATE source_rows SET revision=revision+1,note='followup-after-failure-🙂' WHERE id=150"))
-            val result = groupEvidence(recovered)
-            result.fields("comparison").asJsObject.fields("equal") shouldBe JsBoolean(false)
-            result.fields("T") shouldBe atCut.fields("T")
-            result.fields("audit") shouldBe atCut.fields("audit")
-            result.fields("D") shouldBe atCut.fields("D")
-            recovered.events.exists(_.fields("kind") == JsString("READER_RESUME")) shouldBe false
-            write(dir,"final.json",result)
-            write(dir,"outcome.json",JsObject("scenario" -> JsString(scenario),"injectionEstablished" -> JsBoolean(true),
-              "dataSafety" -> JsString("committed cut retained; D unchanged"),"automaticRecovery" -> JsString("FAIL_TERMINAL"),
-              "fullFieldConvergence" -> JsBoolean(false),"expectedFailureObserved" -> JsBoolean(true)))
-          } else {
-            recovered.awaitEvent("READER_RESUME").fields("checkpoint") shouldBe jAtCut
-            firstReplay = recovered.awaitEvent("SOURCE_BATCH").fields("batch")
-            firstReplay.asJsObject.fields("sequence").convertTo[Long] shouldBe jAtCut.fields("sequence").convertTo[Long]+1
-            awaitCondition("all fields and durable D converge",180.seconds) {
-              comparison(settings,schema).fields("equal") == JsBoolean(true) && offsetMatches(recovered.state())
-            }
-            val afterReplay = groupEvidence(recovered); write(dir,"after-replay.json",afterReplay)
-            val audit = afterReplay.fields("audit").asInstanceOf[JsArray].elements
-            audit.take(cutAudit.size) shouldBe cutAudit
-            // Independently derive the total DML count from the workload SQL, not Source/Sink counters.
-            audit.size shouldBe (if (pkOnly) 71 else 139)
-            if (Set("K1","K2").contains(scenario)) {
-              val added = audit.drop(cutAudit.size)
-              added.exists(_.asJsObject.fields("row_id") == JsString("150")) shouldBe false
-            }
-            withConnection(settings,schema)(executeSql(_,"UPDATE source_rows SET revision=revision+1,note='recovery-followup-🙂' WHERE id=150"))
-            awaitCondition("fresh data after recovery") { comparison(settings,schema).fields("equal") == JsBoolean(true) && offsetMatches(recovered.state()) }
-            val result = groupEvidence(recovered)
-            result.fields("comparison").asJsObject.fields("sourceCount") shouldBe JsNumber(64)
-            result.fields("audit").asInstanceOf[JsArray].elements.size shouldBe (if (pkOnly) 72 else 140)
-            write(dir,"final.json",result)
-            write(dir,"outcome.json",JsObject("scenario" -> JsString(scenario),"injectionEstablished" -> JsBoolean(scenario != "N0"),
-              "automaticRecovery" -> JsString("PASS"),"fullFieldConvergence" -> JsBoolean(true)))
+          recovered.awaitEvent("READER_RESUME").fields("checkpoint") shouldBe jAtCut
+          firstReplay = recovered.awaitEvent("SOURCE_BATCH").fields("batch")
+          firstReplay.asJsObject.fields("sequence").convertTo[Long] shouldBe jAtCut.fields("sequence").convertTo[Long]+1
+          awaitCondition("all fields and durable D converge",180.seconds) {
+            comparison(settings,schema).fields("equal") == JsBoolean(true) && offsetMatches(recovered.state())
           }
+          val afterReplay = groupEvidence(recovered); write(dir,"after-replay.json",afterReplay)
+          val audit = afterReplay.fields("audit").asInstanceOf[JsArray].elements
+          audit.take(cutAudit.size) shouldBe cutAudit
+          // Independently derive the total DML count from the workload SQL, not Source/Sink counters.
+          audit.size shouldBe (if (pkOnly) 71 else 139)
+          if (Set("K1","K2").contains(scenario)) {
+            val added = audit.drop(cutAudit.size)
+            added.exists(_.asJsObject.fields("row_id") == JsString("150")) shouldBe false
+          }
+          withConnection(settings,schema)(executeSql(_,"UPDATE source_rows SET revision=revision+1,note='recovery-followup-🙂' WHERE id=150"))
+          awaitCondition("fresh data after recovery") { comparison(settings,schema).fields("equal") == JsBoolean(true) && offsetMatches(recovered.state()) }
+          val result = groupEvidence(recovered)
+          result.fields("comparison").asJsObject.fields("sourceCount") shouldBe JsNumber(64)
+          result.fields("audit").asInstanceOf[JsArray].elements.size shouldBe (if (pkOnly) 72 else 140)
+          write(dir,"final.json",result)
+          write(dir,"outcome.json",JsObject("scenario" -> JsString(scenario),"injectionEstablished" -> JsBoolean(scenario != "N0"),
+            "automaticRecovery" -> JsString("PASS"),"fullFieldConvergence" -> JsBoolean(true)))
           write(dir,"replay.json",JsObject("firstReplayBatch" -> firstReplay,"checkpointBefore" -> jBefore,
             "checkpointAtCut" -> jAtCut,"originalPid" -> JsNumber(original.pid),"recoveredPid" -> JsNumber(recovered.pid)))
           println(s"CDC_RECOVERY_WINDOW_OBSERVED scenario=$scenario evidence=$dir")

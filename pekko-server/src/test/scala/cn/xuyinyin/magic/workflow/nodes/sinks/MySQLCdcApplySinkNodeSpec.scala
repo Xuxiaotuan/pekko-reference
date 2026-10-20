@@ -84,6 +84,24 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
   }
 
   "MySQLCdcApplySinkNode" should {
+    "classify a lost commit response while preserving the actual committed group" in withFixture() { f =>
+      val batch=f.groupBatch(Vector(f.event(CdcOperation.Create,1,afterStatus=Some("committed"))),0)
+      f.loseCommitReply=true
+      val failure=intercept[cn.xuyinyin.magic.workflow.engine.CdcExecutionException] {
+        Await.result(f.node.commitBatch(f.sinkNode,"w","e",batch,batch.rows,_=>()),5.seconds)
+      }
+      failure.failure.code shouldBe cn.xuyinyin.magic.workflow.engine.ExecutionFailure.CommitUnknown
+      f.selectStatus(1) shouldBe Some("committed")
+      Await.result(f.node.commitBatch(f.sinkNode,"w","e",batch,batch.rows,_=>()),5.seconds) shouldBe a[AlreadyCommitted]
+    }
+    "reject a group ledger without its unique primary key before applying data" in withFixture() { f =>
+      f.dropGroupPrimaryKey()
+      val batch=f.groupBatch(Vector(f.event(CdcOperation.Create,1,afterStatus=Some("blocked"))),0)
+      intercept[IllegalStateException] {
+        Await.result(f.node.commitBatch(f.sinkNode,"w","e",batch,batch.rows,_=>()),5.seconds)
+      }.getMessage should include("group_id")
+      f.selectStatus(1) shouldBe None
+    }
     "reuse transaction-scoped statements without reordering group effects" in withFixture() { f =>
       val events = (1L to 64L).map { id =>
         val event = f.event(CdcOperation.Create, id, afterStatus = Some(s"row-$id"))
@@ -717,6 +735,10 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       username = "sa"
     )
     val preparedStatements = new ConcurrentLinkedQueue[(String, PreparedStatement)]()
+    @volatile var loseCommitReply = false
+    def dropGroupPrimaryKey(): Unit = {
+      val s=keeper.createStatement();try s.execute("ALTER TABLE pekko_sync_cdc_group_ledger DROP PRIMARY KEY") finally s.close()
+    }
     val node: MySQLCdcApplySinkNode = new MySQLCdcApplySinkNode {
       override protected[sinks] def getenv(name: String): Option[String] =
         Option.when(name == "TARGET_PASSWORD")("runtime-secret")
@@ -727,6 +749,10 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
           override def invoke(proxy: Any, method: Method, args: Array[AnyRef]): AnyRef = {
             val result = try method.invoke(actual, Option(args).getOrElse(Array.empty[AnyRef]): _*)
             catch { case e: InvocationTargetException => throw e.getCause }
+            if (method.getName == "commit" && loseCommitReply) {
+              loseCommitReply=false
+              throw new java.sql.SQLRecoverableException("lost commit response","08S01")
+            }
             if (method.getName == "prepareStatement") preparedStatements.add(args(0).toString -> result.asInstanceOf[PreparedStatement])
             result
           }

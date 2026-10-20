@@ -18,7 +18,7 @@ class SourceResourceLifecycleSpec extends STSpec {
   private val testRegistry = new TestNodeRegistry
 
   private implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](Behaviors.empty[Nothing], "source-lifecycle",
-    ConfigFactory.parseString("pekko.actor.provider=local").withFallback(ConfigFactory.load("application-test")))
+    ConfigFactory.parseString("pekko.actor.provider=local\npekko.workflow.session-control-wait-timeout=200ms").withFallback(ConfigFactory.load("application-test")))
   private implicit val ec: ExecutionContext = system.executionContext
   override def afterAll(): Unit = { system.terminate(); Await.result(system.whenTerminated, 10.seconds); super.afterAll() }
 
@@ -57,8 +57,12 @@ class SourceResourceLifecycleSpec extends STSpec {
         val cancellation = engine.cancel(context.executionId)
         Await.result(closeStarted.future, 3.seconds)
         intercept[java.util.concurrent.TimeoutException] { Await.ready(cancellation, 300.millis) }
+        val failure=Await.result(running.failed,3.seconds).asInstanceOf[CdcExecutionException]
+        failure.failure.releaseConfirmed shouldBe false
+        engine.activeReliableExecutionCount shouldBe 1
         closeFinished.success(Done)
         Await.result(cancellation, 3.seconds) shouldBe Done
+        engine.activeReliableExecutionCount shouldBe 0
       } finally {
         closeFinished.trySuccess(Done)
         testRegistry.unregisterSource(source.nodeType, source); testRegistry.unregisterSink(sink.nodeType, sink)

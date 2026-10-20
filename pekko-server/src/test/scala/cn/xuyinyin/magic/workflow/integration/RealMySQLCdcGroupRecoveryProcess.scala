@@ -1,23 +1,22 @@
 package cn.xuyinyin.magic.workflow.integration
 
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
-import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchCommitResult, SnapshotBoundary, SourceBatch}
-import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
+import cn.xuyinyin.magic.workflow.checkpoint.{BatchId, BatchCheckpoint, BatchCommitResult, SnapshotBoundary, SourceBatch}
+import cn.xuyinyin.magic.workflow.engine.{WorkflowExecutionEngine, ReliableRunContext, ExecutionResult}
 import cn.xuyinyin.magic.workflow.TestNodeRegistry
-import cn.xuyinyin.magic.workflow.events.WorkflowEvents.ExecutionCheckpointAdvanced
+import cn.xuyinyin.magic.workflow.events.WorkflowEvents._
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
 import cn.xuyinyin.magic.workflow.nodes.sinks.{MySQLCdcApplySinkNode, MySQLCdcApplyConfig}
 import cn.xuyinyin.magic.workflow.nodes.sources.{DebeziumEngineAccess, DebeziumEngineFactory, MySQLCdcSourceNode, MySQLCdcStateConfig}
 import com.typesafe.config.ConfigFactory
-import org.apache.pekko.{Done, NotUsed}
+import org.apache.pekko.Done
 import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import org.apache.pekko.actor.typed.scaladsl.adapter._
 import org.apache.pekko.serialization.SerializationExtension
-import org.apache.pekko.stream.scaladsl.Source
 import spray.json._
 
 import java.util.Properties
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicReference}
 import java.util.concurrent.CountDownLatch
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
@@ -42,11 +41,23 @@ object RealMySQLCdcGroupRecoveryProcess {
     val settings = Settings.environment()
     val workflowId = s"workflow-$connector-${if (mode == "bootstrap") "bootstrap" else "groups"}"
     val armed = new AtomicBoolean(false)
+    val readers = new AtomicInteger(0)
+    val launches = new AtomicInteger(0)
+    val repeated = new AtomicInteger(0)
+    val closeGate = new CountDownLatch(1)
+    val closeHeld = new AtomicBoolean(false)
+    val oldContext = new AtomicReference[ReliableRunContext]()
+    val lateProgress = new AtomicReference[BatchCheckpoint]()
+    val journalHeld = new AtomicBoolean(false)
+    val journalReply = Promise[Done]()
+    val rejectionGate = Promise[Done]()
+    val rejectionArmed = new AtomicBoolean(false)
+    val rejectionUsed = new AtomicBoolean(false)
     val cancelCommitGate = Promise[BatchCommitResult]()
     val cancelCommitResult = new java.util.concurrent.atomic.AtomicReference[BatchCommitResult]()
     var observedExecutionId = ""
     val rawGate = new CountDownLatch(1)
-    val proxy = if (mode == "fresh" && Set("C0", "C1", "C2").contains(fault))
+    val proxy = if (mode == "fresh" && (Set("C0", "C1", "C2", "LATE_COMMIT", "LATE_ROLLBACK").contains(fault) || fault.startsWith("AUTO") || fault.startsWith("R")))
       Some(new MySQLCommitResponseProxy(settings.host, settings.port, (kind, fields) => emit(kind, fields.fields.toSeq: _*))) else None
     val config = ConfigFactory.parseMap(Map[String, AnyRef](
       "pekko-persistence-jdbc.shared-databases.slick.profile" -> "slick.jdbc.MySQLProfile$",
@@ -56,6 +67,8 @@ object RealMySQLCdcGroupRecoveryProcess {
       "pekko-persistence-jdbc.shared-databases.slick.db.password" -> settings.password,
       // Keep the entire journal available for independent event deserialization.
       "pekko.workflow.event-sourcing.snapshot-every" -> Int.box(100000),
+      "pekko.workflow.cdc-recovery.initial-backoff" -> (if (fault == "R1") "10s" else "200ms"),
+      "pekko.workflow.session-control-wait-timeout" -> (if (fault == "R5") "2s" else "10s"),
       "pekko.loglevel" -> "WARN",
       "pekko.stdout-loglevel" -> "WARN"
     ).asJava).withFallback(ConfigFactory.load("application-test"))
@@ -65,9 +78,11 @@ object RealMySQLCdcGroupRecoveryProcess {
     val observedFactory = new DebeziumEngineFactory {
       override def create(properties: Properties): DebeziumEngineAccess = {
         // Real Debezium performs the split; no records, offsets or acknowledgements are fabricated.
-        properties.setProperty("max.batch.size", batchSize)
+        val reader = readers.incrementAndGet()
+        val sizes = batchSize.split(":")
+        properties.setProperty("max.batch.size", sizes(if (reader == 1) 0 else sizes.length - 1))
         if (Set("J2", "K2").contains(fault)) properties.setProperty("offset.flush.timeout.ms", "2000")
-        emit("ENGINE_CONFIG", "mode" -> JsString(mode),
+        emit("ENGINE_CONFIG", "reader" -> JsNumber(reader), "mode" -> JsString(mode),
           "maxBatchSize" -> JsString(properties.getProperty("max.batch.size")))
         val delegate = DebeziumEngineFactory.real.create(properties)
         new DebeziumEngineAccess {
@@ -77,13 +92,13 @@ object RealMySQLCdcGroupRecoveryProcess {
               override def handleBatch(records: Vector[org.apache.kafka.connect.source.SourceRecord],
                 handle: cn.xuyinyin.magic.workflow.nodes.sources.CdcBatchCommitHandle): Unit = {
                 val id = callback; callback += 1
-                emit("RAW_CALLBACK", "callback" -> JsNumber(id), "records" -> JsArray(records.map(r =>
+                emit("RAW_CALLBACK", "reader" -> JsNumber(reader), "callback" -> JsNumber(id), "records" -> JsArray(records.map(r =>
                   cn.xuyinyin.magic.workflow.nodes.sources.RealMySQLSourceRecordIdentityProbe.encode(r, connector))))
                 consumer.handleBatch(records, new cn.xuyinyin.magic.workflow.nodes.sources.CdcBatchCommitHandle {
                   override def markProcessedAndFinished(): Unit = {
-                    emit("RAW_ACK_BEGIN", "callback" -> JsNumber(id))
+                    emit("RAW_ACK_BEGIN", "reader" -> JsNumber(reader), "callback" -> JsNumber(id))
                     handle.markProcessedAndFinished()
-                    emit("RAW_ACK_RETURNED", "callback" -> JsNumber(id))
+                    emit("RAW_ACK_RETURNED", "reader" -> JsNumber(reader), "callback" -> JsNumber(id))
                     val pkDelete = records.exists(_.headers().lastWithName("__debezium.newkey") != null)
                     if ((fault == "J2" || (Set("K1", "K2").contains(fault) && pkDelete)) && armed.compareAndSet(true, false)) {
                       emit("CUTPOINT", "callback" -> JsNumber(id), "fault" -> JsString(fault))
@@ -91,10 +106,15 @@ object RealMySQLCdcGroupRecoveryProcess {
                     }
                   }
                 })
-                emit("RAW_CALLBACK_RETURNED", "callback" -> JsNumber(id))
+                emit("RAW_CALLBACK_RETURNED", "reader" -> JsNumber(reader), "callback" -> JsNumber(id))
               }
             })
-          override def close(): Unit = { delegate.close(); emit("ENGINE_CLOSED") }
+          override def close(): Unit = {
+            if (fault == "R5" && closeHeld.compareAndSet(true, false)) {
+              emit("ENGINE_CLOSE_HELD", "reader" -> JsNumber(reader)); closeGate.await()
+            }
+            delegate.close(); emit("ENGINE_CLOSED", "reader" -> JsNumber(reader))
+          }
         }
       }
     }
@@ -108,7 +128,7 @@ object RealMySQLCdcGroupRecoveryProcess {
           "checkpoint" -> resumeFrom.map(checkpointJson).getOrElse(JsNull))
         val session = super.openBatches(node, executionId, boundary, resumeFrom, onLog, closeEc)
         session.copy(source = session.source.map { batch =>
-          emit("SOURCE_BATCH", "batch" -> batchJson(batch))
+          emit("SOURCE_BATCH", "reader" -> JsNumber(readers.get()), "batch" -> batchJson(batch))
           batch
         })
       }
@@ -132,7 +152,14 @@ object RealMySQLCdcGroupRecoveryProcess {
         transformedRows: Vector[String], onLog: String => Unit)
         (implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = {
         emit("SINK_ATTEMPT", "batch" -> batchJson(batch))
-        if (proxy.nonEmpty && armed.compareAndSet(true, false)) proxy.get.arm(fault, batchJson(batch))
+        val inject = proxy.nonEmpty && (armed.compareAndSet(true, false) ||
+          (fault == "R3" && repeated.getAndUpdate(v => math.max(0,v-1)) > 0))
+        if (inject) {
+          if (fault == "R3" && repeated.get() == 0) repeated.set(if (launches.get() == 1) 3 else 0)
+          if (fault == "R5") closeHeld.set(true)
+          val proxyMode = if (fault == "AUTO-B") "C0" else if (Set("C0","C1","C2").contains(fault)) fault else if (fault.startsWith("LATE_")) fault else "C2"
+          proxy.get.arm(proxyMode, batchJson(batch))
+        }
         super.commitBatch(node, workflowId, executionId, batch, transformedRows, onLog)
           .andThen {
             case Success(result) => emit("SINK_COMMITTED", "batch" -> batchJson(batch),
@@ -153,7 +180,51 @@ object RealMySQLCdcGroupRecoveryProcess {
           }
       }
     })
-    lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)(kit.system, ec)
+    lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)(kit.system, ec) {
+      override def execute(w: Workflow, c: ReliableRunContext, log: String => Unit): Future[ExecutionResult] = {
+        observedExecutionId = c.executionId
+        val launch = launches.incrementAndGet()
+        emit("ATTEMPT_ENGINE_ENTRY", "launch" -> JsNumber(launch), "executionId" -> JsString(c.executionId))
+        if (fault == "R2" && launch == 2) {
+          emit("ATTEMPT_LAUNCH_HELD", "launch" -> JsNumber(launch))
+          return Promise[ExecutionResult]().future
+        }
+        if (launch == 1) oldContext.set(c)
+        else if (fault == "R4" && lateProgress.get() != null) {
+          oldContext.get().checkpointCommitted(lateProgress.get()).onComplete {
+            case Failure(_) => emit("STALE_PROGRESS_REJECTED")
+            case Success(_) => emit("STALE_PROGRESS_ACCEPTED")
+          }(ec)
+        }
+        val context = c.copy(checkpointCommitted = cp => {
+          val reject = rejectionArmed.get() && (fault != "REJECT-J-RETRY" || launch > 1) && rejectionUsed.compareAndSet(false,true)
+          if (reject) {
+            // The real Actor validates this request; no reply/J result is fabricated.
+            val sequence=cp.batchSequence+1
+            val proposed=cp.copy(batchSequence=sequence,
+              batchId=BatchId.sha256(c.executionId,cp.sourceNodeId,cp.partitionId,sequence))
+            emit("J_REJECTION_READY", "checkpoint"->checkpointJson(cp), "proposed"->checkpointJson(proposed), "launch"->JsNumber(launch))
+            rejectionGate.future.flatMap(_=>c.checkpointCommitted(proposed))(ec).andThen {
+              case Failure(error) =>
+                val failure=cn.xuyinyin.magic.workflow.engine.ExecutionFailure.from(error,"journal")
+                emit("J_EXPLICIT_REJECTION", "code"->JsString(failure.code), "stage"->JsString(failure.stage),
+                  "proposed"->checkpointJson(proposed))
+              case Success(_) => emit("J_UNEXPECTED_ACCEPTANCE")
+            }(ec)
+          } else {
+          c.checkpointCommitted(cp).flatMap { done =>
+            emit("JOURNAL_CONFIRMED", "launch" -> JsNumber(launch), "checkpoint" -> checkpointJson(cp))
+            if (fault == "R4" && journalHeld.compareAndSet(true, false)) {
+              lateProgress.set(cp)
+              emit("J_REPLY_HELD", "checkpoint" -> checkpointJson(cp))
+              journalReply.future
+            } else Future.successful(done)
+          }(ec)
+          }
+        })
+        super.execute(w,context,log)
+      }
+    }
     val actor = kit.spawn(EventSourcedWorkflowActor(workflowId, engine)(ec), "workflow")
     if (mode != "recover") {
       val replies = kit.createTestProbe[EventSourcedWorkflowActor.Reply]()
@@ -177,8 +248,15 @@ object RealMySQLCdcGroupRecoveryProcess {
         case "RELEASE_T" =>
           require(cancelCommitResult.get() != null, "no committed batch at cancellation gate")
           cancelCommitGate.trySuccess(cancelCommitResult.get()); emit("T_RELEASED")
-        case "ARM" => armed.set(true); emit("ARMED")
+        case "ARM" =>
+          if (fault.startsWith("REJECT-J")) rejectionArmed.set(true)
+          if (fault == "R4") journalHeld.set(true) else if (fault != "REJECT-J") armed.set(true)
+          emit("ARMED")
         case "DROP_RESPONSE" => proxy.get.dropHeldResponse()
+        case "REJECT_J" => rejectionGate.trySuccess(Done)
+        case "DROP_J" => journalReply.tryFailure(new java.util.concurrent.TimeoutException("test lost durable checkpoint reply"))
+        case "RESOLVE_TX" => proxy.get.resolveHeldTransaction(); emit("TX_RESOLVE_REQUESTED")
+        case "RELEASE_CLOSE" => closeGate.countDown(); emit("CLOSE_RELEASED")
         case "CRASH" => System.out.flush(); Runtime.getRuntime.halt(86)
         case "STATE" =>
           val reply = kit.createTestProbe[EventSourcedWorkflowActor.WorkflowSummary]()
@@ -203,6 +281,12 @@ object RealMySQLCdcGroupRecoveryProcess {
                 "eventSerializerId" -> JsNumber(rows.getInt("event_ser_id")),
                 "eventSerializerManifest" -> JsString(rows.getString("event_ser_manifest")),
                 "eventPayloadBase64" -> JsString(java.util.Base64.getEncoder.encodeToString(rows.getBytes("event_payload"))),
+                "recovery" -> (event match {
+                  case v: ExecutionRecoveryScheduled => JsObject("nextAttempt" -> JsNumber(v.nextAttempt), "notBefore" -> JsNumber(v.notBefore), "reasonCode" -> JsString(v.reasonCode))
+                  case v: ExecutionRecoveryAttemptStarted => JsObject("attempt" -> JsNumber(v.attempt))
+                  case v: ExecutionRecoveryBlocked => JsObject("reasonCode" -> JsString(v.reasonCode))
+                  case _ => JsNull
+                }),
                 "checkpoint" -> (event match {
                   case value: ExecutionCheckpointAdvanced => checkpointJson(value.checkpoint)
                   case _ => JsNull
@@ -212,11 +296,19 @@ object RealMySQLCdcGroupRecoveryProcess {
           }
           emit("STATE", "status" -> JsString(summary.status.value),
             "executionId" -> current.map(v => JsString(v.executionId)).getOrElse(JsNull),
+            "workflowRevision" -> current.map(v => JsNumber(v.workflowRevision)).getOrElse(JsNull),
+            "boundary" -> current.flatMap(_.boundary).map(b => JsObject("sourceNodeId"->JsString(b.sourceNodeId),
+              "partitionId"->JsString(b.partitionId),"upperBound"->b.upperBound.map(JsString(_)).getOrElse(JsNull))).getOrElse(JsNull),
+            "recovery" -> current.flatMap(_.recovery).map(r => JsObject(
+              "attemptsStarted" -> JsNumber(r.attemptsStarted), "nextAttempt" -> JsNumber(r.nextAttempt),
+              "phase" -> JsString(r.phase), "notBefore" -> JsNumber(r.notBefore), "reasonCode" -> JsString(r.reasonCode),
+              "failureCode" -> r.failure.map(f => JsString(f.code)).getOrElse(JsNull),
+              "batchId" -> r.failure.flatMap(_.batchId).map(JsString(_)).getOrElse(JsNull))).getOrElse(JsNull),
             "actorCheckpoints" -> JsArray(current.toVector.flatMap(_.checkpoints).map(checkpointJson)),
             "journal" -> journal)
         case other => throw new IllegalArgumentException(s"unsupported command: $other")
       }
-    } finally { rawGate.countDown(); proxy.foreach(_.close()); kit.shutdownTestKit() }
+    } finally { closeGate.countDown(); rawGate.countDown(); proxy.foreach(_.close()); kit.shutdownTestKit() }
   }
 
   private def workflow(settings: Settings, schema: String, connector: String, workflowId: String, mode: String, lineage: String): Workflow = {

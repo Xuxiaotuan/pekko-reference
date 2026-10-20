@@ -14,5 +14,6 @@ final case class ExecutionResult(
   message: String,
   rowsProcessed: Option[Int],
   duration: Option[Long] = None,
-  nodeResults: Vector[NodeExecutionResult] = Vector.empty
+  nodeResults: Vector[NodeExecutionResult] = Vector.empty,
+  failure: Option[ExecutionFailure] = None
 )

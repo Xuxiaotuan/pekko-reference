@@ -54,6 +54,68 @@ class WorkflowExecutionEngineSpec extends STSpec {
   }
 
   "WorkflowExecutionEngine" should {
+    for ((kind, stage) <- Vector("typed-journal" -> "journal", "timeout-journal" -> "journal",
+      "untyped-journal" -> "journal", "typed-ack" -> "ack")) {
+      s"preserve explicit progress rejection but keep uncertain outcomes retryable for $kind" in {
+        register(ReliableSource)
+        testRegistry.registerSink(ReliableSink)
+        val id=s"progress-$kind"
+        val b=batch(id,0L,"9",Vector("one"))
+        ReliableSource.batches=Vector(b)
+        val descriptor=ExecutionFailure(ExecutionFailure.ProtocolConflict,stage,Some(b.batchId))
+        val error:Throwable=kind match {
+          case "timeout-journal" => new java.util.concurrent.TimeoutException("checkpoint rejected: reply was not received")
+          case "untyped-journal" => new IllegalStateException("checkpoint rejected")
+          case _ => new CdcExecutionException(descriptor,new IllegalStateException("explicit refusal"))
+        }
+        val acknowledged=new AtomicBoolean(false)
+        ReliableSource.onAcknowledge=_ => {
+          acknowledged.set(true)
+          if(stage=="ack")Future.failed(error) else Future.successful(Done)
+        }
+        val context=ReliableRunContext(id,1L,Some(SnapshotBoundary("source-1","pk-range-0",Some("9"))),Vector.empty,
+          _=>Future.successful(Done),_=>if(stage=="journal")Future.failed(error) else Future.successful(Done))
+        val result=Await.result(new WorkflowExecutionEngine(nodeRegistry=testRegistry.snapshot).execute(reliableWorkflow(),context,_=>()),5.seconds)
+        result.success shouldBe false
+        ReliableSink.commits.size shouldBe 1
+        acknowledged.get() shouldBe (stage=="ack")
+        result.failure.get shouldBe (if(kind.startsWith("typed"))descriptor else ExecutionFailure(ExecutionFailure.ProgressUnknown,stage,Some(b.batchId)))
+      }
+    }
+    "strip presentation fields at actual row connector invocation while preserving configuration and results" in {
+      val received = ListBuffer.empty[WorkflowDSL.Node]
+      val output = ListBuffer.empty[String]
+      val source = new NodeSource {
+        override val nodeType: String = "sequence.numbers"
+        override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] = {
+          received += node
+          Source.single("  row  ")
+        }
+      }
+      val sink = new NodeSink {
+        override val nodeType: String = "console.log"
+        override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)
+          (implicit ec: ExecutionContext): Sink[String, Future[Done]] = {
+          received += node
+          Sink.foreach[String](row => { output += row; () })
+        }
+      }
+      val workflow = WorkflowFixtures.linearWorkflow.copy(nodes = WorkflowFixtures.linearWorkflow.nodes.map(
+        _.copy(position = WorkflowDSL.Position(1234, 5678), style = Some(JsObject("color" -> JsString("red"))))))
+      val registry = testRegistry.snapshot.withSource(source).withSink(sink)
+      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = registry).execute(workflow, "layout-isolation", _ => ()), 5.seconds)
+
+      result.success shouldBe true
+      result.nodeResults.map(_.nodeId) shouldBe Vector("source-1", "transform-1", "sink-1")
+      output.toList shouldBe List("row")
+      received.size shouldBe 2
+      received.foreach { node =>
+        node.position shouldBe WorkflowDSL.Position(0, 0)
+        node.style shouldBe None
+        node.config shouldBe workflow.nodes.find(_.id == node.id).get.config
+      }
+    }
+
     "register the built-in MySQL CDC source and apply sink" in {
       testRegistry.findSource("mysql.cdc").get shouldBe a[MySQLCdcSourceNode]
       testRegistry.findSink("mysql.cdc.apply").get shouldBe a[MySQLCdcApplySinkNode]
@@ -65,7 +127,8 @@ class WorkflowExecutionEngineSpec extends STSpec {
       val logs = ListBuffer.empty[String]
       val source = new ObservingCdcSource
       val sink = new ObservingCdcSink
-      val workflow = WorkflowFixtures.mysqlCdcWorkflow
+      val workflow = WorkflowFixtures.mysqlCdcWorkflow.copy(nodes = WorkflowFixtures.mysqlCdcWorkflow.nodes.map(
+        _.copy(position = WorkflowDSL.Position(1234, 5678), style = Some(JsObject("color" -> JsString("red"))))))
       val context = ReliableRunContext(
         "exec-mysql-cdc-environment",
         1L,
@@ -90,6 +153,8 @@ class WorkflowExecutionEngineSpec extends STSpec {
         result.success shouldBe true
         environmentLookups shouldBe ListBuffer("MYSQL_CDC_PASSWORD", "DB_PASSWORD")
         (source.receivedNodes ++ sink.receivedNodes).foreach { node =>
+          node.position shouldBe WorkflowDSL.Position(0, 0)
+          node.style shouldBe None
           node.config.fields.get("password") shouldBe Some(JsString(secret))
           node.config.fields should not contain "passwordEnv"
         }

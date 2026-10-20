@@ -20,14 +20,16 @@ private[integration] final class MySQLCommitResponseProxy(host: String, upstream
   private val armed = new AtomicReference[Armed]()
   private val sockets = new ConcurrentLinkedQueue[Socket]()
   private val held = new CountDownLatch(1)
+  private val resolve = new CountDownLatch(1)
   private val stopped = new AtomicBoolean(false)
   private val listener = new ServerSocket(0, 16, InetAddress.getLoopbackAddress)
   val port: Int = listener.getLocalPort
   def arm(mode: String, batch: JsObject): Unit = {
-    require(Set("C0", "C1", "C2").contains(mode))
+    require(Set("C0", "C1", "C2", "LATE_COMMIT", "LATE_ROLLBACK").contains(mode))
     require(armed.compareAndSet(null, Armed(mode, batch)), "proxy already armed")
   }
   def dropHeldResponse(): Unit = held.countDown()
+  def resolveHeldTransaction(): Unit = resolve.countDown()
   private def spawn(name: String)(body: => Unit): Unit = {
     val thread = new Thread(() => body, name); thread.setDaemon(true); thread.start()
   }
@@ -65,10 +67,28 @@ private[integration] final class MySQLCommitResponseProxy(host: String, upstream
             event("PROXY_COMMIT_NOT_FORWARDED", a); event("CUTPOINT", a)
             held.await(); closePair(); returnFromThread()
           }
+          if (a.mode.startsWith("LATE_")) {
+            holding.set(true)
+            event("PROXY_TX_HELD", a); event("CUTPOINT", a)
+            closeSocket(client) // JDBC fails, but the real old InnoDB transaction retains its locks.
+            resolve.await()
+            if (a.mode == "LATE_ROLLBACK") {
+              // End the old server connection without COMMIT; the driver verifies actual InnoDB rollback.
+              event("PROXY_LATE_ROLLBACK_DISCONNECTED", a)
+              closePair(); returnFromThread()
+            }
+            event("PROXY_LATE_RESOLVING", a)
+            server.getOutputStream.write(packet); server.getOutputStream.flush()
+            event("PROXY_LATE_SENT", a)
+            returnFromThread()
+          }
           event("PROXY_COMMIT_FORWARDED", a)
         }
         server.getOutputStream.write(packet); server.getOutputStream.flush()
-      } catch { case _: ThreadFinished => (); case NonFatal(_) => if (!holding.get()) closePair() }
+      } catch { case _: ThreadFinished => (); case NonFatal(e) =>
+        val a=intercepted.get()
+        if (a != null && a.mode.startsWith("LATE_")) observe("PROXY_LATE_FORWARD_ERROR",JsObject("error"->JsString(e.getClass.getName)))
+        if (!holding.get()) closePair() }
     }
     spawn("test-mysql-proxy-server") {
       var greeting = true
@@ -81,8 +101,14 @@ private[integration] final class MySQLCommitResponseProxy(host: String, upstream
         } else if (!authenticated.get() && isOk(packet)) authenticated.set(true)
         val a = intercepted.get()
         if (a != null) {
+          if (a.mode.startsWith("LATE_")) observe("PROXY_LATE_REPLY_FRAME",JsObject(
+            "payloadTag"->JsNumber(packet(4)&255),"bytes"->JsNumber(packet.length)))
           require(isOk(packet), "armed COMMIT did not receive OK; cut is invalid")
           holding.set(true)
+          if (a.mode.startsWith("LATE_")) {
+            event(if (a.mode == "LATE_COMMIT") "PROXY_LATE_COMMIT_OK" else "PROXY_LATE_ROLLBACK_OK", a)
+            closePair(); returnFromThread()
+          }
           event("PROXY_COMMIT_OK_HELD", a); event("CUTPOINT", a)
           held.await() // C2 drops this actual server reply; C1 is killed while it is held.
           event("PROXY_COMMIT_OK_DROPPED", a); closePair(); returnFromThread()
@@ -91,13 +117,15 @@ private[integration] final class MySQLCommitResponseProxy(host: String, upstream
       } catch {
         case _: ThreadFinished => ()
         case NonFatal(e) =>
+          val a=intercepted.get()
+          if (a != null && a.mode.startsWith("LATE_")) observe("PROXY_LATE_REPLY_ERROR",JsObject("error"->JsString(e.getClass.getName)))
           if (intercepted.get() != null && !holding.get()) observe("PROXY_INVALID_CUT", JsObject("error" -> JsString(e.getClass.getSimpleName)))
           if (!holding.get()) closePair()
       }
     }
   }
   override def close(): Unit = {
-    stopped.set(true); listener.close(); held.countDown(); sockets.asScala.foreach(closeSocket)
+    stopped.set(true); listener.close(); held.countDown(); resolve.countDown(); sockets.asScala.foreach(closeSocket)
   }
 }
 

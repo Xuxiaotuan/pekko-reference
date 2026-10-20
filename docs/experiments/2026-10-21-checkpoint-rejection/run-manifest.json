@@ -1,0 +1,56 @@
+{
+  "packagedAt": "2026-10-20T16:41:18.409892+00:00",
+  "head": "d046cce2dc850ea60bc3513db84378484b0a1043",
+  "dirty": true,
+  "currentTurnSourceChanges": [
+    "pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala",
+    "pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/WorkflowExecutionEngine.scala",
+    "pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcAutomaticRecoverySpec.scala",
+    "pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcGroupRecoveryProcess.scala",
+    "pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/actors/CdcCommitRecoverySpec.scala",
+    "pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/engine/WorkflowExecutionEngineSpec.scala"
+  ],
+  "container": "pekko-cdc-stage-c-20261019",
+  "image": "sha256:cc52b8b5900d106bc482241091cfa7496d830280868e19aca8a24e8e7086568e",
+  "imageTag": "mysql:8.4",
+  "loopbackPorts": [
+    {
+      "HostIp": "127.0.0.1",
+      "HostPort": "32802"
+    }
+  ],
+  "runtimeDependencies": [
+    "scala-library-2.13.12.jar",
+    "pekko-actor-typed_2.13-1.1.3.jar",
+    "pekko-persistence-jdbc_2.13-1.1.1.jar",
+    "mysql-connector-j-9.1.0.jar",
+    "debezium-embedded-3.6.1.Final.jar",
+    "debezium-connector-mysql-3.6.1.Final.jar"
+  ],
+  "java": "openjdk version \"17.0.14\" 2025-01-21 LTS\nOpenJDK Runtime Environment Microsoft-10800294 (build 17.0.14+7-LTS)\nOpenJDK 64-Bit Server VM Microsoft-10800294 (build 17.0.14+7-LTS, mixed mode, sharing)\n",
+  "mysql": {
+    "mysql": "8.4.11",
+    "gtid_mode": "ON",
+    "binlog_format": "ROW",
+    "client_charset": "utf8mb4",
+    "binlog_row_image": "FULL"
+  },
+  "realRun": {
+    "exitCode": 0,
+    "seconds": 751.8029119968414,
+    "container": "pekko-cdc-stage-c-20261019",
+    "loopbackPort": "32802",
+    "protobuf": "4.33.4"
+  },
+  "realRunner": "org.scalatest.tools.Runner -o -s cn.xuyinyin.magic.workflow.integration.RealMySQLCdcAutomaticRecoverySpec -s cn.xuyinyin.magic.workflow.integration.RealMySQLCdcRecoveryWindowsSpec -s cn.xuyinyin.magic.workflow.integration.RealMySQLCdcSessionReleaseSpec",
+  "backend": "488 tests passed, 79 suites completed, 0 aborted; package succeeded; test JVM system-shutdown-default=60s",
+  "backendCommand": "sbt -java-home /Users/xujiawei/Library/Java/JavaVirtualMachines/ms-17.0.14/Contents/Home -J-Xmx3G -Dpekko.actor.testkit.typed.system-shutdown-default=60s pekko-server/test pekko-server/package",
+  "credentialEnvironmentNames": [
+    "CDC_WINDOW_MYSQL_HOST",
+    "CDC_WINDOW_MYSQL_PASSWORD",
+    "CDC_WINDOW_MYSQL_PORT",
+    "CDC_WINDOW_MYSQL_USER",
+    "RUN_MYSQL_CDC_RECOVERY_WINDOWS"
+  ],
+  "historicalFilesPreserved": 133
+}

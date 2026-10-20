@@ -14,6 +14,31 @@ class WorkflowRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRou
   import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
 
   "Workflow routes" should {
+    "expose a paused recovery without dropping the execution context" in {
+      import cn.xuyinyin.magic.workflow.events.WorkflowEvents._
+      import cn.xuyinyin.magic.workflow.engine.ExecutionFailure
+      val typedSystem=system.toTyped
+      val current=EventSourcedWorkflowActor.ExecutionState("same-execution",ExecutionTrigger("manual"),1L,
+        recovery=Some(ExecutionRecoveryState(3,3,"blocked",0L,ExecutionFailure.BudgetExhausted,"target-commit",
+          Some(ExecutionFailure(ExecutionFailure.CommitUnknown,"target-commit",Some("batch-id"))))))
+      val supervisor=typedSystem.systemActorOf(Behaviors.receiveMessage[WorkflowSupervisor.Command] {
+        case WorkflowSupervisor.GetWorkflowSummary(id,replyTo) =>
+          replyTo ! EventSourcedWorkflowActor.WorkflowSummary(id,1L,EventSourcedWorkflowActor.WorkflowStatus("recovery_blocked"),Some(current),Vector.empty)
+          Behaviors.same
+        case _ => Behaviors.unhandled
+      },s"recovery-summary-${java.util.UUID.randomUUID()}")
+      val routes=new EnhancedWorkflowRoutes(supervisor)(typedSystem,typedSystem.executionContext).routes
+      Get("/api/v1/workflows/paused") ~> routes ~> check {
+        status shouldBe StatusCodes.OK
+        val e=responseAs[String].parseJson.asJsObject.fields("currentExecution").asJsObject
+        e.fields("executionId") shouldBe JsString("same-execution")
+        val r=e.fields("recovery").asJsObject
+        r.fields("attemptsStarted") shouldBe JsNumber(3)
+        r.fields("primaryFailureCode") shouldBe JsString(ExecutionFailure.CommitUnknown)
+        r.fields("batchId") shouldBe JsString("batch-id")
+      }
+    }
+
     "classify infrastructure failures consistently" in {
       HttpErrorMapping.status(new org.apache.pekko.pattern.AskTimeoutException("timeout")) shouldBe StatusCodes.GatewayTimeout
       HttpErrorMapping.status(new java.sql.SQLException("down")) shouldBe StatusCodes.ServiceUnavailable

@@ -1,6 +1,7 @@
 package cn.xuyinyin.magic.workflow.nodes.sinks
 
 import cn.xuyinyin.magic.workflow.checkpoint.{AlreadyCommitted, BatchCheckpoint, BatchCommitResult, Committed, SnapshotBoundary, SourceBatch}
+import cn.xuyinyin.magic.workflow.engine.{CdcExecutionException, ExecutionFailure}
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, NodeSink}
 import cn.xuyinyin.magic.workflow.nodes.cdc.{CdcOperation, MySQLCdcEnvelope, MySQLCdcGroup, MySQLCdcGroupProtocol}
@@ -131,7 +132,9 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
               val existing = using(select.executeQuery())(rows => Option.when(rows.next())(rows.getString(1)))
               existing match {
                 case Some(value) =>
-                  if (value != evidence) throw new IllegalStateException(s"conflicting CDC group evidence: ${group.groupId}")
+                  if (value != evidence) throw new CdcExecutionException(
+                    ExecutionFailure(ExecutionFailure.ProtocolConflict,"group-evidence",Some(batch.batchId)),
+                    new IllegalStateException(s"conflicting CDC group evidence: ${group.groupId}"))
                 case None =>
                   val insert = statements.prepare("INSERT INTO pekko_sync_cdc_group_ledger(group_id,evidence) VALUES (?,?)")
                   insert.setString(1, group.groupId); insert.setString(2, evidence); insert.executeUpdate()
@@ -141,7 +144,10 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
             }
             applied
           } // All statements close before COMMIT; a close failure still rolls this transaction back.
-          connection.commit()
+          try connection.commit() catch {
+            case NonFatal(error) => throw new CdcExecutionException(
+              ExecutionFailure(ExecutionFailure.CommitUnknown,"target-commit",Some(batch.batchId)),error)
+          }
           safeLog(onLog, s"CDC complete groups covered batchId=${batch.batchId} newGroups=$appliedGroups replayedGroups=${groups.get.size - appliedGroups}")
           if (appliedGroups > 0) Committed(checkpoint) else AlreadyCommitted(checkpoint)
         } else findLedger(connection, batch.batchId) match {
@@ -467,6 +473,14 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
 
   private def validateGroupLedger(connection: Connection, targetTable: String): Unit = {
     require(connection.getMetaData.supportsTransactions(), "CDC group protocol requires transactional storage")
+    val pk = using(connection.getMetaData.getPrimaryKeys(connection.getCatalog, connection.getSchema, "pekko_sync_cdc_group_ledger")) { rows =>
+      val keys = Vector.newBuilder[(Int,String)]
+      while (rows.next()) keys += rows.getInt("KEY_SEQ") -> rows.getString("COLUMN_NAME").toLowerCase(Locale.ROOT)
+      keys.result().sortBy(_._1).map(_._2)
+    }
+    if (pk != Vector("group_id")) throw new CdcExecutionException(
+      ExecutionFailure(ExecutionFailure.ProtocolConflict,"group-ledger"),
+      new IllegalStateException("CDC group ledger requires group_id as its single PRIMARY KEY"))
     if (connection.getMetaData.getDatabaseProductName.equalsIgnoreCase("MySQL")) {
       Vector(targetTable, "pekko_sync_cdc_group_ledger").foreach { table =>
         using(connection.prepareStatement("SELECT ENGINE FROM information_schema.tables WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?")) { statement =>
