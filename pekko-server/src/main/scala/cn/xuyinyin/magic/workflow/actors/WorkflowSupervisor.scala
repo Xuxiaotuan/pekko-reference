@@ -4,6 +4,7 @@ import cn.xuyinyin.magic.workflow.model.WorkflowDSL
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.cluster.sharding.typed.ShardingEnvelope
+import scala.concurrent.duration._
 
 /** Stateless ingress router for workflow entities. */
 object WorkflowSupervisor {
@@ -27,9 +28,15 @@ object WorkflowSupervisor {
   final case class WorkflowDefinitionRejected(workflowId: String, errors: Vector[String]) extends WorkflowCreated
 
   def withSharding(shardRegion: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]]): Behavior[Command] =
+    withSharding(shardRegion, 5.seconds)
+
+  private[actors] def withSharding(shardRegion: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]], replyTimeout: FiniteDuration): Behavior[Command] =
     Behaviors.setup { context =>
-      def definitionReply(replyTo: ActorRef[WorkflowCreated]): ActorRef[EventSourcedWorkflowActor.Reply] =
-        context.spawnAnonymous(Behaviors.receiveMessage[EventSourcedWorkflowActor.Reply] {
+      require(replyTimeout.length > 0, "legacy definition reply timeout must be positive")
+      def definitionReply(workflowId: String, replyTo: ActorRef[WorkflowCreated]): ActorRef[EventSourcedWorkflowActor.Reply] =
+        context.spawnAnonymous(Behaviors.setup[EventSourcedWorkflowActor.Reply] { replyContext =>
+          replyContext.setReceiveTimeout(replyTimeout, EventSourcedWorkflowActor.DefinitionRejected(workflowId, Vector("definition result unknown: entity reply timed out")))
+          Behaviors.receiveMessage[EventSourcedWorkflowActor.Reply] {
           case EventSourcedWorkflowActor.Defined(workflowId, _) =>
             replyTo ! WorkflowDefined(workflowId, shardRegion)
             Behaviors.stopped
@@ -39,12 +46,14 @@ object WorkflowSupervisor {
           case EventSourcedWorkflowActor.DefinitionRejected(workflowId, errors) =>
             replyTo ! WorkflowDefinitionRejected(workflowId, errors)
             Behaviors.stopped
-          case _ => Behaviors.stopped
-        })
+          case _ =>
+            replyTo ! WorkflowDefinitionRejected(workflowId, Vector("definition result unknown: unexpected entity reply"))
+            Behaviors.stopped
+        }})
 
       Behaviors.receiveMessage {
         case CreateWorkflow(workflow, replyTo) =>
-          shardRegion ! ShardingEnvelope(workflow.id, EventSourcedWorkflowActor.DefineWorkflow(workflow, 0L, definitionReply(replyTo)))
+          shardRegion ! ShardingEnvelope(workflow.id, EventSourcedWorkflowActor.DefineWorkflow(workflow, 0L, definitionReply(workflow.id, replyTo)))
           Behaviors.same
         case DefineWorkflow(workflow, expectedRevision, replyTo) =>
           shardRegion ! ShardingEnvelope(workflow.id, EventSourcedWorkflowActor.DefineWorkflow(workflow, expectedRevision, replyTo))

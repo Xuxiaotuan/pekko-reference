@@ -42,7 +42,7 @@ object PekkoGuardian {
     implicit val ec = ctx.executionContext
     val executionEngine = new WorkflowExecutionEngine()(ctx.system, ec)
     val shardRegion: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]] = 
-      WorkflowSharding.init(ctx.system, executionEngine)
+      WorkflowSharding.init(ctx.system, executionEngine, WorkflowSharding.configuredNumberOfShards(ctx.system.settings.config))
     logger.info("WorkflowSharding initialized")
     
     // Create workflow supervisor with ShardRegion (工作流管理器)

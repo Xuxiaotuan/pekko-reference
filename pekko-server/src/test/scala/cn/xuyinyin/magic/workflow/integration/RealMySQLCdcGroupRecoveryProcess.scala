@@ -169,7 +169,7 @@ object RealMySQLCdcGroupRecoveryProcess {
                 .takeWhile(_ != null).take(8).map(e => JsString(e.getClass.getName)).toVector))
           }
           .flatMap { result =>
-            if (fault == "cancel-T" && armed.compareAndSet(true, false)) {
+            if (Set("cancel-T", "stop-T").contains(fault) && armed.compareAndSet(true, false)) {
               cancelCommitResult.set(result)
               emit("CUTPOINT", "batch" -> batchJson(batch), "fault" -> JsString(fault))
               cancelCommitGate.future
@@ -239,6 +239,15 @@ object RealMySQLCdcGroupRecoveryProcess {
       "jvmTimezone" -> JsString(java.util.TimeZone.getDefault.getID))
     try {
       Iterator.continually(StdIn.readLine()).takeWhile(_ != null).foreach {
+        case "STOP_OWNER" =>
+          val ended = kit.createTestProbe[Nothing]()
+          actor ! EventSourcedWorkflowActor.Stop
+          emit("OWNER_STOP_REQUESTED")
+          Future {
+            ended.expectTerminated(actor, 60.seconds)
+            emit("OWNER_STOPPED", "liveRunners" -> JsNumber(Thread.getAllStackTraces.keySet().asScala.count(t =>
+              t.isAlive && t.getName.startsWith("mysql-cdc-debezium-engine-"))))
+          }(ExecutionContext.global)
         case "CANCEL" | "AWAIT_RELEASE" =>
           val budget = if (cancelCommitResult.get() != null && !cancelCommitGate.isCompleted) 100.millis else 10.seconds
           val status = scala.concurrent.Await.result(engine.cancelWithin(observedExecutionId, budget), budget + 5.seconds)

@@ -27,6 +27,13 @@ class HealthRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRoute
   }
 
   "Health routes" should {
+    "serve the documented API status resource" in { Get("/api/v1/status") ~> routes(HealthChecker.ReadinessStatus(true,true,true)) ~> check { status shouldBe StatusCodes.OK } }
+    "report actual readiness for the compatibility health resource" in {
+      Get("/health") ~> routes(HealthChecker.ReadinessStatus(true,true,false)) ~> check {
+        status shouldBe StatusCodes.ServiceUnavailable
+        responseAs[String] should not include "Overall: HEALTHY"
+      }
+    }
     "keep liveness process-only" in { Get("/health/live") ~> routes(HealthChecker.ReadinessStatus(false, false, false)) ~> check { status shouldBe StatusCodes.OK } }
     "require all readiness dependencies" in {
       Seq(HealthChecker.ReadinessStatus(false, true, true), HealthChecker.ReadinessStatus(true, false, true), HealthChecker.ReadinessStatus(true, true, false)).foreach { state =>

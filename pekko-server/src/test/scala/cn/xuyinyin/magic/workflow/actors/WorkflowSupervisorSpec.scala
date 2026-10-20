@@ -10,6 +10,18 @@ import scala.concurrent.duration._
 
 class WorkflowSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with Matchers {
   "WorkflowSupervisor" should {
+    "expire a legacy definition reply actor when the entity never responds" in {
+      val region=createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
+      val supervisor=spawn(WorkflowSupervisor.withSharding(region.ref,100.millis))
+      val caller=createTestProbe[WorkflowSupervisor.WorkflowCreated]()
+      supervisor ! WorkflowSupervisor.CreateWorkflow(WorkflowFixtures.linearWorkflow,caller.ref)
+      val response=region.receiveMessage().message.asInstanceOf[EventSourcedWorkflowActor.DefineWorkflow].replyTo
+      val rejected=caller.expectMessageType[WorkflowSupervisor.WorkflowDefinitionRejected]
+      rejected.workflowId shouldBe WorkflowFixtures.linearWorkflow.id
+      rejected.errors.mkString should include("unknown")
+      caller.expectTerminated(response)
+    }
+
     "route one definition envelope carrying the caller reply reference" in {
       val shardRegion = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
       val supervisor = spawn(WorkflowSupervisor.withSharding(shardRegion.ref))

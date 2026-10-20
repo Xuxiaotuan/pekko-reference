@@ -9,8 +9,8 @@ export interface WorkflowNode {
   nodeType: string;      // 'file.csv', 'filter', etc.
   label: string;
   position: Position;
-  config: Record<string, any>;
-  style?: Record<string, any>;
+  config: Record<string, unknown>;
+  style?: Record<string, unknown>;
 }
 
 export interface WorkflowEdge {
@@ -21,7 +21,7 @@ export interface WorkflowEdge {
   targetHandle?: string;
   animated?: boolean;
   label?: string;
-  style?: Record<string, any>;
+  style?: Record<string, unknown>;
 }
 
 export interface ScheduleConfig {
@@ -34,7 +34,7 @@ export interface ScheduleConfig {
 export interface WorkflowMetadata {
   createdAt: string;
   updatedAt: string;
-  executionHistory?: any[];
+  executionHistory?: unknown[];
   schedule?: ScheduleConfig;
 }
 
@@ -56,14 +56,14 @@ export interface NodeTypeDefinition {
   icon: string;
   category: 'source' | 'transform' | 'sink';
   description: string;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 }
 
 export interface ExecutionResult {
   workflowId: string;
   status: string;
   message: string;
-  output: Record<string, any>;
+  output: Record<string, unknown>;
 }
 
 // HTTP query DTOs are deliberately separate from the submitted Workflow DSL.

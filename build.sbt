@@ -164,7 +164,7 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
       Docker / version        := projectVersion,
       Docker / daemonUser     := projectName,
       dockerBaseImage         := "eclipse-temurin:17-jre-alpine",
-      dockerExposedPorts      := Seq(9906),           // HTTP API端口
+      dockerExposedPorts      := Seq(8080),           // HTTP API端口
       dockerUpdateLatest      := true,
       
       // Docker镜像自定义命令

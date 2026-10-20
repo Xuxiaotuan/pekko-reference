@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, Descriptions, Space, Table } from 'antd'
-import { clusterAPI, type ClusterStats } from '../api/services'
-import { errorMessage } from '../api/client'
+import { clusterAPI, type ClusterStats } from '../api'
+import { errorMessage } from '../../../shared/api/client'
 
 export default function ClusterStatus() {
   const [data, setData] = useState<ClusterStats | null>(null)

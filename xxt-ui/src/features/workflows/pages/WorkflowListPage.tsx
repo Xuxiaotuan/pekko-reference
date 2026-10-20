@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, Empty, Select, Space, Table, Tag } from 'antd'
 import { Link } from 'react-router-dom'
-import { workflowAPI } from '../api/workflow'
-import { errorMessage } from '../api/client'
-import type { WorkflowPage } from '../types/workflow'
+import { workflowAPI } from '../api'
+import { errorMessage } from '../../../shared/api/client'
+import type { WorkflowPage } from '../types'
 import ExecuteWorkflowButton from '../components/ExecuteWorkflowButton'
 
 export default function WorkflowListPage() {

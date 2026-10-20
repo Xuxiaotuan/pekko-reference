@@ -57,4 +57,13 @@ class ClusterBootstrapConfigSpec extends AnyWordSpec with Matchers {
 
   private def productionConfig(overrides: String): Config =
     ConfigFactory.parseString(overrides).withFallback(ConfigFactory.load("application-prod.conf")).resolve()
+  "workflow shard configuration" should {
+    "honor an explicit count and reject invalid ownership mappings" in {
+      import cn.xuyinyin.magic.workflow.sharding.WorkflowSharding
+      val configured=ConfigFactory.parseString("pekko.cluster.sharding.number-of-shards=37")
+      WorkflowSharding.configuredNumberOfShards(configured) shouldBe 37
+      intercept[IllegalArgumentException] {WorkflowSharding.configuredNumberOfShards(ConfigFactory.parseString("pekko.cluster.sharding.number-of-shards=0"))}
+    }
+  }
+
 }

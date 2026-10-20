@@ -29,7 +29,7 @@
 
 ## 前端与示例
 
-`xxt-ui/src/api` 对接真实 HTTP 契约，`types` 定义 DTO，`pages` 对应当前产品路由，`components` 放共用 UI。产品支持分页列表、完整 DSL 创建、执行请求、近期历史和已有计划管理；入口以 `App.tsx` 为准。未路由的 SQL/监控历史文件不代表可用能力。
+`xxt-ui/src/features` 按 workflows/schedules/cluster 保存页面、API 和 DTO，`shared/api` 保存共享 HTTP client，`app` 保存布局。产品支持分页列表、完整 DSL 创建、执行请求、近期历史和已有计划管理；入口以 `App.tsx` 为准。未路由的 SQL/监控历史文件不代表可用能力。
 
 旧工作流 Actor、模拟 CDC 和 CRDT/GC/Stream 示例归档在 Test 源集；入口见[示例说明](../pekko-server/src/test/examples/README.md)。原 DAG 编辑器保存在 `xxt-ui/examples`。它们不是生产 CDC 主链路。
 
@@ -82,3 +82,11 @@ Checkpoint 明确拒绝保留为 `protocol_conflict`，不新增恢复尝试，�
 源码结论和真实实验分开记录：[C2 有界恢复](experiments/2026-10-20-c2-recovery/README.md)、[明确拒绝修复](experiments/2026-10-21-checkpoint-rejection/README.md)。正式 26 项真实 MySQL 断言中，10 项自动收敛、7 项安全暂停、7 个历史窗口收敛、2 项释放通过；不能写成 26 项自动恢复成功。新增 Journal 事件不保证旧二进制直接降级，历史已终态失败也不会自动复活。
 
 整体提交前复核见[恢复链路审查](experiments/2026-10-21-c2-final-review/README.md)。
+
+## 纯状态与服务生命周期
+
+Actor 的公共命令、回复、持久化模型和 persistenceId 保持原位；`WorkflowStateTransitions` 负责纯事件重放，`WorkflowDefinitionCodec` 负责定义校验与规范化，`WorkflowHistory` 负责结果边界与历史输出。Actor 本身处理命令、持久化副作用、恢复及停止时序。
+
+`server/http/HttpServerLifecycle` 持有 HTTP binding 的协调关闭注册；`cluster/ReadinessCheck` 合并实际探测，并将响应截止时间与底层工作占用分开。具体约束和强制停止限制见[架构说明](ARCHITECTURE.md)。
+
+本轮目录、优雅退出和探测的正式验证见[架构与退出记录](experiments/2026-10-21-architecture-ha/README.md)：完整后端 503 项、真实 MySQL 27 项断言；其中 7 项是保留差异的安全暂停，不能统称自动恢复成功。

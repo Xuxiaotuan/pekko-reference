@@ -41,6 +41,7 @@ object WorkflowSharding {
     numberOfShards: Int = 100
   )(implicit ec: ExecutionContext): ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]] = {
     
+    require(numberOfShards > 0, "workflow shard count must be positive")
     val sharding = ClusterSharding(system)
     
     // 创建消息提取器
@@ -59,6 +60,12 @@ object WorkflowSharding {
     )
   }
   
+  private[magic] def configuredNumberOfShards(config: com.typesafe.config.Config): Int = {
+    val count = config.getInt("pekko.cluster.sharding.number-of-shards")
+    require(count > 0, "workflow shard count must be positive")
+    count
+  }
+
   /**
    * 提取EntityId（workflowId）
    */
@@ -70,6 +77,7 @@ object WorkflowSharding {
    * 提取ShardId（基于workflowId的哈希）
    */
   def extractShardId(entityId: String, numberOfShards: Int = 100): String = {
+    require(numberOfShards > 0, "workflow shard count must be positive")
     Math.floorMod(entityId.hashCode, numberOfShards).toString
   }
 }

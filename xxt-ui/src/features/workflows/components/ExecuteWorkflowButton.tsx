@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Button, message } from 'antd'
 import axios from 'axios'
-import { workflowAPI } from '../api/workflow'
-import { errorMessage } from '../api/client'
-import { pendingExecution, reserveExecution, confirmExecution } from '../api/executionRequests'
+import { workflowAPI } from '../api'
+import { errorMessage } from '../../../shared/api/client'
+import { pendingExecution, reserveExecution, confirmExecution } from '../executionRequests'
 
 /** Retain an uncertain request across status refresh/navigation in this tab; never auto-retry. */
 export default function ExecuteWorkflowButton({ workflowId }: { workflowId: string }) {

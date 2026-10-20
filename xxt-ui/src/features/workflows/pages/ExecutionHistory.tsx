@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, Descriptions, Space, Table, Tag } from 'antd'
 import { Link, useParams } from 'react-router-dom'
-import { workflowAPI } from '../api/workflow'
-import { errorMessage } from '../api/client'
-import type { ExecutionHistoryData, ExecutionDetail } from '../types/workflow'
+import { workflowAPI } from '../api'
+import { errorMessage } from '../../../shared/api/client'
+import type { ExecutionHistoryData, ExecutionDetail } from '../types'
 
 const time = (value?: number | null) => value == null ? '未记录' : new Date(value).toLocaleString('zh-CN')
 const duration = (value?: number | null) => value == null ? '未记录' : `${value} ms`

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, Card, Space } from 'antd'
-import { monitoringAPI } from '../api/services'
-import { errorMessage } from '../api/client'
+import { monitoringAPI } from '../../../shared/api/health'
+import { errorMessage } from '../../../shared/api/client'
 
 export default function Dashboard() {
   const [live, setLive] = useState<string | null>(null)

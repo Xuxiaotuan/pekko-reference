@@ -1,5 +1,5 @@
-import apiClient from './client'
-import type { WorkflowPage, WorkflowSummary, DefinitionCreated, ExecutionAccepted, ExecutionHistoryData } from '../types/workflow'
+import apiClient from '../../shared/api/client'
+import type { WorkflowPage, WorkflowSummary, DefinitionCreated, ExecutionAccepted, ExecutionHistoryData } from './types'
 const base = '/api/v1/workflows'
 export const workflowAPI = {
   list: async (page: number, pageSize: number, signal?: AbortSignal): Promise<WorkflowPage> =>

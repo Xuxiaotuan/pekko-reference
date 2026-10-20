@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Alert, Button, Input, Space } from 'antd'
 import { Link } from 'react-router-dom'
-import { workflowAPI } from '../api/workflow'
-import { errorMessage } from '../api/client'
-import type { DefinitionCreated } from '../types/workflow'
+import { workflowAPI } from '../api'
+import { errorMessage } from '../../../shared/api/client'
+import type { DefinitionCreated } from '../types'
 
 export default function WorkflowCreatePage() {
   const [draft, setDraft] = useState('')

@@ -2,8 +2,6 @@ package cn.xuyinyin.magic.cluster
 
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import org.apache.pekko.actor.typed.scaladsl.AskPattern._
-import org.apache.pekko.util.Timeout
 import org.apache.pekko.actor.typed.ActorSystem
 import org.apache.pekko.persistence.jdbc.query.scaladsl.JdbcReadJournal
 import org.apache.pekko.persistence.query.PersistenceQuery
@@ -13,7 +11,6 @@ import com.typesafe.scalalogging.Logger
 
 import java.lang.management.ManagementFactory
 import scala.concurrent.duration._
-import scala.util.{Success, Failure}
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -90,8 +87,15 @@ object HealthChecker {
   }
   final case class ReadinessProbes(memberUp: () => Future[Boolean], shardingInitialized: () => Future[Boolean], jdbcAvailable: () => Future[Boolean])
 
-  def readiness(probes: ReadinessProbes)(implicit ec: ExecutionContext): Future[ReadinessStatus] =
-    for { memberUp <- probes.memberUp().recover { case _ => false }; shardingInitialized <- probes.shardingInitialized().recover { case _ => false }; jdbcAvailable <- probes.jdbcAvailable().recover { case _ => false } } yield ReadinessStatus(memberUp, shardingInitialized, jdbcAvailable)
+  def readiness(probes: ReadinessProbes)(implicit ec: ExecutionContext): Future[ReadinessStatus] = {
+    def confirmed(probe: () => Future[Boolean]): Future[Boolean] =
+      try probe().recover { case scala.util.control.NonFatal(_) => false }
+      catch { case scala.util.control.NonFatal(_) => Future.successful(false) }
+    val member = confirmed(probes.memberUp)
+    val sharding = confirmed(probes.shardingInitialized)
+    val jdbc = confirmed(probes.jdbcAvailable)
+    for { m <- member; s <- sharding; j <- jdbc } yield ReadinessStatus(m, s, j)
+  }
 
   def defaultReadinessProbes(system: ActorSystem[_], shardingProbe: () => Future[Boolean])(implicit ec: ExecutionContext): ReadinessProbes = {
     implicit val materializer = SystemMaterializer(system).materializer

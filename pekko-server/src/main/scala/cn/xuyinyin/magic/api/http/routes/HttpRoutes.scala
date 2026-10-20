@@ -1,6 +1,6 @@
 package cn.xuyinyin.magic.api.http.routes
 
-import cn.xuyinyin.magic.cluster.{HealthChecker, PekkoGuardian}
+import cn.xuyinyin.magic.cluster.{HealthChecker, PekkoGuardian, ReadinessCheck}
 import cn.xuyinyin.magic.workflow.actors.WorkflowSupervisor
 import cn.xuyinyin.magic.workflow.scheduler.SchedulerCoordinator
 import org.apache.pekko.actor.typed.{ActorRef, ActorSystem}
@@ -8,7 +8,7 @@ import org.apache.pekko.actor.typed.scaladsl.AskPattern._
 import org.apache.pekko.cluster.Cluster
 import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import org.apache.pekko.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
-import org.apache.pekko.http.scaladsl.server.Directives.{complete, get, path, pathEndOrSingleSlash, pathPrefix, concat}
+import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.http.scaladsl.server.Route
 
 import scala.concurrent.ExecutionContext
@@ -41,6 +41,15 @@ object HttpRoutes {
   )(implicit ec: ExecutionContext): Route = {
     implicit val readinessTimeout: org.apache.pekko.util.Timeout = 2.seconds
     implicit val readinessScheduler: org.apache.pekko.actor.typed.Scheduler = system.scheduler
+    val shardingProbe = () => workflowSupervisor.ask[cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor.WorkflowSummary](replyTo => WorkflowSupervisor.GetWorkflowSummary("__readiness_probe__", replyTo)).map(_ => true)
+    val probes = readinessProbes.getOrElse(HealthChecker.defaultReadinessProbes(system, shardingProbe))
+    val readiness = new ReadinessCheck(probes, system.settings.config.getDuration("pekko.workflow.readiness-timeout").toMillis.millis)(system, ec)
+    def readinessRoute: Route = get {
+      complete(readiness.check().map { result =>
+        val status = if (result.ready) StatusCodes.OK else StatusCodes.ServiceUnavailable
+        status -> HttpEntity(ContentTypes.`text/plain(UTF-8)`, s"memberUp=${result.memberUp} shardingInitialized=${result.shardingInitialized} jdbcAvailable=${result.jdbcAvailable}")
+      })
+    }
     concat(
       // 工作流管理API (DSL可视化 + Event Sourcing + 调度)
       new EnhancedWorkflowRoutes(workflowSupervisor)(system, ec).routes,
@@ -57,69 +66,17 @@ object HttpRoutes {
       // Prometheus指标端点
       new MetricsRoutes().routes,
       
-      // API接口路径
-      pathPrefix("api") {
-        concat(
-          path("v1") {
-            path("status") {
-              get {
-                val apiStatus = 
-                  """
-                    |API Status:
-                    |- Version: 1.0.0 (with Task Scheduling)
-                    |- Status: Running
-                    |- Features: Task Management, Health Check, Monitoring
-                    |- Timestamp: """ + System.currentTimeMillis() + """
-                    |""".stripMargin
-                complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, apiStatus))
-              }
-            }
-          }
-        )
+      path("api" / "v1" / "status") {
+        get { complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, s"Pekko CDC / Workflow API; timestamp=${System.currentTimeMillis()}")) }
       },
-      
-      // 健康检查路径
       pathPrefix("health") {
         concat(
-          path("live") {
-            get {
-              val liveness = 
-                """
-                  |Liveness Probe:
-                  |- Status: OK
-                  |- Timestamp: """ + System.currentTimeMillis() + """
-                  |""".stripMargin
-              complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, liveness))
-            }
-          },
-          path("ready") {
-            get {
-              val shardingProbe = () => workflowSupervisor.ask[cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor.WorkflowSummary](replyTo => WorkflowSupervisor.GetWorkflowSummary("__readiness_probe__", replyTo)).map(_ => true)
-              val probes = readinessProbes.getOrElse(HealthChecker.defaultReadinessProbes(system, shardingProbe))
-              complete(HealthChecker.readiness(probes).map { readiness =>
-                val status = if (readiness.ready) StatusCodes.OK else StatusCodes.ServiceUnavailable
-                status -> HttpEntity(ContentTypes.`text/plain(UTF-8)`, s"memberUp=${readiness.memberUp} shardingInitialized=${readiness.shardingInitialized} jdbcAvailable=${readiness.jdbcAvailable}")
-              })
-            }
-          },
-          pathEndOrSingleSlash {
-            get {
-              val healthInfo = 
-                """
-                  |Health Status:
-                  |- Overall: HEALTHY
-                  |- Memory: OK
-                  |- CPU: OK  
-                  |- Disk: OK
-                  |- Network: OK
-                  |- Timestamp: """ + System.currentTimeMillis() + """
-                  |""".stripMargin
-              complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, healthInfo))
-            }
-          }
+          path("live") { get { complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "process=alive")) } },
+          path("ready") { readinessRoute },
+          pathEndOrSingleSlash { readinessRoute }
         )
       },
-      
+
       // 监控路径
       pathPrefix("monitoring") {
         concat(

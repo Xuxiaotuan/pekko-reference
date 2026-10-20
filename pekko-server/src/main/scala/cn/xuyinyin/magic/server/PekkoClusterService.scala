@@ -1,16 +1,12 @@
 package cn.xuyinyin.magic.server
 
-import cn.xuyinyin.magic.api.http.routes.HttpRoutes
 import cn.xuyinyin.magic.cluster.PekkoGuardian
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.Logger
 import org.apache.pekko.actor.typed.ActorSystem
-import org.apache.pekko.actor.typed.scaladsl.AskPattern._
 import org.apache.pekko.cluster.Cluster
-import org.apache.pekko.http.scaladsl.Http
 import org.apache.pekko.management.cluster.bootstrap.ClusterBootstrap
 import org.apache.pekko.management.scaladsl.PekkoManagement
-import org.apache.pekko.util.Timeout
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
@@ -48,7 +44,6 @@ object PekkoClusterService {
     implicit val system: ActorSystem[PekkoGuardian.Command] = 
       ActorSystem(PekkoGuardian(), systemName, dynamicConfig)
     implicit val ec: ExecutionContextExecutor = system.executionContext
-    implicit val timeout: Timeout = Timeout(5.seconds)
 
     if (shouldStartClusterBootstrap(dynamicConfig)) {
       PekkoManagement(system).start().failed.foreach { exception =>
@@ -64,13 +59,12 @@ object PekkoClusterService {
     
     logger.info(s"Pekko cluster system started with roles: ${currentRoles.mkString(", ")}")
     
-    // 注册优雅关闭钩子
-    registerShutdownHook(system)
+    // Pekko CoordinatedShutdown owns the JVM hook and service shutdown phases.
     
     // 根据角色启动服务
-    startServicesByRole(currentRoles, system, system.scheduler)
+    startServicesByRole(currentRoles, system)
     
-    logger.info("Pekko server started successfully!")
+    logger.info("ActorSystem initialized; HTTP binding result is reported separately")
     
     // 保持服务运行
     waitForTermination(system)
@@ -85,15 +79,13 @@ object PekkoClusterService {
    * 
    * @param roles 当前节点角色列表
    * @param system ActorSystem实例
-   * @param scheduler 调度器实例
    */
   private def startServicesByRole(
     roles: Set[String], 
-    system: ActorSystem[PekkoGuardian.Command],
-    scheduler: org.apache.pekko.actor.typed.Scheduler
-  )(implicit ec: ExecutionContextExecutor, timeout: Timeout): Unit = {
+    system: ActorSystem[PekkoGuardian.Command]
+  )(implicit ec: ExecutionContextExecutor): Unit = {
     if (roles.contains("api-gateway")) {
-      startHttpServer(system, scheduler)
+      startHttpServer(system)
     } else {
       logger.info("Current node does not have api-gateway role, HTTP server not started")
     }
@@ -103,75 +95,18 @@ object PekkoClusterService {
    * 启动HTTP服务器
    * 
    * @param system ActorSystem实例
-   * @param scheduler 调度器实例
    */
   private def startHttpServer(
-    system: ActorSystem[PekkoGuardian.Command],
-    scheduler: org.apache.pekko.actor.typed.Scheduler
-  )(implicit ec: ExecutionContextExecutor, timeout: Timeout): Unit = {
-    logger.info("Starting HTTP server with Task Scheduling support...")
-    
-    // Guardian引用就是system本身
-    val guardian = system
-    
-    // 获取HealthChecker引用
-    val healthCheckerFuture = system.ask(ref => PekkoGuardian.GetHealthChecker(ref))(timeout, scheduler)
-    
-    val schedulerCoordinatorFuture = system.ask(ref => PekkoGuardian.GetSchedulerCoordinator(ref))(timeout, scheduler)
-    
-    // 获取WorkflowSupervisor引用
-    val workflowSupervisorFuture = system.ask(ref => PekkoGuardian.GetWorkflowSupervisor(ref))(timeout, scheduler)
-    
-    // 组合所有Future
-    val componentsFuture = for {
-      healthChecker <- healthCheckerFuture
-      schedulerCoordinator <- schedulerCoordinatorFuture
-      workflowSupervisor <- workflowSupervisorFuture
-    } yield (healthChecker, schedulerCoordinator, workflowSupervisor)
-    
-    componentsFuture.onComplete {
-      case Success((healthChecker, schedulerCoordinator, workflowSupervisor)) =>
-        val routes = HttpRoutes.createRoutes(system, healthChecker, guardian, schedulerCoordinator, workflowSupervisor)
-        implicit val classicSystem = system.classicSystem
-        val host = system.settings.config.getString("http.host")
-        val port = system.settings.config.getInt("http.port")
-        val bindingFuture = Http().newServerAt(host, port).bind(routes)
-        
-        bindingFuture.onComplete {
-          case Success(binding) =>
-            val address = binding.localAddress
-            logger.info(s"HTTP server successfully started at http://${address.getHostString}:${address.getPort}/")
-            logger.info("Available HTTP endpoints:")
-            logger.info("  - API Status: http://localhost:8080/api/v1/status")
-            logger.info("  - Task Submit: POST http://localhost:8080/api/v1/tasks")
-            logger.info("  - Task Statistics: http://localhost:8080/api/v1/tasks/statistics")
-            logger.info("  - Task Status: http://localhost:8080/api/v1/tasks/{taskId}")
-            logger.info("  - Health Check: http://localhost:8080/health")
-            logger.info("  - Monitoring: http://localhost:8080/monitoring/")
-            
-          case Failure(exception) =>
-            logger.error(s"Failed to bind HTTP server: ${exception.getMessage}")
-            system.terminate()
-        }
-        
+    system: ActorSystem[PekkoGuardian.Command]
+  )(implicit ec: ExecutionContextExecutor): Unit = {
+    cn.xuyinyin.magic.server.http.HttpServerLifecycle.start(system).onComplete {
+      case Success(binding) => logger.info(s"HTTP server bound at ${binding.localAddress}; coordinated unbind/drain registered")
       case Failure(exception) =>
-        logger.error(s"Failed to get HealthChecker reference: ${exception.getMessage}")
+        logger.error("HTTP startup failed", exception)
         system.terminate()
     }
   }
-  
-  /**
-   * 注册优雅关闭钩子
-   * 
-   * @param system ActorSystem实例
-   */
-  private def registerShutdownHook(system: ActorSystem[_]): Unit = {
-    sys.addShutdownHook {
-      logger.info("Shutdown hook triggered, terminating actor system...")
-      system.terminate()
-    }
-  }
-  
+
   /**
    * 等待系统终止信号
    * 
@@ -187,6 +122,7 @@ object PekkoClusterService {
     } catch {
       case _: InterruptedException =>
         logger.info("Server interrupted, shutting down...")
+        system.terminate()
     }
   }
 }

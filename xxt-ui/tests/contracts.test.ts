@@ -14,9 +14,9 @@ if (typeof globalThis.sessionStorage === 'undefined') {
   } })
 }
 import { createServer, type IncomingMessage } from 'node:http'
-import apiClient from '../src/api/client'
-import { workflowAPI } from '../src/api/workflow'
-import { pendingExecution, reserveExecution, confirmExecution } from '../src/api/executionRequests'
+import apiClient from '../src/shared/api/client'
+import { workflowAPI } from '../src/features/workflows/api'
+import { pendingExecution, reserveExecution, confirmExecution } from '../src/features/workflows/executionRequests'
 
 const requests: { method: string; path: string; body: string }[] = []
 const server = createServer(async (req: IncomingMessage, res) => {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, Space, Table, message } from 'antd'
-import { scheduleAPI, type Schedule } from '../api/services'
-import { errorMessage } from '../api/client'
+import { scheduleAPI, type Schedule } from '../api'
+import { errorMessage } from '../../../shared/api/client'
 
 export default function SchedulePage() {
   const [schedules, setSchedules] = useState<Schedule[] | null>(null)

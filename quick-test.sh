@@ -3,4 +3,4 @@
 set -eu
 cd "$(dirname "$0")"
 exec sbt "$@" 'project pekko-server' 'Test / compile' \
-  'testOnly cn.xuyinyin.magic.workflow.engine.WorkflowValidatorSpec cn.xuyinyin.magic.workflow.nodes.sources.MySQLCdcGroupAssemblerSpec cn.xuyinyin.magic.workflow.nodes.sinks.MySQLCdcApplySinkNodeSpec'
+  'testOnly cn.xuyinyin.magic.workflow.engine.WorkflowValidatorSpec cn.xuyinyin.magic.workflow.nodes.sources.MySQLCdcGroupAssemblerSpec cn.xuyinyin.magic.workflow.nodes.sinks.MySQLCdcApplySinkNodeSpec cn.xuyinyin.magic.workflow.actors.WorkflowStopSpec cn.xuyinyin.magic.cluster.ReadinessCheckSpec cn.xuyinyin.magic.server.HttpServerLifecycleSpec'

@@ -163,3 +163,11 @@ session override 只影响本次 sbt 会话；若不先清除默认 exclude，in
 版本依据：[Protobuf v33.4](https://github.com/protocolbuffers/protobuf/releases/tag/v33.4)、
 [生成代码与 runtime 的兼容边界](https://protobuf.dev/support/cross-version-runtime-guarantee/)。
 完整本轮结果见[写入热路径和查询优化记录](experiments/2026-10-20-hot-path-query/README.md)。
+
+## 就绪与 HTTP 退出预算
+
+`pekko.workflow.readiness-timeout=2s` 约束观测响应，实际探测未结束时继续占用唯一 slot；不会用超时释放底层查询额度。`/health` 与 `/health/ready` 使用相同就绪检查，失败或未确认返回 503。
+
+`http.shutdown-grace=5s` 必须严格小于 `pekko.coordinated-shutdown.phases.service-requests-done.timeout`（默认 10s），且两者为正。binding 通过 Pekko HTTP 注册协调 unbind/drain。外部 Pod/JVM 停止预算还要覆盖 preStop、Sharding handoff 及其他阶段。
+
+Guardian 现在明确读取 `pekko.cluster.sharding.number-of-shards`，默认 100。旧版本忽略过非默认值，修复后会改变相应 hash 映射；已有集群不能把它当无损滚动参数。见[架构与迁移边界](ARCHITECTURE.md)。
