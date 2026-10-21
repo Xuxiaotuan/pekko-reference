@@ -124,7 +124,7 @@ lazy val commonSettings = Seq(
 // ================================
 import com.typesafe.sbt.packager.docker.Cmd
 
-lazy val pekkoServer = Project(id = "pekko-server", base = file("pekko-server"))
+lazy val pekkoServer = Project(id = "pekko-server", base = file("server"))
   .enablePlugins(JavaServerAppPackaging, DockerPlugin, AshScriptPlugin)
   .settings(
     commonSettings ++ Seq(

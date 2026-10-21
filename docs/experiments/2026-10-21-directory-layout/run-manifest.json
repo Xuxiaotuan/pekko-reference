@@ -1,0 +1,211 @@
+{
+  "packagedAt": "2026-10-21T13:29:11.270378+00:00",
+  "baselineCommit": "bf249b1823040abc056b65c0c16e462d914c1d73",
+  "sourceSnapshot": "evidence.tar.gz:source-final/",
+  "sourceFiles": 226,
+  "sourceUnchangedSinceFormalStart": true,
+  "container": "pekko-cdc-stage-c-20261019",
+  "image": "sha256:cc52b8b5900d106bc482241091cfa7496d830280868e19aca8a24e8e7086568e",
+  "imageTag": "mysql:8.4",
+  "loopbackPorts": [
+    {
+      "HostIp": "127.0.0.1",
+      "HostPort": "32804"
+    }
+  ],
+  "runtimeDependencies": [
+    "scala-library-2.13.12.jar",
+    "pekko-actor-typed_2.13-1.1.3.jar",
+    "pekko-persistence-jdbc_2.13-1.1.1.jar",
+    "mysql-connector-j-9.1.0.jar",
+    "debezium-embedded-3.6.1.Final.jar",
+    "debezium-connector-mysql-3.6.1.Final.jar",
+    "protobuf-java-4.33.4.jar"
+  ],
+  "java": "openjdk version \"17.0.14\" 2025-01-21 LTS\nOpenJDK Runtime Environment Microsoft-10800294 (build 17.0.14+7-LTS)\nOpenJDK 64-Bit Server VM Microsoft-10800294 (build 17.0.14+7-LTS, mixed mode, sharing)\n",
+  "mysql": {
+    "mysql": "8.4.11",
+    "gtid_mode": "ON",
+    "binlog_format": "ROW",
+    "client_charset": "utf8mb4",
+    "binlog_row_image": "FULL"
+  },
+  "realRun": {
+    "exitCode": 0,
+    "seconds": 1166.291630744934,
+    "container": "pekko-cdc-stage-c-20261019",
+    "loopbackPort": "32804",
+    "protobuf": "4.33.4"
+  },
+  "cases": [
+    {
+      "category": "automatic",
+      "scenario": "AUTO-A",
+      "schema": "pekko_test_cdc_window_15bf0da99843"
+    },
+    {
+      "category": "automatic",
+      "scenario": "AUTO-B",
+      "schema": "pekko_test_cdc_window_b6ad41abf2ea"
+    },
+    {
+      "category": "automatic",
+      "scenario": "LATE_COMMIT",
+      "schema": "pekko_test_cdc_window_465445b54620"
+    },
+    {
+      "category": "automatic",
+      "scenario": "LATE_ROLLBACK",
+      "schema": "pekko_test_cdc_window_55e4e5fb1683"
+    },
+    {
+      "category": "automatic",
+      "scenario": "AUTO-D",
+      "schema": "pekko_test_cdc_window_230fe28ea26d"
+    },
+    {
+      "category": "automatic",
+      "scenario": "AUTO-E",
+      "schema": "pekko_test_cdc_window_25ca385ca078"
+    },
+    {
+      "category": "automatic",
+      "scenario": "AUTO-F",
+      "schema": "pekko_test_cdc_window_322bad5fab20"
+    },
+    {
+      "category": "automatic",
+      "scenario": "R1",
+      "schema": "pekko_test_cdc_window_49f14555a1b6"
+    },
+    {
+      "category": "automatic",
+      "scenario": "R2",
+      "schema": "pekko_test_cdc_window_118f56e33c55"
+    },
+    {
+      "category": "automatic",
+      "scenario": "R3",
+      "schema": "pekko_test_cdc_window_9c6760450e75"
+    },
+    {
+      "category": "automatic",
+      "scenario": "R4",
+      "schema": "pekko_test_cdc_window_ef7e94548196"
+    },
+    {
+      "category": "automatic",
+      "scenario": "R5",
+      "schema": "pekko_test_cdc_window_6daa380afc8a"
+    },
+    {
+      "category": "automatic",
+      "scenario": "R6",
+      "schema": "pekko_test_cdc_window_8b23b8cb5e38"
+    },
+    {
+      "category": "automatic",
+      "scenario": "R7-PK",
+      "schema": "pekko_test_cdc_window_3029924c6909"
+    },
+    {
+      "category": "automatic",
+      "scenario": "R7-D",
+      "schema": "pekko_test_cdc_window_8a078457f042"
+    },
+    {
+      "category": "automatic",
+      "scenario": "REJECT-J",
+      "schema": "pekko_test_cdc_window_76f1b478afcb"
+    },
+    {
+      "category": "automatic",
+      "scenario": "REJECT-J-RETRY",
+      "schema": "pekko_test_cdc_window_db5d0cb1c69a"
+    },
+    {
+      "category": "regression",
+      "scenario": "N0",
+      "schema": "pekko_test_cdc_window_03edb48b2906"
+    },
+    {
+      "category": "regression",
+      "scenario": "J1",
+      "schema": "pekko_test_cdc_window_d581ad4cf42a"
+    },
+    {
+      "category": "regression",
+      "scenario": "J2",
+      "schema": "pekko_test_cdc_window_dcffef9ea7f5"
+    },
+    {
+      "category": "regression",
+      "scenario": "C1",
+      "schema": "pekko_test_cdc_window_9250213076a0"
+    },
+    {
+      "category": "regression",
+      "scenario": "C0",
+      "schema": "pekko_test_cdc_window_15c326723e4c"
+    },
+    {
+      "category": "regression",
+      "scenario": "K1",
+      "schema": "pekko_test_cdc_window_7007b1a629a8"
+    },
+    {
+      "category": "regression",
+      "scenario": "K2",
+      "schema": "pekko_test_cdc_window_21ae572dc308"
+    },
+    {
+      "category": "release",
+      "scenario": "none",
+      "schema": "pekko_test_cdc_window_4d5af5cfcb96"
+    },
+    {
+      "category": "release",
+      "scenario": "cancel-T",
+      "schema": "pekko_test_cdc_window_bc12f71c65b1"
+    },
+    {
+      "category": "release",
+      "scenario": "stop-T",
+      "schema": "pekko_test_cdc_window_320f557f5086"
+    }
+  ],
+  "backend": {
+    "tests": 504,
+    "suites": 83,
+    "failed": 0,
+    "aborted": 0,
+    "package": true,
+    "universalStage": true,
+    "dockerStage": true,
+    "verificationJvmShutdownSeconds": 60,
+    "defaultShutdownUnchanged": true
+  },
+  "quickEntry": {
+    "tests": 68,
+    "suites": 6,
+    "failed": 0
+  },
+  "console": {
+    "isolatedOfflineFrozenInstall": true,
+    "tests": 5,
+    "failed": 0,
+    "build": true,
+    "lint": true,
+    "liveBrowserTest": false
+  },
+  "oldCborSamples": 18,
+  "credentialEnvironmentNames": [
+    "CDC_WINDOW_MYSQL_HOST",
+    "CDC_WINDOW_MYSQL_PASSWORD",
+    "CDC_WINDOW_MYSQL_PORT",
+    "CDC_WINDOW_MYSQL_USER",
+    "RUN_MYSQL_CDC_RECOVERY_WINDOWS"
+  ],
+  "historicalFilesPreserved": 166,
+  "imageBuiltOrPublished": false
+}

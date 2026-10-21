@@ -4,7 +4,13 @@
 和 HTTP 的 CDC / 工作流项目，以长期运行的 CDC 复制任务为主，保留必要的线性工作流和调度。当前验收范围是单数据中心、共享 JDBC 持久化和严格的
 线性流水线；没有生产就绪、可用性百分比、固定故障恢复时间或线性扩展承诺。
 
-源码入口和各层职责见[源码导航](docs/CODE_STRUCTURE.md)，所有权、退出和高可用边界见[架构说明](docs/ARCHITECTURE.md)。 本轮验证及未覆盖范围见[架构与退出记录](docs/experiments/2026-10-21-architecture-ha/README.md)。
+源码入口和各层职责见[源码导航](docs/architecture/code-structure.md)，所有权、退出和高可用边界见[架构说明](docs/architecture/README.md)。 本轮目录迁移、兼容检查及回归见[目录整理记录](docs/experiments/2026-10-21-directory-layout/README.md)；此前退出改造见[架构与退出记录](docs/experiments/2026-10-21-architecture-ha/README.md)。
+
+## 仓库入口
+
+`server` 是后端，`console` 是管理界面，`scripts` 是本地命令，`deploy/local` 与 `deploy/kubernetes` 保存环境配置。[文档导航](docs/README.md)将架构、使用指南、文章、开发记录和历史文档分开，实验原路径保留。
+
+旧模块和 k8s 路径仅保留兼容软链接，源码以新目录为准。物理目录调整不改变 SBT 项目 ID `pekko-server`、原 main 和根命令入口。详细包职责与兼容类型见[目录说明](docs/development/directory-layout.md)。编辑器隐藏生成目录，未删除实验数据或工具状态。
 
 ## 当前边界
 
@@ -49,12 +55,12 @@ sbt checkDeps
 
 `dockerBuild` 指向 `pekko-server/Docker/publishLocal`；`dockerPublish` 会发布镜像，
 应在明确发布目标后另行执行。旧 Actor、模拟 CDC、CRDT 和工具示例已迁入 Test，
-原包名和内容保留，见[示例入口与迁移说明](pekko-server/src/test/examples/README.md)。
+原包名和内容保留，见[示例入口与迁移说明](server/src/test/examples/README.md)。
 
 ## 最小管理界面（B 阶段）
 
-`xxt-ui` 提供分页摘要、完整 DSL 创建、请求执行、近期历史，以及已有计划的暂停/恢复。
-入口与本地启动方式见 [UI README](xxt-ui/README.md)，实际检查和兼容变化见
+`console` 提供分页摘要、完整 DSL 创建、请求执行、近期历史，以及已有计划的暂停/恢复。
+入口与本地启动方式见 [UI README](console/README.md)，实际检查和兼容变化见
 [B 阶段记录](docs/experiments/2026-10-19-stage-b-console/README.md)。
 列表仍枚举 Journal ID 并查询 Actor；不提供全局任务总数或稳定快照分页。
 SQL/通用 DAG 演示不再进入产品路由；未知指标不再返回固定数值。
@@ -62,7 +68,7 @@ SQL/通用 DAG 演示不再进入产品路由；未知指标不再返回固定�
 ## 写入热路径与查询上限
 
 CDC Sink 在一次事务内复用语句并保留逐条事件顺序；列表查询限制请求数与未完成 ask，
-失败、超时后也不提前归还仍在运行的 ask 额度。配置及兼容边界见[配置指南](docs/CONFIGURATION.md#列表查询的资源上限)。
+失败、超时后也不提前归还仍在运行的 ask 额度。配置及兼容边界见[配置指南](docs/guides/configuration.md#列表查询的资源上限)。
 本轮 Protobuf 调整保留 Calcite 测试，实际结果见[优化记录](docs/experiments/2026-10-20-hot-path-query/README.md)。
 当前完整组 C2 已提供同一 execution 最多三次持久化恢复；明确拒绝不消耗新预算，结果不确定才进入已有有界恢复。历史失败保留，见 [C2 审查](docs/experiments/2026-10-21-c2-final-review/README.md)。没有 70 万任务容量结论。
 
@@ -72,12 +78,12 @@ CDC Sink 在一次事务内复用语句并保留逐条事件顺序；列表查�
 
 ```bash
 mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_NAME" \
-  < pekko-server/src/main/resources/db/mysql/pekko-persistence-schema.sql
+  < server/src/main/resources/db/mysql/pekko-persistence-schema.sql
 ```
 
 必需变量为 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USER` 和 `DB_PASSWORD`。
-完整配置与外部 MySQL 恢复测试见 [配置指南](docs/CONFIGURATION.md)，两节点本地
-拓扑与生产注意事项见 [部署指南](docs/DEPLOYMENT.md)。
+完整配置与外部 MySQL 恢复测试见 [配置指南](docs/guides/configuration.md)，两节点本地
+拓扑与生产注意事项见 [部署指南](docs/guides/deployment.md)。
 
 ## 证据边界
 
