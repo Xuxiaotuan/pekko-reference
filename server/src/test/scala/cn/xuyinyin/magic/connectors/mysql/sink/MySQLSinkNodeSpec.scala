@@ -41,6 +41,35 @@ class MySQLSinkNodeSpec extends STSpec {
   }
 
   "MySQLSinkNode" should {
+    "report unconfirmed split target release instead of allowing a retry" in {
+      withFixture { fixture =>
+        fixture.initializeLedger(); fixture.initializeSplitEvidence(); fixture.failSplitClose = true
+        val batch = sourceBatch(0L, "1", Vector(row(1))).copy(partitionId = "plan:0",
+          cursor = SourceCursor(cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.CursorKind, "1", "10"))
+        val failed = try intercept[cn.xuyinyin.magic.workflow.engine.CdcExecutionException] {
+          Await.result(fixture.node.commitBatch(sinkNode(100), "w", "e", batch, batch.rows, _ => ()), 5.seconds)
+        } finally fixture.failSplitClose = false
+        failed.failure.releaseConfirmed shouldBe false
+        fixture.selectCount("sink_rows") shouldBe 1
+      }
+    }
+
+    "reject changed split page content even when cursor and row counts match a committed batch" in {
+      withFixture { fixture =>
+        fixture.initializeLedger()
+        fixture.initializeSplitEvidence()
+        val batch = sourceBatch(0L, "1", Vector(row(1))).copy(partitionId = "plan:0",
+          cursor = SourceCursor(cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.CursorKind, "1", "10"))
+        Await.result(fixture.node.commitBatch(sinkNode(100), "w", "e", batch, batch.rows, _ => ()), 5.seconds)
+        val changed = batch.copy(rows = Vector("""{"id":1,"payload":"changed"}"""))
+        intercept[IllegalStateException] {
+          Await.result(fixture.node.commitBatch(sinkNode(100), "w", "e", changed, changed.rows, _ => ()), 5.seconds)
+        }
+        fixture.selectString("SELECT payload FROM sink_rows WHERE id=1") shouldBe "row-1"
+        fixture.selectCount("pekko_snapshot_batch_evidence") shouldBe 1
+      }
+    }
+
     "pass an environment-backed password to JDBC setup without exposing it in workflow data, logs, or errors" in {
       val node = sinkNode(batchSize = 100, passwordEnv = Some("WORKFLOW_DB_PASSWORD"))
       val capturedPasswords = ArrayBuffer.empty[String]
@@ -532,6 +561,7 @@ class MySQLSinkNodeSpec extends STSpec {
   }
 
   private final class H2Fixture(failInnerSink: Boolean, claimHook: String => Unit) {
+    var failSplitClose = false
     private val jdbcUrl = s"jdbc:h2:mem:mysql_sink_${UUID.randomUUID().toString.replace('-', '_')};MODE=MySQL;DB_CLOSE_DELAY=0"
     Class.forName("org.h2.Driver")
     private val inspectionConnection: Connection = DriverManager.getConnection(jdbcUrl, "sa", "")
@@ -553,11 +583,16 @@ class MySQLSinkNodeSpec extends STSpec {
         config.setPassword("")
         config.setMaximumPoolSize(1)
         config.setMinimumIdle(0)
-        val dataSource = new HikariDataSource(config)
+        val dataSource = new HikariDataSource(config) {
+          override def close(): Unit = { super.close(); if (failSplitClose) throw new IllegalStateException("injected target close observation failure") }
+        }
         dataSources :+= dataSource
         created.trySuccess(dataSource)
         dataSource
       }
+
+      override protected[sink] def createSplitDataSource(host: String, port: Int, database: String, username: String, password: String): HikariDataSource =
+        createDataSource(host, port, database, username, password)
 
       override protected[sink] def createInnerSink(
         dataSource: HikariDataSource,
@@ -609,6 +644,12 @@ class MySQLSinkNodeSpec extends STSpec {
         while (result.next()) columns += result.getString("COLUMN_NAME").toLowerCase
         columns.result()
       } finally result.close()
+    }
+
+    def initializeSplitEvidence(): Unit = {
+      val statement = inspectionConnection.createStatement()
+      try statement.execute("CREATE TABLE pekko_snapshot_batch_evidence (batch_id VARCHAR(64) PRIMARY KEY, source_sha256 VARCHAR(64) NOT NULL, target_sha256 VARCHAR(64) NOT NULL)")
+      finally statement.close()
     }
 
     def initializeLedger(): Unit = {

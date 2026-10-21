@@ -185,6 +185,43 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
   }
 
   "MySQLSnapshotSourceNode" should {
+    "preserve unconfirmed metadata release on the split path" in {
+      withFixture() { f =>
+        f.failClose = true
+        val base = f.snapshotNode()
+        val n = base.copy(config = JsObject(base.config.fields + ("splitRows" -> JsNumber(4))))
+        val error = intercept[cn.xuyinyin.magic.workflow.engine.CdcExecutionException] {
+          Await.result(f.node.discoverBoundary(n, None, _ => ()), 5.seconds)
+        }
+        error.failure.releaseConfirmed shouldBe false
+      }
+    }
+
+    "discover real-key splits and resume pages independently inside their fixed ranges" in {
+      import cn.xuyinyin.magic.workflow.snapshot._
+      withFixture() { f =>
+        val node = f.snapshotNode()
+        val plan = SnapshotSplitPlanState("p", node.id, "fixed", Some("12"), 2, 3, 2, 4096)
+        val first = Await.result(f.node.discoverSplit(node, plan, None, 0L), 5.seconds).get
+        first.upper shouldBe "5"
+        val second = Await.result(f.node.discoverSplit(node, plan, Some(first.upper), 1L), 5.seconds).get
+        second.upper shouldBe "12"
+        val session = f.node.openSplit(node, "e", plan, first, None, _ => (), ec)
+        val pages = Await.result(session.source.runWith(Sink.seq), 5.seconds)
+        Await.result(session.close(), 5.seconds)
+        pages.map(_.rows.size) shouldBe Seq(2, 1)
+        f.observedQueryTimeouts should contain(30)
+        pages.map(_.partitionId).distinct shouldBe Seq(first.id)
+        val c = pages.head
+        val checkpoint = BatchCheckpoint(c.sourceNodeId, c.partitionId, c.batchSequence, c.batchId, c.cursor, 2, 2)
+        val resumed = f.node.openSplit(node, "e", plan, first, Some(checkpoint), _ => (), ec)
+        val remaining = Await.result(resumed.source.runWith(Sink.seq), 5.seconds)
+        Await.result(resumed.close(), 5.seconds)
+        remaining.map(_.batchId) shouldBe pages.tail.map(_.batchId)
+        remaining.map(_.cursor.value) shouldBe Seq("5")
+      }
+    }
+
     "pass an environment-backed password to JDBC setup without exposing it in workflow data, logs, or errors" in {
       val node = environmentPasswordSnapshotNode()
       val capturedPasswords = ArrayBuffer.empty[String]
@@ -527,10 +564,13 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
     Class.forName("org.h2.Driver")
     private val inspectionConnection: Connection = DriverManager.getConnection(jdbcUrl, "sa", "")
     var failClose = false
+    var observedQueryTimeouts = Vector.empty[Int]
     private var dataSources = Vector.empty[HikariDataSource]
     private var nextCreation: Option[Promise[HikariDataSource]] = None
 
     val node = new MySQLSnapshotSourceNode {
+      override protected[source] def createSplitDataSource(host: String, port: Int, database: String, username: String, password: String): HikariDataSource = newDataSource()
+
       override protected[source] def createDataSource(
         host: String,
         port: Int,
@@ -564,6 +604,22 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
       config.setMaximumPoolSize(1)
       config.setMinimumIdle(0)
       val dataSource = new HikariDataSource(config) {
+        override def getConnection: Connection = {
+          val connection = super.getConnection
+          Proxy.newProxyInstance(getClass.getClassLoader, Array(classOf[Connection]), (_, method, args) => {
+            try {
+              val result = method.invoke(connection, Option(args).getOrElse(Array.empty[AnyRef]): _*)
+              if (method.getName == "prepareStatement") {
+                val statement = result.asInstanceOf[PreparedStatement]
+                Proxy.newProxyInstance(getClass.getClassLoader, Array(classOf[PreparedStatement]), (_, m, a) => {
+                  if (m.getName == "executeQuery") observedQueryTimeouts :+= statement.getQueryTimeout
+                  try m.invoke(statement, Option(a).getOrElse(Array.empty[AnyRef]): _*)
+                  catch { case e: InvocationTargetException => throw e.getCause }
+                })
+              } else result
+            } catch { case e: InvocationTargetException => throw e.getCause }
+          }).asInstanceOf[Connection]
+        }
         override def close(): Unit = {
           super.close()
           if (failClose) throw new IllegalStateException("test datasource close failure")

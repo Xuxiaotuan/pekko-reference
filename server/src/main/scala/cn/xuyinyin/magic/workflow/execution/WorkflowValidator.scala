@@ -75,6 +75,12 @@ object WorkflowValidator {
       } else {
         val pipeline = ValidatedPipeline(source, path.drop(1).dropRight(1), sink)
         val cdcErrors = Vector.newBuilder[WorkflowValidationError]
+        if (source.nodeType == "mysql.snapshot" && source.config.fields.contains("splitRows")) {
+          if (source.config.fields.get("snapshotConsistency") != Some(spray.json.JsString("quiescent")))
+            cdcErrors += WorkflowValidationError("snapshot_split_consistency_required", "Split snapshots require snapshotConsistency=quiescent; concurrent source changes are unsupported")
+          if (pipeline.transforms.nonEmpty || sink.nodeType != "mysql.write")
+            cdcErrors += WorkflowValidationError("snapshot_split_pipeline", "Split snapshots currently require a direct mysql.write sink")
+        }
         if (source.nodeType == "mysql.cdc") {
           if (source.config.fields.contains("password")) {
             cdcErrors += WorkflowValidationError(

@@ -24,6 +24,8 @@ import scala.util.control.NonFatal
 
 /** The workflow entity's bounded durable projection; the journal is the full audit trail. */
 object EventSourcedWorkflowActor {
+  import cn.xuyinyin.magic.workflow.snapshot._
+  import cn.xuyinyin.magic.workflow.execution.SnapshotSplitRunContext
   import WorkflowDefinitionCodec.{canonicalAndValidateJson, decodeWorkflow, workflowSourceNode}
   import WorkflowHistory._
   private[actors] val MaxRecentExecutions = 50
@@ -48,6 +50,10 @@ object EventSourcedWorkflowActor {
   final case class ExecuteScheduled(scheduleId: String, scheduledAt: Long, triggerId: String, replyTo: ActorRef[Reply]) extends Command
   final case class InitializeSnapshot(executionId: String, boundary: SnapshotBoundary, replyTo: ActorRef[Reply]) extends Command
   final case class AdvanceCheckpoint(executionId: String, checkpoint: BatchCheckpoint, replyTo: ActorRef[Reply]) extends Command
+  final case class ReadSnapshotSplits(executionId: String, attemptId: String, replyTo: ActorRef[Reply]) extends Command
+  final case class UpdateSnapshotSplits(executionId: String, attemptId: String, update: SnapshotSplitUpdate, replyTo: ActorRef[Reply]) extends Command
+  final case class SnapshotSplitsRead(value: Option[SnapshotSplitState]) extends Reply
+  final case class SnapshotSplitsStored(value: SnapshotSplitState) extends Reply
   final case class GetSummary(replyTo: ActorRef[WorkflowSummary]) extends Command
   final case class GetStatus(replyTo: ActorRef[StatusResponse]) extends Command
   final case class GetExecutionHistory(page: Int, pageSize: Int, replyTo: ActorRef[ExecutionHistoryResponse]) extends Command
@@ -148,7 +154,9 @@ object EventSourcedWorkflowActor {
     recentExecutions: Vector[StoredExecutionSummary] = Vector.empty,
     lastAcceptedTriggerBySchedule: Vector[ScheduleWatermark] = Vector.empty,
     manualRequests: Vector[ManualRequestRecord] = Vector.empty,
-    workflowSourceProgress: Option[WorkflowSourceProgress] = None
+    workflowSourceProgress: Option[WorkflowSourceProgress] = None,
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT)
+    splitSnapshot: Option[SnapshotSplitState] = None
   ) extends CborSerializable
 
   final case class WorkflowSummary(
@@ -209,6 +217,23 @@ object EventSourcedWorkflowActor {
     stop.intercept(state, command).getOrElse {
     if (recoveryGate.get() && !allowedDuringRecovery(command)) Effect.stash()
     else command match {
+    case ReadSnapshotSplits(id, token, replyTo) =>
+      if (token != activeAttemptId.get() || !state.currentExecution.exists(_.executionId == id)) rejectCheckpoint(replyTo, "stale snapshot execution")
+      else immediate(replyTo, SnapshotSplitsRead(state.splitSnapshot))
+    case UpdateSnapshotSplits(id, token, update, replyTo) =>
+      if (token != activeAttemptId.get() || !state.currentExecution.exists(_.executionId == id)) rejectCheckpoint(replyTo, "stale snapshot execution")
+      else {
+        val validIdentity = update match {
+          case CommitSnapshotPage(c, _) => c.batchId == BatchId.sha256(id, c.sourceNodeId, c.partitionId, c.batchSequence)
+          case InitializeSnapshotSplits(p) => reliableSourceNodeId(state).contains(p.sourceNodeId)
+          case _ => true
+        }
+        val next = if (validIdentity) scala.util.Try(SnapshotSplitState.advance(state.splitSnapshot, update)).toOption.flatMap(_.toOption) else None
+        next match {
+          case Some(value) => Effect.persist(SnapshotSplitsUpdated(id, update, now())).thenReply(replyTo)(_ => SnapshotSplitsStored(value))
+          case None => rejectCheckpoint(replyTo, "snapshot split update rejected")
+        }
+      }
     case DefineWorkflow(_, _, replyTo) if state.currentExecution.nonEmpty => immediate(replyTo, AlreadyRunning(state.currentExecution.get.executionId))
     case DefineWorkflow(workflowJson, expectedRevision, replyTo) => validateDefinition(workflowId, state, workflowJson, expectedRevision, replyTo, executionEngine.nodeRegistry)
     case Initialize(workflowJson, replyTo) =>
@@ -237,7 +262,9 @@ object EventSourcedWorkflowActor {
     case EngineFinished(executionId, token, result) if token == activeAttemptId.get() && state.currentExecution.exists(_.executionId == executionId) =>
       activeEngineExecutionId.compareAndSet(executionId, null)
       activeAttemptId.compareAndSet(token, null)
-      if (!result.success && recovery.eligible(state)) {
+      if (!result.success && decodeWorkflow(state).exists(executionEngine.supportsSplitSnapshot)) {
+        releaseRecoveryGateAfter(Effect.persist(SnapshotExecutionPaused(executionId, result.failure.fold("snapshot_execution_failed")(_.code), now())), recoveryGate)
+      } else if (!result.success && recovery.eligible(state)) {
         recovery.decide(state, result.failure.getOrElse(ExecutionFailure(ExecutionFailure.Unclassified,"execution")))
       } else {
       val terminal: EffectBuilder[WorkflowEvent, WorkflowState] = boundedPersistedResult(result) match {
@@ -249,13 +276,17 @@ object EventSourcedWorkflowActor {
     case EngineCrashed(executionId, token, message, failure) if token == activeAttemptId.get() && state.currentExecution.exists(_.executionId == executionId) =>
       activeEngineExecutionId.compareAndSet(executionId, null)
       activeAttemptId.compareAndSet(token, null)
-      if (recovery.eligible(state)) recovery.decide(state, failure)
+      if (decodeWorkflow(state).exists(executionEngine.supportsSplitSnapshot))
+        releaseRecoveryGateAfter(Effect.persist(SnapshotExecutionPaused(executionId, failure.code, now())), recoveryGate)
+      else if (recovery.eligible(state)) recovery.decide(state, failure)
       else releaseRecoveryGateAfter(
         Effect.persist(ExecutionFailed(executionId, failedPersistedResult(message), now())),
         recoveryGate
       )
     case BeginRecovery(id, attempt) => recovery.begin(state, id, attempt)
     case RecoveryReleaseChecked(id, attempt, status) => recovery.released(state, id, attempt, status)
+    case RecoverInterrupted(executionId) if state.currentExecution.exists(_.executionId == executionId) && state.status.value == "snapshot_blocked" =>
+      releaseRecoveryGateAfter(Effect.none, recoveryGate)
     case RecoverInterrupted(executionId) if state.currentExecution.exists(_.executionId == executionId) && recovery.eligible(state) =>
       val current = state.currentExecution.get
       current.recovery match {
@@ -589,12 +620,23 @@ object EventSourcedWorkflowActor {
         case CheckpointRejected(reason) => scala.concurrent.Future.failed(new CdcExecutionException(
           ExecutionFailure(ExecutionFailure.ProtocolConflict,"journal",Some(checkpoint.batchId)),new IllegalStateException(reason)))
         case other => scala.concurrent.Future.failed(new IllegalStateException(s"unexpected checkpoint reply: ${other.getClass.getSimpleName}"))
-      }
+      },
+      Some(SnapshotSplitRunContext(
+        () => context.self.ask[Reply](r => ReadSnapshotSplits(execution.executionId, token, r)).flatMap {
+          case SnapshotSplitsRead(value) => scala.concurrent.Future.successful(value)
+          case _ => scala.concurrent.Future.failed(new CdcExecutionException(ExecutionFailure(ExecutionFailure.ProtocolConflict, "snapshot-read"), new IllegalStateException("snapshot read rejected")))
+        },
+        update => context.self.ask[Reply](r => UpdateSnapshotSplits(execution.executionId, token, update, r)).flatMap {
+          case SnapshotSplitsStored(value) => scala.concurrent.Future.successful(value)
+          case CheckpointRejected(_) => scala.concurrent.Future.failed(new CdcExecutionException(ExecutionFailure(ExecutionFailure.ProtocolConflict, "snapshot-journal"), new IllegalStateException("snapshot update explicitly rejected")))
+          case _ => scala.concurrent.Future.failed(new IllegalStateException("unexpected snapshot update reply"))
+        }
+      ))
     )
   }
 
   private def allowedDuringRecovery(command: Command): Boolean = command match {
-    case _: InitializeSnapshot | _: AdvanceCheckpoint | _: InitializeFromAttempt | _: CheckpointFromAttempt | _: EngineFinished | _: EngineCrashed => true
+    case _: ReadSnapshotSplits | _: UpdateSnapshotSplits | _: InitializeSnapshot | _: AdvanceCheckpoint | _: InitializeFromAttempt | _: CheckpointFromAttempt | _: EngineFinished | _: EngineCrashed => true
     case _: GetSummary | _: GetStatus | _: GetExecutionHistory | _: GetReliableRunState => true
     case _: BeginRecovery | _: RecoveryReleaseChecked => true
     case _: RecoverInterrupted | _: RecoveryEngineLaunched => true

@@ -11,7 +11,7 @@ import spray.json._
 import java.sql.{Connection, DatabaseMetaData, ResultSet, Types}
 import scala.concurrent.{ExecutionContext, Future}
 
-class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource {
+class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource with cn.xuyinyin.magic.workflow.spi.SnapshotSplitSource {
   import MySQLSnapshotSourceNode._
 
   override val nodeType: String = "mysql.snapshot"
@@ -31,14 +31,16 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource {
       var dataSource: HikariDataSource = null
       var connection: Connection = null
       try {
-        dataSource = createDataSource(config.host, config.port, config.database, config.username, config.password)
+        dataSource = if (node.config.fields.contains("splitRows"))
+          createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
+        else createDataSource(config.host, config.port, config.database, config.username, config.password)
         connection = dataSource.getConnection
         val projection = resolveProjection(connection, config)
-        val upperBound = maxPrimaryKey(connection, projection)
+        val upperBound = maxPrimaryKey(connection, projection, node.config.fields.contains("splitRows"))
         SnapshotBoundary(node.id, PartitionId, upperBound)
       } finally {
-        close(connection)
-        close(dataSource)
+        if (node.config.fields.contains("splitRows")) closeSplitMetadata(connection, dataSource)
+        else { close(connection); close(dataSource) }
       }
     }
   }
@@ -81,6 +83,73 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource {
     }
   }
 
+  override def discoverSplit(node: WorkflowDSL.Node, plan: cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitPlanState,
+    lower: Option[String], index: Long)(implicit ec: ExecutionContext): Future[Option[cn.xuyinyin.magic.workflow.snapshot.SnapshotSplit]] = Future {
+    val config = MySQLSnapshotSourceConfig.parse(node, getenv)
+    plan.upper.flatMap { upper =>
+      val ds = createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
+      var connection: Connection = null
+      try {
+        connection = ds.getConnection
+        val projection = resolveProjection(connection, config)
+        val predicate = lower.fold("")(_ => s"${quote(projection.primaryKey)} > ? AND ")
+        val sql = s"SELECT MAX(chunk_key) FROM (SELECT ${quote(projection.primaryKey)} AS chunk_key FROM ${quote(projection.table)} " +
+          s"WHERE $predicate${quote(projection.primaryKey)} <= ? ORDER BY ${quote(projection.primaryKey)} LIMIT ?) AS chunk_keys"
+        val statement = connection.prepareStatement(sql)
+        statement.setQueryTimeout(30)
+        try {
+          var p = 1
+          lower.foreach { key => statement.setBigDecimal(p, new java.math.BigDecimal(key)); p += 1 }
+          statement.setBigDecimal(p, new java.math.BigDecimal(upper)); statement.setInt(p + 1, plan.splitRows)
+          val rs = statement.executeQuery()
+          try { rs.next(); Option(rs.getObject(1)).map(v => cn.xuyinyin.magic.workflow.snapshot.SnapshotSplit(
+            s"${plan.id}:$index", index, lower, canonicalDecimal(v))) } finally rs.close()
+        } finally statement.close()
+      } finally closeSplitMetadata(connection, ds)
+    }
+  }
+
+  override def openSplit(node: WorkflowDSL.Node, executionId: String, plan: cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitPlanState,
+    split: cn.xuyinyin.magic.workflow.snapshot.SnapshotSplit, checkpoint: Option[BatchCheckpoint], onLog: String => Unit,
+    closeEc: ExecutionContext)(implicit ec: ExecutionContext): BatchSourceSession = {
+    require(plan.sourceNodeId == node.id && split.id == s"${plan.id}:${split.index}", "snapshot split identity mismatch")
+    checkpoint.foreach { c => require(c.partitionId == split.id && c.sourceNodeId == node.id &&
+      c.cursor.upperBound == split.upper && c.cursor.kind == cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.CursorKind,
+      "snapshot split checkpoint mismatch") }
+    val config = MySQLSnapshotSourceConfig.parse(node, getenv).copy(chunkSize = plan.pageRows)
+    BatchSourceSession.resource[BatchReader](
+      () => Future {
+        val reader = openBatchReader(config, split.upper, checkpoint.map(_.cursor.value).orElse(split.lower),
+          checkpoint.fold(0L)(_.batchSequence + 1L), splitMode = true)
+        reader.partition = split.id
+        reader.cursorKind = cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.CursorKind
+        reader.maxPageBytes = plan.maxPageBytes
+        reader
+      }(ec),
+      r => Future(r.nextBatch(node.id, executionId))(ec),
+      r => Future { r.close(); Done }(closeEc), managed = false, drainReads = true)
+  }
+
+  private def closeSplitMetadata(resources: AutoCloseable*): Unit = {
+    var failure: Throwable = null
+    resources.filter(_ != null).foreach { resource =>
+      try resource.close()
+      catch { case scala.util.control.NonFatal(error) =>
+        if (failure == null) failure = error else failure.addSuppressed(error)
+      }
+    }
+    if (failure != null) throw new cn.xuyinyin.magic.workflow.engine.CdcExecutionException(
+      cn.xuyinyin.magic.workflow.engine.ExecutionFailure("local_release_unconfirmed", "snapshot-metadata-close", releaseConfirmed = false), failure)
+  }
+
+  protected[source] def createSplitDataSource(host: String, port: Int, database: String, username: String, password: String): HikariDataSource = {
+    val config = new HikariConfig()
+    config.setJdbcUrl(s"jdbc:mysql://$host:$port/$database?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&useCursorFetch=true&socketTimeout=30000&connectTimeout=5000")
+    config.setUsername(username); config.setPassword(password); config.setDriverClassName("com.mysql.cj.jdbc.Driver")
+    config.setMaximumPoolSize(1); config.setMinimumIdle(0); config.setConnectionTimeout(10000)
+    new HikariDataSource(config)
+  }
+
   protected[source] def createDataSource(
     host: String,
     port: Int,
@@ -104,12 +173,14 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource {
     config: MySQLSnapshotSourceConfig,
     upperBound: String,
     cursor: Option[String],
-    sequence: Long
+    sequence: Long,
+    splitMode: Boolean = false
   ): BatchReader = {
     var dataSource: HikariDataSource = null
     var connection: Connection = null
     try {
-      dataSource = createDataSource(config.host, config.port, config.database, config.username, config.password)
+      dataSource = if (splitMode) createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
+        else createDataSource(config.host, config.port, config.database, config.username, config.password)
       connection = dataSource.getConnection
       val projection = resolveProjection(connection, config)
       new BatchReader(config, projection, dataSource, connection, upperBound, cursor, sequence)
@@ -245,8 +316,9 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource {
       .replace("%", escape + "%")
   }
 
-  private def maxPrimaryKey(connection: Connection, projection: ResolvedProjection): Option[String] = {
+  private def maxPrimaryKey(connection: Connection, projection: ResolvedProjection, bounded: Boolean = false): Option[String] = {
     val statement = connection.prepareStatement(s"SELECT MAX(${quote(projection.primaryKey)}) FROM ${quote(projection.table)}")
+    if (bounded) statement.setQueryTimeout(30)
     try {
       val resultSet = statement.executeQuery()
       try {
@@ -293,6 +365,9 @@ object MySQLSnapshotSourceNode {
     initialCursor: Option[String],
     initialSequence: Long
   ) extends AutoCloseable {
+    var partition: String = PartitionId
+    var cursorKind: String = "mysql.numeric-pk"
+    var maxPageBytes: Int = Int.MaxValue
     private var cursor = initialCursor
     private var sequence = initialSequence
 
@@ -307,6 +382,10 @@ object MySQLSnapshotSourceNode {
             s"WHERE ${quote(projection.primaryKey)} <= ? ORDER BY ${quote(projection.primaryKey)} ASC LIMIT ?", false)
       }
       val statement = connection.prepareStatement(sql)
+      if (cursorKind == cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.CursorKind) {
+        statement.setQueryTimeout(30)
+        statement.setFetchSize(math.min(config.chunkSize, 128))
+      }
       try {
         var parameter = 1
         if (hasCursor) {
@@ -320,18 +399,24 @@ object MySQLSnapshotSourceNode {
         try {
           val rows = Vector.newBuilder[String]
           var lastCursor: Option[String] = None
+          var encodedBytes = 0L
           while (resultSet.next()) {
-            rows += rowAsJson(resultSet)
+            val row = rowAsJson(resultSet)
+            if (maxPageBytes != Int.MaxValue) {
+              encodedBytes += row.getBytes(java.nio.charset.StandardCharsets.UTF_8).length
+              require(encodedBytes <= maxPageBytes, "snapshot page exceeds maxPageBytes; pagination must not change within an execution")
+            }
+            rows += row
             lastCursor = Some(canonicalDecimal(resultSet.getObject(projection.primaryKeyIndex)))
           }
           val batchRows = rows.result()
           lastCursor.map { nextCursor =>
             val batch = SourceBatch(
               sourceNodeId = sourceNodeId,
-              partitionId = PartitionId,
+              partitionId = partition,
               batchSequence = sequence,
-              batchId = BatchId.sha256(executionId, sourceNodeId, PartitionId, sequence),
-              cursor = SourceCursor("mysql.numeric-pk", nextCursor, upperBound),
+              batchId = BatchId.sha256(executionId, sourceNodeId, partition, sequence),
+              cursor = SourceCursor(cursorKind, nextCursor, upperBound),
               rows = batchRows
             )
             cursor = Some(nextCursor)

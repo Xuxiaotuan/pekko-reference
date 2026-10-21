@@ -51,6 +51,15 @@ private[actors] object WorkflowStateTransitions {
         recovery = Some(c.recovery.getOrElse(ExecutionRecoveryState()).copy(phase="blocked", reasonCode=code, stage=stage, failure=fault.orElse(c.recovery.flatMap(_.failure)))))))
       case _ => state
     }
+    case SnapshotSplitsUpdated(id, update, _) => state.currentExecution match {
+      case Some(c) if c.executionId == id => state.copy(splitSnapshot = Some(
+        cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.advance(state.splitSnapshot, update).fold(e => throw new IllegalStateException(e), identity)))
+      case _ => state
+    }
+    case SnapshotExecutionPaused(id, _, _) => state.currentExecution match {
+      case Some(c) if c.executionId == id => state.copy(status = WorkflowStatus("snapshot_blocked"))
+      case _ => state
+    }
     case ExecutionCompleted(executionId, result, timestamp) => terminal(state, executionId, result, Completed, timestamp)
     case ExecutionFailed(executionId, result, timestamp) => terminal(state, executionId, result, Failed, timestamp)
     case ExecutionSkipped(executionId, trigger, reason, timestamp) =>
@@ -62,6 +71,7 @@ private[actors] object WorkflowStateTransitions {
     state.copy(
       status = Running,
       currentExecution = Some(execution),
+      splitSnapshot = None,
       manualRequests = manual,
       lastAcceptedTriggerBySchedule = updateWatermark(state.lastAcceptedTriggerBySchedule, execution.trigger)
     )
@@ -70,7 +80,7 @@ private[actors] object WorkflowStateTransitions {
   private def terminal(state: WorkflowState, executionId: String, result: PersistedExecutionResult, status: WorkflowStatus, timestamp: Long): WorkflowState = state.currentExecution match {
     case Some(current) if current.executionId == executionId =>
       val summary = StoredExecutionSummary(executionId, current.startedAt, timestamp, hasEndTime = true, status.value, timestamp - current.startedAt, hasDuration = true, Some(result))
-      state.copy(status = status, currentExecution = None, recentExecutions = (state.recentExecutions :+ summary).takeRight(MaxRecentExecutions))
+      state.copy(status = status, currentExecution = None, splitSnapshot = None, recentExecutions = (state.recentExecutions :+ summary).takeRight(MaxRecentExecutions))
     case _ => state
   }
 

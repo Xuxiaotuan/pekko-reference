@@ -22,7 +22,7 @@ import scala.util.{Failure, Success}
  * @author : Xuxiaotuan
  * @since : 2024-11-15
  */
-class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
+class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.magic.workflow.spi.SnapshotSplitSink {
 
   private val LedgerTable = "pekko_sync_batch_ledger"
 
@@ -89,6 +89,34 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
     }
   }
 
+  override def validateSnapshotReady(node: WorkflowDSL.Node)(implicit ec: ExecutionContext): Future[Done] = Future {
+    val config = MySQLSinkConfig.parse(node, getenv)
+    val ds = createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
+    var connection: Connection = null
+    try {
+      connection = ds.getConnection
+      Vector(
+        "SELECT batch_id, workflow_id, execution_id, source_node_id, partition_id, batch_sequence, cursor_kind, cursor_value, upper_bound, source_rows, target_rows FROM pekko_sync_batch_ledger WHERE 1=0",
+        "SELECT batch_id, source_sha256, target_sha256 FROM pekko_snapshot_batch_evidence WHERE 1=0"
+      ).foreach { sql =>
+        val statement = connection.prepareStatement(sql)
+        try { val rows = statement.executeQuery(); rows.close() } finally statement.close()
+      }
+      Done
+    } finally {
+      try closeSplitResource(connection, "snapshot-validation") finally closeSplitResource(ds, "snapshot-validation")
+    }
+  }(ec)
+
+  /** Split workers have no per-table idle connections; one physical target connection per active commit. */
+  protected[sink] def createSplitDataSource(host: String, port: Int, database: String, username: String, password: String): HikariDataSource = {
+    val config = new HikariConfig()
+    config.setJdbcUrl(s"jdbc:mysql://$host:$port/$database?rewriteBatchedStatements=true&useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&socketTimeout=10000&connectTimeout=5000")
+    config.setUsername(username); config.setPassword(password); config.setDriverClassName("com.mysql.cj.jdbc.Driver")
+    config.setMaximumPoolSize(1); config.setMinimumIdle(0); config.setConnectionTimeout(10000)
+    new HikariDataSource(config)
+  }
+
   override def commitBatch(
     node: WorkflowDSL.Node,
     workflowId: String,
@@ -98,13 +126,18 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
     onLog: String => Unit
   )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = Future {
     val config = MySQLSinkConfig.parse(node, getenv)
-    val dataSource = createDataSource(config.host, config.port, config.database, config.username, config.password)
+    val dataSource = if (batch.cursor.kind == cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.CursorKind)
+      createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
+    else createDataSource(config.host, config.port, config.database, config.username, config.password)
     try {
       val result = commitCheckpointedBatch(dataSource, config, workflowId, executionId, batch, transformedRows)
       try onLog(s"[MySQL Sink] 批次 ${batch.batchId} 已确认，目标行数: ${resultCheckpoint(result).targetRowsWritten}")
       catch { case NonFatal(_) => () }
       result
-    } finally closeDataSource(dataSource)
+    } finally {
+      if (batch.cursor.kind == cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.CursorKind) closeSplitResource(dataSource, batch.batchId)
+      else closeDataSource(dataSource)
+    }
   }
 
   protected[sink] def beforeLedgerClaim(batchId: String): Unit = ()
@@ -154,7 +187,29 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
       transformedRows.size.toLong
     )
     val expected = LedgerRecord(batch.batchId, workflowId, executionId, checkpoint)
+    val split = batch.cursor.kind == cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.CursorKind
+    var commitStarted = false
     var connection: Connection = null
+    def evidence(c: Connection, insert: Boolean): Unit = if (split) {
+      val sourceHash = cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.rowsDigest(batch.rows)
+      val targetHash = cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.rowsDigest(transformedRows)
+      val statement = c.prepareStatement(if (insert)
+        "INSERT INTO pekko_snapshot_batch_evidence (batch_id,source_sha256,target_sha256) VALUES (?,?,?)"
+        else "SELECT source_sha256,target_sha256 FROM pekko_snapshot_batch_evidence WHERE batch_id=?")
+      try {
+        statement.setString(1, batch.batchId)
+        if (insert) { statement.setString(2, sourceHash); statement.setString(3, targetHash); statement.executeUpdate(); () }
+        else {
+          val rs = statement.executeQuery()
+          try {
+            if (!rs.next() || rs.getString(1) != sourceHash || rs.getString(2) != targetHash)
+              throw new cn.xuyinyin.magic.workflow.engine.CdcExecutionException(
+                cn.xuyinyin.magic.workflow.engine.ExecutionFailure("protocol_conflict", "snapshot-evidence", Some(batch.batchId)),
+                new IllegalStateException("snapshot batch content conflicts with committed evidence"))
+          } finally rs.close()
+        }
+      } finally statement.close()
+    }
     try {
       val records = parseRows(transformedRows)
       connection = dataSource.getConnection
@@ -162,7 +217,7 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
       findLedger(connection, batch.batchId) match {
         case Some(existing) =>
           connection.rollback()
-          if (existing == expected) AlreadyCommitted(existing.checkpoint)
+          if (existing == expected) { evidence(connection, insert = false); AlreadyCommitted(existing.checkpoint) }
           else throw conflictingLedger(batch.batchId)
         case None =>
           beforeLedgerClaim(batch.batchId)
@@ -176,25 +231,37 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink {
           duplicateClaim match {
             case None =>
               writeRows(connection, config.table, records, config.mode)
+              evidence(connection, insert = true)
+              commitStarted = true
               connection.commit()
               Committed(checkpoint)
             case Some(sql) =>
               connection.rollback()
               findLedger(connection, batch.batchId) match {
-                case Some(existing) if existing == expected => AlreadyCommitted(existing.checkpoint)
+                case Some(existing) if existing == expected => evidence(connection, insert = false); AlreadyCommitted(existing.checkpoint)
                 case Some(_) => throw conflictingLedger(batch.batchId)
                 case None => throw new IllegalStateException("batch write failed", sql)
               }
           }
       }
     } catch {
+      case exception: Exception if split && commitStarted =>
+        rollback(connection)
+        throw new cn.xuyinyin.magic.workflow.engine.CdcExecutionException(
+          cn.xuyinyin.magic.workflow.engine.ExecutionFailure("commit_outcome_unknown", "snapshot-commit", Some(batch.batchId)), exception)
       case exception: IllegalStateException =>
         rollback(connection)
         throw exception
       case NonFatal(exception) =>
         rollback(connection)
         throw new IllegalStateException("batch write failed", exception)
-    } finally closeConnection(connection)
+    } finally { if (split) closeSplitResource(connection, batch.batchId) else closeConnection(connection) }
+  }
+
+  private def closeSplitResource(resource: AutoCloseable, batchId: String): Unit = if (resource != null) {
+    try resource.close()
+    catch { case NonFatal(error) => throw new cn.xuyinyin.magic.workflow.engine.CdcExecutionException(
+      cn.xuyinyin.magic.workflow.engine.ExecutionFailure("local_release_unconfirmed", "snapshot-target-close", Some(batchId), releaseConfirmed = false), error) }
   }
 
   private def findLedger(connection: Connection, batchId: String): Option[LedgerRecord] = {

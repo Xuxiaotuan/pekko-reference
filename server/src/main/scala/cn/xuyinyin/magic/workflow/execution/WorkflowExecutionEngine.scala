@@ -45,6 +45,9 @@ class WorkflowExecutionEngine(
   /** Preserves the existing checkpoint-capability rule; this is not a general recovery guarantee. */
   def isResumable(workflow: Workflow): Boolean = planCompiler.compile(workflow).exists(_.resumable)
 
+  def supportsSplitSnapshot(workflow: Workflow): Boolean = planCompiler.compile(workflow).exists(p =>
+    p.pipeline.source.nodeType == "mysql.snapshot" && p.pipeline.source.config.fields.contains("splitRows"))
+
   def supportsCompleteGroupRecovery(workflow: Workflow): Boolean = planCompiler.compile(workflow).exists {
     case plan: MySqlCdcPlan => plan.pipeline.source.config.fields.contains("groupProtocol")
     case _ => false
@@ -189,6 +192,28 @@ class WorkflowExecutionEngine(
     val runtimeSecrets = Vector(preparedSource, preparedSink).flatMap(runtimePassword)
     control.sanitizeCloseFailure = error => sanitizeRuntimeFailure(error, runtimeSecrets)
     val runtimeOnLog: String => Unit = message => onLog(redactRuntimeSecrets(message, runtimeSecrets))
+    if (pipeline.source.nodeType == "mysql.snapshot" && pipeline.source.config.fields.contains("splitRows")) {
+      val splitContext = runContext.splitContext.getOrElse(throw new IllegalStateException("durable split context required"))
+      val splitSource = source match {
+        case capable: cn.xuyinyin.magic.workflow.spi.SnapshotSplitSource => capable.asInstanceOf[CheckpointedNodeSource with cn.xuyinyin.magic.workflow.spi.SnapshotSplitSource]
+        case _ => throw new IllegalStateException("snapshot split source capability missing")
+      }
+      def ready: Future[Done] = sink match {
+        case capable: cn.xuyinyin.magic.workflow.spi.SnapshotSplitSink => capable.validateSnapshotReady(preparedSink.connectorNode)(jdbcBlockingEc)
+        case _ => Future.failed(new IllegalStateException("snapshot split sink capability missing"))
+      }
+      return control.continueIfActive().flatMap(_ => ready)
+        .flatMap(_ => new cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitExecutor(splitSource, sink,
+          preparedSource.connectorNode, preparedSink.connectorNode, task.id, runContext.executionId, runContext.workflowRevision,
+          splitContext, () => control.continueIfActive(), control.installSession, control.removeSession,
+          runtimeOnLog, jdbcBlockingEc, closeEc, () => control.isCancellationRequested,
+          error => { control.closeFailure.compareAndSet(null, error); () }).run())
+        .map(rows => completedResult(task, pipeline, Option.when(rows.isValidInt)(rows.toInt), startTime, runtimeOnLog))
+        .recoverWith { case NonFatal(error) =>
+          if (!ExecutionFailure.from(error, "snapshot").releaseConfirmed) control.closeFailure.compareAndSet(null, error)
+          Future.failed(error)
+        }
+    }
     val latestSourceCheckpoint = runContext.checkpoints
       .filter(_.sourceNodeId == pipeline.source.id)
       .sortBy(_.batchSequence)

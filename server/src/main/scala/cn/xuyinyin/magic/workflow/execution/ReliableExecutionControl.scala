@@ -27,6 +27,12 @@ private[execution] final class ReliableExecutionControl(implicit ec: ExecutionCo
     sessions :+= session
   }
 
+  def isCancellationRequested: Boolean = cancelled.get()
+
+  def removeSession(session: BatchSourceSession): Unit = synchronized {
+    sessions = sessions.filterNot(_ eq session)
+  }
+
   def processBatch(work: => Future[Long]): Future[Long] = {
     val finished = Promise[Done]()
     val admitted = synchronized {
@@ -53,7 +59,7 @@ private[execution] final class ReliableExecutionControl(implicit ec: ExecutionCo
         .recover { case NonFatal(e) => Left(e) })).flatMap { outcomes =>
         outcomes.collectFirst { case Left(e) => e } match {
           case Some(e) => Future.failed(e)
-          case None => Future.successful(Done)
+          case None => Option(closeFailure.get()).fold[Future[Done]](Future.successful(Done))(Future.failed)
         }
       }
     }
