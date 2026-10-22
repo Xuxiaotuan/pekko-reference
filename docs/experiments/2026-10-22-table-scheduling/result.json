@@ -1,0 +1,802 @@
+{
+  "baseCommit": "b24762f367596abac15a8a40fe044aab1c35edcc",
+  "version": "uncommitted working tree; exact source hashes and frozen runtime manifests in evidence",
+  "multiTable": {
+    "scenarios": [
+      {
+        "scenario": "BASELINE",
+        "directory": "BASELINE-d685ee45ae9b",
+        "archivePrefix": "experiments/tables/BASELINE-d685ee45ae9b",
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "sampledPhysicalConnectionsIncludingObserver": 17,
+        "runtime": "real-matrix-1792604668768854000"
+      },
+      {
+        "scenario": "HELD_REDELIVERY",
+        "directory": "HELD_REDELIVERY-7475b0bf105f",
+        "archivePrefix": "experiments/tables/HELD_REDELIVERY-7475b0bf105f",
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "sampledPhysicalConnectionsIncludingObserver": 16,
+        "runtime": "real-matrix-1792604668768854000"
+      },
+      {
+        "scenario": "COORDINATOR_RESTART",
+        "directory": "COORDINATOR_RESTART-08b7828d502e",
+        "archivePrefix": "experiments/tables/COORDINATOR_RESTART-08b7828d502e",
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "sampledPhysicalConnectionsIncludingObserver": 17,
+        "runtime": "real-matrix-1792604668768854000"
+      },
+      {
+        "scenario": "T_J_CRASH",
+        "directory": "T_J_CRASH-7867c9f660dc",
+        "archivePrefix": "experiments/tables/T_J_CRASH-7867c9f660dc",
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "sampledPhysicalConnectionsIncludingObserver": 18,
+        "runtime": "real-matrix-1792604668768854000"
+      },
+      {
+        "scenario": "J_REPLY_LOST",
+        "directory": "J_REPLY_LOST-c3cceda86461",
+        "archivePrefix": "experiments/tables/J_REPLY_LOST-c3cceda86461",
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "sampledPhysicalConnectionsIncludingObserver": 15,
+        "runtime": "real-matrix-1792604668768854000"
+      },
+      {
+        "scenario": "READ_T",
+        "directory": "READ_T-ce2b682b6381",
+        "archivePrefix": "experiments/tables/READ_T-ce2b682b6381",
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "sampledPhysicalConnectionsIncludingObserver": 15,
+        "runtime": "real-matrix-1792604668768854000"
+      },
+      {
+        "scenario": "STOP_READ_T",
+        "directory": "STOP_READ_T-abdcdd9b8b3d",
+        "archivePrefix": "experiments/tables/STOP_READ_T-abdcdd9b8b3d",
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "sampledPhysicalConnectionsIncludingObserver": 16,
+        "runtime": "real-matrix-1792604668768854000"
+      },
+      {
+        "scenario": "CLOSE_UNKNOWN",
+        "directory": "CLOSE_UNKNOWN-c69f8c79c59f",
+        "archivePrefix": "experiments/tables/CLOSE_UNKNOWN-c69f8c79c59f",
+        "classification": "quarantined",
+        "equalTables": 15,
+        "sourceRows": 1167,
+        "targetRows": 915,
+        "missingKeys": 252,
+        "fieldDifferences": 0,
+        "maxReaders": 6,
+        "maxAttached": 4,
+        "sampledPhysicalConnectionsIncludingObserver": 14,
+        "runtime": "real-matrix-1792604668768854000"
+      },
+      {
+        "scenario": "RELEASE_REPLY_LOST",
+        "directory": "RELEASE_REPLY_LOST-bd52746e2fb2",
+        "archivePrefix": "experiments/tables/RELEASE_REPLY_LOST-bd52746e2fb2",
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "sampledPhysicalConnectionsIncludingObserver": 16,
+        "runtime": "real-matrix-1792604668768854000"
+      },
+      {
+        "scenario": "GRANT_REPLY_LOST",
+        "directory": "GRANT_REPLY_LOST-78b5e9802b95",
+        "archivePrefix": "experiments/tables/GRANT_REPLY_LOST-78b5e9802b95",
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "sampledPhysicalConnectionsIncludingObserver": 15,
+        "runtime": "real-matrix-1792604668768854000"
+      },
+      {
+        "scenario": "BIND_REPLY_LOST",
+        "directory": "BIND_REPLY_LOST-594dcfffa482",
+        "archivePrefix": "experiments/tables/BIND_REPLY_LOST-594dcfffa482",
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "sampledPhysicalConnectionsIncludingObserver": 17,
+        "runtime": "real-matrix-1792604668768854000"
+      },
+      {
+        "scenario": "RELEASE_REPLY_HELD",
+        "directory": "RELEASE_REPLY_HELD-111d94a722ca",
+        "archivePrefix": "experiments/tables/RELEASE_REPLY_HELD-111d94a722ca",
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "sampledPhysicalConnectionsIncludingObserver": 10,
+        "runtime": "real-matrix-1792604668768854000"
+      }
+    ],
+    "fullyConvergedCases": 11,
+    "quarantinedCases": 1,
+    "mixedTestFacilityVersions": false,
+    "productionIdenticalToCurrent": true,
+    "status": "met_expected_outcomes"
+  },
+  "metadata": {
+    "archivePrefix": "experiments/metadata/cf36f275147c",
+    "rows": 700000,
+    "loadSeconds": 27.003953083,
+    "heapMaxBytes": 268435456,
+    "heapUsedAfterGcBytes": [
+      14784736,
+      15331216,
+      15339296,
+      15339048,
+      15945312
+    ],
+    "coldHeapBytes": 15439808,
+    "runtime": "real-metadata-1792600182384161000",
+    "scope": "JDBC seeded control metadata only, not physical tables/actors/CDC throughput",
+    "relevantCurrentSourcesIdentical": [
+      "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingStore.scala",
+      "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingModels.scala",
+      "server/src/main/resources/db/mysql/pekko-table-scheduling-schema.sql"
+    ]
+  },
+  "retainedFailures": [
+    {
+      "directory": "BASELINE-096d48bb78d0",
+      "archivePrefix": "experiments/tables/BASELINE-096d48bb78d0",
+      "failure": "java.lang.IllegalArgumentException: requirement failed: condition timed out: managed completed entities passivated"
+    },
+    {
+      "directory": "BIND_REPLY_LOST-d8a4aa7ce15c",
+      "archivePrefix": "experiments/tables/BIND_REPLY_LOST-d8a4aa7ce15c",
+      "failure": "java.lang.IllegalArgumentException: requirement failed: condition timed out: all tables terminal or deliberately quarantined"
+    },
+    {
+      "directory": "CLOSE_UNKNOWN-678c996e4548",
+      "archivePrefix": "experiments/tables/CLOSE_UNKNOWN-678c996e4548",
+      "failure": "java.lang.IllegalArgumentException: requirement failed: condition timed out: all tables terminal or deliberately quarantined"
+    },
+    {
+      "directory": "RELEASE_REPLY_LOST-d4e1204e7cd0",
+      "archivePrefix": "experiments/tables/RELEASE_REPLY_LOST-d4e1204e7cd0",
+      "failure": "java.lang.IllegalArgumentException: requirement failed: condition timed out: all tables terminal or deliberately quarantined"
+    }
+  ],
+  "verification": {
+    "backendTests": 530,
+    "suites": 95,
+    "failed": 0,
+    "package": true,
+    "historicalFilesUnchanged": 208,
+    "legacyCborSamples": 18,
+    "cdcProtectedFilesUnchanged": 15
+  },
+  "snapshotRegression": {
+    "status": "passed",
+    "scenarios": [
+      {
+        "scenario": "BASELINE",
+        "directory": "BASELINE-0b4aa3dc9004",
+        "archivePrefix": "experiments/snapshot-splits/BASELINE-0b4aa3dc9004",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "CHANGED",
+        "directory": "CHANGED-bf9c4234cb6a",
+        "archivePrefix": "experiments/snapshot-splits/CHANGED-bf9c4234cb6a",
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 65,
+        "targetRows": 60,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "COMMIT_ABSENT",
+        "directory": "COMMIT_ABSENT-5f90ed41f471",
+        "archivePrefix": "experiments/snapshot-splits/COMMIT_ABSENT-5f90ed41f471",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "COMMIT_LOST",
+        "directory": "COMMIT_LOST-b75266e96247",
+        "archivePrefix": "experiments/snapshot-splits/COMMIT_LOST-b75266e96247",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "EMPTY",
+        "directory": "EMPTY-27883b58be98",
+        "archivePrefix": "experiments/snapshot-splits/EMPTY-27883b58be98",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 0,
+        "targetRows": 0,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "EOF",
+        "directory": "EOF-73fe10f63fcd",
+        "archivePrefix": "experiments/snapshot-splits/EOF-73fe10f63fcd",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "EOF_J_LOST",
+        "directory": "EOF_J_LOST-45dc13d45d7a",
+        "archivePrefix": "experiments/snapshot-splits/EOF_J_LOST-45dc13d45d7a",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "J_LOST",
+        "directory": "J_LOST-0c9ee65723bc",
+        "archivePrefix": "experiments/snapshot-splits/J_LOST-0c9ee65723bc",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "PAGE_BYTES",
+        "directory": "PAGE_BYTES-dd6100340f4a",
+        "archivePrefix": "experiments/snapshot-splits/PAGE_BYTES-dd6100340f4a",
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 65,
+        "targetRows": 0,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "PLAN",
+        "directory": "PLAN-b40001a38531",
+        "archivePrefix": "experiments/snapshot-splits/PLAN-b40001a38531",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "QUERY_TIMEOUT",
+        "directory": "QUERY_TIMEOUT-b2fbf15a0ceb",
+        "archivePrefix": "experiments/snapshot-splits/QUERY_TIMEOUT-b2fbf15a0ceb",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "READ_T",
+        "directory": "READ_T-2eea454f38cd",
+        "archivePrefix": "experiments/snapshot-splits/READ_T-2eea454f38cd",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "REGISTER_BEFORE",
+        "directory": "REGISTER_BEFORE-7804a19ffbd8",
+        "archivePrefix": "experiments/snapshot-splits/REGISTER_BEFORE-7804a19ffbd8",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "REJECT_J",
+        "directory": "REJECT_J-e2e0b2ef6e78",
+        "archivePrefix": "experiments/snapshot-splits/REJECT_J-e2e0b2ef6e78",
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 65,
+        "targetRows": 60,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "RETRY_EXHAUSTED",
+        "directory": "RETRY_EXHAUSTED-5d93cb7d1090",
+        "archivePrefix": "experiments/snapshot-splits/RETRY_EXHAUSTED-5d93cb7d1090",
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 65,
+        "targetRows": 60,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "SNAPSHOT_RECOVERY",
+        "directory": "SNAPSHOT_RECOVERY-094a2d83da5d",
+        "archivePrefix": "experiments/snapshot-splits/SNAPSHOT_RECOVERY-094a2d83da5d",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "STOP_READ_T",
+        "directory": "STOP_READ_T-f6c0aae3c34c",
+        "archivePrefix": "experiments/snapshot-splits/STOP_READ_T-f6c0aae3c34c",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "STOP_T",
+        "directory": "STOP_T-f3d39a1bba84",
+        "archivePrefix": "experiments/snapshot-splits/STOP_T-f3d39a1bba84",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "TARGET_CLOSE",
+        "directory": "TARGET_CLOSE-9b865923e777",
+        "archivePrefix": "experiments/snapshot-splits/TARGET_CLOSE-9b865923e777",
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 65,
+        "targetRows": 6,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "T_J",
+        "directory": "T_J-5c51442cfbf2",
+        "archivePrefix": "experiments/snapshot-splits/T_J-5c51442cfbf2",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "WIDE_PAGE",
+        "directory": "WIDE_PAGE-9d4d03a60412",
+        "archivePrefix": "experiments/snapshot-splits/WIDE_PAGE-9d4d03a60412",
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 65,
+        "targetRows": 57,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      },
+      {
+        "scenario": "WINDOWS",
+        "directory": "WINDOWS-f0d120cbead6",
+        "archivePrefix": "experiments/snapshot-splits/WINDOWS-f0d120cbead6",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "runtime": "real-snapshot-regression-1792603313016523000"
+      }
+    ],
+    "runtime": "real-snapshot-regression-1792603313016523000",
+    "productionIdenticalToCurrent": false,
+    "productionDifferencesFromCurrent": [
+      "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingRuntime.scala"
+    ],
+    "relevantSourceActorEngineSinkIdentical": true,
+    "unusedSnapshotAdmissionDifference": true
+  },
+  "cdcRegression": {
+    "status": "passed",
+    "scenarios": [
+      {
+        "scenario": "AUTO-A",
+        "directory": "AUTO-A-5936586be939",
+        "archivePrefix": "experiments/cdc-automatic-recovery/AUTO-A-5936586be939",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "AUTO-B",
+        "directory": "AUTO-B-842a4ffdee25",
+        "archivePrefix": "experiments/cdc-automatic-recovery/AUTO-B-842a4ffdee25",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "AUTO-D",
+        "directory": "AUTO-D-a4999157486e",
+        "archivePrefix": "experiments/cdc-automatic-recovery/AUTO-D-a4999157486e",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "AUTO-E",
+        "directory": "AUTO-E-600d96226e96",
+        "archivePrefix": "experiments/cdc-automatic-recovery/AUTO-E-600d96226e96",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "AUTO-F",
+        "directory": "AUTO-F-d773f4c11f7b",
+        "archivePrefix": "experiments/cdc-automatic-recovery/AUTO-F-d773f4c11f7b",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "LATE_COMMIT",
+        "directory": "LATE_COMMIT-b01810c1a0b6",
+        "archivePrefix": "experiments/cdc-automatic-recovery/LATE_COMMIT-b01810c1a0b6",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "LATE_ROLLBACK",
+        "directory": "LATE_ROLLBACK-a50ac7ae6673",
+        "archivePrefix": "experiments/cdc-automatic-recovery/LATE_ROLLBACK-a50ac7ae6673",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "R1",
+        "directory": "R1-9c4a96cf2bea",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R1-9c4a96cf2bea",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "R2",
+        "directory": "R2-b6dab12c20ff",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R2-b6dab12c20ff",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "R3",
+        "directory": "R3-152187805328",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R3-152187805328",
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "R4",
+        "directory": "R4-b84e9d3b7acf",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R4-b84e9d3b7acf",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "R5",
+        "directory": "R5-5cec68da2327",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R5-5cec68da2327",
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "R6",
+        "directory": "R6-b0b644d2c4d9",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R6-b0b644d2c4d9",
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "R7-D",
+        "directory": "R7-D-cc4bf83f1d95",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R7-D-cc4bf83f1d95",
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "R7-PK",
+        "directory": "R7-PK-c0b7c4fa5b11",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R7-PK-c0b7c4fa5b11",
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "REJECT-J-RETRY",
+        "directory": "REJECT-J-RETRY-5b45a06c8b82",
+        "archivePrefix": "experiments/cdc-automatic-recovery/REJECT-J-RETRY-5b45a06c8b82",
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "REJECT-J",
+        "directory": "REJECT-J-a393d4bf435a",
+        "archivePrefix": "experiments/cdc-automatic-recovery/REJECT-J-a393d4bf435a",
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "C0",
+        "directory": "C0-aa1846760280",
+        "archivePrefix": "experiments/cdc-recovery-windows/C0-aa1846760280",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "C1",
+        "directory": "C1-2f3b5abd68eb",
+        "archivePrefix": "experiments/cdc-recovery-windows/C1-2f3b5abd68eb",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "J1",
+        "directory": "J1-cd93ef0ff1a4",
+        "archivePrefix": "experiments/cdc-recovery-windows/J1-cd93ef0ff1a4",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "J2",
+        "directory": "J2-4d78b5c9f57d",
+        "archivePrefix": "experiments/cdc-recovery-windows/J2-4d78b5c9f57d",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "K1",
+        "directory": "K1-d0190b4277ba",
+        "archivePrefix": "experiments/cdc-recovery-windows/K1-d0190b4277ba",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "K2",
+        "directory": "K2-2f47a8edf0e2",
+        "archivePrefix": "experiments/cdc-recovery-windows/K2-2f47a8edf0e2",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "N0",
+        "directory": "N0-c810612efee0",
+        "archivePrefix": "experiments/cdc-recovery-windows/N0-c810612efee0",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "cancel-T",
+        "directory": "cancel-T-04bc392175c8",
+        "archivePrefix": "experiments/cdc-session-release/cancel-T-04bc392175c8",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "none",
+        "directory": "none-31c111beef42",
+        "archivePrefix": "experiments/cdc-session-release/none-31c111beef42",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      },
+      {
+        "scenario": "stop-T",
+        "directory": "stop-T-f66c26c469da",
+        "archivePrefix": "experiments/cdc-session-release/stop-T-f66c26c469da",
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "runtime": "real-cdc-regression-1792605381915601000"
+      }
+    ],
+    "runtime": "real-cdc-regression-1792605381915601000",
+    "productionIdenticalToCurrent": true,
+    "productionDifferencesFromCurrent": [],
+    "relevantSourceActorEngineSinkIdentical": true,
+    "unusedSnapshotAdmissionDifference": false
+  },
+  "retainedRegressionFailures": [
+    {
+      "directory": "PAGE_BYTES-7aa4bdba9460",
+      "archivePrefix": "experiments/snapshot-splits/PAGE_BYTES-7aa4bdba9460",
+      "classification": "legacy_pause_owner_stopped_unexpectedly"
+    },
+    {
+      "directory": "RETRY_EXHAUSTED-58f5fd9dc279",
+      "archivePrefix": "experiments/snapshot-splits/RETRY_EXHAUSTED-58f5fd9dc279",
+      "classification": "legacy_pause_owner_stopped_unexpectedly"
+    },
+    {
+      "directory": "WIDE_PAGE-beffaf8a3c34",
+      "archivePrefix": "experiments/snapshot-splits/WIDE_PAGE-beffaf8a3c34",
+      "classification": "legacy_pause_owner_stopped_unexpectedly"
+    },
+    {
+      "directory": "REJECT_J-8a486b582bed",
+      "archivePrefix": "experiments/snapshot-splits/REJECT_J-8a486b582bed",
+      "classification": "legacy_pause_owner_stopped_unexpectedly"
+    },
+    {
+      "directory": "CHANGED-727ecd3d837b",
+      "archivePrefix": "experiments/snapshot-splits/CHANGED-727ecd3d837b",
+      "classification": "legacy_pause_owner_stopped_unexpectedly"
+    }
+  ],
+  "retainedIncompleteCdcRuns": [
+    {
+      "runtime": "real-cdc-regression-1792602986877032000",
+      "classification": "aborted_before_all_cases_finished",
+      "reason": "shared-instance Schema history replay exceeded initial snapshot deadline before fault injection; fixed replication serverId parallel risk also present"
+    },
+    {
+      "runtime": "real-cdc-regression-1792603916376280000",
+      "classification": "aborted_before_all_cases_finished",
+      "reason": "shared-instance Schema history replay exceeded initial snapshot deadline before fault injection; fixed replication serverId parallel risk also present"
+    }
+  ],
+  "exploratoryInsufficientCoverage": [
+    {
+      "directory": "RELEASE_REPLY_HELD-727f88799c2c",
+      "reason": "post-COMMIT gate established but next-grant overlap was not established; excluded from final12"
+    }
+  ]
+}

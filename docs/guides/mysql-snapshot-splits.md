@@ -60,6 +60,6 @@ Split 路径使用独立的游标读取和 JDBC 超时配置；旧 Source、CDC 
 
 旧持久化类名、persistenceId、Checkpoint 和原事件保持。新增事件及可选 Split 状态；未启用时不序列化额外状态字段。旧 CBOR 样本和新非空状态分别测试。写入新事件后，不承诺旧二进制直接降级。
 
-maxPageBytes 限制接受的应用页大小，不能证明 JVM RSS 硬上限。驱动获取、单行大字段和字符串转换仍有临时内存；宽行拒绝实验只证明对应输入会安全暂停。尚无跨表资源预算、共享 Reader、跨节点 Split 抢占、多 owner fencing、并发源写入一致性、DDL、全量到 binlog 切换或 70 万表容量结论。真实永久阻塞的 JDBC close、源实例替换及其他未在实验表中覆盖的 MySQL 类型也未验证。
+maxPageBytes 限制接受的应用页大小，不能证明 JVM RSS 硬上限。驱动获取、单行大字段和字符串转换仍有临时内存；宽行拒绝实验只证明对应输入会安全暂停。跨表资源预算和完整窗口让出是另行启用的[有界调度](mysql-table-scheduling.md)，不属于原单表实验结论。尚无共享 Reader、跨节点 Split 抢占、多 owner fencing、并发源写入一致性、DDL、全量到 binlog 切换或 70 万张物理表容量结论。真实永久阻塞的 JDBC close、源实例替换及其他未在实验表中覆盖的 MySQL 类型也未验证。
 
 实际结果与原始材料见 [最终审查与重跑](../experiments/2026-10-21-snapshot-splits-review/README.md)；[首次实验及失败材料](../experiments/2026-10-21-snapshot-splits/README.md) 保留原版本归属。

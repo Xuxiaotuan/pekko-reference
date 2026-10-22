@@ -9,6 +9,7 @@ import cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine
 import cn.xuyinyin.magic.workflow.scheduler.SchedulerCoordinator
 import cn.xuyinyin.magic.infrastructure.cluster.sharding.WorkflowSharding
 import com.typesafe.scalalogging.Logger
+import scala.concurrent.duration._
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import org.apache.pekko.cluster.sharding.typed.ShardingEnvelope
@@ -51,7 +52,7 @@ object PekkoGuardian {
     
     // Create workflow supervisor with ShardRegion (工作流管理器)
     val workflowSupervisor = ctx.spawn(
-      WorkflowSupervisor.withSharding(shardRegion),
+      WorkflowSupervisor.withSharding(shardRegion, executionEngine.tableScheduling),
       "WorkflowSupervisor"
     )
     logger.info("WorkflowSupervisor created with Sharding support")
@@ -61,6 +62,12 @@ object PekkoGuardian {
         .withSettings(ClusterSingletonSettings(ctx.system).withRole("coordinator"))
     )
     logger.info("SchedulerCoordinator Cluster Singleton initialized")
+    executionEngine.tableScheduling.foreach { runtime =>
+      ClusterSingleton(ctx.system).init(SingletonActor(
+        cn.xuyinyin.magic.workflow.scheduling.BoundedTableDispatcher(runtime,shardRegion,
+          ctx.system.settings.config.getDuration("pekko.workflow.table-scheduling.poll-interval").toMillis.millis),
+        "BoundedTableDispatcher").withSettings(ClusterSingletonSettings(ctx.system).withRole("coordinator")))
+    }
 
     Behaviors.receiveMessage {
       case GetNodeRoles(reply) =>

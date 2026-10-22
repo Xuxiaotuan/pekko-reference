@@ -82,6 +82,7 @@ class EnhancedWorkflowRoutes(
   }
 
   private def replyResponse(workflowId: String, operation: String, reply: EventSourcedWorkflowActor.Reply): (StatusCode, JsObject) = reply match {
+    case EventSourcedWorkflowActor.SchedulingUnavailable(reason) => StatusCodes.ServiceUnavailable -> error(workflowId,operation,reason)
     case EventSourcedWorkflowActor.Defined(id, revision) => StatusCodes.Created -> JsObject("workflowId" -> JsString(id), "revision" -> JsNumber(revision))
     case EventSourcedWorkflowActor.ExecutionAccepted(executionId) => StatusCodes.Accepted -> JsObject("workflowId" -> JsString(workflowId), "executionId" -> JsString(executionId))
     case EventSourcedWorkflowActor.DuplicateExecution(requestId, executionId) => StatusCodes.Conflict -> JsObject("workflowId" -> JsString(workflowId), "requestId" -> JsString(requestId), "executionId" -> JsString(executionId), "error" -> JsString("duplicate execution"))

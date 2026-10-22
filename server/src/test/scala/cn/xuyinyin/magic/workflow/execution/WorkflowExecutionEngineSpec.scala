@@ -806,7 +806,7 @@ class WorkflowExecutionEngineSpec extends STSpec {
         Await.result(firstExecution, 2.seconds)
         Await.result(engine.cancel(context.executionId), 2.seconds) shouldBe Done
         Await.result(recoveredExecution, 2.seconds)
-        source.closed.get shouldBe 2
+        awaitCondition("both stream termination observers completed") { source.closed.get == 2 }
         engine.activeReliableExecutionCount shouldBe 0
       } finally {
         testRegistry.unregisterSource(source.nodeType, source)
@@ -872,7 +872,7 @@ class WorkflowExecutionEngineSpec extends STSpec {
 
         engine.activeReliableExecutionCount shouldBe 0
         Await.result(engine.cancel(context.executionId), 2.seconds) shouldBe Done
-        source.closed.get shouldBe 1
+        awaitCondition("normal stream termination observer completed") { source.closed.get == 1 }
       } finally {
         testRegistry.unregisterSource(source.nodeType, source)
         testRegistry.unregisterSink(sink.nodeType, sink)

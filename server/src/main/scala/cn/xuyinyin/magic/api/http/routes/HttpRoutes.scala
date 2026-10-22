@@ -54,6 +54,7 @@ object HttpRoutes {
     concat(
       // 工作流管理API (DSL可视化 + Event Sourcing + 调度)
       new EnhancedWorkflowRoutes(workflowSupervisor)(system, ec).routes,
+      new SnapshotSchedulingRoutes(cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension(system).runtime).routes,
       
       // 执行历史查询API (Event Sourcing)
       new EventHistoryRoutes(workflowSupervisor)(system, ec).routes,

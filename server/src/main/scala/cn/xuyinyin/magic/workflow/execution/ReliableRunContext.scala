@@ -12,7 +12,8 @@ final case class ReliableRunContext(
   checkpoints: Vector[BatchCheckpoint],
   initializeBoundary: SnapshotBoundary => Future[Done],
   checkpointCommitted: BatchCheckpoint => Future[Done],
-  splitContext: Option[SnapshotSplitRunContext] = None
+  splitContext: Option[SnapshotSplitRunContext] = None,
+  schedulingGrant: Option[cn.xuyinyin.magic.workflow.scheduling.TableGrant] = None
 )
 
 final case class SnapshotSplitRunContext(

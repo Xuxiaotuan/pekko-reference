@@ -60,6 +60,11 @@ private[actors] object WorkflowStateTransitions {
       case Some(c) if c.executionId == id => state.copy(status = WorkflowStatus("snapshot_blocked"))
       case _ => state
     }
+    case SnapshotSchedulingChanged(id, phase, grant, _) => state.currentExecution match {
+      case Some(c) if c.executionId == id => state.copy(status = WorkflowStatus("snapshot_"+phase),
+        snapshotAdmission = Some(SnapshotAdmissionState(phase,grant)))
+      case _ => state
+    }
     case ExecutionCompleted(executionId, result, timestamp) => terminal(state, executionId, result, Completed, timestamp)
     case ExecutionFailed(executionId, result, timestamp) => terminal(state, executionId, result, Failed, timestamp)
     case ExecutionSkipped(executionId, trigger, reason, timestamp) =>
@@ -72,6 +77,7 @@ private[actors] object WorkflowStateTransitions {
       status = Running,
       currentExecution = Some(execution),
       splitSnapshot = None,
+      snapshotAdmission = None,
       manualRequests = manual,
       lastAcceptedTriggerBySchedule = updateWatermark(state.lastAcceptedTriggerBySchedule, execution.trigger)
     )
@@ -80,7 +86,7 @@ private[actors] object WorkflowStateTransitions {
   private def terminal(state: WorkflowState, executionId: String, result: PersistedExecutionResult, status: WorkflowStatus, timestamp: Long): WorkflowState = state.currentExecution match {
     case Some(current) if current.executionId == executionId =>
       val summary = StoredExecutionSummary(executionId, current.startedAt, timestamp, hasEndTime = true, status.value, timestamp - current.startedAt, hasDuration = true, Some(result))
-      state.copy(status = status, currentExecution = None, splitSnapshot = None, recentExecutions = (state.recentExecutions :+ summary).takeRight(MaxRecentExecutions))
+      state.copy(status = status, currentExecution = None, splitSnapshot = None, snapshotAdmission = None, recentExecutions = (state.recentExecutions :+ summary).takeRight(MaxRecentExecutions))
     case _ => state
   }
 

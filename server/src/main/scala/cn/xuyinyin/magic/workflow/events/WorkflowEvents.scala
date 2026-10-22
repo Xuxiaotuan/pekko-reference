@@ -53,5 +53,6 @@ object WorkflowEvents {
   final case class ExecutionFailed(executionId: String, result: PersistedExecutionResult, timestamp: Long) extends WorkflowEvent
   final case class SnapshotSplitsUpdated(executionId: String, update: cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitUpdate, timestamp: Long) extends WorkflowEvent
   final case class SnapshotExecutionPaused(executionId: String, reason: String, timestamp: Long) extends WorkflowEvent
+  final case class SnapshotSchedulingChanged(executionId: String, phase: String, grantId: String, timestamp: Long) extends WorkflowEvent
   final case class ExecutionSkipped(executionId: String, trigger: ExecutionTrigger, reason: String, timestamp: Long) extends WorkflowEvent
 }

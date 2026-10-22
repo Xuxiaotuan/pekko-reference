@@ -62,7 +62,7 @@ sbt checkDeps
 `console` 提供分页摘要、完整 DSL 创建、请求执行、近期历史，以及已有计划的暂停/恢复。
 入口与本地启动方式见 [UI README](console/README.md)，实际检查和兼容变化见
 [B 阶段记录](docs/experiments/2026-10-19-stage-b-console/README.md)。
-列表仍枚举 Journal ID 并查询 Actor；不提供全局任务总数或稳定快照分页。
+旧列表仍枚举 Journal ID；普通任务查询 Actor，启用快照调度索引的任务使用索引摘要。不提供全局任务总数或稳定快照分页；尚未激活的冷快照任务使用下面的独立目录。
 SQL/通用 DAG 演示不再进入产品路由；未知指标不再返回固定数值。
 
 ## 写入热路径与查询上限
@@ -71,6 +71,12 @@ CDC Sink 在一次事务内复用语句并保留逐条事件顺序；列表查�
 失败、超时后也不提前归还仍在运行的 ask 额度。配置及兼容边界见[配置指南](docs/guides/configuration.md#列表查询的资源上限)。
 本轮 Protobuf 调整保留 Calcite 测试，实际结果见[优化记录](docs/experiments/2026-10-20-hot-path-query/README.md)。
 当前完整组 C2 已提供同一 execution 最多三次持久化恢复；明确拒绝不消耗新预算，结果不确定才进入已有有界恢复。历史失败保留，见 [C2 审查](docs/experiments/2026-10-21-c2-final-review/README.md)。没有 70 万任务容量结论。
+
+## 静态 Split 与跨表有界调度
+
+[单表 Split](docs/guides/mysql-snapshot-splits.md)提供静态 MySQL 分页与独立恢复；新增的[跨表调度](docs/guides/mysql-table-scheduling.md)默认关闭，显式部署 SQL 后支持持久化冷目录、实例资源准入和完整窗口让出。旧命令保留，受管任务的定义修订走独立入口。
+
+[初次实验](docs/experiments/2026-10-22-table-scheduling/README.md)区分真实多表 Source/Journal/Sink、原恢复回归和 70 万条目录元数据；[提交前整体审查](docs/experiments/2026-10-22-table-scheduling-review/README.md)保存授权重试、Stop 归还修复及新版本回归。元数据实验不代表 70 万张物理表或常驻 CDC 容量；不包含共享 CDC 或多 owner 自动接管。
 
 ## MySQL schema
 

@@ -26,6 +26,7 @@ import scala.util.control.NonFatal
 object EventSourcedWorkflowActor {
   import cn.xuyinyin.magic.workflow.snapshot._
   import cn.xuyinyin.magic.workflow.execution.SnapshotSplitRunContext
+  import cn.xuyinyin.magic.workflow.scheduling.TableGrant
   import WorkflowDefinitionCodec.{canonicalAndValidateJson, decodeWorkflow, workflowSourceNode}
   import WorkflowHistory._
   private[actors] val MaxRecentExecutions = 50
@@ -48,6 +49,13 @@ object EventSourcedWorkflowActor {
   }
   final case class ExecuteManual(requestId: String, replyTo: ActorRef[Reply]) extends Command
   final case class ExecuteScheduled(scheduleId: String, scheduledAt: Long, triggerId: String, replyTo: ActorRef[Reply]) extends Command
+  final case class SchedulingUnavailable(reason: String) extends Reply
+  final case class ActivateSnapshot(grant: TableGrant) extends Command
+  private final case class SnapshotQueued(id: String, token: String) extends Command
+  private final case class SnapshotQueueFailed(id: String, token: String) extends Command
+  private final case class SnapshotSchedulingReleased(id: String, grantId: Option[String], stopAfter: Boolean) extends Command
+  private final case class SnapshotDispositionFailed(id: String, grantId: Option[String], disposition: String, confirmed: Boolean, stopAfter: Boolean) extends Command
+  private final case class RetrySnapshotDisposition(id: String, grantId: Option[String], disposition: String, confirmed: Boolean, stopAfter: Boolean) extends Command
   final case class InitializeSnapshot(executionId: String, boundary: SnapshotBoundary, replyTo: ActorRef[Reply]) extends Command
   final case class AdvanceCheckpoint(executionId: String, checkpoint: BatchCheckpoint, replyTo: ActorRef[Reply]) extends Command
   final case class ReadSnapshotSplits(executionId: String, attemptId: String, replyTo: ActorRef[Reply]) extends Command
@@ -78,6 +86,9 @@ object EventSourcedWorkflowActor {
 
   private final case class StopReleased(token: String) extends Command
   private final case class StopReleaseFailed(token: String) extends Command
+  private final case class StopResourcesReleased(token: String, id: String, grantId: Option[String]) extends Command
+  private final case class RetryStopDisposition(token: String, id: String, grantId: Option[String]) extends Command
+  private final case class StopDispositionFailed(token: String, id: String, grantId: Option[String]) extends Command
   private final case class BeginRecovery(executionId: String, attempt: Int) extends Command
   private final case class RecoveryReleaseChecked(executionId: String, attempt: Int, status: WorkflowExecutionEngine.ReleaseStatus) extends Command
   private final case class InitializeFromAttempt(executionId: String, attemptId: String, boundary: SnapshotBoundary, replyTo: ActorRef[Reply]) extends Command
@@ -122,6 +133,7 @@ object EventSourcedWorkflowActor {
     recovery: Option[ExecutionRecoveryState] = None
   ) extends CborSerializable
   final case class ManualRequestRecord(requestId: String, executionId: String) extends CborSerializable
+  final case class SnapshotAdmissionState(phase: String, grantId: String) extends CborSerializable
   final case class ExecutionSummary(
     executionId: String,
     startTime: Long,
@@ -156,7 +168,9 @@ object EventSourcedWorkflowActor {
     manualRequests: Vector[ManualRequestRecord] = Vector.empty,
     workflowSourceProgress: Option[WorkflowSourceProgress] = None,
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT)
-    splitSnapshot: Option[SnapshotSplitState] = None
+    splitSnapshot: Option[SnapshotSplitState] = None,
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT)
+    snapshotAdmission: Option[SnapshotAdmissionState] = None
   ) extends CborSerializable
 
   final case class WorkflowSummary(
@@ -175,13 +189,19 @@ object EventSourcedWorkflowActor {
 
   def apply(workflowId: String, executionEngine: WorkflowExecutionEngine)(implicit ec: ExecutionContext): Behavior[Command] = behavior(workflowId, executionEngine)
   def apply(workflowId: String, workflow: WorkflowDSL.Workflow, executionEngine: WorkflowExecutionEngine)(implicit ec: ExecutionContext): Behavior[Command] = behavior(workflowId, executionEngine)
+  def apply(workflowId: String, executionEngine: WorkflowExecutionEngine, passivate: ActorRef[Command] => Unit)
+    (implicit ec: ExecutionContext): Behavior[Command] = behavior(workflowId,executionEngine,Some(passivate))
 
-  private def behavior(workflowId: String, executionEngine: WorkflowExecutionEngine)(implicit ec: ExecutionContext): Behavior[Command] =
+  private def behavior(workflowId: String, executionEngine: WorkflowExecutionEngine, shardPassivate: Option[ActorRef[Command] => Unit] = None)(implicit ec: ExecutionContext): Behavior[Command] =
     Behaviors.setup { context => Behaviors.withTimers[Command] { timers =>
       val recoveryGate = new AtomicBoolean(false)
       val activeEngineExecutionId = new AtomicReference[String]()
       val activeAttemptId = new AtomicReference[String]()
       val stopping = new AtomicBoolean(false)
+      val passivating = new AtomicBoolean(false)
+      val passivate: () => Unit = () => if(passivating.compareAndSet(false,true)) {
+        shardPassivate match { case Some(request) => request(context.self); case None => context.self ! Stop }
+      }
       val stop = new StopController(workflowId, executionEngine, context, timers, stopping, activeEngineExecutionId, activeAttemptId)
       val recovery = new RecoveryController(executionEngine, context, timers, recoveryGate, activeEngineExecutionId, activeAttemptId, stopping)
       val snapshotEvery = context.system.settings.config.getInt("pekko.workflow.event-sourcing.snapshot-every")
@@ -189,7 +209,7 @@ object EventSourcedWorkflowActor {
       EventSourcedBehavior[Command, WorkflowEvent, WorkflowState](
         PersistenceId.ofUniqueId(s"workflow-$workflowId"),
         WorkflowState(),
-        commandHandler(workflowId, executionEngine, context, recoveryGate, activeEngineExecutionId, activeAttemptId, recovery, stop),
+        commandHandler(workflowId, executionEngine, context, recoveryGate, activeEngineExecutionId, activeAttemptId, recovery, stop, timers,passivate,passivating),
         WorkflowStateTransitions.apply
       ).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = snapshotEvery, keepNSnapshots = keepSnapshots))
         .receiveSignal {
@@ -211,12 +231,35 @@ object EventSourcedWorkflowActor {
     activeEngineExecutionId: AtomicReference[String],
     activeAttemptId: AtomicReference[String],
     recovery: RecoveryController,
-    stop: StopController
+    stop: StopController,
+    timers: TimerScheduler[Command],
+    passivate: () => Unit,
+    passivating: AtomicBoolean
   )
     (state: WorkflowState, command: Command)(implicit ec: ExecutionContext): Effect[WorkflowEvent, WorkflowState] =
     stop.intercept(state, command).getOrElse {
     if (recoveryGate.get() && !allowedDuringRecovery(command)) Effect.stash()
     else command match {
+    case _: ActivateSnapshot if passivating.get() => Effect.none
+    case ActivateSnapshot(grant) =>
+      activateSnapshot(workflowId, state, grant, executionEngine, context, recoveryGate, activeEngineExecutionId, activeAttemptId,passivate)
+    case SnapshotQueued(id, token) if activeAttemptId.get() == token && state.currentExecution.exists(_.executionId == id) && activeEngineExecutionId.get() == null =>
+      Effect.persist(SnapshotSchedulingChanged(id,"queued","",now())).thenRun((_: WorkflowState) => {recoveryGate.set(false);passivate()})
+    case SnapshotQueueFailed(id, token) if activeAttemptId.get() == token && state.currentExecution.exists(_.executionId == id) =>
+      context.scheduleOnce(1.second,context.self,RecoverInterrupted(id))
+      releaseRecoveryGateAfter(Effect.persist(SnapshotSchedulingChanged(id,"queued","",now())), recoveryGate)
+    case SnapshotSchedulingReleased(id, grantId, stopAfter) =>
+      timers.cancel(("snapshot-disposition",id,grantId))
+      val sameRun = state.currentExecution.forall(_.executionId == id)
+      val sameGrant = state.snapshotAdmission.forall(a => grantId.contains(a.grantId))
+      if (stopAfter && sameRun && sameGrant && activeEngineExecutionId.get() == null) passivate()
+      Effect.none
+    case SnapshotDispositionFailed(id, grantId, disposition, confirmed, stopAfter) =>
+      timers.startSingleTimer(("snapshot-disposition",id,grantId),RetrySnapshotDisposition(id,grantId,disposition,confirmed,stopAfter),1.second)
+      Effect.none
+    case RetrySnapshotDisposition(id, grantId, disposition, confirmed, stopAfter) =>
+      releaseScheduled(executionEngine,context,id,disposition,confirmed,stopAfter,grantId)
+      Effect.none
     case ReadSnapshotSplits(id, token, replyTo) =>
       if (token != activeAttemptId.get() || !state.currentExecution.exists(_.executionId == id)) rejectCheckpoint(replyTo, "stale snapshot execution")
       else immediate(replyTo, SnapshotSplitsRead(state.splitSnapshot))
@@ -235,7 +278,12 @@ object EventSourcedWorkflowActor {
         }
       }
     case DefineWorkflow(_, _, replyTo) if state.currentExecution.nonEmpty => immediate(replyTo, AlreadyRunning(state.currentExecution.get.executionId))
-    case DefineWorkflow(workflowJson, expectedRevision, replyTo) => validateDefinition(workflowId, state, workflowJson, expectedRevision, replyTo, executionEngine.nodeRegistry)
+    case DefineWorkflow(workflowJson, _, replyTo) if state.revision>0L && executionEngine.tableScheduling.nonEmpty &&
+      (decodeWorkflow(state).exists(executionEngine.managedSnapshot) ||
+        decodeWorkflow(state.copy(workflowJson=Some(workflowJson))).exists(executionEngine.managedSnapshot)) =>
+      immediate(replyTo,DefinitionRejected(workflowId,Vector("managed snapshot revisions must use the durable snapshot-tasks ingress")))
+    case DefineWorkflow(workflowJson, expectedRevision, replyTo) => validateDefinition(workflowId, state, workflowJson, expectedRevision, replyTo, executionEngine.nodeRegistry,
+      json => if(decodeWorkflow(state.copy(workflowJson=Some(json))).exists(executionEngine.managedSnapshot))passivate())
     case Initialize(workflowJson, replyTo) =>
       if (state.revision != 0L) { replyTo ! InitializeResponse(workflowId, "initialized"); Effect.none }
       else canonicalAndValidateJson(workflowJson, executionEngine.nodeRegistry) match {
@@ -255,15 +303,21 @@ object EventSourcedWorkflowActor {
     case InitializeSnapshot(executionId, boundary, replyTo) => initializeSnapshot(state, executionId, boundary, replyTo)
     case AdvanceCheckpoint(executionId, checkpoint, replyTo) => advanceCheckpoint(state, executionId, checkpoint, replyTo)
     case Execute(replyTo) => startLegacyManual(workflowId, state, replyTo, executionEngine, context, activeEngineExecutionId, activeAttemptId)
-    case GetSummary(replyTo) => replyTo ! WorkflowSummary(workflowId, state.revision, state.status, state.currentExecution, state.recentExecutions.map(publicSummary)); Effect.none
-    case GetStatus(replyTo) => replyTo ! statusResponse(workflowId, state); Effect.none
-    case GetExecutionHistory(page, pageSize, replyTo) => replyTo ! historyResponse(workflowId, state, page, pageSize); Effect.none
+    case GetSummary(replyTo) => replyTo ! WorkflowSummary(workflowId, state.revision, state.status, state.currentExecution, state.recentExecutions.map(publicSummary)); snapshotReadEffect(state,executionEngine,passivate)
+    case GetStatus(replyTo) => replyTo ! statusResponse(workflowId, state); snapshotReadEffect(state,executionEngine,passivate)
+    case GetExecutionHistory(page, pageSize, replyTo) => replyTo ! historyResponse(workflowId, state, page, pageSize); snapshotReadEffect(state,executionEngine,passivate)
     case GetReliableRunState(replyTo) => replyTo ! ReliableRunState(state.currentExecution); Effect.none
     case EngineFinished(executionId, token, result) if token == activeAttemptId.get() && state.currentExecution.exists(_.executionId == executionId) =>
       activeEngineExecutionId.compareAndSet(executionId, null)
       activeAttemptId.compareAndSet(token, null)
-      if (!result.success && decodeWorkflow(state).exists(executionEngine.supportsSplitSnapshot)) {
-        releaseRecoveryGateAfter(Effect.persist(SnapshotExecutionPaused(executionId, result.failure.fold("snapshot_execution_failed")(_.code), now())), recoveryGate)
+      if (Set("snapshot_yielded","snapshot_deferred").contains(result.status)) {
+        val grantId = state.snapshotAdmission.fold("")(_.grantId)
+        releaseRecoveryGateAfter(Effect.persist(SnapshotSchedulingChanged(executionId,
+          if (result.status == "snapshot_yielded") "yielded" else "queued",grantId,now()))
+          .thenRun((_: WorkflowState) => releaseScheduled(executionEngine, context, executionId,"ready",true,stopAfter=true,grantId=state.snapshotAdmission.map(_.grantId))), recoveryGate)
+      } else if (!result.success && decodeWorkflow(state).exists(executionEngine.supportsSplitSnapshot)) {
+        releaseRecoveryGateAfter(Effect.persist(SnapshotExecutionPaused(executionId, result.failure.fold("snapshot_execution_failed")(_.code), now()))
+          .thenRun((_: WorkflowState) => releaseScheduled(executionEngine,context,executionId,"blocked",result.failure.forall(_.releaseConfirmed),stopAfter=decodeWorkflow(state).exists(executionEngine.managedSnapshot) && result.failure.forall(_.releaseConfirmed),grantId=state.snapshotAdmission.map(_.grantId))), recoveryGate)
       } else if (!result.success && recovery.eligible(state)) {
         recovery.decide(state, result.failure.getOrElse(ExecutionFailure(ExecutionFailure.Unclassified,"execution")))
       } else {
@@ -271,13 +325,16 @@ object EventSourcedWorkflowActor {
         case Right(persisted) => Effect.persist(if (result.success) ExecutionCompleted(executionId, persisted, now()) else ExecutionFailed(executionId, persisted, now()))
         case Left(reason) => Effect.persist(ExecutionFailed(executionId, failedPersistedResult(reason), now()))
       }
-      releaseRecoveryGateAfter(terminal, recoveryGate)
+      releaseRecoveryGateAfter(terminal.thenRun((_: WorkflowState) =>
+        releaseScheduled(executionEngine,context,executionId,if(result.success) "completed" else "blocked",result.failure.forall(_.releaseConfirmed),
+          stopAfter=decodeWorkflow(state).exists(executionEngine.managedSnapshot),grantId=state.snapshotAdmission.map(_.grantId))), recoveryGate)
       }
     case EngineCrashed(executionId, token, message, failure) if token == activeAttemptId.get() && state.currentExecution.exists(_.executionId == executionId) =>
       activeEngineExecutionId.compareAndSet(executionId, null)
       activeAttemptId.compareAndSet(token, null)
       if (decodeWorkflow(state).exists(executionEngine.supportsSplitSnapshot))
-        releaseRecoveryGateAfter(Effect.persist(SnapshotExecutionPaused(executionId, failure.code, now())), recoveryGate)
+        releaseRecoveryGateAfter(Effect.persist(SnapshotExecutionPaused(executionId, failure.code, now()))
+          .thenRun((_: WorkflowState) => releaseScheduled(executionEngine,context,executionId,"blocked",failure.releaseConfirmed,stopAfter=decodeWorkflow(state).exists(executionEngine.managedSnapshot) && failure.releaseConfirmed,grantId=state.snapshotAdmission.map(_.grantId))), recoveryGate)
       else if (recovery.eligible(state)) recovery.decide(state, failure)
       else releaseRecoveryGateAfter(
         Effect.persist(ExecutionFailed(executionId, failedPersistedResult(message), now())),
@@ -285,6 +342,8 @@ object EventSourcedWorkflowActor {
       )
     case BeginRecovery(id, attempt) => recovery.begin(state, id, attempt)
     case RecoveryReleaseChecked(id, attempt, status) => recovery.released(state, id, attempt, status)
+    case RecoverInterrupted(executionId) if activeEngineExecutionId.get() == executionId =>
+      releaseRecoveryGateAfter(Effect.none,recoveryGate)
     case RecoverInterrupted(executionId) if state.currentExecution.exists(_.executionId == executionId) && state.status.value == "snapshot_blocked" =>
       releaseRecoveryGateAfter(Effect.none, recoveryGate)
     case RecoverInterrupted(executionId) if state.currentExecution.exists(_.executionId == executionId) && recovery.eligible(state) =>
@@ -340,6 +399,12 @@ object EventSourcedWorkflowActor {
       }
       Effect.persist(event).thenStop()
     }
+    private def releaseDisposition(token: String, id: String, grantId: Option[String]): Unit = {
+      context.pipeToSelf(engine.finishScheduledSnapshot(id,"ready",true,grantId)) {
+        case Success(_) => StopReleased(token)
+        case Failure(_) => StopDispositionFailed(token,id,grantId)
+      }
+    }
     def intercept(state: WorkflowState, command: Command): Option[Effect[WorkflowEvent, WorkflowState]] = command match {
       case Stop =>
         if (stopping.getAndSet(true)) Some(Effect.none)
@@ -349,9 +414,10 @@ object EventSourcedWorkflowActor {
             case Some(current) if current.resumable =>
               stopToken = java.util.UUID.randomUUID().toString
               val token = stopToken
-              val released = try engine.cancel(current.executionId) catch { case NonFatal(e) => scala.concurrent.Future.failed(e) }
+              val released = try engine.cancel(current.executionId)
+                catch { case NonFatal(e) => scala.concurrent.Future.failed(e) }
               context.pipeToSelf(released) {
-                case Success(_) => StopReleased(token)
+                case Success(_) => StopResourcesReleased(token,current.executionId,grantId=state.snapshotAdmission.map(_.grantId))
                 case Failure(_) => StopReleaseFailed(token)
               }
               Some(Effect.none)
@@ -362,12 +428,22 @@ object EventSourcedWorkflowActor {
             case _ => Some(Effect.stop())
           }
         }
+      case StopResourcesReleased(token,id,grantId) if stopping.get() && token == stopToken =>
+        releaseDisposition(token,id,grantId)
+        Some(Effect.none)
+      case StopDispositionFailed(token,id,grantId) if stopping.get() && token == stopToken =>
+        timers.startSingleTimer("snapshot-stop-disposition",RetryStopDisposition(token,id,grantId),1.second)
+        Some(Effect.none)
+      case RetryStopDisposition(token,id,grantId) if stopping.get() && token == stopToken =>
+        releaseDisposition(token,id,grantId)
+        Some(Effect.none)
       case StopReleased(token) if stopping.get() && token == stopToken =>
         activeExecution.set(null); activeAttempt.set(null); Some(Effect.stop())
       case StopReleaseFailed(token) if stopping.get() && token == stopToken =>
         context.log.error("Workflow {} remains stopping because actual release failed", workflowId)
         Some(Effect.none)
       case _ if stopping.get() => command match {
+        case _: ActivateSnapshot => Some(Effect.none)
         case EngineFinished(id, token, result) if waitingForRow && activeExecution.get() == id && activeAttempt.get() == token => Some(finishRow(id, result))
         case EngineCrashed(id, token, message, _) if waitingForRow && activeExecution.get() == id && activeAttempt.get() == token =>
           Some(finishRow(id, ExecutionResult("failed", false, message, None)))
@@ -446,13 +522,14 @@ object EventSourcedWorkflowActor {
     }
   }
 
-  private def validateDefinition(workflowId: String, state: WorkflowState, workflowJson: String, expectedRevision: Long, replyTo: ActorRef[Reply], registry: NodeRegistry): Effect[WorkflowEvent, WorkflowState] =
+  private def validateDefinition(workflowId: String, state: WorkflowState, workflowJson: String, expectedRevision: Long, replyTo: ActorRef[Reply], registry: NodeRegistry,
+    onDefined: String => Unit = _ => ()): Effect[WorkflowEvent, WorkflowState] =
     if (expectedRevision != state.revision) { replyTo ! RevisionConflict(workflowId, expectedRevision, state.revision); Effect.none }
     else canonicalAndValidateJson(workflowJson, registry) match {
       case Left(errors) => replyTo ! DefinitionRejected(workflowId, errors); Effect.none
       case Right(json) =>
         val revision = state.revision + 1L
-        Effect.persist(WorkflowDefined(json, revision, now())).thenReply(replyTo)(_ => Defined(workflowId, revision))
+        Effect.persist(WorkflowDefined(json, revision, now())).thenRun((_: WorkflowState) => onDefined(json)).thenReply(replyTo)(_ => Defined(workflowId, revision))
     }
 
   private def startManual(workflowId: String, state: WorkflowState, requestId: String, replyTo: ActorRef[Reply], executionEngine: WorkflowExecutionEngine, context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command], activeEngineExecutionId: AtomicReference[String], activeAttemptId: AtomicReference[String])
@@ -565,14 +642,27 @@ object EventSourcedWorkflowActor {
     executionEngine: WorkflowExecutionEngine,
     context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command],
     activeEngineExecutionId: AtomicReference[String],
-    activeAttemptId: AtomicReference[String]
+    activeAttemptId: AtomicReference[String],
+    grant: Option[TableGrant] = None
   )(implicit ec: ExecutionContext): Boolean = {
     val token = java.util.UUID.randomUUID().toString
     activeAttemptId.set(token)
+    if (executionEngine.managedSnapshot(workflow) && grant.isEmpty) {
+      val runtime = executionEngine.tableScheduling.get
+      val request = execution.trigger.requestId.orElse(execution.trigger.triggerId).getOrElse(execution.executionId)
+      val queued = try runtime.enqueue(workflow,execution.workflowRevision,execution.executionId,request)
+        catch { case NonFatal(e) => scala.concurrent.Future.failed(e) }
+      context.pipeToSelf(queued) {
+        case Success(t) if t.grantId.nonEmpty && t.owner.contains(runtime.nodeId) && t.state == "running" => ActivateSnapshot(TableGrant(t,t.grantId.get))
+        case Success(_) => SnapshotQueued(execution.executionId,token)
+        case Failure(_) => SnapshotQueueFailed(execution.executionId,token)
+      }
+      return true
+    }
     try {
       activeEngineExecutionId.set(execution.executionId)
       val result =
-        if (execution.resumable) executionEngine.execute(workflow, reliableRunContext(execution, token, context), _ => ())
+        if (execution.resumable) executionEngine.execute(workflow, reliableRunContext(execution, token, context).copy(schedulingGrant=grant), _ => ())
         else executionEngine.execute(workflow, execution.executionId, _ => ())
       context.pipeToSelf(result) {
         case Success(value) => EngineFinished(execution.executionId, token, value)
@@ -584,6 +674,65 @@ object EventSourcedWorkflowActor {
         context.self ! EngineCrashed(execution.executionId, token, Option(error.getMessage).getOrElse(error.getClass.getSimpleName), ExecutionFailure.from(error,"engine"))
       false
     }
+  }
+
+  private def releaseScheduled(engine: WorkflowExecutionEngine,
+    context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command], id: String, disposition: String,
+    confirmed: Boolean, stopAfter: Boolean, grantId: Option[String]): Unit = {
+    context.pipeToSelf(engine.finishScheduledSnapshot(id,disposition,confirmed,grantId)) {
+      case Success(_) => SnapshotSchedulingReleased(id,grantId,stopAfter)
+      case Failure(_) => SnapshotDispositionFailed(id,grantId,disposition,confirmed,stopAfter)
+    }
+  }
+
+  private def snapshotReadEffect(state: WorkflowState, engine: WorkflowExecutionEngine, passivate: () => Unit): Effect[WorkflowEvent,WorkflowState] = {
+    if (state.currentExecution.isEmpty && decodeWorkflow(state).exists(engine.managedSnapshot)) passivate()
+    Effect.none
+  }
+
+  private def activateSnapshot(workflowId: String, state: WorkflowState, grant: TableGrant, engine: WorkflowExecutionEngine,
+    context: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command], gate: AtomicBoolean,
+    activeExecution: AtomicReference[String], activeAttempt: AtomicReference[String], passivate: () => Unit)
+    (implicit ec: ExecutionContext): Effect[WorkflowEvent,WorkflowState] = {
+    import spray.json._
+    import WorkflowDSL.workflowFormat
+    val runtime = engine.tableScheduling.getOrElse(return Effect.none)
+    if (grant.task.workflowId != workflowId || grant.task.executionId.isEmpty) return Effect.none
+    val id = grant.task.executionId.get
+    if (grant.task.owner.exists(_ != runtime.nodeId)) {
+      runtime.quarantine(grant); return releaseRecoveryGateAfter(Effect.none,gate)
+    }
+    if (state.status.value == "snapshot_blocked") { runtime.reject(grant); return releaseRecoveryGateAfter(Effect.none,gate) }
+    if (state.currentExecution.isEmpty && state.recentExecutions.exists(_.executionId == id)) {
+      if (engine.ownsSnapshotGrant(grant)) releaseScheduled(engine,context,id,"completed",true,stopAfter=true,grantId=Some(grant.id))
+      else runtime.reject(grant)
+      return releaseRecoveryGateAfter(Effect.none,gate)
+    }
+    if (state.currentExecution.exists(_.executionId != id) || activeExecution.get() != null) return Effect.none
+    if (state.snapshotAdmission.exists(a => a.grantId == grant.id && Set("yielded","queued").contains(a.phase)) && engine.ownsSnapshotGrant(grant)) {
+      releaseScheduled(engine,context,id,"ready",true,stopAfter=true,grantId=Some(grant.id))
+      return releaseRecoveryGateAfter(Effect.none,gate)
+    }
+    val json = canonicalAndValidateJson(grant.task.definition.workflowJson,engine.nodeRegistry).toOption
+    val advancesDefinition = state.currentExecution.isEmpty && grant.task.definition.revision > state.revision
+    if (json.isEmpty || (!advancesDefinition && (state.workflowJson.exists(_.parseJson != json.get.parseJson) ||
+      state.revision != grant.task.definition.revision))) {
+      runtime.reject(grant); return releaseRecoveryGateAfter(Effect.none,gate)
+    }
+    val workflow = json.get.parseJson.convertTo[WorkflowDSL.Workflow]
+    if (!engine.managedSnapshot(workflow) || runtime.definition(workflow,grant.task.definition.revision) != grant.task.definition) {
+      runtime.reject(grant); return releaseRecoveryGateAfter(Effect.none,gate)
+    }
+    if(!runtime.attach(workflowId,context.self)(context.system)) {
+      runtime.defer(grant)
+      passivate()
+      return Effect.none
+    }
+    val define = Option.when(advancesDefinition)(WorkflowDefined(json.get,grant.task.definition.revision,now())).toVector
+    val start = Option.when(state.currentExecution.isEmpty)(ResumableExecutionStarted(id,
+      manualTrigger(grant.task.requestKey.getOrElse(id)),grant.task.definition.revision,now())).toVector
+    releaseRecoveryGateAfter(Effect.persist(define ++ start :+ SnapshotSchedulingChanged(id,"running",grant.id,now()))
+      .thenRun((updated: WorkflowState) => runEngine(workflow,updated.currentExecution.get,engine,context,activeExecution,activeAttempt,Some(grant))),gate)
   }
 
   private def cancelActiveExecution(
@@ -636,6 +785,8 @@ object EventSourcedWorkflowActor {
   }
 
   private def allowedDuringRecovery(command: Command): Boolean = command match {
+    case _: ActivateSnapshot | _: SnapshotQueued | _: SnapshotQueueFailed | _: SnapshotSchedulingReleased |
+         _: SnapshotDispositionFailed | _: RetrySnapshotDisposition => true
     case _: ReadSnapshotSplits | _: UpdateSnapshotSplits | _: InitializeSnapshot | _: AdvanceCheckpoint | _: InitializeFromAttempt | _: CheckpointFromAttempt | _: EngineFinished | _: EngineCrashed => true
     case _: GetSummary | _: GetStatus | _: GetExecutionHistory | _: GetReliableRunState => true
     case _: BeginRecovery | _: RecoveryReleaseChecked => true

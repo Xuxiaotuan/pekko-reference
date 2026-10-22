@@ -21,7 +21,15 @@ class SnapshotSplitSerializationSpec extends AnyWordSpec with Matchers {
         val updates: Vector[SnapshotSplitUpdate] = Vector(InitializeSnapshotSplits(plan), RegisterSnapshotSplit(split), StartSnapshotSplit(split.id),
           CompleteSnapshotSplit(split.id), RetrySnapshotSplit(split.id, 1), BlockSnapshotSplit(split.id, "protocol_conflict"),
           RetireSnapshotWindow, FinishSnapshotEnumeration)
-        val samples: Vector[AnyRef] = Vector(WorkflowState(splitSnapshot = Some(state))) ++ updates.map(SnapshotSplitsUpdated("e", _, 1L))
+        val samples: Vector[AnyRef] = Vector(WorkflowState(splitSnapshot = Some(state)),
+          WorkflowState(splitSnapshot=Some(state),snapshotAdmission=Some(cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor.SnapshotAdmissionState("yielded","grant"))),
+          SnapshotSchedulingChanged("e","yielded","grant",1L),
+          cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor.ActivateSnapshot(
+            cn.xuyinyin.magic.workflow.scheduling.TableGrant(
+              cn.xuyinyin.magic.workflow.scheduling.ScheduledTable(
+                cn.xuyinyin.magic.workflow.scheduling.ScheduledTableDefinition("w",1L,"{}",
+                  cn.xuyinyin.magic.workflow.scheduling.TableResourceDemand("source","target",2,4096)),
+                "held",Some("e"),Some("request"),1L,0L,Some("grant"),None),"grant"))) ++ updates.map(SnapshotSplitsUpdated("e", _, 1L))
         samples.foreach { value =>
           val serializer = serialization.findSerializerFor(value)
           val bytes = serialization.serialize(value).get

@@ -52,7 +52,7 @@ object WorkflowSharding {
       Entity(TypeKey) { entityContext =>
         val workflowId = entityContext.entityId
         
-        EventSourcedWorkflowActor(workflowId, executionEngine)
+        EventSourcedWorkflowActor(workflowId, executionEngine, ref => entityContext.shard ! ClusterSharding.Passivate(ref))
       }
         .withMessageExtractor(messageExtractor)
         .withSettings(ClusterShardingSettings(system).withRole("worker"))

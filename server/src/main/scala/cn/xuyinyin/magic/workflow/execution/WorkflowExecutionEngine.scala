@@ -48,6 +48,13 @@ class WorkflowExecutionEngine(
   def supportsSplitSnapshot(workflow: Workflow): Boolean = planCompiler.compile(workflow).exists(p =>
     p.pipeline.source.nodeType == "mysql.snapshot" && p.pipeline.source.config.fields.contains("splitRows"))
 
+  def tableScheduling: Option[cn.xuyinyin.magic.workflow.scheduling.TableSchedulingRuntime] =
+    cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension(system).runtime
+  def managedSnapshot(workflow: Workflow): Boolean = supportsSplitSnapshot(workflow) && tableScheduling.nonEmpty
+
+  def finishScheduledSnapshot(executionId: String, disposition: String, released: Boolean = true, grantId: Option[String] = None): Future[Done] =
+    tableScheduling.fold[Future[Done]](Future.successful(Done))(_.release(executionId, disposition, released, grantId))
+
   def supportsCompleteGroupRecovery(workflow: Workflow): Boolean = planCompiler.compile(workflow).exists {
     case plan: MySqlCdcPlan => plan.pipeline.source.config.fields.contains("groupProtocol")
     case _ => false
@@ -58,11 +65,20 @@ class WorkflowExecutionEngine(
 
   def execute(workflow: Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] =
     reliableExecutions.register(runContext.executionId).flatMap { control =>
-      control.continueIfActive().flatMap { _ =>
+      val admitted = try { if (!managedSnapshot(workflow)) Future.successful(true) else {
+        val grant = runContext.schedulingGrant.getOrElse(throw new IllegalStateException("managed snapshot requires an admission grant"))
+        require(grant.task.executionId.contains(runContext.executionId) && grant.task.workflowId == workflow.id &&
+          grant.task.definition == tableScheduling.get.definition(workflow, runContext.workflowRevision), "snapshot grant definition changed")
+        tableScheduling.get.bind(grant)
+      }} catch { case NonFatal(e) => Future.failed(e) }
+      admitted.flatMap { allowed => control.continueIfActive().flatMap { _ =>
+        if (!allowed) Future.successful(ExecutionResult("snapshot_deferred",false,"local admission capacity unavailable",None))
+        else {
         val execution = try executeInternal(workflow, runContext.executionId, Some(runContext), Some(control), onLog)
         catch { case NonFatal(exception) => Future.failed(exception) }
         execution
-      }.transformWith { outcome =>
+        }
+      }}.transformWith { outcome =>
         val observed = Promise[ExecutionResult]()
         val primary = outcome.toOption.flatMap(_.failure)
           .orElse(outcome.failed.toOption.map(ExecutionFailure.from(_, "execution")))
@@ -96,6 +112,9 @@ class WorkflowExecutionEngine(
   ): Future[WorkflowExecutionEngine.ReleaseStatus] = reliableExecutions.cancelWithin(executionId, timeout)(cancel(executionId))
 
   private[execution] def activeReliableExecutionCount: Int = reliableExecutions.activeCount
+
+  def ownsSnapshotGrant(grant: cn.xuyinyin.magic.workflow.scheduling.TableGrant): Boolean =
+    tableScheduling.exists(_.owns(grant))
 
   private def executeInternal(
     workflow: Workflow,
@@ -203,12 +222,21 @@ class WorkflowExecutionEngine(
         case _ => Future.failed(new IllegalStateException("snapshot split sink capability missing"))
       }
       return control.continueIfActive().flatMap(_ => ready)
-        .flatMap(_ => new cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitExecutor(splitSource, sink,
+        .flatMap { _ =>
+          val executor = new cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitExecutor(splitSource, sink,
           preparedSource.connectorNode, preparedSink.connectorNode, task.id, runContext.executionId, runContext.workflowRevision,
           splitContext, () => control.continueIfActive(), control.installSession, control.removeSession,
           runtimeOnLog, jdbcBlockingEc, closeEc, () => control.isCancellationRequested,
-          error => { control.closeFailure.compareAndSet(null, error); () }).run())
-        .map(rows => completedResult(task, pipeline, Option.when(rows.isValidInt)(rows.toInt), startTime, runtimeOnLog))
+          error => { control.closeFailure.compareAndSet(null, error); () })
+          if (runContext.schedulingGrant.nonEmpty) executor.runWindow()
+          else executor.run().map(cn.xuyinyin.magic.workflow.snapshot.SnapshotWindowCompleted)
+        }
+        .map {
+          case cn.xuyinyin.magic.workflow.snapshot.SnapshotWindowYielded(rows) =>
+            ExecutionResult("snapshot_yielded",false,"snapshot window drained and retired",Option.when(rows.isValidInt)(rows.toInt))
+          case cn.xuyinyin.magic.workflow.snapshot.SnapshotWindowCompleted(rows) =>
+            completedResult(task, pipeline, Option.when(rows.isValidInt)(rows.toInt), startTime, runtimeOnLog)
+        }
         .recoverWith { case NonFatal(error) =>
           if (!ExecutionFailure.from(error, "snapshot").releaseConfirmed) control.closeFailure.compareAndSet(null, error)
           Future.failed(error)

@@ -14,6 +14,10 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
+sealed trait SnapshotWindowOutcome { def rows: Long }
+final case class SnapshotWindowCompleted(rows: Long) extends SnapshotWindowOutcome
+final case class SnapshotWindowYielded(rows: Long) extends SnapshotWindowOutcome
+
 /** Single-owner, snapshot-only execution. Recovery ownership stays here; CDC never enters this path. */
 final class SnapshotSplitExecutor(source: CheckpointedNodeSource with SnapshotSplitSource, sink: CheckpointedNodeSink,
   sourceNode: Node, sinkNode: Node, workflowId: String, executionId: String, revision: Long,
@@ -50,7 +54,10 @@ final class SnapshotSplitExecutor(source: CheckpointedNodeSource with SnapshotSp
   private def fail(code: String, release: Boolean = true): Nothing = throw new CdcExecutionException(
     ExecutionFailure(code, "snapshot", releaseConfirmed = release), new IllegalStateException(code))
 
-  def run(): Future[Long] = for {
+  def run(): Future[Long] = execute(oneWindow = false).map(_.rows)
+  def runWindow(): Future[SnapshotWindowOutcome] = execute(oneWindow = true)
+
+  private def execute(oneWindow: Boolean): Future[SnapshotWindowOutcome] = for {
     _ <- active()
     existing <- context.read()
     initialized <- existing match {
@@ -69,12 +76,15 @@ final class SnapshotSplitExecutor(source: CheckpointedNodeSource with SnapshotSp
             pageRows, splitRows, parallelism, bytes)))
         }
     }
-    result <- windows(initialized)
+    result <- windows(initialized, oneWindow)
   } yield result
 
-  private def windows(s: SnapshotSplitState): Future[Long] = active().flatMap { _ =>
-    if (s.enumerated && s.splits.isEmpty) Future.successful(s.rowsCommitted)
-    else if (s.splits.nonEmpty && s.splits.forall(_.completed)) write(RetireSnapshotWindow).flatMap(windows)
+  private def windows(s: SnapshotSplitState, oneWindow: Boolean): Future[SnapshotWindowOutcome] = active().flatMap { _ =>
+    if (s.enumerated && s.splits.isEmpty) Future.successful(SnapshotWindowCompleted(s.rowsCommitted))
+    else if (s.splits.nonEmpty && s.splits.forall(_.completed)) write(RetireSnapshotWindow).flatMap { retired =>
+      if (oneWindow && retired.nextLower != retired.plan.upper) Future.successful(SnapshotWindowYielded(retired.rowsCommitted))
+      else windows(retired, oneWindow)
+    }
     else if (s.splits.nonEmpty) {
       // Recover an already durable window; do not enumerate different boundaries after a restart.
       Source(s.splits.filterNot(_.completed)).mapAsyncUnordered(s.plan.parallelism) { p =>
@@ -82,12 +92,12 @@ final class SnapshotSplitExecutor(source: CheckpointedNodeSource with SnapshotSp
       }.runWith(Sink.seq).flatMap { failures =>
         failures.flatten.headOption match {
           case Some(e) => Future.failed(e) // healthy siblings have been allowed to finish.
-          case None => state().flatMap(windows)
+          case None => state().flatMap(windows(_, oneWindow))
         }
       }
     } else fillWindow(s).flatMap { filled =>
-      if (filled.splits.isEmpty) write(FinishSnapshotEnumeration).flatMap(windows)
-      else windows(filled)
+      if (filled.splits.isEmpty) write(FinishSnapshotEnumeration).flatMap(windows(_, oneWindow))
+      else windows(filled, oneWindow)
     }
   }
 

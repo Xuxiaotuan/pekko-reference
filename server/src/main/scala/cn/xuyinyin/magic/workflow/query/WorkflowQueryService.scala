@@ -53,6 +53,7 @@ class WorkflowQueryService(
   private implicit val scheduler: org.apache.pekko.actor.typed.Scheduler = system.scheduler
   private implicit val materializer: Materializer = SystemMaterializer(system).materializer
   private lazy val readJournal = PersistenceQuery(system).readJournalFor[JdbcReadJournal](JdbcReadJournal.Identifier)
+  private lazy val tableScheduling = cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension(system).runtime
 
   protected[query] def persistenceIds(): Source[String, NotUsed] = readJournal.currentPersistenceIds()
 
@@ -79,9 +80,16 @@ class WorkflowQueryService(
       .take(pageSize)
       .mapAsync(parallelism) { persistenceId =>
         val workflowId = persistenceId.stripPrefix("workflow-")
-        admitted(activeAsks, maxAsks) {
-          supervisor.ask[EventSourcedWorkflowActor.WorkflowSummary](replyTo =>
-            WorkflowSupervisor.GetWorkflowSummary(workflowId, replyTo))
+        def liveSummary() = admitted(activeAsks, maxAsks) {
+          supervisor.ask[EventSourcedWorkflowActor.WorkflowSummary](replyTo => WorkflowSupervisor.GetWorkflowSummary(workflowId, replyTo))
+        }
+        tableScheduling match {
+          case None => liveSummary()
+          case Some(runtime) => runtime.summary(workflowId).flatMap {
+            case Some(t) => Future.successful(EventSourcedWorkflowActor.WorkflowSummary(t.workflowId,t.revision,
+              EventSourcedWorkflowActor.WorkflowStatus(if(t.state=="completed") "completed" else "snapshot_"+t.state),None,Vector.empty))
+            case None => liveSummary()
+          }
         }
       }
       .completionTimeout(deadline)
