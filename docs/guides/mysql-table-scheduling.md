@@ -1,6 +1,6 @@
 # 跨表有界快照调度
 
-这一步把静态 `mysql.snapshot → mysql.write` Split 任务放入持久化待执行索引，按资源配额激活，完成一个完整窗口后让出。分页、批次身份、目标账本和 Actor Journal 仍沿用[单表 Split](mysql-snapshot-splits.md)。没有接入共享 CDC，也没有自动接管失联 owner。
+这一步把静态 `mysql.snapshot → mysql.write` Split 任务放入持久化待执行索引，按资源配额激活，完成一个完整窗口后让出。分页、批次身份、目标账本和 Actor Journal 仍沿用[单表 Split](mysql-snapshot-splits.md)。默认调度不自动接管失联 owner；另有显式启用的[受管静态快照隔离后接管](mysql-snapshot-takeover.md)，不包含共享 CDC。
 
 ## 启用与入口
 
@@ -39,6 +39,8 @@ instance-aliases = [
 
 旧 Define/Create 的受管初始定义先登记索引，再写 Journal；索引不可用时不先推进 Journal。已存在受管定义的修订必须走新的持久化 POST 入口，旧 Define 明确拒绝，包含把受管任务改为其他类型的更新，避免绕过索引造成两份定义分叉。原运行 completed 后可提交更高 revision 和新 requestId；新授权激活时把该定义修订写入 Journal，再开始新 execution。修订不会清空目标，新运行仍需满足静态源和目标约束，insert 模式重复写同一目标可能因唯一键冲突暂停。未结束执行不允许改定义。控制索引和 Journal 没有跨库原子事务，定义写入结果未知时需要使用原身份重试，不能把 202 当成两份状态已经同时完成。
 
+上段描述默认模式。启用 HA 时，初始定义和触发意图先仅落控制索引；取得 writer permit 后才创建持久化实体并写入定义/执行事件，冷查询另走只读 Snapshot/Journal 投影。不能把“已登记”解释成 Journal 已写入。
+
 ## 三份状态各自负责什么
 
 SQL 索引负责定义、运行意图、排队位置和资源授权，不能代替进度 Checkpoint。Actor Journal 保存 Split 计划、独立页进度、重试次数及窗口状态。目标账本与页摘要和数据效果同事务提交。
@@ -64,14 +66,16 @@ registered → waiting/ready → held → running
 
 节点还保留到实际 Actor 终止才释放的本地激活名额。实体经 Shard 的 `Passivate` 正式让出，兼容生产的 `remember-entities=on`；仅让 Actor 自行停止会触发重新激活，不能达到冷却效果。
 
+HA 模式另行强制关闭 remember-entities 和运行中 shard 再平衡，避免在进程未隔离时迁移持久化 writer；不能把默认模式的配置直接照搬到 HA。
+
 ## 故障、恢复与人工边界
 
 协调器重启重新查询持久化授权，重复发送不会改变执行身份。发出授权、绑定 owner 或归还事务 COMMIT 回复丢失时，重读索引确认准确的 grant、execution 和 owner，不能凭异常认定回滚。旧归还结果尚未在本地确认时，新窗口授权保持 HELD，不先绑定成 RUNNING。无法确认绑定结果时保留 fence；归还失败使用同一执行上下文重试控制操作，不消耗数据 Split 恢复预算。归还命令、失败重试和成功回调均固定原 grantId，旧窗口消息不能按 executionId 重新选择新窗口授权。若新窗口 deferred 时遇到旧本地映射，只在 SQL 确认旧授权已不存在后清理该映射，不更新新授权；读取仍失败就保留上下文重试。Stop 只有在实际取消与资源释放成功后，才对控制库归还失败安排同一 grant 的重试；实际释放未知仍不自动回收。资源释放已确认的失败实体归还配额后也会让出，本地激活名额一直保留到实际终止；释放未知的实体继续占用名额。
 
 同节点实体重建仍从原 Journal 独立恢复。T 已提交而 J 尚未持久化时，以原页身份重放并校验目标账本；J 已持久化回复丢失时按实际 J 跳过已完成页。快照 D 为 N/A，原 CDC 的 T→J→原始回调前缀 ACK→D 协议没有改动。
 
-unknown 保留授权及全部配额，不能因超时、心跳丢失或集群移除而回收。新 JVM 的 nodeId 不同，不能自动绑定旧 owner 的 running 授权。本轮进程崩溃实验先确认旧进程退出、数据库连接全部消失，再由测试代表运维显式重新排队；这是人工恢复验证，不是多 owner 自动接管。当前没有新增生产人工继续/放弃 API。
+unknown 保留授权及全部配额，不能因超时、心跳丢失或集群移除而回收。默认模式下新 JVM 的 nodeId 不同，不能自动绑定旧 owner 的 running 授权。初次进程崩溃实验先确认旧进程退出、数据库连接全部消失，再由测试代表运维显式重新排队；这些历史材料仍是人工恢复验证。另行启用的 HA 模式增加 recovering、隔离证明和 writer permit，见[接管指南](mysql-snapshot-takeover.md)，不能省略维护迁移前提。当前没有新增生产人工继续/放弃 API。
 
 ## 验证范围
 
-初次真实多表故障窗口、70 万条元数据实验、全量逐字段对账和失败记录见[初次材料](../experiments/2026-10-22-table-scheduling/README.md)；提交前发现的授权重试与 Stop 问题、修复后的源码版本和新回归见[整体审查材料](../experiments/2026-10-22-table-scheduling-review/README.md)。初次归档保持原样，不能把其中旧运行时标为修复后版本。70 万条实验不包含 70 万张物理表、70 万个常驻 Actor 或吞吐承诺。尚未验证多节点自动 owner 接管、共享 binlog、DDL、在线源变更一致性和永久阻塞的 JDBC close。
+初次真实多表故障窗口、70 万条元数据实验、全量逐字段对账和失败记录见[初次材料](../experiments/2026-10-22-table-scheduling/README.md)；提交前发现的授权重试与 Stop 问题、修复后的源码版本和新回归见[整体审查材料](../experiments/2026-10-22-table-scheduling-review/README.md)。初次归档保持原样，不能把其中旧运行时标为修复后版本。70 万条实验不包含 70 万张物理表、70 万个常驻 Actor 或吞吐承诺。后续[受管自动接管材料](../experiments/2026-10-23-snapshot-takeover/README.md)单独标注源码及环境；共享 binlog、DDL、在线源变更一致性和永久阻塞的 JDBC close 仍未验证。

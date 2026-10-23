@@ -6,7 +6,8 @@ import org.apache.pekko.actor.typed.{ActorRef, ActorSystem}
 import org.apache.pekko.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityTypeKey}
 import org.apache.pekko.cluster.sharding.typed.{ClusterShardingSettings, ShardingEnvelope, ShardingMessageExtractor}
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext,Future}
+import scala.concurrent.duration._
 
 /**
  * WorkflowSharding - 工作流集群分片管理
@@ -48,8 +49,7 @@ object WorkflowSharding {
     val messageExtractor = new WorkflowShardingExtractor(numberOfShards)
     
     // 初始化Entity
-    sharding.init(
-      Entity(TypeKey) { entityContext =>
+    val entity=Entity(TypeKey) { entityContext =>
         val workflowId = entityContext.entityId
         
         EventSourcedWorkflowActor(workflowId, executionEngine, ref => entityContext.shard ! ClusterSharding.Passivate(ref))
@@ -57,7 +57,13 @@ object WorkflowSharding {
         .withMessageExtractor(messageExtractor)
         .withSettings(ClusterShardingSettings(system).withRole("worker"))
         .withStopMessage(EventSourcedWorkflowActor.Stop)
-    )
+    val managed=executionEngine.tableScheduling.filter(_.store.ownership.nonEmpty)
+    managed.foreach { runtime=>
+      val cluster=org.apache.pekko.cluster.typed.Cluster(system)
+      scala.concurrent.Await.result(runtime.io(runtime.store.ownership.get.setAddress(runtime.nodeId,s"${cluster.selfMember.address}|${cluster.selfMember.uniqueAddress.longUid}")),10.seconds)
+      system.systemActorOf(cn.xuyinyin.magic.workflow.scheduling.SnapshotClusterRetirement(runtime),"snapshot-owner-retirement")
+    }
+    sharding.init(if(managed.isEmpty)entity else entity.withAllocationStrategy(new NoLiveSnapshotRebalance))
   }
   
   private[magic] def configuredNumberOfShards(config: com.typesafe.config.Config): Int = {
@@ -110,4 +116,12 @@ class WorkflowShardingExtractor(numberOfShards: Int)
   def unwrapMessageGeneric[T <: EventSourcedWorkflowActor.Command](envelope: ShardingEnvelope[T]): T = {
     envelope.message
   }
+}
+
+/** Fault takeover only: no live transfer of persistence writers during routine balancing. */
+private final class NoLiveSnapshotRebalance extends org.apache.pekko.cluster.sharding.ShardCoordinator.ShardAllocationStrategy {
+  import org.apache.pekko.actor.{ActorRef => ClassicRef}
+  def allocateShard(requester:ClassicRef,shardId:String,allocations:Map[ClassicRef,IndexedSeq[String]]):Future[ClassicRef]=
+    Future.successful(if(allocations.isEmpty)requester else allocations.minBy { case (ref,shards)=>(shards.size,ref.path.toString) }._1)
+  def rebalance(allocations:Map[ClassicRef,IndexedSeq[String]],inProgress:Set[String]):Future[Set[String]]=Future.successful(Set.empty)
 }

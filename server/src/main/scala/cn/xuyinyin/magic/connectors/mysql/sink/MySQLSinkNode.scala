@@ -95,6 +95,12 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
     var connection: Connection = null
     try {
       connection = ds.getConnection
+      if(cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbc.context.nonEmpty) {
+        Vector(config.table,"pekko_sync_batch_ledger","pekko_snapshot_batch_evidence").foreach { table=>
+          val statement=connection.prepareStatement("SELECT ENGINE FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=?")
+          try {statement.setString(1,table);val rows=statement.executeQuery();try require(rows.next() && rows.getString(1)=="InnoDB","managed snapshot target and ledgers must be InnoDB")finally rows.close()}finally statement.close()
+        }
+      }
       Vector(
         "SELECT batch_id, workflow_id, execution_id, source_node_id, partition_id, batch_sequence, cursor_kind, cursor_value, upper_bound, source_rows, target_rows FROM pekko_sync_batch_ledger WHERE 1=0",
         "SELECT batch_id, source_sha256, target_sha256 FROM pekko_snapshot_batch_evidence WHERE 1=0"
@@ -114,6 +120,7 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
     config.setJdbcUrl(s"jdbc:mysql://$host:$port/$database?rewriteBatchedStatements=true&useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&socketTimeout=10000&connectTimeout=5000")
     config.setUsername(username); config.setPassword(password); config.setDriverClassName("com.mysql.cj.jdbc.Driver")
     config.setMaximumPoolSize(1); config.setMinimumIdle(0); config.setConnectionTimeout(10000)
+    cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbc.configure(config,"target")
     new HikariDataSource(config)
   }
 
@@ -388,6 +395,7 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
     config.setMinimumIdle(2)
     config.setConnectionTimeout(30000)
     
+    cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbc.configure(config,"target")
     new HikariDataSource(config)
   }
   

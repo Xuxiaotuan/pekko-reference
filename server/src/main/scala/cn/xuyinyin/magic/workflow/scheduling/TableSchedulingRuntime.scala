@@ -17,8 +17,24 @@ import scala.util.control.NonFatal
 /** Bounded asynchronous SQL facade; no waiting Future or Actor per queued table. */
 final class TableSchedulingRuntime(val store: TableSchedulingStore, val nodeId: String,
   aliases: Map[String,String] = Map.empty, maxPendingOperations: Int = 64)(implicit ec: ExecutionContext) {
+  private val scheduledTriggers=new ConcurrentHashMap[String,SnapshotScheduledTrigger]()
+  def scheduledTrigger(execution:String):Option[SnapshotScheduledTrigger]=Option(scheduledTriggers.get(execution))
   private val pending = new AtomicInteger()
   private val owned = new ConcurrentHashMap[String,TableGrant]()
+  // The grant and its trigger have one local lifetime. SQL work stays outside this lock.
+  private def remember(grant: TableGrant, trigger: Option[SnapshotScheduledTrigger] = None): Unit = synchronized {
+    val execution = grant.task.executionId.get
+    require(!Option(owned.get(execution)).exists(_.id != grant.id), "another local grant still owns the execution")
+    owned.put(execution,grant)
+    trigger.foreach(t => scheduledTriggers.put(execution,t))
+  }
+  private def forget(grant: TableGrant): Unit = synchronized {
+    val execution = grant.task.executionId.get
+    if (Option(owned.get(execution)).exists(_.id == grant.id)) {
+      owned.remove(execution)
+      scheduledTriggers.remove(execution)
+    }
+  }
   private val attached = scala.collection.mutable.Map.empty[String,org.apache.pekko.actor.typed.ActorRef[_]]
   private var watcher = Option.empty[org.apache.pekko.actor.typed.ActorRef[TableSchedulingRuntime.WatchCommand]]
   private val peakAttached = new AtomicInteger()
@@ -90,15 +106,11 @@ final class TableSchedulingRuntime(val store: TableSchedulingStore, val nodeId: 
     // Leave the new grant HELD until the local old disposition has been reconciled.
     if(Option(owned.get(grant.task.executionId.get)).exists(_.id != grant.id)) false
     else {
-    def remember(): Unit = {
-      val previous=owned.putIfAbsent(grant.task.executionId.get,grant)
-      require(previous==null || previous.id==grant.id,"another local grant still owns the execution")
-    }
     val bound = try store.bind(grant,nodeId) catch { case NonFatal(error) =>
       val recorded=try store.get(grant.task.workflowId) catch { case NonFatal(_) => None }
       recorded.filter(t=>t.grantId.contains(grant.id) && t.executionId==grant.task.executionId && t.definition==grant.task.definition) match {
         case Some(t) if t.state=="running" && t.owner.contains(nodeId) => true
-        case Some(t) if t.state=="held" && t.owner.isEmpty => remember(); throw error
+        case Some(t) if t.state=="held" && t.owner.isEmpty => remember(grant); throw error
         case _ => throw new cn.xuyinyin.magic.workflow.engine.CdcExecutionException(
           cn.xuyinyin.magic.workflow.engine.ExecutionFailure(cn.xuyinyin.magic.workflow.engine.ExecutionFailure.ReleaseUnknown,
             "table-admission",releaseConfirmed=false),error)
@@ -106,7 +118,7 @@ final class TableSchedulingRuntime(val store: TableSchedulingStore, val nodeId: 
     }
     val unstarted = !bound && store.get(grant.task.workflowId).exists(t => t.state == "held" && t.grantId.contains(grant.id) && t.owner.isEmpty)
     if (bound || unstarted) {
-      remember()
+      remember(grant)
     }
     bound
     }
@@ -118,7 +130,7 @@ final class TableSchedulingRuntime(val store: TableSchedulingStore, val nodeId: 
       // encounters an old local mapping, clear it only after SQL confirms it is gone.
       val g=grant.get
       val durable=store.get(g.task.workflowId).getOrElse(throw new IllegalStateException("scheduling disposition is not confirmed"))
-      if(!durable.grantId.contains(g.id))owned.remove(executionId,g)
+      if(!durable.grantId.contains(g.id))forget(g)
       Done
     }
     grant.fold(Future.successful(Done)) { g => io {
@@ -126,24 +138,40 @@ final class TableSchedulingRuntime(val store: TableSchedulingStore, val nodeId: 
         if(confirmed) !t.grantId.contains(g.id)
         else t.grantId.contains(g.id) && t.state=="unknown"
       }
-      val changed = try store.release(g,disposition,confirmed) catch {
+      val changed = try store.release(g,disposition,confirmed,Some(nodeId)) catch {
         case NonFatal(error) => if(recorded) true else throw error
       }
       if(!changed && !recorded)throw new IllegalStateException("scheduling disposition is not confirmed")
-      if (confirmed) owned.remove(executionId,g)
+      if (confirmed) forget(g)
       Done
     }}
   }
   def defer(grant: TableGrant): Future[Done] = io {
     if(store.get(grant.task.workflowId).exists(t => t.state=="held" && t.owner.isEmpty && t.grantId.contains(grant.id)))
-      store.release(grant,"ready",releaseConfirmed=true)
+      store.release(grant,"ready",releaseConfirmed=true,Some(nodeId))
     Done
   }
-  def quarantine(grant: TableGrant): Future[Done] = io { store.release(grant,"blocked",releaseConfirmed=false); Done }
+  def quarantine(grant: TableGrant): Future[Done] = io { store.release(grant,"blocked",releaseConfirmed=false,Some(nodeId)); Done }
   def reject(grant: TableGrant): Future[Done] = io {
-    if(store.get(grant.task.workflowId).exists(t => t.state=="held" && t.owner.isEmpty && t.grantId.contains(grant.id)))
-      store.release(grant,"blocked",releaseConfirmed=true)
+    def recorded: Boolean = store.get(grant.task.workflowId).exists(t => !t.grantId.contains(grant.id))
+    if(store.get(grant.task.workflowId).exists(t => t.grantId.contains(grant.id) &&
+      ((t.state=="held" && t.owner.isEmpty) || (store.ownership.nonEmpty && Set("recovering","running").contains(t.state) && t.owner.contains(nodeId))))) {
+      val changed = try store.release(grant,"blocked",releaseConfirmed=true,Some(nodeId)) catch {
+        case NonFatal(error) => if(recorded) true else throw error
+      }
+      if(changed || recorded) forget(grant)
+    } else if(recorded) forget(grant)
     Done
+  }
+  def acquireRecovery(workflowId:String,expectedGrantId:String):Future[Option[TableGrant]]=io {
+    store.get(workflowId).flatMap { task=>task.grantId.filter(_==expectedGrantId).flatMap { id=>
+      val grant=TableGrant(task,id)
+      if(Option(owned.get(task.executionId.get)).exists(_.id!=id))None else store.ownership.flatMap(_.acquire(grant,nodeId)).map { _=>
+        val updated=TableGrant(store.get(workflowId).get,id)
+        remember(updated,store.ownership.get.scheduledTrigger(updated.task.executionId.get))
+        updated
+      }
+    }}
   }
   def dispatchBatch(): Future[Vector[TableGrant]] = io {
     val fresh = store.claim(store.limits.maxStarts)
@@ -168,7 +196,16 @@ private[scheduling] object TableSchedulingRuntime {
 final class TableSchedulingExtension(system: ActorSystem[_]) extends Extension {
   val runtime: Option[TableSchedulingRuntime] = {
     val root = system.settings.config
-    if (!root.hasPath("pekko.workflow.table-scheduling.enabled") || !root.getBoolean("pekko.workflow.table-scheduling.enabled")) None else {
+    if (SnapshotOwnerBootstrap.enabled(root)) {
+      val managed=SnapshotOwnerJdbc.context.getOrElse(throw new IllegalStateException("managed owner bootstrap must precede ActorSystem"))
+      CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate,"close-managed-snapshot-control") {()=>
+        Future {managed.close();Done}(system.dispatchers.lookup(DispatcherSelector.fromConfig("pekko.workflow.table-scheduling.jdbc-dispatcher")))
+      }
+      val c=root.getConfig("pekko.workflow.table-scheduling")
+      val aliases=c.getConfigList("instance-aliases").asScala.map(a=>a.getString("from").toLowerCase(java.util.Locale.ROOT)->a.getString("to")).toMap
+      Some(new TableSchedulingRuntime(managed.store,managed.identity.bootId,aliases,c.getInt("max-pending-operations"))(
+        system.dispatchers.lookup(DispatcherSelector.fromConfig("pekko.workflow.table-scheduling.jdbc-dispatcher"))))
+    } else if (!root.hasPath("pekko.workflow.table-scheduling.enabled") || !root.getBoolean("pekko.workflow.table-scheduling.enabled")) None else {
       val c = root.getConfig("pekko.workflow.table-scheduling")
       val db = c.getConfig("jdbc")
       val pool = new HikariConfig()

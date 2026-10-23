@@ -37,9 +37,10 @@ object PekkoClusterService {
    * @param port 端口号
    */
   def start(systemName: String, config: Config, port: Option[Int] = None): Unit = {
+    val managedConfig = cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerBootstrap.prepare(config)
     val dynamicConfig = port
-      .map(value => com.typesafe.config.ConfigFactory.parseString(s"pekko.remote.artery.canonical.port = $value").withFallback(config))
-      .getOrElse(config)
+      .map(value => com.typesafe.config.ConfigFactory.parseString(s"pekko.remote.artery.canonical.port = $value").withFallback(managedConfig))
+      .getOrElse(managedConfig)
     
     implicit val system: ActorSystem[PekkoGuardian.Command] = 
       ActorSystem(PekkoGuardian(), systemName, dynamicConfig)

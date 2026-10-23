@@ -147,6 +147,7 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource wit
     config.setJdbcUrl(s"jdbc:mysql://$host:$port/$database?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&useCursorFetch=true&socketTimeout=30000&connectTimeout=5000")
     config.setUsername(username); config.setPassword(password); config.setDriverClassName("com.mysql.cj.jdbc.Driver")
     config.setMaximumPoolSize(1); config.setMinimumIdle(0); config.setConnectionTimeout(10000)
+    cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbc.configure(config,"source")
     new HikariDataSource(config)
   }
 
@@ -166,6 +167,7 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource wit
     config.setMinimumIdle(0)
     config.setConnectionTimeout(30000)
     config.setConnectionTestQuery("SELECT 1")
+    cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbc.configure(config,"source")
     new HikariDataSource(config)
   }
 

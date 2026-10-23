@@ -1,0 +1,35 @@
+{
+  "reviewedAgainst": "7ec75d716779d760972ab76f925465dbf953e7c0",
+  "scope": "all unstaged and untracked managed static snapshot takeover production changes and tests",
+  "independentReviewer": "takeover_commit_review; fresh context; read-only",
+  "verifiedBlockers": [],
+  "checked": [
+    "exact child JVM isolation before DB drain",
+    "unknown resources retain quota",
+    "permit before persistent Writer recovery",
+    "original execution and Split T/J identities",
+    "control commit reply loss idempotence",
+    "legacy persistence types unchanged",
+    "cold read-only query and scheduled watermark",
+    "paired local grant and trigger cleanup with grant guard"
+  ],
+  "limits": [
+    "review is not a runtime experiment",
+    "code review graph covered tracked changes; untracked classes were read directly"
+  ],
+  "consideredOutsideScope": [
+    "CDC HA",
+    "whole supervisor JVM restart adoption",
+    "remote fencing",
+    "database failover",
+    "multiple physical MySQL instances live drain",
+    "adversarial attribute forgery",
+    "long-running scale",
+    "permanently blocked JDBC"
+  ],
+  "additionalReadOnlyReview": {
+    "case": "delayed_release",
+    "verdict": "valid real COMMIT/reply interleaving; no verified issue",
+    "productionChangedSinceReview": false
+  }
+}

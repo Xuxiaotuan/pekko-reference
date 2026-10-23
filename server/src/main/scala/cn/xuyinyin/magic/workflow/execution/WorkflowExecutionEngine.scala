@@ -50,6 +50,8 @@ class WorkflowExecutionEngine(
 
   def tableScheduling: Option[cn.xuyinyin.magic.workflow.scheduling.TableSchedulingRuntime] =
     cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension(system).runtime
+  private[magic] lazy val snapshotIngress:Option[cn.xuyinyin.magic.workflow.actors.ManagedSnapshotIngress]=
+    tableScheduling.filter(_.store.ownership.nonEmpty).map(new cn.xuyinyin.magic.workflow.actors.ManagedSnapshotIngress(system,_))
   def managedSnapshot(workflow: Workflow): Boolean = supportsSplitSnapshot(workflow) && tableScheduling.nonEmpty
 
   def finishScheduledSnapshot(executionId: String, disposition: String, released: Boolean = true, grantId: Option[String] = None): Future[Done] =
@@ -123,6 +125,10 @@ class WorkflowExecutionEngine(
     reliableControl: Option[ReliableExecutionControl],
     onLog: String => Unit
   ): Future[ExecutionResult] = {
+    if(cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbc.context.nonEmpty) {
+      require(managedSnapshot(workflow) && runContext.flatMap(_.schedulingGrant).nonEmpty,
+        "managed HA workers accept only admitted static snapshot executions")
+    }
     val startTime = System.currentTimeMillis()
     logger.info(s"Starting workflow execution: ${workflow.id}")
     onLog(s"开始执行工作流: ${workflow.name}")

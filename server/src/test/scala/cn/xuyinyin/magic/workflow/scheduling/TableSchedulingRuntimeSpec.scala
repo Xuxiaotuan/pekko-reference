@@ -15,6 +15,39 @@ import spray.json._
 class TableSchedulingRuntimeSpec extends AnyWordSpec with Matchers with org.scalatest.concurrent.Eventually {
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(org.scalatest.time.Span(3,org.scalatest.time.Seconds))
   "durable snapshot ingress" should {
+    "forget a rejected scheduled trigger without deleting its durable deduplication record" in {
+      implicit val ec: ExecutionContext = ExecutionContext.global
+      val hc = new HikariConfig()
+      hc.setJdbcUrl("jdbc:h2:mem:scheduled-rejection-"+java.util.UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1")
+      hc.setUsername("sa"); hc.setMaximumPoolSize(4)
+      val ds = new HikariDataSource(hc)
+      try {
+        val c = ds.getConnection
+        try Vector("db/h2/pekko-table-scheduling-schema.sql", "db/h2/pekko-snapshot-ownership-schema.sql").foreach { path =>
+          val in = getClass.getClassLoader.getResourceAsStream(path)
+          val sql = try scala.io.Source.fromInputStream(in).mkString finally in.close()
+          sql.split(";").map(_.trim).filter(_.nonEmpty).foreach { query =>
+            val statement = c.createStatement(); try statement.execute(query) finally statement.close()
+          }
+        } finally c.close()
+        val store = new TableSchedulingStore(ds, SchedulingLimits(2,1,8,1,1048576,8), ownershipEnabled=true)
+        val ha = store.ownership.get
+        ha.registerOwner(SnapshotOwnerIdentity("owner","managed-jvm",101,"start"))
+        store.register(ScheduledTableDefinition("scheduled",1,"{}",TableResourceDemand("mysql","mysql",1,1024)))
+        ha.submitScheduled("scheduled","cron",2000,"cron-2000",None,"scheduled-execution") shouldBe ("accepted","scheduled-execution")
+        val runtime = new TableSchedulingRuntime(store,"owner")
+        val held = store.claim(1).head
+        val acquired = Await.result(runtime.acquireRecovery("scheduled",held.id),3.seconds).get
+        runtime.scheduledTrigger("scheduled-execution").get.triggerId shouldBe "cron-2000"
+        Await.result(runtime.reject(acquired),3.seconds)
+        runtime.scheduledTrigger("scheduled-execution") shouldBe None
+        runtime.owns(acquired) shouldBe false
+        store.get("scheduled").get.state shouldBe "blocked"
+        ha.scheduledTrigger("scheduled-execution").get.triggerId shouldBe "cron-2000"
+        ha.submitScheduled("scheduled","cron",2000,"cron-2000",None,"another-execution") shouldBe ("duplicate","cron-2000")
+        Await.result(runtime.reject(acquired),3.seconds)
+      } finally ds.close()
+    }
     "defer a new window while the old SQL release reply is held" in {
       implicit val ec:ExecutionContext=ExecutionContext.global
       val hc=new HikariConfig();hc.setJdbcUrl("jdbc:h2:mem:release-race-"+java.util.UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1");hc.setUsername("sa");hc.setMaximumPoolSize(2)

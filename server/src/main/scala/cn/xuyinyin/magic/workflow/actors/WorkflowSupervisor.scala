@@ -71,7 +71,10 @@ object WorkflowSupervisor {
                 Future.successful(())
               } else if(managed) {
                 val registration=try runtime.register(workflow,1L) catch {case NonFatal(e)=>Future.failed(e)}
-                registration.map(_=>deliver())
+                registration.map { saved=>
+                  if(runtime.store.ownership.nonEmpty)reply ! EventSourcedWorkflowActor.Defined(workflow.id,saved.definition.revision)
+                  else deliver()
+                }
               } else {deliver();Future.successful(())}
             }.recover {case NonFatal(_)=>reply ! EventSourcedWorkflowActor.SchedulingUnavailable("definition/index result unavailable; retry the same definition");()}
         }

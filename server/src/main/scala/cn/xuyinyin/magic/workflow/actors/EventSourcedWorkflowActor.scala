@@ -81,6 +81,9 @@ object EventSourcedWorkflowActor {
   case object Stop extends Command
   private final case class EngineFinished(executionId: String, attemptId: String, result: ExecutionResult) extends Command
   private final case class EngineCrashed(executionId: String, attemptId: String, message: String, failure: ExecutionFailure) extends Command
+  private final case class SnapshotPermitChecked(grant: Option[TableGrant]) extends Command
+  private case object SnapshotIngressCompleted extends Command
+  private case object SnapshotPermitUnavailable extends Command
   private final case class RecoverInterrupted(executionId: String) extends Command
   private final case class RecoveryEngineLaunched(executionId: String, attemptId: String) extends Command
 
@@ -193,6 +196,72 @@ object EventSourcedWorkflowActor {
     (implicit ec: ExecutionContext): Behavior[Command] = behavior(workflowId,executionEngine,Some(passivate))
 
   private def behavior(workflowId: String, executionEngine: WorkflowExecutionEngine, shardPassivate: Option[ActorRef[Command] => Unit] = None)(implicit ec: ExecutionContext): Behavior[Command] =
+    executionEngine.tableScheduling.filter(_.store.ownership.nonEmpty) match {
+      case None => persistentBehavior(workflowId,executionEngine,shardPassivate)
+      case Some(runtime) => Behaviors.setup { context => Behaviors.withStash[Command](32) { stash =>
+        def stopGate():Behavior[Command]={shardPassivate.foreach(_(context.self));Behaviors.stopped}
+        def pendingIngress:Behavior[Command]=Behaviors.receiveMessage {
+          case SnapshotIngressCompleted | Stop=>stopGate()
+          case command=>
+            managedIngressRequest(workflowId,executionEngine,command).foreach(result=>context.pipeToSelf(result)(_=>SnapshotIngressCompleted))
+            Behaviors.same
+        }
+        def pendingPermit:Behavior[Command]=Behaviors.receiveMessage {
+          case SnapshotPermitChecked(Some(_))=>stash.unstashAll(persistentBehavior(workflowId,executionEngine,shardPassivate))
+          case SnapshotPermitChecked(None) | SnapshotPermitUnavailable | Stop=>stopGate()
+          case _ if stash.isFull=>stopGate()
+          case command=>stash.stash(command);Behaviors.same
+        }
+        Behaviors.receiveMessage { command=>
+          managedIngressRequest(workflowId,executionEngine,command) match {
+            case Some(result)=>context.pipeToSelf(result)(_=>SnapshotIngressCompleted);pendingIngress
+            case None=>command match {
+              case Stop=>stopGate()
+              case ActivateSnapshot(grant) if runtime.attach(workflowId,context.self)(context.system)=>
+                stash.stash(command)
+                context.pipeToSelf(runtime.acquireRecovery(workflowId,grant.id)) {
+                  case Success(grant)=>SnapshotPermitChecked(grant)
+                  case Failure(_)=>SnapshotPermitUnavailable
+                };pendingPermit
+              case _=>stopGate()
+            }
+          }
+        }
+      }}
+    }
+
+  private def managedIngressRequest(workflowId:String,engine:WorkflowExecutionEngine,command:Command)
+    (implicit ec:ExecutionContext):Option[scala.concurrent.Future[Unit]]=engine.snapshotIngress.flatMap { ingress=>
+    val result:Option[scala.concurrent.Future[Unit]]=command match {
+      case GetSummary(reply)=>Some(ingress.read(workflowId).map(s=>reply ! WorkflowSummary(workflowId,s.revision,s.status,s.currentExecution,s.recentExecutions.map(WorkflowHistory.publicSummary))))
+      case GetStatus(reply)=>Some(ingress.read(workflowId).map(s=>reply ! WorkflowHistory.statusResponse(workflowId,s)))
+      case GetExecutionHistory(page,size,reply)=>Some(ingress.read(workflowId).map(s=>reply ! WorkflowHistory.historyResponse(workflowId,s,page,size)))
+      case ExecuteManual(request,reply)=>Some(ingress.manual(workflowId,request).map(reply ! _))
+      case ExecuteScheduled(schedule,at,trigger,reply)=>Some(ingress.scheduled(workflowId,schedule,at,trigger).map(reply ! _))
+      case Execute(reply)=>Some(ingress.manual(workflowId,java.util.UUID.randomUUID().toString).map {
+        case ExecutionAccepted(id)=>reply ! ExecutionResponse(id,"started")
+        case AlreadyRunning(id)=>reply ! ExecutionResponse(id,"already_running")
+        case DuplicateExecution(_,id)=>reply ! ExecutionResponse(id,"already_running")
+        case _=>reply ! ExecutionResponse("","not_initialized")
+      })
+      case DefineWorkflow(json,expected,reply)=>
+        import spray.json._
+        import WorkflowDSL.workflowFormat
+        if(expected!=0L)Some(scala.concurrent.Future.successful(reply ! DefinitionRejected(workflowId,Vector("managed revisions must use snapshot-tasks ingress"))))
+        else Some(scala.concurrent.Future(json.parseJson.convertTo[WorkflowDSL.Workflow]).flatMap(w=>engine.tableScheduling.get.register(w,1L)).map(t=>reply ! Defined(workflowId,t.definition.revision)))
+      case _=>None
+    }
+    result.map(_.recover {case NonFatal(_)=>
+      val target:Option[ActorRef[_]]=command match {
+        case GetSummary(r)=>Some(r);case GetStatus(r)=>Some(r);case GetExecutionHistory(_,_,r)=>Some(r)
+        case ExecuteManual(_,r)=>Some(r);case ExecuteScheduled(_,_,_,r)=>Some(r);case Execute(r)=>Some(r);case DefineWorkflow(_,_,r)=>Some(r)
+        case _=>None
+      }
+      target.foreach(_.asInstanceOf[ActorRef[Any]] ! org.apache.pekko.actor.Status.Failure(new java.util.concurrent.RejectedExecutionException("managed query or scheduling result unavailable; retry the same request")))
+    })
+  }
+
+  private def persistentBehavior(workflowId: String, executionEngine: WorkflowExecutionEngine, shardPassivate: Option[ActorRef[Command] => Unit])(implicit ec: ExecutionContext): Behavior[Command] =
     Behaviors.setup { context => Behaviors.withTimers[Command] { timers =>
       val recoveryGate = new AtomicBoolean(false)
       val activeEngineExecutionId = new AtomicReference[String]()
@@ -238,7 +307,9 @@ object EventSourcedWorkflowActor {
   )
     (state: WorkflowState, command: Command)(implicit ec: ExecutionContext): Effect[WorkflowEvent, WorkflowState] =
     stop.intercept(state, command).getOrElse {
-    if (recoveryGate.get() && !allowedDuringRecovery(command)) Effect.stash()
+    val ingress=managedIngressRequest(workflowId,executionEngine,command)
+    if(ingress.nonEmpty) Effect.none
+    else if (recoveryGate.get() && !allowedDuringRecovery(command)) Effect.stash()
     else command match {
     case _: ActivateSnapshot if passivating.get() => Effect.none
     case ActivateSnapshot(grant) =>
@@ -345,6 +416,10 @@ object EventSourcedWorkflowActor {
     case RecoverInterrupted(executionId) if activeEngineExecutionId.get() == executionId =>
       releaseRecoveryGateAfter(Effect.none,recoveryGate)
     case RecoverInterrupted(executionId) if state.currentExecution.exists(_.executionId == executionId) && state.status.value == "snapshot_blocked" =>
+      executionEngine.tableScheduling.filter(_.store.ownership.nonEmpty).foreach { runtime=>
+        runtime.find(workflowId).foreach(_.foreach(t=>t.grantId.foreach(id=>runtime.reject(TableGrant(t,id)))))
+        passivate()
+      }
       releaseRecoveryGateAfter(Effect.none, recoveryGate)
     case RecoverInterrupted(executionId) if state.currentExecution.exists(_.executionId == executionId) && recovery.eligible(state) =>
       val current = state.currentExecution.get
@@ -653,7 +728,7 @@ object EventSourcedWorkflowActor {
       val queued = try runtime.enqueue(workflow,execution.workflowRevision,execution.executionId,request)
         catch { case NonFatal(e) => scala.concurrent.Future.failed(e) }
       context.pipeToSelf(queued) {
-        case Success(t) if t.grantId.nonEmpty && t.owner.contains(runtime.nodeId) && t.state == "running" => ActivateSnapshot(TableGrant(t,t.grantId.get))
+        case Success(t) if t.grantId.nonEmpty && t.owner.contains(runtime.nodeId) && Set("running","recovering").contains(t.state) => ActivateSnapshot(TableGrant(t,t.grantId.get))
         case Success(_) => SnapshotQueued(execution.executionId,token)
         case Failure(_) => SnapshotQueueFailed(execution.executionId,token)
       }
@@ -700,9 +775,10 @@ object EventSourcedWorkflowActor {
     if (grant.task.workflowId != workflowId || grant.task.executionId.isEmpty) return Effect.none
     val id = grant.task.executionId.get
     if (grant.task.owner.exists(_ != runtime.nodeId)) {
-      runtime.quarantine(grant); return releaseRecoveryGateAfter(Effect.none,gate)
+      if(runtime.store.ownership.isEmpty) runtime.quarantine(grant)
+      return releaseRecoveryGateAfter(Effect.none,gate)
     }
-    if (state.status.value == "snapshot_blocked") { runtime.reject(grant); return releaseRecoveryGateAfter(Effect.none,gate) }
+    if (state.status.value == "snapshot_blocked" || state.currentExecution.flatMap(_.recovery).exists(_.phase=="blocked")) { runtime.reject(grant); if(runtime.store.ownership.nonEmpty)passivate(); return releaseRecoveryGateAfter(Effect.none,gate) }
     if (state.currentExecution.isEmpty && state.recentExecutions.exists(_.executionId == id)) {
       if (engine.ownsSnapshotGrant(grant)) releaseScheduled(engine,context,id,"completed",true,stopAfter=true,grantId=Some(grant.id))
       else runtime.reject(grant)
@@ -730,7 +806,8 @@ object EventSourcedWorkflowActor {
     }
     val define = Option.when(advancesDefinition)(WorkflowDefined(json.get,grant.task.definition.revision,now())).toVector
     val start = Option.when(state.currentExecution.isEmpty)(ResumableExecutionStarted(id,
-      manualTrigger(grant.task.requestKey.getOrElse(id)),grant.task.definition.revision,now())).toVector
+      runtime.scheduledTrigger(id).map(t=>scheduledTrigger(t.scheduleId,t.scheduledAt,t.triggerId))
+        .getOrElse(manualTrigger(grant.task.requestKey.getOrElse(id))),grant.task.definition.revision,now())).toVector
     releaseRecoveryGateAfter(Effect.persist(define ++ start :+ SnapshotSchedulingChanged(id,"running",grant.id,now()))
       .thenRun((updated: WorkflowState) => runEngine(workflow,updated.currentExecution.get,engine,context,activeExecution,activeAttempt,Some(grant))),gate)
   }
