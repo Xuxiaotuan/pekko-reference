@@ -1,0 +1,29 @@
+{
+  "review": "fresh read-only whole-change review plus narrow reproduced-failure fix",
+  "reviewer": "supervisor_commit_audit",
+  "criticalRemaining": 0,
+  "importantRemaining": 0,
+  "reviewedBoundaries": [
+    "original Process and guardian incarnation",
+    "epoch-fenced durable launch and proof",
+    "database drain before quota return and successor",
+    "additive SQL and unchanged business persistence"
+  ],
+  "finding": {
+    "issue": "A returned fork whose identity lookup failed could be inventoried as NOT_STARTED and cancelled",
+    "classification": "reproduced inventory misclassification; no claim that a live process survived forced termination",
+    "red": "identity-red.log: 0/1, NOT_STARTED != UNKNOWN; real fork and Java17 Process.info permission denial",
+    "resolution": "retain original Process and process slot as unidentified; UNKNOWN inventory; refuse CANCEL, boot reuse and capacity overrun",
+    "green": "identity-green.log: 16/16; backend final 580/580",
+    "postFixReadOnlyReview": "no new Critical or Important blockers"
+  },
+  "unverified": [
+    "forced kill timeout with a still-live unidentified process",
+    "guardian JVM/host restart",
+    "cross-host leader election",
+    "mixed-controller rolling upgrade",
+    "CDC multi-owner",
+    "real OS PID reuse",
+    "production upgrade and long-running performance"
+  ]
+}

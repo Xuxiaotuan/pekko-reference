@@ -1,0 +1,32 @@
+{
+  "scope": "Read-only test-facility and evidence review; no production review guarantee",
+  "reviewer": "guardian_probe_review",
+  "blockingFindingsRemaining": 0,
+  "findings": [
+    {
+      "issue": "Cleanup exceptions could skip guardian and pool cleanup",
+      "resolution": "Entire scenario wrapped in outer finally; unknown process identity remains unknown"
+    },
+    {
+      "issue": "Journal permit evidence archived without assertions",
+      "resolution": "Assert each journal writer permit, generation and admission order against SQL owner audit"
+    },
+    {
+      "issue": "Response nonce test name could imply request replay coverage",
+      "resolution": "Rename unit test and add actual authenticated request replay in S14"
+    },
+    {
+      "issue": "Missing process start identity could be treated as exit",
+      "resolution": "Treat alive process with unavailable start identity as alive-or-unknown"
+    },
+    {
+      "issue": "README could imply Actor Snapshot coverage",
+      "resolution": "State Journal replay only; no Actor Snapshot save/read triggered"
+    },
+    {
+      "issue": "Two guardian control tables versus journal evidence table",
+      "resolution": "Distinguish two control tables and third journal evidence table"
+    }
+  ],
+  "evidenceCalibration": "Final runner exit0; ten expected outcomes, eight convergence and two safe pauses; backend564/564; boundaries retained"
+}

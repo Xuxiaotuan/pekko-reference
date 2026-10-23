@@ -9,19 +9,29 @@ final case class ManagedSnapshotChild(identity:SnapshotOwnerIdentity,process:Pro
 /** Trusted supervisor capability: only children created here are eligible. No PID-adoption or shell fencing commands. */
 final class ManagedJvmIsolation(deploymentId:String,maxWorkers:Int) {
   require(deploymentId.nonEmpty && maxWorkers>0)
+  private[scheduling] val capabilityId:String=java.util.UUID.randomUUID().toString
   private val children=mutable.Map.empty[String,ManagedSnapshotChild]
+  // A successful fork is never equivalent to NOT_STARTED, even if its identity lookup fails.
+  private val unidentified=mutable.Map.empty[String,Process]
   @volatile private var usedBoot:String=>Boolean = _=>false
   private[scheduling] def bindRegistry(ownership:SnapshotOwnershipStore):Unit={usedBoot=id=>ownership.owner(id).nonEmpty}
   private[scheduling] def retire(id:String):Unit=synchronized {children.remove(id);()}
+  private[scheduling] def hasUnidentified(id:String):Boolean=synchronized(unidentified.contains(id))
   def launch(bootId:String,builder:ProcessBuilder):ManagedSnapshotChild=synchronized {
-    require(!children.contains(bootId) && !usedBoot(bootId),"boot identity cannot be reused")
-    if(children.size>=maxWorkers)throw new IllegalStateException("managed worker capacity exhausted")
+    require(!children.contains(bootId) && !unidentified.contains(bootId) && !usedBoot(bootId),"boot identity cannot be reused")
+    if(children.size+unidentified.size>=maxWorkers)throw new IllegalStateException("managed worker capacity exhausted")
     val process=builder.start()
+    unidentified.update(bootId,process)
     try {
       val start=process.info().startInstant().orElseThrow(()=>new IllegalStateException("process start identity unavailable")).toString
       val child=ManagedSnapshotChild(SnapshotOwnerIdentity(bootId,deploymentId,process.pid(),start),process)
-      children.update(bootId,child);child
-    } catch {case e:Exception=>process.destroyForcibly().waitFor(10,TimeUnit.SECONDS);throw e}
+      children.update(bootId,child);unidentified.remove(bootId);child
+    } catch {case e:Exception=>
+      try process.destroyForcibly().waitFor(10,TimeUnit.SECONDS)
+      catch {case scala.util.control.NonFatal(cleanup)=>e.addSuppressed(cleanup)}
+      // No verified launch identity/receipt: retain the original handle and slot for manual isolation.
+      throw e
+    }
   }
   def managed:Vector[ManagedSnapshotChild]=synchronized(children.values.toVector)
   def confirm(identity:SnapshotOwnerIdentity,operation:String,terminate:Boolean):Option[SnapshotIsolationReceipt]={

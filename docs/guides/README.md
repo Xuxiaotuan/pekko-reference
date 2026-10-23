@@ -7,3 +7,5 @@
 [单表快照 Split](mysql-snapshot-splits.md)说明显式启用、分页与独立恢复；[跨表有界调度](mysql-table-scheduling.md)说明持久化队列、资源准入和完整窗口让出。目前仅支持静态源直连 MySQL Sink，不包含在线增量快照。
 
 [受管静态快照自动接管](mysql-snapshot-takeover.md)说明进程隔离、服务端事务排空、恢复许可和旧配额转换；默认关闭，仅支持 supervisor 持有精确句柄的子 JVM。
+
+[Supervisor JVM 重启恢复](mysql-supervisor-recovery.md)增加每台机器一个独立 guardian，按原进程能力、启动票据和签名证明恢复受管静态快照；guardian 自身重启及主机重启仍不在范围。[提交前终审](../experiments/2026-10-23-supervisor-final-review/README.md)说明本次复审、补强及冻结证据的版本边界。

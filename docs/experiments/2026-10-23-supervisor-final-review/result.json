@@ -1,0 +1,1497 @@
+{
+  "baselineCommit": "afff7ab27560b74ad026aa370dba1cf920fdc587",
+  "runtimes": [
+    {
+      "suite": "matrix",
+      "exitCode": 0,
+      "runtime": "matrix-1792765012905845000"
+    },
+    {
+      "suite": "main-smoke",
+      "exitCode": 0,
+      "runtime": "main-smoke-1792765442285295000"
+    },
+    {
+      "suite": "takeover-regression",
+      "exitCode": 0,
+      "runtime": "takeover-regression-1792766002561667000"
+    },
+    {
+      "suite": "snapshot-regression",
+      "exitCode": 0,
+      "runtime": "snapshot-regression-1792766687311563000"
+    },
+    {
+      "suite": "probe-regression",
+      "exitCode": 0,
+      "runtime": "probe-regression-1792766790956290000"
+    }
+  ],
+  "historicalAttempts": [
+    {
+      "runtime": "takeover-regression-1792765454877127000",
+      "exitCode": 1,
+      "seconds": 324.30161213874817,
+      "startedAtUnix": 1792765455.5524118,
+      "caseDirectories": [
+        "target/snapshot-takeover/B_RECOVERY_CRASH-904fb452dfa9",
+        "target/snapshot-takeover/COMPETING_CANDIDATES-5128cfa43a27",
+        "target/snapshot-takeover/COORDINATOR_RESTART-0f663e0ea275",
+        "target/snapshot-takeover/CRON_RECOVERY-4ed11d4faa8f",
+        "target/snapshot-takeover/DRAIN_COMMIT_REPLY_LOST-3f0dcf42f587",
+        "target/snapshot-takeover/FENCE_COMMIT_REPLY_LOST-e54ef78cfa34",
+        "target/snapshot-takeover/KILL_BOOTSTRAP-0c74dea51fe5",
+        "target/snapshot-takeover/KILL_DB_JOURNAL_WAIT-524db99bbad7",
+        "target/snapshot-takeover/KILL_DB_SNAPSHOT_WAIT-aa00f226ccc2",
+        "target/snapshot-takeover/KILL_DB_TARGET_WAIT-70e7f6f169b5",
+        "target/snapshot-takeover/KILL_J_AFTER_STORE-a4cbb1a987dc",
+        "target/snapshot-takeover/KILL_READ-b2bcb9cb7892",
+        "target/snapshot-takeover/KILL_TARGET_TX-6d5005e913d9",
+        "target/snapshot-takeover/KILL_T_BEFORE_J-3d0ac3e45a0f",
+        "target/snapshot-takeover/OBSERVER_DENIED-75748865c9e1",
+        "target/snapshot-takeover/OBSERVER_SEPARATE_ACCOUNT-5305a02dc45c",
+        "target/snapshot-takeover/QUOTA_COMMIT_REPLY_LOST-00be157a95fd",
+        "target/snapshot-takeover/REVOKE_COMMIT_REPLY_LOST-19adb44d23e5",
+        "target/snapshot-takeover/SIGSTOP_READ-dc64033e1839",
+        "target/snapshot-takeover/STALE_GRANT-0af50d79495d",
+        "target/snapshot-takeover/STARTUP_COMMIT_REPLY_LOST-6971245a235d",
+        "target/snapshot-takeover/WRONG_ISOLATION_RECEIPT-dcbafd3a4246"
+      ]
+    },
+    {
+      "runtime": "takeover-regression-1792765955953359000",
+      "exitCode": 0,
+      "seconds": 12.497563362121582,
+      "startedAtUnix": 1792765956.6468039,
+      "caseDirectories": [
+        "target/snapshot-takeover/KILL_DB_TARGET_WAIT-97629271776b"
+      ]
+    },
+    {
+      "runtime": "snapshot-regression-1792766288063770000",
+      "exitCode": 1,
+      "seconds": 142.35114312171936,
+      "startedAtUnix": 1792766288.675721,
+      "caseDirectories": [
+        "target/snapshot-splits/BASELINE-dea7160ea2e3",
+        "target/snapshot-splits/CHANGED-91f92af5aa94",
+        "target/snapshot-splits/COMMIT_ABSENT-afacc2a1e41c",
+        "target/snapshot-splits/COMMIT_LOST-e2f7ac4b74aa",
+        "target/snapshot-splits/EMPTY-fd9af2a21e99",
+        "target/snapshot-splits/EOF-3be82fc501f5",
+        "target/snapshot-splits/EOF_J_LOST-8034a18fe1ff",
+        "target/snapshot-splits/J_LOST-dfc5f0c1b915",
+        "target/snapshot-splits/PAGE_BYTES-8d56d5255b3e",
+        "target/snapshot-splits/PLAN-7b86fd2d009d",
+        "target/snapshot-splits/QUERY_TIMEOUT-5e05673d25d2",
+        "target/snapshot-splits/READ_T-8c8a50b381a1",
+        "target/snapshot-splits/REGISTER_BEFORE-533c5a1a1f17",
+        "target/snapshot-splits/REJECT_J-a43a389d5ea0",
+        "target/snapshot-splits/RETRY_EXHAUSTED-3a5dbacbee39",
+        "target/snapshot-splits/SNAPSHOT_RECOVERY-45afa6b8be66",
+        "target/snapshot-splits/STOP_READ_T-1d2e04d2823e",
+        "target/snapshot-splits/STOP_T-0ac423ae39d0",
+        "target/snapshot-splits/TARGET_CLOSE-885b4f62d277",
+        "target/snapshot-splits/T_J-1cce9fbf9ed8",
+        "target/snapshot-splits/WIDE_PAGE-e10905f10607",
+        "target/snapshot-splits/WINDOWS-e3ed78c32fbc"
+      ]
+    },
+    {
+      "runtime": "snapshot-regression-1792766626408226000",
+      "exitCode": 0,
+      "seconds": 33.446643114089966,
+      "startedAtUnix": 1792766627.07088,
+      "caseDirectories": [
+        "target/snapshot-splits/QUERY_TIMEOUT-6d268b69ca52"
+      ]
+    }
+  ],
+  "sourceDelta": {
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/ManagedJvmIsolation.scala": {
+      "before": "572f33570170d8c9a8b09eaaa477d45bf8d3d7b088817cd6bb26f2b0ebd4930c",
+      "after": "12de12742f9e36ea7fc52987ef5f9c67dd743be3b4c804c4c96eeea161800126"
+    },
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotGuardianService.scala": {
+      "before": "e433cb4740b9da0169cde47614603ad7a7964901bb2fb6cc5fba0986bde15169",
+      "after": "fe08ad51d5e2e3e5783a8a9be0d16308d90ca862c232fbaefcac9b1b47a597f4"
+    },
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorStoreSpec.scala": {
+      "before": "f2a2f03e4f4ec6933893a526ad5413da1a9f5ef0a477876d48f73154fa317ee6",
+      "after": "d3f0771db9ec6ec39837c14349c29be75e56890ccc0f43d97890d7fdafbf6855"
+    }
+  },
+  "cases": [
+    {
+      "case": "S10_JOURNAL_RESIDUAL",
+      "archivePrefix": "cases/supervisor-recovery/S10_JOURNAL_RESIDUAL-5df1c24985ca",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S10_JOURNAL_RESIDUAL",
+        "schema": "pekko_test_cdc_window_5df1c24985ca"
+      }
+    },
+    {
+      "case": "S10_OBSERVATION_RESTART",
+      "archivePrefix": "cases/supervisor-recovery/S10_OBSERVATION_RESTART-2ad249669505",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S10_OBSERVATION_RESTART",
+        "schema": "pekko_test_cdc_window_2ad249669505"
+      }
+    },
+    {
+      "case": "S10_OBSERVER_DENIED",
+      "archivePrefix": "cases/supervisor-recovery/S10_OBSERVER_DENIED-e27299dce21b",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S10_OBSERVER_DENIED",
+        "schema": "pekko_test_cdc_window_e27299dce21b"
+      }
+    },
+    {
+      "case": "S10_SNAPSHOT_RESIDUAL",
+      "archivePrefix": "cases/supervisor-recovery/S10_SNAPSHOT_RESIDUAL-67f68d1b9c93",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S10_SNAPSHOT_RESIDUAL",
+        "schema": "pekko_test_cdc_window_67f68d1b9c93"
+      }
+    },
+    {
+      "case": "S10_SOURCE_RESIDUAL",
+      "archivePrefix": "cases/supervisor-recovery/S10_SOURCE_RESIDUAL-50503ede2bb1",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S10_SOURCE_RESIDUAL",
+        "schema": "pekko_test_cdc_window_50503ede2bb1"
+      }
+    },
+    {
+      "case": "S10_TARGET_RESIDUAL",
+      "archivePrefix": "cases/supervisor-recovery/S10_TARGET_RESIDUAL-7abff4f30ee1",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S10_TARGET_RESIDUAL",
+        "schema": "pekko_test_cdc_window_7abff4f30ee1"
+      }
+    },
+    {
+      "case": "S11_DISPATCH_REPLY_LOST",
+      "archivePrefix": "cases/supervisor-recovery/S11_DISPATCH_REPLY_LOST-32986fb10141",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S11_DISPATCH_REPLY_LOST",
+        "schema": "pekko_test_cdc_window_32986fb10141"
+      }
+    },
+    {
+      "case": "S11_EPOCH_REPLY_LOST",
+      "archivePrefix": "cases/supervisor-recovery/S11_EPOCH_REPLY_LOST-f99bbe273519",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S11_EPOCH_REPLY_LOST",
+        "schema": "pekko_test_cdc_window_f99bbe273519"
+      }
+    },
+    {
+      "case": "S11_PERMIT_REPLY_LOST",
+      "archivePrefix": "cases/supervisor-recovery/S11_PERMIT_REPLY_LOST-6a4ad59f984e",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S11_PERMIT_REPLY_LOST",
+        "schema": "pekko_test_cdc_window_6a4ad59f984e"
+      }
+    },
+    {
+      "case": "S11_QUOTA_REPLY_LOST",
+      "archivePrefix": "cases/supervisor-recovery/S11_QUOTA_REPLY_LOST-412332cfcf28",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S11_QUOTA_REPLY_LOST",
+        "schema": "pekko_test_cdc_window_412332cfcf28"
+      }
+    },
+    {
+      "case": "S11_RETIRE_REPLY_LOST",
+      "archivePrefix": "cases/supervisor-recovery/S11_RETIRE_REPLY_LOST-dd5544f516b8",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S11_RETIRE_REPLY_LOST",
+        "schema": "pekko_test_cdc_window_dd5544f516b8"
+      }
+    },
+    {
+      "case": "S11_TICKET_REPLY_LOST",
+      "archivePrefix": "cases/supervisor-recovery/S11_TICKET_REPLY_LOST-4bb3e9ea34a8",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S11_TICKET_REPLY_LOST",
+        "schema": "pekko_test_cdc_window_4bb3e9ea34a8"
+      }
+    },
+    {
+      "case": "S12_RECOVERY_JOURNAL",
+      "archivePrefix": "cases/supervisor-recovery/S12_RECOVERY_JOURNAL-735d08083049",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S12_RECOVERY_JOURNAL",
+        "schema": "pekko_test_cdc_window_735d08083049"
+      }
+    },
+    {
+      "case": "S12_T_BEFORE_J",
+      "archivePrefix": "cases/supervisor-recovery/S12_T_BEFORE_J-637106d914b7",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S12_T_BEFORE_J",
+        "schema": "pekko_test_cdc_window_637106d914b7"
+      }
+    },
+    {
+      "case": "S13_LOCK_CONTENDER",
+      "archivePrefix": "cases/supervisor-recovery/S13_LOCK_CONTENDER-44e59dafd360",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S13_LOCK_CONTENDER",
+        "schema": "pekko_test_cdc_window_44e59dafd360"
+      }
+    },
+    {
+      "case": "S13_SIGSTOP",
+      "archivePrefix": "cases/supervisor-recovery/S13_SIGSTOP-2736f69fd0c2",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S13_SIGSTOP",
+        "schema": "pekko_test_cdc_window_2736f69fd0c2"
+      }
+    },
+    {
+      "case": "S14_AUTH_IDENTITY",
+      "archivePrefix": "cases/supervisor-recovery/S14_AUTH_IDENTITY-2d0879183703",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S14_AUTH_IDENTITY",
+        "schema": "pekko_test_cdc_window_2d0879183703"
+      }
+    },
+    {
+      "case": "S15_AFTER_PROOF",
+      "archivePrefix": "cases/supervisor-recovery/S15_AFTER_PROOF-10bfd90d9679",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "SAFE_PAUSE",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S15_AFTER_PROOF",
+        "schema": "pekko_test_cdc_window_10bfd90d9679"
+      }
+    },
+    {
+      "case": "S15_CAPABILITY_LOST",
+      "archivePrefix": "cases/supervisor-recovery/S15_CAPABILITY_LOST-cf1ab3613599",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "SAFE_PAUSE",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S15_CAPABILITY_LOST",
+        "schema": "pekko_test_cdc_window_cf1ab3613599"
+      }
+    },
+    {
+      "case": "S15_GUARDIAN_DEAD",
+      "archivePrefix": "cases/supervisor-recovery/S15_GUARDIAN_DEAD-0c0e809d4279",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "SAFE_PAUSE",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S15_GUARDIAN_DEAD",
+        "schema": "pekko_test_cdc_window_0c0e809d4279"
+      }
+    },
+    {
+      "case": "S1_READ",
+      "archivePrefix": "cases/supervisor-recovery/S1_READ-a6867f2ddc07",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S1_READ",
+        "schema": "pekko_test_cdc_window_a6867f2ddc07"
+      }
+    },
+    {
+      "case": "S2_FORK_PENDING",
+      "archivePrefix": "cases/supervisor-recovery/S2_FORK_PENDING-f137874656d9",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S2_FORK_PENDING",
+        "schema": "pekko_test_cdc_window_f137874656d9"
+      }
+    },
+    {
+      "case": "S2_PREPARED",
+      "archivePrefix": "cases/supervisor-recovery/S2_PREPARED-d181dea57132",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S2_PREPARED",
+        "schema": "pekko_test_cdc_window_d181dea57132"
+      }
+    },
+    {
+      "case": "S3_ACK_LOST",
+      "archivePrefix": "cases/supervisor-recovery/S3_ACK_LOST-0f229541f589",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S3_ACK_LOST",
+        "schema": "pekko_test_cdc_window_0f229541f589"
+      }
+    },
+    {
+      "case": "S4_PRE_BOOTSTRAP",
+      "archivePrefix": "cases/supervisor-recovery/S4_PRE_BOOTSTRAP-fe7c0a7cdff6",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S4_PRE_BOOTSTRAP",
+        "schema": "pekko_test_cdc_window_fe7c0a7cdff6"
+      }
+    },
+    {
+      "case": "S5_TARGET_TX",
+      "archivePrefix": "cases/supervisor-recovery/S5_TARGET_TX-1f129ad25fc6",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S5_TARGET_TX",
+        "schema": "pekko_test_cdc_window_1f129ad25fc6"
+      }
+    },
+    {
+      "case": "S6_T_BEFORE_J",
+      "archivePrefix": "cases/supervisor-recovery/S6_T_BEFORE_J-4604870a71eb",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S6_T_BEFORE_J",
+        "schema": "pekko_test_cdc_window_4604870a71eb"
+      }
+    },
+    {
+      "case": "S7_J_AFTER_STORE",
+      "archivePrefix": "cases/supervisor-recovery/S7_J_AFTER_STORE-60bea5670ab5",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S7_J_AFTER_STORE",
+        "schema": "pekko_test_cdc_window_60bea5670ab5"
+      }
+    },
+    {
+      "case": "S8_COMMITTED_UNKNOWN",
+      "archivePrefix": "cases/supervisor-recovery/S8_COMMITTED_UNKNOWN-0f81b35c6dfb",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S8_COMMITTED_UNKNOWN",
+        "schema": "pekko_test_cdc_window_0f81b35c6dfb"
+      }
+    },
+    {
+      "case": "S8_UNCOMMITTED_UNKNOWN",
+      "archivePrefix": "cases/supervisor-recovery/S8_UNCOMMITTED_UNKNOWN-490598578565",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S8_UNCOMMITTED_UNKNOWN",
+        "schema": "pekko_test_cdc_window_490598578565"
+      }
+    },
+    {
+      "case": "S9_FENCE_REPLY_LOST",
+      "archivePrefix": "cases/supervisor-recovery/S9_FENCE_REPLY_LOST-7c39a250f2c1",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S9_FENCE_REPLY_LOST",
+        "schema": "pekko_test_cdc_window_7c39a250f2c1"
+      }
+    },
+    {
+      "case": "S9_PROOF_REPLY_LOST",
+      "archivePrefix": "cases/supervisor-recovery/S9_PROOF_REPLY_LOST-7f0f25427204",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": true,
+        "runtime": "matrix-1792765012905845000",
+        "scenario": "S9_PROOF_REPLY_LOST",
+        "schema": "pekko_test_cdc_window_7f0f25427204"
+      }
+    }
+  ],
+  "mainCase": {
+    "case": "ACTUAL_MAIN_STARTUP_RESTART",
+    "archivePrefix": "cases/supervisor-main/startup-1f7f08fa5139",
+    "outcomeFile": "result.json",
+    "outcome": {
+      "D": "N/A",
+      "fixedProductionWorkerMain": "cn.xuyinyin.magic.PekkoServer",
+      "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+      "outcome": "CONVERGED",
+      "scenario": "ACTUAL_MAIN_STARTUP_RESTART",
+      "schema": "pekko_test_cdc_window_1f7f08fa5139"
+    }
+  },
+  "takeoverCases": [
+    {
+      "case": "B_RECOVERY_CRASH",
+      "archivePrefix": "cases/snapshot-takeover/B_RECOVERY_CRASH-8a57489b65ab",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "B_RECOVERY_CRASH",
+        "schema": "pekko_test_cdc_window_8a57489b65ab"
+      }
+    },
+    {
+      "case": "COMPETING_CANDIDATES",
+      "archivePrefix": "cases/snapshot-takeover/COMPETING_CANDIDATES-9c706211d787",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "COMPETING_CANDIDATES",
+        "schema": "pekko_test_cdc_window_9c706211d787"
+      }
+    },
+    {
+      "case": "COORDINATOR_RESTART",
+      "archivePrefix": "cases/snapshot-takeover/COORDINATOR_RESTART-09d78df9bd72",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "COORDINATOR_RESTART",
+        "schema": "pekko_test_cdc_window_09d78df9bd72"
+      }
+    },
+    {
+      "case": "CRON_RECOVERY",
+      "archivePrefix": "cases/snapshot-takeover/CRON_RECOVERY-45635350ab8f",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "CRON_RECOVERY",
+        "schema": "pekko_test_cdc_window_45635350ab8f"
+      }
+    },
+    {
+      "case": "DRAIN_COMMIT_REPLY_LOST",
+      "archivePrefix": "cases/snapshot-takeover/DRAIN_COMMIT_REPLY_LOST-210342d5e8b1",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "DRAIN_COMMIT_REPLY_LOST",
+        "schema": "pekko_test_cdc_window_210342d5e8b1"
+      }
+    },
+    {
+      "case": "FENCE_COMMIT_REPLY_LOST",
+      "archivePrefix": "cases/snapshot-takeover/FENCE_COMMIT_REPLY_LOST-2b8b15c2293a",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "FENCE_COMMIT_REPLY_LOST",
+        "schema": "pekko_test_cdc_window_2b8b15c2293a"
+      }
+    },
+    {
+      "case": "KILL_BOOTSTRAP",
+      "archivePrefix": "cases/snapshot-takeover/KILL_BOOTSTRAP-953a4c55d97e",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "KILL_BOOTSTRAP",
+        "schema": "pekko_test_cdc_window_953a4c55d97e"
+      }
+    },
+    {
+      "case": "KILL_DB_JOURNAL_WAIT",
+      "archivePrefix": "cases/snapshot-takeover/KILL_DB_JOURNAL_WAIT-fd5970704b56",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "KILL_DB_JOURNAL_WAIT",
+        "schema": "pekko_test_cdc_window_fd5970704b56"
+      }
+    },
+    {
+      "case": "KILL_DB_SNAPSHOT_WAIT",
+      "archivePrefix": "cases/snapshot-takeover/KILL_DB_SNAPSHOT_WAIT-27e7facccbb7",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "KILL_DB_SNAPSHOT_WAIT",
+        "schema": "pekko_test_cdc_window_27e7facccbb7"
+      }
+    },
+    {
+      "case": "KILL_DB_TARGET_WAIT",
+      "archivePrefix": "cases/snapshot-takeover/KILL_DB_TARGET_WAIT-71d718abd8ef",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "KILL_DB_TARGET_WAIT",
+        "schema": "pekko_test_cdc_window_71d718abd8ef"
+      }
+    },
+    {
+      "case": "KILL_J_AFTER_STORE",
+      "archivePrefix": "cases/snapshot-takeover/KILL_J_AFTER_STORE-09307e97cb8e",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "KILL_J_AFTER_STORE",
+        "schema": "pekko_test_cdc_window_09307e97cb8e"
+      }
+    },
+    {
+      "case": "KILL_READ",
+      "archivePrefix": "cases/snapshot-takeover/KILL_READ-ee389af0fd3d",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "KILL_READ",
+        "schema": "pekko_test_cdc_window_ee389af0fd3d"
+      }
+    },
+    {
+      "case": "KILL_TARGET_TX",
+      "archivePrefix": "cases/snapshot-takeover/KILL_TARGET_TX-8e6907162df8",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "KILL_TARGET_TX",
+        "schema": "pekko_test_cdc_window_8e6907162df8"
+      }
+    },
+    {
+      "case": "KILL_T_BEFORE_J",
+      "archivePrefix": "cases/snapshot-takeover/KILL_T_BEFORE_J-8028b09f1a86",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "KILL_T_BEFORE_J",
+        "schema": "pekko_test_cdc_window_8028b09f1a86"
+      }
+    },
+    {
+      "case": "OBSERVER_DENIED",
+      "archivePrefix": "cases/snapshot-takeover/OBSERVER_DENIED-628fd1bf19d9",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "OBSERVER_DENIED",
+        "schema": "pekko_test_cdc_window_628fd1bf19d9"
+      }
+    },
+    {
+      "case": "OBSERVER_SEPARATE_ACCOUNT",
+      "archivePrefix": "cases/snapshot-takeover/OBSERVER_SEPARATE_ACCOUNT-20d3954fa9cf",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "OBSERVER_SEPARATE_ACCOUNT",
+        "schema": "pekko_test_cdc_window_20d3954fa9cf"
+      }
+    },
+    {
+      "case": "QUOTA_COMMIT_REPLY_LOST",
+      "archivePrefix": "cases/snapshot-takeover/QUOTA_COMMIT_REPLY_LOST-79a96fb36530",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "QUOTA_COMMIT_REPLY_LOST",
+        "schema": "pekko_test_cdc_window_79a96fb36530"
+      }
+    },
+    {
+      "case": "REVOKE_COMMIT_REPLY_LOST",
+      "archivePrefix": "cases/snapshot-takeover/REVOKE_COMMIT_REPLY_LOST-83f885427a9f",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "REVOKE_COMMIT_REPLY_LOST",
+        "schema": "pekko_test_cdc_window_83f885427a9f"
+      }
+    },
+    {
+      "case": "SIGSTOP_READ",
+      "archivePrefix": "cases/snapshot-takeover/SIGSTOP_READ-62f94ddfec7e",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "SIGSTOP_READ",
+        "schema": "pekko_test_cdc_window_62f94ddfec7e"
+      }
+    },
+    {
+      "case": "STALE_GRANT",
+      "archivePrefix": "cases/snapshot-takeover/STALE_GRANT-c6f0ddd867bb",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "STALE_GRANT",
+        "schema": "pekko_test_cdc_window_c6f0ddd867bb"
+      }
+    },
+    {
+      "case": "STARTUP_COMMIT_REPLY_LOST",
+      "archivePrefix": "cases/snapshot-takeover/STARTUP_COMMIT_REPLY_LOST-910291312bff",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "STARTUP_COMMIT_REPLY_LOST",
+        "schema": "pekko_test_cdc_window_910291312bff"
+      }
+    },
+    {
+      "case": "WRONG_ISOLATION_RECEIPT",
+      "archivePrefix": "cases/snapshot-takeover/WRONG_ISOLATION_RECEIPT-c9b237449aca",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "automaticTakeover": true,
+        "equal": true,
+        "fields": 6,
+        "rows": 10,
+        "runtime": "takeover-regression-1792766002561667000",
+        "sameCluster": true,
+        "scenario": "WRONG_ISOLATION_RECEIPT",
+        "schema": "pekko_test_cdc_window_c9b237449aca"
+      }
+    }
+  ],
+  "probeCases": [
+    {
+      "case": "S13_LOCK_CONTENDER",
+      "archivePrefix": "cases/guardian-restart/S13_LOCK_CONTENDER-380e71a173fd",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": false,
+        "runtime": "probe-regression-1792766790956290000",
+        "scenario": "S13_LOCK_CONTENDER",
+        "schema": "pekko_test_cdc_window_380e71a173fd"
+      }
+    },
+    {
+      "case": "S13_SIGSTOP",
+      "archivePrefix": "cases/guardian-restart/S13_SIGSTOP-8515d3e805c0",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": false,
+        "runtime": "probe-regression-1792766790956290000",
+        "scenario": "S13_SIGSTOP",
+        "schema": "pekko_test_cdc_window_8515d3e805c0"
+      }
+    },
+    {
+      "case": "S14_AUTH_IDENTITY",
+      "archivePrefix": "cases/guardian-restart/S14_AUTH_IDENTITY-93ebd8d7e5fb",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": false,
+        "runtime": "probe-regression-1792766790956290000",
+        "scenario": "S14_AUTH_IDENTITY",
+        "schema": "pekko_test_cdc_window_93ebd8d7e5fb"
+      }
+    },
+    {
+      "case": "S15_CAPABILITY_LOST",
+      "archivePrefix": "cases/guardian-restart/S15_CAPABILITY_LOST-5343d4c4fd94",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "SAFE_PAUSE",
+        "productionSupervisorProtocol": false,
+        "runtime": "probe-regression-1792766790956290000",
+        "scenario": "S15_CAPABILITY_LOST",
+        "schema": "pekko_test_cdc_window_5343d4c4fd94"
+      }
+    },
+    {
+      "case": "S15_GUARDIAN_DEAD",
+      "archivePrefix": "cases/guardian-restart/S15_GUARDIAN_DEAD-59cb01bc8eed",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "SAFE_PAUSE",
+        "productionSupervisorProtocol": false,
+        "runtime": "probe-regression-1792766790956290000",
+        "scenario": "S15_GUARDIAN_DEAD",
+        "schema": "pekko_test_cdc_window_59cb01bc8eed"
+      }
+    },
+    {
+      "case": "S1_READ",
+      "archivePrefix": "cases/guardian-restart/S1_READ-0dcf27dd1fb0",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": false,
+        "runtime": "probe-regression-1792766790956290000",
+        "scenario": "S1_READ",
+        "schema": "pekko_test_cdc_window_0dcf27dd1fb0"
+      }
+    },
+    {
+      "case": "S2_FORK_PENDING",
+      "archivePrefix": "cases/guardian-restart/S2_FORK_PENDING-d3557d94883c",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": false,
+        "runtime": "probe-regression-1792766790956290000",
+        "scenario": "S2_FORK_PENDING",
+        "schema": "pekko_test_cdc_window_d3557d94883c"
+      }
+    },
+    {
+      "case": "S2_PREPARED",
+      "archivePrefix": "cases/guardian-restart/S2_PREPARED-c3b835219b12",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": false,
+        "runtime": "probe-regression-1792766790956290000",
+        "scenario": "S2_PREPARED",
+        "schema": "pekko_test_cdc_window_c3b835219b12"
+      }
+    },
+    {
+      "case": "S3_ACK_LOST",
+      "archivePrefix": "cases/guardian-restart/S3_ACK_LOST-0d07f2f84f16",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": false,
+        "runtime": "probe-regression-1792766790956290000",
+        "scenario": "S3_ACK_LOST",
+        "schema": "pekko_test_cdc_window_0d07f2f84f16"
+      }
+    },
+    {
+      "case": "S4_PRE_BOOTSTRAP",
+      "archivePrefix": "cases/guardian-restart/S4_PRE_BOOTSTRAP-71693d6f0f8c",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "D": "N/A",
+        "originalExecution": "478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd",
+        "outcome": "CONVERGED",
+        "productionSupervisorProtocol": false,
+        "runtime": "probe-regression-1792766790956290000",
+        "scenario": "S4_PRE_BOOTSTRAP",
+        "schema": "pekko_test_cdc_window_71693d6f0f8c"
+      }
+    }
+  ],
+  "splitCases": [
+    {
+      "case": "BASELINE-20f959082d15",
+      "archivePrefix": "cases/snapshot-splits/BASELINE-20f959082d15",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/BASELINE-20f959082d15",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_20f959082d15"
+      }
+    },
+    {
+      "case": "CHANGED-dd040a651643",
+      "archivePrefix": "cases/snapshot-splits/CHANGED-dd040a651643",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "safe_pause",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/CHANGED-dd040a651643",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_dd040a651643"
+      }
+    },
+    {
+      "case": "COMMIT_ABSENT-6e0d923a7055",
+      "archivePrefix": "cases/snapshot-splits/COMMIT_ABSENT-6e0d923a7055",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/COMMIT_ABSENT-6e0d923a7055",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_6e0d923a7055"
+      }
+    },
+    {
+      "case": "COMMIT_LOST-d18f3d6fa7d3",
+      "archivePrefix": "cases/snapshot-splits/COMMIT_LOST-d18f3d6fa7d3",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/COMMIT_LOST-d18f3d6fa7d3",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_d18f3d6fa7d3"
+      }
+    },
+    {
+      "case": "EMPTY-1f19ccb95951",
+      "archivePrefix": "cases/snapshot-splits/EMPTY-1f19ccb95951",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/EMPTY-1f19ccb95951",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_1f19ccb95951"
+      }
+    },
+    {
+      "case": "EOF-45079b6daed8",
+      "archivePrefix": "cases/snapshot-splits/EOF-45079b6daed8",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/EOF-45079b6daed8",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_45079b6daed8"
+      }
+    },
+    {
+      "case": "EOF_J_LOST-cbd0991cfd5c",
+      "archivePrefix": "cases/snapshot-splits/EOF_J_LOST-cbd0991cfd5c",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/EOF_J_LOST-cbd0991cfd5c",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_cbd0991cfd5c"
+      }
+    },
+    {
+      "case": "J_LOST-c123d88dce9d",
+      "archivePrefix": "cases/snapshot-splits/J_LOST-c123d88dce9d",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/J_LOST-c123d88dce9d",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_c123d88dce9d"
+      }
+    },
+    {
+      "case": "PAGE_BYTES-75553c0289ef",
+      "archivePrefix": "cases/snapshot-splits/PAGE_BYTES-75553c0289ef",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "safe_pause",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/PAGE_BYTES-75553c0289ef",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_75553c0289ef"
+      }
+    },
+    {
+      "case": "PLAN-ebc4582076d3",
+      "archivePrefix": "cases/snapshot-splits/PLAN-ebc4582076d3",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/PLAN-ebc4582076d3",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_ebc4582076d3"
+      }
+    },
+    {
+      "case": "QUERY_TIMEOUT-f00011d9b895",
+      "archivePrefix": "cases/snapshot-splits/QUERY_TIMEOUT-f00011d9b895",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/QUERY_TIMEOUT-f00011d9b895",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_f00011d9b895"
+      }
+    },
+    {
+      "case": "READ_T-82018417f0f4",
+      "archivePrefix": "cases/snapshot-splits/READ_T-82018417f0f4",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/READ_T-82018417f0f4",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_82018417f0f4"
+      }
+    },
+    {
+      "case": "REGISTER_BEFORE-828f2d2f5e31",
+      "archivePrefix": "cases/snapshot-splits/REGISTER_BEFORE-828f2d2f5e31",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/REGISTER_BEFORE-828f2d2f5e31",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_828f2d2f5e31"
+      }
+    },
+    {
+      "case": "REJECT_J-d8ca82228dc4",
+      "archivePrefix": "cases/snapshot-splits/REJECT_J-d8ca82228dc4",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "safe_pause",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/REJECT_J-d8ca82228dc4",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_d8ca82228dc4"
+      }
+    },
+    {
+      "case": "RETRY_EXHAUSTED-e586cd70aa3a",
+      "archivePrefix": "cases/snapshot-splits/RETRY_EXHAUSTED-e586cd70aa3a",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "safe_pause",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/RETRY_EXHAUSTED-e586cd70aa3a",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_e586cd70aa3a"
+      }
+    },
+    {
+      "case": "SNAPSHOT_RECOVERY-b8c4a97bd0db",
+      "archivePrefix": "cases/snapshot-splits/SNAPSHOT_RECOVERY-b8c4a97bd0db",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/SNAPSHOT_RECOVERY-b8c4a97bd0db",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_b8c4a97bd0db"
+      }
+    },
+    {
+      "case": "STOP_READ_T-54fa11192ee5",
+      "archivePrefix": "cases/snapshot-splits/STOP_READ_T-54fa11192ee5",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/STOP_READ_T-54fa11192ee5",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_54fa11192ee5"
+      }
+    },
+    {
+      "case": "STOP_T-5428eabc2ef1",
+      "archivePrefix": "cases/snapshot-splits/STOP_T-5428eabc2ef1",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/STOP_T-5428eabc2ef1",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_5428eabc2ef1"
+      }
+    },
+    {
+      "case": "TARGET_CLOSE-1d77c8d55a8a",
+      "archivePrefix": "cases/snapshot-splits/TARGET_CLOSE-1d77c8d55a8a",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "safe_pause",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/TARGET_CLOSE-1d77c8d55a8a",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_1d77c8d55a8a"
+      }
+    },
+    {
+      "case": "T_J-a143133c52a2",
+      "archivePrefix": "cases/snapshot-splits/T_J-a143133c52a2",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/T_J-a143133c52a2",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_a143133c52a2"
+      }
+    },
+    {
+      "case": "WIDE_PAGE-4c11a8f068c9",
+      "archivePrefix": "cases/snapshot-splits/WIDE_PAGE-4c11a8f068c9",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "safe_pause",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/WIDE_PAGE-4c11a8f068c9",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_4c11a8f068c9"
+      }
+    },
+    {
+      "case": "WINDOWS-fd19caeb7495",
+      "archivePrefix": "cases/snapshot-splits/WINDOWS-fd19caeb7495",
+      "outcomeFile": "result.json",
+      "outcome": {
+        "classification": "converged",
+        "evidenceDirectory": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/snapshot-splits/WINDOWS-fd19caeb7495",
+        "passed": true,
+        "sourceSchema": "pekko_test_cdc_window_fd19caeb7495"
+      }
+    }
+  ],
+  "backendTests": 580,
+  "backendSuites": 110,
+  "package": {
+    "file": "pekko-reference_2.13-0.1.jar",
+    "sha256": "e942bbb1f3ebd35812de2684691dd0c151028ca1da9706814be8a77f6275ffcd",
+    "classesMatchedFrozen": 859,
+    "testClassesExcluded": 654,
+    "mainClass": "cn.xuyinyin.magic.PekkoServer"
+  },
+  "cleanup": {
+    "clients": 0,
+    "transactions": 0,
+    "nonSystemUsers": [],
+    "fixtureJvmProcesses": [],
+    "container": "pekko-supervisor-recovery-20261023",
+    "stopped": true,
+    "volumePreserved": true,
+    "dataVolumes": [
+      "2eed1de753abbef0bc305d767745a5eec860e2b2be7973533131052c8913c194"
+    ],
+    "otherContainersTouched": false,
+    "allSchemaCount": 367,
+    "preservedPreviousSchemas": 234,
+    "newSchemaCount": 133,
+    "newSchemaNames": [
+      "pekko_test_cdc_window_00be157a95fd",
+      "pekko_test_cdc_window_09307e97cb8e",
+      "pekko_test_cdc_window_09d78df9bd72",
+      "pekko_test_cdc_window_0ac423ae39d0",
+      "pekko_test_cdc_window_0af50d79495d",
+      "pekko_test_cdc_window_0c0e809d4279",
+      "pekko_test_cdc_window_0c74dea51fe5",
+      "pekko_test_cdc_window_0d07f2f84f16",
+      "pekko_test_cdc_window_0dcf27dd1fb0",
+      "pekko_test_cdc_window_0f229541f589",
+      "pekko_test_cdc_window_0f663e0ea275",
+      "pekko_test_cdc_window_0f81b35c6dfb",
+      "pekko_test_cdc_window_10bfd90d9679",
+      "pekko_test_cdc_window_19adb44d23e5",
+      "pekko_test_cdc_window_1cce9fbf9ed8",
+      "pekko_test_cdc_window_1d2e04d2823e",
+      "pekko_test_cdc_window_1d77c8d55a8a",
+      "pekko_test_cdc_window_1f129ad25fc6",
+      "pekko_test_cdc_window_1f19ccb95951",
+      "pekko_test_cdc_window_1f7f08fa5139",
+      "pekko_test_cdc_window_20d3954fa9cf",
+      "pekko_test_cdc_window_20f959082d15",
+      "pekko_test_cdc_window_210342d5e8b1",
+      "pekko_test_cdc_window_2736f69fd0c2",
+      "pekko_test_cdc_window_27e7facccbb7",
+      "pekko_test_cdc_window_2ad249669505",
+      "pekko_test_cdc_window_2b8b15c2293a",
+      "pekko_test_cdc_window_2d0879183703",
+      "pekko_test_cdc_window_32986fb10141",
+      "pekko_test_cdc_window_380e71a173fd",
+      "pekko_test_cdc_window_3a5dbacbee39",
+      "pekko_test_cdc_window_3be82fc501f5",
+      "pekko_test_cdc_window_3d0ac3e45a0f",
+      "pekko_test_cdc_window_3f0dcf42f587",
+      "pekko_test_cdc_window_412332cfcf28",
+      "pekko_test_cdc_window_44e59dafd360",
+      "pekko_test_cdc_window_45079b6daed8",
+      "pekko_test_cdc_window_45635350ab8f",
+      "pekko_test_cdc_window_45afa6b8be66",
+      "pekko_test_cdc_window_4604870a71eb",
+      "pekko_test_cdc_window_490598578565",
+      "pekko_test_cdc_window_4bb3e9ea34a8",
+      "pekko_test_cdc_window_4c11a8f068c9",
+      "pekko_test_cdc_window_4ed11d4faa8f",
+      "pekko_test_cdc_window_50503ede2bb1",
+      "pekko_test_cdc_window_5128cfa43a27",
+      "pekko_test_cdc_window_524db99bbad7",
+      "pekko_test_cdc_window_5305a02dc45c",
+      "pekko_test_cdc_window_533c5a1a1f17",
+      "pekko_test_cdc_window_5343d4c4fd94",
+      "pekko_test_cdc_window_5428eabc2ef1",
+      "pekko_test_cdc_window_54fa11192ee5",
+      "pekko_test_cdc_window_59cb01bc8eed",
+      "pekko_test_cdc_window_5df1c24985ca",
+      "pekko_test_cdc_window_5e05673d25d2",
+      "pekko_test_cdc_window_60bea5670ab5",
+      "pekko_test_cdc_window_628fd1bf19d9",
+      "pekko_test_cdc_window_62f94ddfec7e",
+      "pekko_test_cdc_window_637106d914b7",
+      "pekko_test_cdc_window_67f68d1b9c93",
+      "pekko_test_cdc_window_6971245a235d",
+      "pekko_test_cdc_window_6a4ad59f984e",
+      "pekko_test_cdc_window_6d268b69ca52",
+      "pekko_test_cdc_window_6d5005e913d9",
+      "pekko_test_cdc_window_6e0d923a7055",
+      "pekko_test_cdc_window_70e7f6f169b5",
+      "pekko_test_cdc_window_71693d6f0f8c",
+      "pekko_test_cdc_window_71d718abd8ef",
+      "pekko_test_cdc_window_735d08083049",
+      "pekko_test_cdc_window_75553c0289ef",
+      "pekko_test_cdc_window_75748865c9e1",
+      "pekko_test_cdc_window_79a96fb36530",
+      "pekko_test_cdc_window_7abff4f30ee1",
+      "pekko_test_cdc_window_7b86fd2d009d",
+      "pekko_test_cdc_window_7c39a250f2c1",
+      "pekko_test_cdc_window_7f0f25427204",
+      "pekko_test_cdc_window_8028b09f1a86",
+      "pekko_test_cdc_window_8034a18fe1ff",
+      "pekko_test_cdc_window_82018417f0f4",
+      "pekko_test_cdc_window_828f2d2f5e31",
+      "pekko_test_cdc_window_83f885427a9f",
+      "pekko_test_cdc_window_8515d3e805c0",
+      "pekko_test_cdc_window_885b4f62d277",
+      "pekko_test_cdc_window_8a57489b65ab",
+      "pekko_test_cdc_window_8c8a50b381a1",
+      "pekko_test_cdc_window_8d56d5255b3e",
+      "pekko_test_cdc_window_8e6907162df8",
+      "pekko_test_cdc_window_904fb452dfa9",
+      "pekko_test_cdc_window_910291312bff",
+      "pekko_test_cdc_window_91f92af5aa94",
+      "pekko_test_cdc_window_93ebd8d7e5fb",
+      "pekko_test_cdc_window_953a4c55d97e",
+      "pekko_test_cdc_window_97629271776b",
+      "pekko_test_cdc_window_9c706211d787",
+      "pekko_test_cdc_window_a143133c52a2",
+      "pekko_test_cdc_window_a43a389d5ea0",
+      "pekko_test_cdc_window_a4cbb1a987dc",
+      "pekko_test_cdc_window_a6867f2ddc07",
+      "pekko_test_cdc_window_aa00f226ccc2",
+      "pekko_test_cdc_window_afacc2a1e41c",
+      "pekko_test_cdc_window_b2bcb9cb7892",
+      "pekko_test_cdc_window_b8c4a97bd0db",
+      "pekko_test_cdc_window_c123d88dce9d",
+      "pekko_test_cdc_window_c3b835219b12",
+      "pekko_test_cdc_window_c6f0ddd867bb",
+      "pekko_test_cdc_window_c9b237449aca",
+      "pekko_test_cdc_window_cbd0991cfd5c",
+      "pekko_test_cdc_window_cf1ab3613599",
+      "pekko_test_cdc_window_d181dea57132",
+      "pekko_test_cdc_window_d18f3d6fa7d3",
+      "pekko_test_cdc_window_d3557d94883c",
+      "pekko_test_cdc_window_d8ca82228dc4",
+      "pekko_test_cdc_window_dc64033e1839",
+      "pekko_test_cdc_window_dcbafd3a4246",
+      "pekko_test_cdc_window_dd040a651643",
+      "pekko_test_cdc_window_dd5544f516b8",
+      "pekko_test_cdc_window_dea7160ea2e3",
+      "pekko_test_cdc_window_dfc5f0c1b915",
+      "pekko_test_cdc_window_e10905f10607",
+      "pekko_test_cdc_window_e27299dce21b",
+      "pekko_test_cdc_window_e2f7ac4b74aa",
+      "pekko_test_cdc_window_e3ed78c32fbc",
+      "pekko_test_cdc_window_e54ef78cfa34",
+      "pekko_test_cdc_window_e586cd70aa3a",
+      "pekko_test_cdc_window_ebc4582076d3",
+      "pekko_test_cdc_window_ee389af0fd3d",
+      "pekko_test_cdc_window_f00011d9b895",
+      "pekko_test_cdc_window_f137874656d9",
+      "pekko_test_cdc_window_f99bbe273519",
+      "pekko_test_cdc_window_fd19caeb7495",
+      "pekko_test_cdc_window_fd5970704b56",
+      "pekko_test_cdc_window_fd9af2a21e99",
+      "pekko_test_cdc_window_fe7c0a7cdff6"
+    ],
+    "dumpBytes": 22429128,
+    "serverUuid": "2a8c77c5-ceba-11f1-b2a7-2adc3049a0da",
+    "mysqlVersion": "8.4.11",
+    "observedAtUnix": 1792766962.821727,
+    "host": "127.0.0.1",
+    "port": 32820
+  },
+  "credentialFilesInspected": 19507,
+  "archiveFiles": 2087,
+  "previousCdcEvidence": "original 27 cases retained at previous frozen source; data/CDC protocol unchanged; not rerun after Process-identity guard",
+  "commitState": "pre-commit evidence; commit and remote outcome are recorded by Git, not rewritten into this frozen snapshot"
+}

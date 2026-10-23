@@ -9,12 +9,21 @@ import scala.jdk.CollectionConverters._
 object SnapshotOwnerBootstrap {
   def enabled(config:Config):Boolean=config.hasPath("pekko.workflow.snapshot-ha.enabled") && config.getBoolean("pekko.workflow.snapshot-ha.enabled")
   def prepare(config:Config):Config={
+    require(!config.hasPath("pekko.workflow.snapshot-ha.supervisor-config") || enabled(config),"managed launch cannot disable snapshot HA bootstrap")
     if(!enabled(config))return config
     require(config.getBoolean("pekko.workflow.table-scheduling.enabled"),"HA requires durable table scheduling")
     require(config.getString("pekko.cluster.downing-provider-class").isEmpty,"HA requires externally proven retirement; automatic downing is unsupported")
     require(config.getString("pekko.cluster.auto-down-unreachable-after")=="off","automatic downing bypasses the isolation proof")
     val boot=config.getString("pekko.workflow.snapshot-ha.owner-id")
     val identity=SnapshotOwnerIdentity(boot,config.getString("pekko.workflow.snapshot-ha.deployment-id"),ProcessHandle.current().pid(),ProcessHandle.current().info().startInstant().orElseThrow().toString)
+    if(config.hasPath("pekko.workflow.snapshot-ha.supervisor-config")) {
+      val supervisor=new SnapshotSupervisorSettings(java.nio.file.Path.of(config.getString("pekko.workflow.snapshot-ha.supervisor-config")))
+      try {
+        val deadline=System.nanoTime()+10000000000L
+        while(supervisor.metadata.launch(boot).exists(_.phase=="dispatching") && System.nanoTime()<deadline)Thread.sleep(10)
+        supervisor.metadata.verifyWorker(boot,identity,config.getString("pekko.workflow.snapshot-ha.launch-profile"))
+      } finally supervisor.close()
+    }
     val scheduling=config.getConfig("pekko.workflow.table-scheduling")
     val db=scheduling.getConfig("jdbc")
     val pool=new HikariConfig();pool.setJdbcUrl(SnapshotOwnerJdbc.taggedUrl(db.getString("url"),identity,"control"))

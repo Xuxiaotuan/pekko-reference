@@ -10,12 +10,22 @@ import scala.util.control.NonFatal
 final class TableSchedulingStore(dataSource: DataSource, val limits: SchedulingLimits, ownershipEnabled: Boolean = false) {
   val ownership: Option[SnapshotOwnershipStore] = Option.when(ownershipEnabled)(new SnapshotOwnershipStore(this))
   @volatile private[scheduling] var onBorrow: Connection => Unit = _ => ()
+  private val admissionConnection = new ThreadLocal[Connection]()
   private val occupied = "('held','recovering','running','drained','unknown')"
   private[scheduling] def read[A](f: Connection => A): A = {
+    val nested = admissionConnection.get()
+    if (nested != null) return f(nested)
     val c = dataSource.getConnection
     try { onBorrow(c); f(c) } finally c.close()
   }
-  private[scheduling] def transaction[A](f: Connection => A): A = read(c => transactionOn(c)(f))
+  private[scheduling] def transaction[A](f: Connection => A): A = {
+    val nested = admissionConnection.get()
+    if (nested != null) f(nested)
+    else read(c => transactionOn(c) { current =>
+      admissionConnection.set(current)
+      try f(current) finally admissionConnection.remove()
+    })
+  }
   private[scheduling] def transactionOn[A](c:Connection)(f:Connection=>A):A = {
     c.setAutoCommit(false)
     var transactionEnded=false
