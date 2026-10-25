@@ -1,0 +1,34 @@
+{
+  "record": {
+    "id": "01M5NT0YPP3GBCMP1BVKTQMCS3",
+    "name": "pekko-guardian-os-probe-20261024",
+    "image": {
+      "distro": "ubuntu",
+      "version": "noble",
+      "arch": "arm64",
+      "variant": "default"
+    },
+    "config": {
+      "isolated": true,
+      "forward_ssh_agent": false,
+      "isolate_network": false,
+      "default_username": "xujiawei",
+      "http_port": 0,
+      "https_port": 0,
+      "mounts": [
+        {
+          "source": "/Users/xujiawei/magic/scala-workbench/pekko-reference",
+          "destination": "/work"
+        }
+      ],
+      "memory_limit_mib": 3072,
+      "cpu_limit": 2,
+      "disk_limit_bytes": 6442450944
+    },
+    "builtin": false,
+    "state": "running"
+  },
+  "disk_size": 1691070464,
+  "ip4": "192.168.139.55",
+  "ip6": "fd07:b51a:cc66:0:98e1:f8ff:fe74:23c7"
+}

@@ -1,0 +1,44 @@
+{
+  "scope": "read-only review of test facilities, not a production recovery certification",
+  "reviewer": "guardian_os_probe_review",
+  "criticalFindings": 0,
+  "importantFindings": [
+    {
+      "finding": "G15 initially forced a failed-match flag instead of establishing missing predecessor metadata or missing unit",
+      "resolution": "legacy case omits binding.json; missing-unit case removes only its owned unit/drop-in and confirms LoadState=not-found",
+      "evidence": "four negative cases in matrix-1792807956339393928; independent case() validation of raw lookup and unchanged quota/T/J"
+    },
+    {
+      "finding": "a stop timeout could skip later service cleanup and cleanup.json",
+      "resolution": "attempt every owned unit, record exceptions and unknown observations; unknown cleanup cannot pass",
+      "evidence": "native subprocess timeout control in logs/pekko-os-cleanup-helper-test.json; selected cases contain complete cleanup observations",
+      "boundary": "did not reproduce a real unkillable OS task or systemctl stop timeout against such a task"
+    },
+    {
+      "finding": "offline verification did not require every sealed instance to reach two complete empty rounds",
+      "resolution": "check each original instance identity, final complete/rounds, zero counts, 250ms separation and final drain event",
+      "evidence": "RED accepted corrupted drain; GREEN rejects instance and event corruption; five archive corruption controls"
+    }
+  ],
+  "wordingCorrection": "closed launch tickets deny new admission; only the OS stop fences a fork that already passed its check",
+  "additionalObservedIssues": [
+    "OrbStack LXC type-wide overrides disabled requested service hardening; fixed only dedicated unit drop-ins and checked effective values",
+    "reused state-ready marker allowed reading partial JSON; revoke marker before each request",
+    "Snapshot GET_LOCK alone did not establish an InnoDB transaction; add an InnoDB read in the test trigger, retain old failures"
+  ],
+  "finalAssessment": {
+    "selectedEvidence": "12 scenarios verified across two frozen live versions; 8 convergence and 4 safe pauses",
+    "sameVersionFullMatrix": "external_blocked",
+    "fullBackendSuite": "evidence_incomplete: original ActorSpec teardown abort, reproduced alone",
+    "currentResourceExit": "unconfirmed after dedicated machine control loss and attempted restart",
+    "productionProtocolChanged": false,
+    "freshReviewAfterCorrections": false,
+    "correctionVerification": "author reproduction, targeted tests and independent offline semantic assertions; no second reviewer run"
+  },
+  "deferredMinors": [],
+  "rulings": [
+    "keep production provider validation unchanged; new external proof is accepted only by the test adapter",
+    "do not repair the adjacent ActorSpec or relax its shutdown timeout in this task",
+    "do not globally restart OrbStack or unrelated services to hide the experiment environment blocker"
+  ]
+}
