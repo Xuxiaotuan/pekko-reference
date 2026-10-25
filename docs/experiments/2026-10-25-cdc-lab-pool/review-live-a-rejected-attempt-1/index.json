@@ -1,0 +1,80 @@
+{
+  "candidate_sha256": "178b9d9f219c4ed256816015f398aa747637018cf56b17686766615fb43f4cdc",
+  "leases": {
+    "a": {
+      "acquired_ns": 1792935322545190000,
+      "released_ns": 1792935322581663000,
+      "status": "released"
+    }
+  },
+  "results": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "-c",
+        "from pathlib import Path;Path(\"must-not-run.txt\").touch()"
+      ],
+      "attempt": "/Users/xujiawei/magic/scala-workbench/pekko-reference/docs/experiments/2026-10-25-cdc-lab-pool/review-live-a-rejected-attempt-1/live-a-rejected-a",
+      "candidate_sha256": "178b9d9f219c4ed256816015f398aa747637018cf56b17686766615fb43f4cdc",
+      "case_id": "live-a-rejected",
+      "environment": {
+        "credentials_ref": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/credentials.json",
+        "id": "a",
+        "source": {
+          "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/source/data",
+          "port": 14365,
+          "uuid": "889e2d3f-765b-4456-a55e-a441a5ffc580"
+        },
+        "state": {
+          "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/state/data",
+          "port": 14366,
+          "uuid": "00000000-0000-4000-8000-000000000000"
+        }
+      },
+      "error": "live source/state identity admission rejected",
+      "evidence_files": {},
+      "exit_code": 125,
+      "finished_ns": 1792935322580728000,
+      "instance_admission": {
+        "admitted": false,
+        "checked_ns": 1792935322545510000,
+        "finished_ns": 1792935322580710000,
+        "instances": {
+          "source": {
+            "actual": {
+              "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/source/data",
+              "port": 14365,
+              "uuid": "889e2d3f-765b-4456-a55e-a441a5ffc580"
+            },
+            "expected": {
+              "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/source/data",
+              "port": 14365,
+              "uuid": "889e2d3f-765b-4456-a55e-a441a5ffc580"
+            },
+            "matches": true
+          },
+          "state": {
+            "actual": {
+              "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/state/data",
+              "port": 14366,
+              "uuid": "97907728-948c-47ee-9b0e-fa8fbc12b6e3"
+            },
+            "expected": {
+              "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/state/data",
+              "port": 14366,
+              "uuid": "00000000-0000-4000-8000-000000000000"
+            },
+            "matches": false
+          }
+        }
+      },
+      "runner_tool_sha256": "952290582466d205f61dc0ad3d9857371140bc29ce2cd0d5f776e912dc61f1fd",
+      "slot": "a",
+      "source_sha256": "4785f702f2483f9da1f3840410695ea2554bd93e1e78fb80de0788587596f3fe",
+      "started_ns": 1792935322545271000,
+      "test_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    }
+  ],
+  "runner_tool_sha256": "952290582466d205f61dc0ad3d9857371140bc29ce2cd0d5f776e912dc61f1fd",
+  "source_sha256": "4785f702f2483f9da1f3840410695ea2554bd93e1e78fb80de0788587596f3fe"
+}

@@ -1,0 +1,45 @@
+...F..F....F...
+======================================================================
+FAIL: test_each_case_checks_both_live_identities_and_rejects_changed_state (test_pool.PoolTests.test_each_case_checks_both_live_identities_and_rejects_changed_state)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/test_pool.py", line 194, in test_each_case_checks_both_live_identities_and_rejects_changed_state
+    self.assertEqual({r['case_id']:r['exit_code'] for r in results},{'first':0,'reject':125})
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'first': 0, 'reject': 0} != {'first': 0, 'reject': 125}
+- {'first': 0, 'reject': 0}
+?                        ^
+
++ {'first': 0, 'reject': 125}
+?                        ^^^
+
+
+======================================================================
+FAIL: test_manual_and_unknown_lease_reserve_pool_capacity (test_pool.PoolTests.test_manual_and_unknown_lease_reserve_pool_capacity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/test_pool.py", line 230, in test_manual_and_unknown_lease_reserve_pool_capacity
+    with self.assertRaises(ValueError):self.p.acquire('b','must-be-denied')
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_two_runner_processes_share_one_pool_budget (test_pool.PoolTests.test_two_runner_processes_share_one_pool_budget)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/test_pool.py", line 222, in test_two_runner_processes_share_one_pool_budget
+    self.assertEqual(sorted(r['exit_code'] for r in results),[0,125])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: [0, 0] != [0, 125]
+
+First differing element 1:
+0
+125
+
+- [0, 0]
++ [0, 125]
+
+----------------------------------------------------------------------
+Ran 15 tests in 2.537s
+
+FAILED (failures=3)

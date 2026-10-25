@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/tcp_check.py", line 29, in <module>
+    try:report={'status':'passed','slot':a.slot,'instances':check(Pool(a.config),a.slot,json.loads(a.token_file.read_text())['token'])}
+                                                            ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/tcp_check.py", line 19, in check
+    if result.returncode:raise RuntimeError(result.stderr.strip())
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: ERROR 1130 (HY000): Host '127.0.0.1' is not allowed to connect to this MySQL server

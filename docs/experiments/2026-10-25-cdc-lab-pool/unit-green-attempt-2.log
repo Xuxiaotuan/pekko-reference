@@ -1,0 +1,20 @@
+..E...
+======================================================================
+ERROR: test_freeze_copies_classpath_and_rejects_tampering (test_pool.PoolTests.test_freeze_copies_classpath_and_rejects_tampering)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/test_pool.py", line 69, in test_freeze_copies_classpath_and_rejects_tampering
+    Path(frozen['classpath'][1]).write_bytes(b'tampered')
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py", line 796, in write_bytes
+    with self.open(mode='wb') as f:
+         ~~~~~~~~~^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py", line 771, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/private/var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/tmpnntx5u_z/candidate/classpath-1.jar'
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.582s
+
+FAILED (errors=1)

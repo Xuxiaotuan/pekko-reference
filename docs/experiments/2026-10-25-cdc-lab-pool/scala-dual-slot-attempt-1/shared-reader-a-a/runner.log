@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/scala_slot_check.py", line 66, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/scala_slot_check.py", line 46, in main
+    if any(row['other_connections'] or row['active_transactions'] for row in receipt['before'].values()):raise RuntimeError('slot not idle before Scala suite')
+                                                                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: slot not idle before Scala suite

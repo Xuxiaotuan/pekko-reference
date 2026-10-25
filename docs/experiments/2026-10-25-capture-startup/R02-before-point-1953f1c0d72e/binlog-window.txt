@@ -1,0 +1,66 @@
+# The proper term is pseudo_replica_mode, but we use this compatibility alias
+# to make the statement usable on server versions 8.0.24 and older.
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=1*/;
+/*!50003 SET @OLD_COMPLETION_TYPE=@@COMPLETION_TYPE,COMPLETION_TYPE=0*/;
+DELIMITER /*!*/;
+# at 198
+#261025 21:20:15 server id 14375  end_log_pos 127 CRC32 0x9aae09b8 	Start: binlog v 4, server v 9.5.0 created 261025 21:20:15 at startup
+# Warning: this binlog is either in use or was not closed properly.
+ROLLBACK/*!*/;
+# at 117041
+#261025 21:27:38 server id 14375  end_log_pos 117120 CRC32 0x9a9ad2f9 	GTID	last_committed=281	sequence_number=282	rbr_only=no	original_committed_timestamp=1792934858753376	immediate_commit_timestamp=1792934858753376	transaction_length=399
+# original_commit_timestamp=1792934858753376 (2026-10-25 21:27:38.753376 CST)
+# immediate_commit_timestamp=1792934858753376 (2026-10-25 21:27:38.753376 CST)
+/*!80001 SET @@session.original_commit_timestamp=1792934858753376*//*!*/;
+/*!80014 SET @@session.original_server_version=90500*//*!*/;
+/*!80014 SET @@session.immediate_server_version=90500*//*!*/;
+SET @@SESSION.GTID_NEXT= '561ae360-2c2c-4de9-bf01-3b913e7226a6:300'/*!*/;
+# at 117120
+#261025 21:27:38 server id 14375  end_log_pos 117440 CRC32 0x31eebb13 	Query	thread_id=148	exec_time=0	error_code=0
+use `pekko_test_cdc_window_1953f1c0d72e`/*!*/;
+SET TIMESTAMP=1792934858/*!*/;
+SET @@session.pseudo_thread_id=148/*!*/;
+SET @@session.foreign_key_checks=1, @@session.sql_auto_is_null=0, @@session.unique_checks=1, @@session.autocommit=1/*!*/;
+SET @@session.sql_mode=1168113696/*!*/;
+SET @@session.auto_increment_increment=1, @@session.auto_increment_offset=1/*!*/;
+/*!\C utf8mb4 *//*!*/;
+SET @@session.character_set_client=255,@@session.collation_connection=255,@@session.collation_server=255/*!*/;
+SET @@session.lc_time_names=0/*!*/;
+SET @@session.collation_database=DEFAULT/*!*/;
+/*!80011 SET @@session.default_collation_for_utf8mb4=255*//*!*/;
+/*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+CREATE TABLE IF NOT EXISTS pekko_capture_control(operation_id VARCHAR(128) PRIMARY KEY,action VARCHAR(32) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL)
+/*!*/;
+# at 117440
+#261025 21:27:39 server id 14375  end_log_pos 117519 CRC32 0xbe01d525 	GTID	last_committed=282	sequence_number=283	rbr_only=yes	original_committed_timestamp=1792934859014357	immediate_commit_timestamp=1792934859014357	transaction_length=442
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1792934859014357 (2026-10-25 21:27:39.014357 CST)
+# immediate_commit_timestamp=1792934859014357 (2026-10-25 21:27:39.014357 CST)
+/*!80001 SET @@session.original_commit_timestamp=1792934859014357*//*!*/;
+/*!80014 SET @@session.original_server_version=90500*//*!*/;
+/*!80014 SET @@session.immediate_server_version=90500*//*!*/;
+SET @@SESSION.GTID_NEXT= '561ae360-2c2c-4de9-bf01-3b913e7226a6:301'/*!*/;
+# at 117519
+#261025 21:27:39 server id 14375  end_log_pos 117624 CRC32 0x1682731b 	Query	thread_id=151	exec_time=0	error_code=0
+SET TIMESTAMP=1792934859/*!*/;
+BEGIN
+/*!*/;
+# at 117624
+#261025 21:27:39 server id 14375  end_log_pos 117732 CRC32 0x04a9d7c4 	Table_map: `pekko_test_cdc_window_1953f1c0d72e`.`pekko_capture_control` mapped to number 152
+# has_generated_invisible_primary_key=0
+# at 117732
+#261025 21:27:39 server id 14375  end_log_pos 117851 CRC32 0xfaffda79 	Write_rows: table id 152 flags: STMT_END_F
+### INSERT INTO `pekko_test_cdc_window_1953f1c0d72e`.`pekko_capture_control`
+### SET
+###   @1='baa4be85eb81a07775b64b50f69d7b1655ffc5730a977d5b2df5960cb275235b' /* VARSTRING(512) meta=512 nullable=0 is_null=0 */
+###   @2='SUBSCRIBE' /* VARSTRING(128) meta=128 nullable=0 is_null=0 */
+###   @3='a' /* VARSTRING(512) meta=512 nullable=0 is_null=0 */
+###   @4='g1' /* VARSTRING(512) meta=512 nullable=0 is_null=0 */
+# at 117851
+#261025 21:27:39 server id 14375  end_log_pos 117882 CRC32 0xb49f9cb5 	Xid = 1479
+COMMIT/*!*/;
+SET @@SESSION.GTID_NEXT= 'AUTOMATIC' /* added by mysqlbinlog */ /*!*/;
+DELIMITER ;
+# End of log file
+/*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;

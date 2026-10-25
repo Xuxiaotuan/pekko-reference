@@ -1,0 +1,88 @@
+E./Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py:23: ResourceWarning: unclosed file <_io.BufferedReader name='/private/var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/tmphu19dia7/repo/build.sbt'>
+  return hashlib.file_digest(Path(path).open('rb'), 'sha256').hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py:23: ResourceWarning: unclosed file <_io.BufferedReader name='/private/var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/tmphu19dia7/repo/server/src/X.scala'>
+  return hashlib.file_digest(Path(path).open('rb'), 'sha256').hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py:23: ResourceWarning: unclosed file <_io.BufferedReader name='/private/var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/tmphu19dia7/candidate/classpath-0.jar'>
+  return hashlib.file_digest(Path(path).open('rb'), 'sha256').hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py:23: ResourceWarning: unclosed file <_io.BufferedReader name='/private/var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/tmphu19dia7/candidate/classpath-1.jar'>
+  return hashlib.file_digest(Path(path).open('rb'), 'sha256').hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py:23: ResourceWarning: unclosed file <_io.BufferedReader name='/private/var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/tmphu19dia7/candidate/source.zip'>
+  return hashlib.file_digest(Path(path).open('rb'), 'sha256').hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+E/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py:23: ResourceWarning: unclosed file <_io.BufferedReader name='/private/var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/tmphobcesob/repo/build.sbt'>
+  return hashlib.file_digest(Path(path).open('rb'), 'sha256').hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py:23: ResourceWarning: unclosed file <_io.BufferedReader name='/private/var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/tmphobcesob/candidate/source.zip'>
+  return hashlib.file_digest(Path(path).open('rb'), 'sha256').hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+E./Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py:23: ResourceWarning: unclosed file <_io.BufferedReader name='/private/var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/tmpm05wxzd2/repo/build.sbt'>
+  return hashlib.file_digest(Path(path).open('rb'), 'sha256').hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py:23: ResourceWarning: unclosed file <_io.BufferedReader name='/private/var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/tmpm05wxzd2/candidate/source.zip'>
+  return hashlib.file_digest(Path(path).open('rb'), 'sha256').hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+E
+======================================================================
+ERROR: test_atomic_lease_excludes_second_process_and_wrong_release_token (test_pool.PoolTests.test_atomic_lease_excludes_second_process_and_wrong_release_token)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/test_pool.py", line 36, in test_atomic_lease_excludes_second_process_and_wrong_release_token
+    token = self.p.acquire('a', 'first')
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py", line 87, in acquire
+    write_json(directory/'lease.json', {'token':token, 'owner':owner, 'pid':os.getpid(), 'created_ns':time.time_ns()}, True)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py", line 28, in write_json
+    with path.open('x', opener=lambda p, flags: os.open(p, flags, 0o600 if private else 0o644)) as out:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Path.open() got an unexpected keyword argument 'opener'
+
+======================================================================
+ERROR: test_freeze_copies_classpath_and_rejects_tampering (test_pool.PoolTests.test_freeze_copies_classpath_and_rejects_tampering)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/test_pool.py", line 64, in test_freeze_copies_classpath_and_rejects_tampering
+    candidate = self.pool.freeze(repo, self.root / 'candidate', [classes, dep])
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py", line 253, in freeze
+    write_json(dest/'candidate.json',manifest); (dest/'candidate.json').chmod(0o444)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py", line 28, in write_json
+    with path.open('x', opener=lambda p, flags: os.open(p, flags, 0o600 if private else 0o644)) as out:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Path.open() got an unexpected keyword argument 'opener'
+
+======================================================================
+ERROR: test_parallel_commands_use_distinct_attempts_and_release_failed_lease (test_pool.PoolTests.test_parallel_commands_use_distinct_attempts_and_release_failed_lease)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/test_pool.py", line 74, in test_parallel_commands_use_distinct_attempts_and_release_failed_lease
+    candidate = self.pool.freeze(repo, self.root / 'candidate', [])
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py", line 253, in freeze
+    write_json(dest/'candidate.json',manifest); (dest/'candidate.json').chmod(0o444)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py", line 28, in write_json
+    with path.open('x', opener=lambda p, flags: os.open(p, flags, 0o600 if private else 0o644)) as out:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Path.open() got an unexpected keyword argument 'opener'
+
+======================================================================
+ERROR: test_timeout_kills_worker_and_preserves_result (test_pool.PoolTests.test_timeout_kills_worker_and_preserves_result)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/test_pool.py", line 93, in test_timeout_kills_worker_and_preserves_result
+    candidate = self.pool.freeze(repo,self.root/'candidate',[])
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py", line 253, in freeze
+    write_json(dest/'candidate.json',manifest); (dest/'candidate.json').chmod(0o444)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py", line 28, in write_json
+    with path.open('x', opener=lambda p, flags: os.open(p, flags, 0o600 if private else 0o644)) as out:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Path.open() got an unexpected keyword argument 'opener'
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.095s
+
+FAILED (errors=4)

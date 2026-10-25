@@ -27,3 +27,7 @@ final case class CaptureSubscription(requestId:String,table:String,generation:St
 }
 final case class CaptureSchema(table:String,id:String,definition:String)
 final case class CaptureLogEntry(sequence:Long,subscriptionId:String,schemaId:String,group:MySQLCdcGroup)
+
+/** Independent initialization marker; sequence is not a GROUP cursor. */
+final case class CaptureFence(id:String, subscriptionId:String, action:String, context:String,
+  point:Option[CapturePoint], sequence:Option[Long], covered:Boolean, obsolete:Boolean=false)

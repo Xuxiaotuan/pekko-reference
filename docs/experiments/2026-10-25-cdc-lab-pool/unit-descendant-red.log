@@ -1,0 +1,14 @@
+.......F..
+======================================================================
+FAIL: test_successful_parent_does_not_leave_signal_ignoring_child (test_pool.PoolTests.test_successful_parent_does_not_leave_signal_ignoring_child)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/test_pool.py", line 139, in test_successful_parent_does_not_leave_signal_ignoring_child
+    self.assertTrue(not status or status.startswith('Z'),'descendant survived runner cleanup: '+status)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : descendant survived runner cleanup: S
+
+----------------------------------------------------------------------
+Ran 10 tests in 2.026s
+
+FAILED (failures=1)

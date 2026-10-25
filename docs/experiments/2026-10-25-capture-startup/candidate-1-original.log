@@ -1,0 +1,52 @@
+[36mRun starting. Expected test count is: 1[0m
+[32mCaptureStartupRecoverySpec:[0m
+[32mcapture startup recovery on an exclusive disposable slot[0m
+21:22:28,590 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+21:22:28,591 |-INFO in ch.qos.logback.classic.util.ContextInitializer@331acdad - No custom configurators were discovered as a service.
+21:22:28,591 |-INFO in ch.qos.logback.classic.util.ContextInitializer@331acdad - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+21:22:28,592 |-INFO in ch.qos.logback.classic.util.ContextInitializer@331acdad - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+21:22:28,592 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+21:22:28,592 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+21:22:28,594 |-INFO in ch.qos.logback.classic.util.ContextInitializer@331acdad - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+21:22:28,594 |-INFO in ch.qos.logback.classic.util.ContextInitializer@331acdad - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+21:22:28,594 |-INFO in ch.qos.logback.classic.util.ContextInitializer@331acdad - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+21:22:28,594 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+21:22:28,594 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [jar:file:/private/tmp/c-startup-candidate-1/classpath-1.jar!/logback.xml]
+21:22:28,596 |-INFO in ch.qos.logback.core.joran.spi.ConfigurationWatchList@41d426b5 - URL [jar:file:/private/tmp/c-startup-candidate-1/classpath-1.jar!/logback.xml] is not of type file
+21:22:28,643 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+21:22:28,643 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+21:22:28,647 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+21:22:28,664 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+21:22:28,664 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+21:22:28,664 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+21:22:28,664 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+21:22:28,665 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+21:22:28,665 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+21:22:28,666 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+21:22:28,666 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+21:22:28,667 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+21:22:28,667 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+21:22:28,667 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+21:22:28,667 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+21:22:28,667 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@8dbfffb - End of configuration.
+21:22:28,667 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@f316aeb - Registering current configuration as safe fallback point
+21:22:28,667 |-INFO in ch.qos.logback.classic.util.ContextInitializer@331acdad - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 73 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+[31m- should preserve startup continuity for R02-original-trigger *** FAILED *** (240 milliseconds)[0m
+[31m  java.sql.SQLException: CLI-specific condition,  message from server: "Host '127.0.0.1' is not allowed to connect to this MySQL server"[0m
+[31m  at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:121)[0m
+[31m  at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:114)[0m
+[31m  at com.mysql.cj.jdbc.ConnectionImpl.createNewIO(ConnectionImpl.java:837)[0m
+[31m  at com.mysql.cj.jdbc.ConnectionImpl.<init>(ConnectionImpl.java:420)[0m
+[31m  at com.mysql.cj.jdbc.ConnectionImpl.getInstance(ConnectionImpl.java:238)[0m
+[31m  at com.mysql.cj.jdbc.NonRegisteringDriver.connect(NonRegisteringDriver.java:180)[0m
+[31m  at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:681)[0m
+[31m  at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:229)[0m
+[31m  at cn.xuyinyin.magic.workflow.integration.CdcJournalWindowSupport$.withConnection(RealMySQLCdcJournalWindowSpec.scala:185)[0m
+[31m  at cn.xuyinyin.magic.workflow.integration.CdcJournalWindowSupport$.initialize(RealMySQLCdcJournalWindowSpec.scala:206)[0m
+[31m  ...[0m
+[36mRun completed in 400 milliseconds.[0m
+[36mTotal number of tests run: 1[0m
+[36mSuites: completed 1, aborted 0[0m
+[36mTests: succeeded 0, failed 1, canceled 0, ignored 0, pending 0[0m
+[31m*** 1 TEST FAILED ***[0m

@@ -29,7 +29,7 @@ class SharedCaptureReaderSpec extends AnyWordSpec with Matchers {
           def close():Unit={done.trySuccess(org.apache.pekko.Done);()}
         }
       }
-      val source=MySQLCdcSourceConfig(id,"127.0.0.1",13365,"pekko_test_shared_wire","missing",user,pw,310002,1,100)
+      val source=MySQLCdcSourceConfig(id,sys.env.getOrElse("CDC_WINDOW_MYSQL_HOST","127.0.0.1"),sys.env.getOrElse("CDC_WINDOW_MYSQL_PORT","13365").toInt,"pekko_test_shared_wire","missing",user,pw,310002,1,100)
       val session=new SharedMySQLCapture(source,MySQLCdcStateConfig(stateUrl,user,pw,"capture_offsets","capture_history",0),store,factory) {
         override protected def sourceConnection():java.sql.Connection={
           opened.incrementAndGet();val real=super.sourceConnection()
@@ -62,7 +62,7 @@ class SharedCaptureReaderSpec extends AnyWordSpec with Matchers {
       val lineage=try {val q=c.createStatement();try {val r=q.executeQuery("SELECT @@server_uuid");try {r.next();r.getString(1)}finally r.close()}finally q.close()}finally c.close()
       val store=new MySQLCaptureStore(()=>DriverManager.getConnection(stateUrl,user,pw),id,lineage,10000000)
       store.initialize()
-      val source=MySQLCdcSourceConfig(id,"127.0.0.1",13365,"pekko_test_shared_wire",table,user,pw,310002,1,100)
+      val source=MySQLCdcSourceConfig(id,sys.env.getOrElse("CDC_WINDOW_MYSQL_HOST","127.0.0.1"),sys.env.getOrElse("CDC_WINDOW_MYSQL_PORT","13365").toInt,"pekko_test_shared_wire",table,user,pw,310002,1,100)
       val state=MySQLCdcStateConfig(stateUrl,user,pw,"capture_offsets","capture_history",0)
       val session=new SharedMySQLCapture(source,state,store)
       val misplaced=new MySQLCaptureStore(()=>DriverManager.getConnection(sourceUrl,user,pw),id+"_misplaced",lineage,10000000)

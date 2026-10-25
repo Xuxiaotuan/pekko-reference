@@ -1,0 +1,26 @@
+{
+  "status": "failed_and_preserved",
+  "variant": "R02",
+  "schema": "pekko_test_cdc_window_bbf6cab03f90",
+  "capturedB": false,
+  "checkpointD": {
+    "file": "mysql-bin.000006",
+    "position": 211714068,
+    "snapshot": "INITIAL"
+  },
+  "subscribe": {
+    "operation": "be7519893731fef2b4c2de9acddf5ce9995a34f2f8f4d5d80075d751113087c4",
+    "rowEventPosition": 211714759,
+    "transactionEnd": 211714909,
+    "gtid": "0e4f53da-d042-11f1-ae2b-08f9cb0ddc2a:453631",
+    "committedUtc": "2026-10-25T12:32:09.684500Z"
+  },
+  "snapshotRestart": {
+    "newPosition": 211714909,
+    "determinedUtc": "2026-10-25T12:32:10.856Z"
+  },
+  "assertion": "B a timed out",
+  "evidenceDirectory": "target/shared-capture-matrix/R02-bbf6cab03f90",
+  "binlogExtract": "r02-startup-window.txt",
+  "scope": "actual stalled B; active-B plus INITIAL recovery data-loss consequence is not experimentally established"
+}

@@ -1,0 +1,4 @@
+import json,os,pathlib,sys,time
+start=time.time_ns();time.sleep(.5)
+out={"case_id":sys.argv[1],"slot":os.environ["CDC_LAB_SLOT"],"started_ns":start,"finished_ns":time.time_ns(),"source_sha256":os.environ["BOOTSTRAP_SOURCE_MANIFEST_SHA256"]}
+pathlib.Path("artifact.json").write_text(json.dumps(out,indent=2));print("private credential redaction:",os.environ["CDC_WINDOW_MYSQL_PASSWORD"])

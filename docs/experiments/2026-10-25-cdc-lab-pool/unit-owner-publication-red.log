@@ -1,0 +1,25 @@
+E.E.....
+======================================================================
+ERROR: test_atomic_lease_excludes_second_process_and_wrong_release_token (test_pool.PoolTests.test_atomic_lease_excludes_second_process_and_wrong_release_token)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/test_pool.py", line 41, in test_atomic_lease_excludes_second_process_and_wrong_release_token
+    with self.assertRaises(ValueError): self.p.release('a', token, owner='other')
+                                        ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Pool.release() got an unexpected keyword argument 'owner'
+
+======================================================================
+ERROR: test_failed_token_publication_does_not_orphan_lease (test_pool.PoolTests.test_failed_token_publication_does_not_orphan_lease)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/test_pool.py", line 110, in test_failed_token_publication_does_not_orphan_lease
+    token=self.p.acquire('a','after-failed-publication');self.p.release('a',token)
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py", line 86, in acquire
+    except FileExistsError: raise ValueError('slot already leased: '+name) from None
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: slot already leased: a
+
+----------------------------------------------------------------------
+Ran 8 tests in 1.162s
+
+FAILED (errors=2)

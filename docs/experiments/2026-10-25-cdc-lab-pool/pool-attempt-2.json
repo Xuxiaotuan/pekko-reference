@@ -1,0 +1,37 @@
+{
+  "job_timeout_seconds": 600,
+  "max_parallel": 2,
+  "mysql_buffer_pool_mb": 64,
+  "mysql_max_connections": 24,
+  "runtime_root": "/private/tmp/cdc-lab-pool-20261025-attempt2",
+  "slots": [
+    {
+      "credentials_ref": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/credentials.json",
+      "id": "a",
+      "source": {
+        "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/source/data",
+        "port": 14365,
+        "uuid": "889e2d3f-765b-4456-a55e-a441a5ffc580"
+      },
+      "state": {
+        "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/state/data",
+        "port": 14366,
+        "uuid": "97907728-948c-47ee-9b0e-fa8fbc12b6e3"
+      }
+    },
+    {
+      "credentials_ref": "/private/tmp/cdc-lab-pool-20261025-attempt2/b/credentials.json",
+      "id": "b",
+      "source": {
+        "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/b/source/data",
+        "port": 14375,
+        "uuid": "561ae360-2c2c-4de9-bf01-3b913e7226a6"
+      },
+      "state": {
+        "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/b/state/data",
+        "port": 14376,
+        "uuid": "542fff04-a65b-4f5f-a911-90ff25211e3d"
+      }
+    }
+  ]
+}

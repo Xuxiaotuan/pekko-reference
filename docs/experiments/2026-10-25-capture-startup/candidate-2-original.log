@@ -1,0 +1,52 @@
+[36mRun starting. Expected test count is: 1[0m
+[32mCaptureStartupRecoverySpec:[0m
+[32mcapture startup recovery on an exclusive disposable slot[0m
+21:25:47,993 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+21:25:47,993 |-INFO in ch.qos.logback.classic.util.ContextInitializer@8dbfffb - No custom configurators were discovered as a service.
+21:25:47,993 |-INFO in ch.qos.logback.classic.util.ContextInitializer@8dbfffb - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+21:25:47,994 |-INFO in ch.qos.logback.classic.util.ContextInitializer@8dbfffb - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+21:25:47,994 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+21:25:47,994 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+21:25:47,996 |-INFO in ch.qos.logback.classic.util.ContextInitializer@8dbfffb - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+21:25:47,996 |-INFO in ch.qos.logback.classic.util.ContextInitializer@8dbfffb - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+21:25:47,996 |-INFO in ch.qos.logback.classic.util.ContextInitializer@8dbfffb - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+21:25:47,996 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+21:25:47,996 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [jar:file:/private/tmp/c-startup-candidate-2/classpath-1.jar!/logback.xml]
+21:25:47,998 |-INFO in ch.qos.logback.core.joran.spi.ConfigurationWatchList@f316aeb - URL [jar:file:/private/tmp/c-startup-candidate-2/classpath-1.jar!/logback.xml] is not of type file
+21:25:48,034 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+21:25:48,034 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+21:25:48,036 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+21:25:48,046 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+21:25:48,046 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+21:25:48,046 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+21:25:48,046 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+21:25:48,047 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+21:25:48,047 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+21:25:48,048 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+21:25:48,048 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+21:25:48,049 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+21:25:48,049 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+21:25:48,049 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+21:25:48,049 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+21:25:48,049 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@6aa3a905 - End of configuration.
+21:25:48,049 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@a22cb6a - Registering current configuration as safe fallback point
+21:25:48,049 |-INFO in ch.qos.logback.classic.util.ContextInitializer@8dbfffb - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 53 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+[31m- should preserve startup continuity for R02-original-trigger *** FAILED *** (1 minute, 1 second)[0m
+[31m  java.sql.SQLSyntaxErrorException: Table 'pekko_test_cdc_window_c4c25b66a365.capture_offsets_0f2fae7b01005cbc8a67baa2fd842bc1' doesn't exist[0m
+[31m  at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:112)[0m
+[31m  at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:114)[0m
+[31m  at com.mysql.cj.jdbc.StatementImpl.executeQuery(StatementImpl.java:1312)[0m
+[31m  at cn.xuyinyin.magic.workflow.integration.CdcJournalWindowSupport$.query(RealMySQLCdcJournalWindowSpec.scala:194)[0m
+[31m  at cn.xuyinyin.magic.workflow.integration.CaptureStartupRecoverySpec.$anonfun$new$17(CaptureStartupRecoverySpec.scala:49)[0m
+[31m  at cn.xuyinyin.magic.workflow.integration.CdcJournalWindowSupport$.withConnection(RealMySQLCdcJournalWindowSpec.scala:186)[0m
+[31m  at cn.xuyinyin.magic.workflow.integration.CaptureStartupRecoverySpec.offsets$1(CaptureStartupRecoverySpec.scala:49)[0m
+[31m  at cn.xuyinyin.magic.workflow.integration.CaptureStartupRecoverySpec.$anonfun$new$3(CaptureStartupRecoverySpec.scala:122)[0m
+[31m  at org.scalatest.OutcomeOf.outcomeOf(OutcomeOf.scala:85)[0m
+[31m  at org.scalatest.OutcomeOf.outcomeOf$(OutcomeOf.scala:83)[0m
+[31m  ...[0m
+[36mRun completed in 1 minute, 2 seconds.[0m
+[36mTotal number of tests run: 1[0m
+[36mSuites: completed 1, aborted 0[0m
+[36mTests: succeeded 0, failed 1, canceled 0, ignored 0, pending 0[0m
+[31m*** 1 TEST FAILED ***[0m

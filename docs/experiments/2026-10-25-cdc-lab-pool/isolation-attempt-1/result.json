@@ -1,0 +1,206 @@
+{
+  "baseline": {
+    "a": {
+      "source": "889e2d3f-765b-4456-a55e-a441a5ffc580\t14365\t/private/tmp/cdc-lab-pool-20261025-attempt2/a/source/data/\n1\t0\nwitness\tCREATE TABLE `witness` (\\n  `id` int NOT NULL,\\n  `seq` int NOT NULL,\\n  PRIMARY KEY (`id`)\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\nbinlog.000001\t2293\t\t\t889e2d3f-765b-4456-a55e-a441a5ffc580:1-8\n",
+      "state": "97907728-948c-47ee-9b0e-fa8fbc12b6e3\t14366\t/private/tmp/cdc-lab-pool-20261025-attempt2/a/state/data/\n1\t0\nwitness\tCREATE TABLE `witness` (\\n  `id` int NOT NULL,\\n  `seq` int NOT NULL,\\n  PRIMARY KEY (`id`)\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\nbinlog.000001\t2293\t\t\t97907728-948c-47ee-9b0e-fa8fbc12b6e3:1-8\n"
+    },
+    "b": {
+      "source": "561ae360-2c2c-4de9-bf01-3b913e7226a6\t14375\t/private/tmp/cdc-lab-pool-20261025-attempt2/b/source/data/\n1\t0\nwitness\tCREATE TABLE `witness` (\\n  `id` int NOT NULL,\\n  `seq` int NOT NULL,\\n  PRIMARY KEY (`id`)\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\nbinlog.000001\t2293\t\t\t561ae360-2c2c-4de9-bf01-3b913e7226a6:1-8\n",
+      "state": "542fff04-a65b-4f5f-a911-90ff25211e3d\t14376\t/private/tmp/cdc-lab-pool-20261025-attempt2/b/state/data/\n1\t0\nwitness\tCREATE TABLE `witness` (\\n  `id` int NOT NULL,\\n  `seq` int NOT NULL,\\n  PRIMARY KEY (`id`)\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\nbinlog.000001\t2292\t\t\t542fff04-a65b-4f5f-a911-90ff25211e3d:1-8\n"
+    }
+  },
+  "checks": [
+    {
+      "fault": "blocking",
+      "lock_wait_transactions": 1,
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "role": "source",
+      "victim": "a"
+    },
+    {
+      "fault": "DDL",
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "role": "source",
+      "victim": "a"
+    },
+    {
+      "after": "binlog.000002\t198\tNo\n",
+      "archive_sha256": {
+        "binlog.000001": "1e3a3e17fd220b5021a61ce65e4e352d486ce6d939d4673c5a7ae48b39088b25"
+      },
+      "before": "binlog.000001\t2851\tNo\n",
+      "fault": "purge",
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "private_archive": "/private/tmp/cdc-lab-pool-20261025-attempt2/binlog-archives/isolation-attempt-1-a-source",
+      "role": "source",
+      "victim": "a"
+    },
+    {
+      "fault": "SIGKILL",
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "role": "source",
+      "victim": "a",
+      "victim_restart_data": "matched"
+    },
+    {
+      "fault": "blocking",
+      "lock_wait_transactions": 1,
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "role": "state",
+      "victim": "a"
+    },
+    {
+      "fault": "DDL",
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "role": "state",
+      "victim": "a"
+    },
+    {
+      "after": "binlog.000002\t198\tNo\n",
+      "archive_sha256": {
+        "binlog.000001": "24ef3dc0a4722fa70c2a6c45aec3221ea53f30d0c45483a2e4c272e8a0eefe9f"
+      },
+      "before": "binlog.000001\t2851\tNo\n",
+      "fault": "purge",
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "private_archive": "/private/tmp/cdc-lab-pool-20261025-attempt2/binlog-archives/isolation-attempt-1-a-state",
+      "role": "state",
+      "victim": "a"
+    },
+    {
+      "fault": "SIGKILL",
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "role": "state",
+      "victim": "a",
+      "victim_restart_data": "matched"
+    },
+    {
+      "fault": "blocking",
+      "lock_wait_transactions": 1,
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "role": "source",
+      "victim": "b"
+    },
+    {
+      "fault": "DDL",
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "role": "source",
+      "victim": "b"
+    },
+    {
+      "after": "binlog.000002\t198\tNo\n",
+      "archive_sha256": {
+        "binlog.000001": "ec506d5cba89526447a98e1855b9dd2416545c3eb953b7107a87c7bcb46a5803"
+      },
+      "before": "binlog.000001\t5339\tNo\n",
+      "fault": "purge",
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "private_archive": "/private/tmp/cdc-lab-pool-20261025-attempt2/binlog-archives/isolation-attempt-1-b-source",
+      "role": "source",
+      "victim": "b"
+    },
+    {
+      "fault": "SIGKILL",
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "role": "source",
+      "victim": "b",
+      "victim_restart_data": "matched"
+    },
+    {
+      "fault": "blocking",
+      "lock_wait_transactions": 1,
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "role": "state",
+      "victim": "b"
+    },
+    {
+      "fault": "DDL",
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "role": "state",
+      "victim": "b"
+    },
+    {
+      "after": "binlog.000002\t198\tNo\n",
+      "archive_sha256": {
+        "binlog.000001": "d10a83ef7d46becee08c4dfc4c2191ef86a1dde5e61638b68bae5b450f82d1b5"
+      },
+      "before": "binlog.000001\t5338\tNo\n",
+      "fault": "purge",
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "private_archive": "/private/tmp/cdc-lab-pool-20261025-attempt2/binlog-archives/isolation-attempt-1-b-state",
+      "role": "state",
+      "victim": "b"
+    },
+    {
+      "fault": "SIGKILL",
+      "observer_source_state_writes": "passed",
+      "observer_unchanged": true,
+      "role": "state",
+      "victim": "b",
+      "victim_restart_data": "matched"
+    }
+  ],
+  "environment": {
+    "job_timeout_seconds": 600,
+    "max_parallel": 2,
+    "mysql_buffer_pool_mb": 64,
+    "mysql_max_connections": 24,
+    "runtime_root": "/private/tmp/cdc-lab-pool-20261025-attempt2",
+    "slots": [
+      {
+        "credentials_ref": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/credentials.json",
+        "id": "a",
+        "source": {
+          "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/source/data",
+          "port": 14365,
+          "uuid": "889e2d3f-765b-4456-a55e-a441a5ffc580"
+        },
+        "state": {
+          "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/state/data",
+          "port": 14366,
+          "uuid": "97907728-948c-47ee-9b0e-fa8fbc12b6e3"
+        }
+      },
+      {
+        "credentials_ref": "/private/tmp/cdc-lab-pool-20261025-attempt2/b/credentials.json",
+        "id": "b",
+        "source": {
+          "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/b/source/data",
+          "port": 14375,
+          "uuid": "561ae360-2c2c-4de9-bf01-3b913e7226a6"
+        },
+        "state": {
+          "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/b/state/data",
+          "port": 14376,
+          "uuid": "542fff04-a65b-4f5f-a911-90ff25211e3d"
+        }
+      }
+    ]
+  },
+  "final": {
+    "a": {
+      "source": "889e2d3f-765b-4456-a55e-a441a5ffc580\t14365\t/private/tmp/cdc-lab-pool-20261025-attempt2/a/source/data/\n1\t9\t7\nwitness\tCREATE TABLE `witness` (\\n  `id` int NOT NULL,\\n  `seq` int NOT NULL,\\n  `ddl_marker` int DEFAULT '7',\\n  PRIMARY KEY (`id`)\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\nbinlog.000003\t2758\t\t\t889e2d3f-765b-4456-a55e-a441a5ffc580:1-18\n",
+      "state": "97907728-948c-47ee-9b0e-fa8fbc12b6e3\t14366\t/private/tmp/cdc-lab-pool-20261025-attempt2/a/state/data/\n1\t9\t7\nwitness\tCREATE TABLE `witness` (\\n  `id` int NOT NULL,\\n  `seq` int NOT NULL,\\n  `ddl_marker` int DEFAULT '7',\\n  PRIMARY KEY (`id`)\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\nbinlog.000003\t2758\t\t\t97907728-948c-47ee-9b0e-fa8fbc12b6e3:1-18\n"
+    },
+    "b": {
+      "source": "561ae360-2c2c-4de9-bf01-3b913e7226a6\t14375\t/private/tmp/cdc-lab-pool-20261025-attempt2/b/source/data/\n1\t9\t7\nwitness\tCREATE TABLE `witness` (\\n  `id` int NOT NULL,\\n  `seq` int NOT NULL,\\n  `ddl_marker` int DEFAULT '7',\\n  PRIMARY KEY (`id`)\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\nbinlog.000003\t198\t\t\t561ae360-2c2c-4de9-bf01-3b913e7226a6:1-18\n",
+      "state": "542fff04-a65b-4f5f-a911-90ff25211e3d\t14376\t/private/tmp/cdc-lab-pool-20261025-attempt2/b/state/data/\n1\t9\t7\nwitness\tCREATE TABLE `witness` (\\n  `id` int NOT NULL,\\n  `seq` int NOT NULL,\\n  `ddl_marker` int DEFAULT '7',\\n  PRIMARY KEY (`id`)\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\nbinlog.000003\t198\t\t\t542fff04-a65b-4f5f-a911-90ff25211e3d:1-18\n"
+    }
+  },
+  "status": "passed"
+}

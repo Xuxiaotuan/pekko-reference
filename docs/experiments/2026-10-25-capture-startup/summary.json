@@ -1,0 +1,115 @@
+{
+  "status": "failed_and_preserved",
+  "scope": "C test facilities and three logical startup probes only; no production fix or complete bootstrap validation",
+  "production_sha256": "4953d46ef2fa32c4ecc588afd04c14a067aab024f6b0a218145ea8dc67ee55f4",
+  "production_frozen_candidates_1_to_4_identical": true,
+  "current_production_matches_frozen_candidate_4": true,
+  "final_test_sha256": "f10069601fb1e370b32a3c9d08ac5170235b9254b7148f73d0fba98b9535d691",
+  "slot": {
+    "id": "b",
+    "source_port": 14375,
+    "state_port": 14376,
+    "source_uuid": "561ae360-2c2c-4de9-bf01-3b913e7226a6",
+    "state_uuid": "542fff04-a65b-4f5f-a911-90ff25211e3d"
+  },
+  "cases": [
+    {
+      "case": "original_R02_natural",
+      "directory": "R02-original-trigger-eaa005be087a",
+      "candidate": 3,
+      "result": "PASS"
+    },
+    {
+      "case": "deterministic_before_point",
+      "directory": "R02-before-point-1953f1c0d72e",
+      "candidate": 3,
+      "result": "FAIL"
+    },
+    {
+      "case": "bound_B_INITIAL_D",
+      "directory": "B-bound-D-initial-0d00664ccfa7",
+      "candidate": 4,
+      "result": "FAIL"
+    }
+  ],
+  "facility_attempts": [
+    {
+      "candidate": 1,
+      "result": "external_blocked",
+      "reason": "A slot initially had no TCP127.0.0.1 user grant; fixture initialization failed before capture start",
+      "log": "candidate-1-original.log"
+    },
+    {
+      "candidate": 2,
+      "result": "test_facility_failed",
+      "reason": "loopback SQL proxy rejected SDK default preferred TLS; no R02 assertion evidence",
+      "log": "candidate-2-original.log"
+    },
+    {
+      "candidate": 3,
+      "case": "B-bound-D-initial-68abdc2871a8",
+      "result": "test_facility_failed",
+      "reason": "producer enqueue observer expected SUBSCRIBE text; actual SDK event printed binary string arrays; raw DEBUG did show enqueue but callback remained held, so no B_BOUND claim"
+    }
+  ],
+  "binlog_findings": {
+    "R02": {
+      "file": "binlog.000003",
+      "old_D": 117041,
+      "old_D_snapshot": "INITIAL",
+      "B_row": 117732,
+      "B_transaction_end": 117882,
+      "B_gtid": "561ae360-2c2c-4de9-bf01-3b913e7226a6:301",
+      "new_D": 117882,
+      "assertion": "B a timed out"
+    },
+    "bound_INITIAL": {
+      "file": "binlog.000003",
+      "old_D": 194970,
+      "old_D_snapshot": "INITIAL",
+      "B_row": 195262,
+      "B_transaction_end": 195412,
+      "B_gtid": "561ae360-2c2c-4de9-bf01-3b913e7226a6:487",
+      "business_row": 195705,
+      "business_transaction_end": 195893,
+      "business_gtid": "561ae360-2c2c-4de9-bf01-3b913e7226a6:488",
+      "restart_selected_point_from_actual_schema_callback": 196292,
+      "witness_row": 196585,
+      "witness_transaction_end": 196746,
+      "witness_gtid": "561ae360-2c2c-4de9-bf01-3b913e7226a6:490",
+      "witness_T_rows": 1,
+      "witness_J_event_rows": 6,
+      "witness_J_log_sequence": 20,
+      "final_D_pos": 196371,
+      "final_D_event": 3,
+      "final_D_snapshot": null,
+      "source_and_target_rows": 4,
+      "missing_keys": 0,
+      "extra_keys": 0,
+      "different_fields": [
+        "label",
+        "amount",
+        "revision",
+        "note",
+        "updated_at"
+      ]
+    }
+  },
+  "unverified": [
+    "repeat frequency beyond one confirmed hit per deterministic cut",
+    "B uncommitted/commit unknown variants",
+    "concurrent add/cancel/close races",
+    "startup failure and retry matrix",
+    "heartbeat/quiet database readiness",
+    "approved future startup contract or production fix",
+    "complete bootstrap LOW/HIGH matrix",
+    "complete old regression or backend suite",
+    "online initialization; target starts from known copied baseline"
+  ],
+  "cleanup": "cleanup-after-release.json",
+  "warnings": [
+    "snapshot.step7 gate relies on pinned Debezium3.6.1 log statement; changed SDK boundary must fail closed",
+    "deterministic probes disable SDK TLS on exclusive loopback wire transport; natural R02 uses original direct SDK TLS",
+    "B+INITIAL uses batch128; old natural R02 original uses batch1 and recovered128; no SDK batches or offsets were rewritten"
+  ]
+}

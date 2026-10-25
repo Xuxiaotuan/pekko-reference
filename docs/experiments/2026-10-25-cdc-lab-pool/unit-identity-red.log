@@ -1,0 +1,14 @@
+......F
+======================================================================
+FAIL: test_wrong_live_identity_prevents_mutating_sql (test_pool.PoolTests.test_wrong_live_identity_prevents_mutating_sql)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/test_pool.py", line 100, in test_wrong_live_identity_prevents_mutating_sql
+    self.assertNotIn('INSERT',trace.read_text())
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'INSERT' unexpectedly found in 'INSERT INTO protected VALUES (1)\nSELECT @@server_uuid,@@port,@@datadir\n'
+
+----------------------------------------------------------------------
+Ran 7 tests in 1.150s
+
+FAILED (failures=1)

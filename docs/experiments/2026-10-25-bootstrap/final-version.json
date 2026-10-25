@@ -1,0 +1,44 @@
+{
+  "overallStatus": "evidence_incomplete",
+  "blockingLegacyFailure": "R02 initial Schema snapshot restart skips pending B marker",
+  "sourceBaseline": "00ad18e624568ef595bd90e2d6ac00008bd235a0",
+  "branch": "feature/pekkosync-mvp-cleanup-datafusion",
+  "sourceManifestSha256": "c71f260870325aa54bb6818200a875689afaace93d10dc8496a11c99e5f362da",
+  "productionManifestSha256": "076dd7daf1c6dfadf0b33be2a39c48b56a2a0a32351ef15be779f5052846d661",
+  "runs": {
+    "matrix": {
+      "directory": "target/bootstrap-runners/matrix-all-1792931094818574000",
+      "exitCode": 0,
+      "tests": 61,
+      "summary": "Tests: succeeded 61, failed 0, canceled 0, ignored 0, pending 0",
+      "seconds": 392.2401430606842
+    },
+    "unit": {
+      "directory": "target/bootstrap-runners/unit-all-1792931497196243000",
+      "exitCode": 0,
+      "tests": 80,
+      "summary": "Tests: succeeded 80, failed 0, canceled 0, ignored 0, pending 0",
+      "seconds": 7.893765926361084
+    },
+    "regression": {
+      "directory": "target/bootstrap-runners/regression-all-1792931511367223000",
+      "exitCode": 1,
+      "tests": 58,
+      "summary": "Tests: succeeded 57, failed 1, canceled 0, ignored 0, pending 0",
+      "seconds": 1094.8388550281525
+    }
+  },
+  "backend": {
+    "succeeded": 593,
+    "failed": 0,
+    "excludedExternalIntegrationTag": true,
+    "excludedSuite": "cn.xuyinyin.magic.actor.ActorSpec",
+    "log": "target/bootstrap-backend-final2.log",
+    "packagedMainClassesMatchFinalRuntime": 916
+  },
+  "resources": "final-resources.json",
+  "independentReconciliation": "final-summary.json",
+  "committed": false,
+  "pushed": false,
+  "websitePublished": false
+}

@@ -31,7 +31,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   private case class Pending(id:Long,offset:String,handle:CdcBatchCommitHandle,var remaining:Int,bytes:Long,references:mutable.Set[Long])
   private val pending=mutable.Queue.empty[Pending]
   private val assemblers=mutable.Map.empty[String,MySQLCdcGroupAssembler]
-  private case class Marker(id:String,table:String,generation:String,stop:Boolean,point:CapturePoint,done:Long=>Unit)
+  private case class Marker(id:String,table:String,generation:String,action:String,point:CapturePoint,done:Long=>Unit)
   private val markers=mutable.Map.empty[String,Marker]
   private val commandLock=new AnyRef
   private val closeLock=new AnyRef
@@ -121,14 +121,17 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
           val value=v.get
           if(value.getString("status")=="END") markers.remove(value.getString("id")).foreach {m=>
             require(value.getInt64("event_count")==1L,"control marker requires its own transaction")
-            val subscription=store.subscription(m.id).getOrElse(throw new IllegalArgumentException("marker without intent"))
-            require(subscription.table==m.table && subscription.generation==m.generation,"marker intent conflict")
-            store.bind(m.id,m.point,MySQLCdcSourceNode.cursorValue(r),m.stop)
-            assemblers.remove(m.table).foreach(_.close())
-            val barrier=store.barrierSequence(m.id,m.stop)
+            val ordinary=m.action=="SUBSCRIBE" || m.action=="STOP"
+            val barrier=if(ordinary) {
+              val subscription=store.subscription(m.id).getOrElse(throw new IllegalArgumentException("marker without intent"))
+              require(subscription.table==m.table && subscription.generation==m.generation,"marker intent conflict")
+              store.bind(m.id,m.point,MySQLCdcSourceNode.cursorValue(r),m.action=="STOP")
+              assemblers.remove(m.table).foreach(_.close())
+              store.barrierSequence(m.id,m.action=="STOP")
+            }else Some(store.bindFence(m.id,m.point,MySQLCdcSourceNode.cursorValue(r)))
             barrier.foreach(p.references.add)
             m.done(barrier.getOrElse(0L))
-            observe(if(m.stop)"K_BOUND" else "B_BOUND",JsObject("requestId"->JsString(m.id),"point"->m.point.json.parseJson))
+            observe(if(ordinary){if(m.action=="STOP")"K_BOUND"else "B_BOUND"}else m.action+"_BOUND",JsObject("requestId"->JsString(m.id),"point"->m.point.json.parseJson))
           }
           done()
         } else if(name=="io.debezium.connector.common.Heartbeat")done()
@@ -140,14 +143,16 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
             val e=MySQLCdcEnvelope.decode(r,source.connectorId).fold(x=>throw new IllegalArgumentException(x.message),_.get)
             require(value.getString("op")=="c","control markers are immutable inserts")
             val a=value.getStruct("after");val id=a.getString("operation_id")
-            val stop=a.getString("action")=="STOP"
-            require(stop || a.getString("action")=="SUBSCRIBE","unknown control action")
-            store.markerIntent(id,a.getString("table_name"),a.getString("generation"),stop) match {
-              case None=>done() // a marker belonging to a different capture namespace
-              case Some(intent)=>
+            val action=a.getString("action")
+            require(Set("SUBSCRIBE","STOP","LOW","HIGH","F").contains(action),"unknown control action")
+            val intent=if(action=="SUBSCRIBE" || action=="STOP")store.markerIntent(id,a.getString("table_name"),a.getString("generation"),action=="STOP").map(s=>s.requestId)
+              else store.fenceIntent(id,a.getString("table_name"),a.getString("generation")).map {case(f,_)=>require(f.action==action,"bootstrap action changed");f.id}
+            intent match {
+              case None=>done()
+              case Some(intentId)=>
                 val transaction=value.getStruct("transaction").getString("id")
                 require(!markers.contains(transaction),"multiple markers in one transaction")
-                markers(transaction)=Marker(intent.requestId,intent.table,intent.generation,stop,CapturePoint.from(e),n=>{if(n>0)p.references+=n;done()})
+                markers(transaction)=Marker(intentId,a.getString("table_name"),a.getString("generation"),action,CapturePoint.from(e),n=>{if(n>0)p.references+=n;done()})
             }
           } else if(value.getString("op")=="t") {
             require(!store.hasActive(table),"TRUNCATE requires explicit reinitialization; capture paused")
@@ -229,12 +234,23 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   def unsubscribe(id:String):Unit=commandLock.synchronized {active();assertOwner();val s=store.subscription(id).get
     require(s.status=="CAPTURE_READY" || s.status=="CAPTURE_STOPPED","subscription not ready to stop")
     if(s.status=="CAPTURE_READY")writeMarker(s,stop=true)}
-  private def writeMarker(s:CaptureSubscription,stop:Boolean):Unit={
+  def requestFence(id:String,subscriptionId:String,action:String,context:String):CaptureFence=commandLock.synchronized {
+    active();assertOwner()
+    val f=store.registerFence(id,subscriptionId,action,context)
+    if(f.sequence.isEmpty) {
+      val sub=store.subscription(subscriptionId).get
+      writeControl(store.fenceOperation(id),action,sub.table,sub.generation)
+    }
+    f
+  }
+  private def writeMarker(s:CaptureSubscription,stop:Boolean):Unit=
+    writeControl(store.markerId(s.requestId,stop),if(stop)"STOP"else "SUBSCRIBE",s.table,s.generation)
+  private def writeControl(operation:String,action:String,table:String,generation:String):Unit={
     withSourceConnection {c=>
       c.setAutoCommit(false)
       val q=c.prepareStatement("INSERT INTO pekko_capture_control VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE operation_id=operation_id")
       q.setQueryTimeout(5)
-      try {q.setString(1,store.markerId(s.requestId,stop));q.setString(2,if(stop)"STOP" else "SUBSCRIBE");q.setString(3,s.table);q.setString(4,s.generation);q.executeUpdate()}finally q.close()
+      try {q.setString(1,operation);q.setString(2,action);q.setString(3,table);q.setString(4,generation);q.executeUpdate()}finally q.close()
       c.commit()
     }
   }

@@ -1,0 +1,41 @@
+.......E.FE.
+======================================================================
+ERROR: test_successful_parent_does_not_leave_signal_ignoring_child (test_pool.PoolTests.test_successful_parent_does_not_leave_signal_ignoring_child)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/test_pool.py", line 140, in test_successful_parent_does_not_leave_signal_ignoring_child
+    self.assertTrue(results[0]['cleanup']['confirmed_exited'])
+                    ~~~~~~~~~~^^^^^^^^^^^
+KeyError: 'cleanup'
+
+======================================================================
+ERROR: test_unknown_slot_cannot_be_used_as_lease_path (test_pool.PoolTests.test_unknown_slot_cannot_be_used_as_lease_path)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/test_pool.py", line 152, in test_unknown_slot_cannot_be_used_as_lease_path
+    with self.assertRaises(ValueError):self.p.require(name,'token')
+                                       ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/pool.py", line 101, in require
+    lease = json.loads((self.root/'leases'/name/'lease.json').read_text())
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py", line 787, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py", line 771, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/tmppgii5skh/runtime/leases/unconfigured/lease.json'
+
+======================================================================
+FAIL: test_uncertain_cleanup_quarantines_lease_and_skips_next_case (test_pool.PoolTests.test_uncertain_cleanup_quarantines_lease_and_skips_next_case)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xujiawei/magic/scala-workbench/pekko-reference/scripts/experiments/cdc-lab-pool/test_pool.py", line 160, in test_uncertain_cleanup_quarantines_lease_and_skips_next_case
+    if not hasattr(self.pool,'terminate_group'):self.fail('cleanup confirmation boundary is missing')
+                                                ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: cleanup confirmation boundary is missing
+
+----------------------------------------------------------------------
+Ran 12 tests in 1.165s
+
+FAILED (failures=1, errors=2)

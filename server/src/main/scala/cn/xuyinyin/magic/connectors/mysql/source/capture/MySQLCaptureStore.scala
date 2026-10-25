@@ -49,11 +49,12 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
   def initialize():Unit=connection {c=>
     Vector(
       "CREATE TABLE IF NOT EXISTS pekko_capture_readers(capture_id VARCHAR(64) PRIMARY KEY,lineage VARCHAR(255) NOT NULL,next_seq BIGINT NOT NULL,used_bytes BIGINT NOT NULL,frontier LONGTEXT NULL)",
+      "CREATE TABLE IF NOT EXISTS pekko_capture_fences(capture_id VARCHAR(64),fence_id VARCHAR(128),operation_id CHAR(64) NOT NULL,subscription_id VARCHAR(128) NOT NULL,action VARCHAR(16) NOT NULL,context_json LONGTEXT NOT NULL,point_json TEXT NULL,seq BIGINT NULL,covered_seq BIGINT NULL,PRIMARY KEY(capture_id,fence_id),UNIQUE KEY operation(capture_id,operation_id))",
       "CREATE TABLE IF NOT EXISTS pekko_capture_schemas(capture_id VARCHAR(64),table_name VARCHAR(128),schema_id CHAR(64) NOT NULL,definition LONGTEXT NOT NULL,PRIMARY KEY(capture_id,table_name))",
       "CREATE TABLE IF NOT EXISTS pekko_capture_subscriptions(capture_id VARCHAR(64),request_id VARCHAR(128),table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL,status VARCHAR(32) NOT NULL,schema_id CHAR(64) NOT NULL,b_point TEXT NULL,k_point TEXT NULL,b_seq BIGINT NULL,PRIMARY KEY(capture_id,request_id),INDEX table_route(capture_id,table_name))",
       "CREATE TABLE IF NOT EXISTS pekko_capture_log(capture_id VARCHAR(64),seq BIGINT,source_key CHAR(64) NOT NULL,kind VARCHAR(16) NOT NULL,table_name VARCHAR(128) NOT NULL,subscription_id VARCHAR(128) NOT NULL,schema_id CHAR(64) NOT NULL,payload LONGTEXT NOT NULL,digest CHAR(64) NOT NULL,point_json TEXT NULL,resume_json LONGTEXT NULL,PRIMARY KEY(capture_id,seq),UNIQUE KEY occurrence(capture_id,source_key),INDEX deliveries(capture_id,subscription_id,seq))"
     ).foreach(sql=>update(c,sql+" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin"))
-    require(rows(c,"SELECT COUNT(*) AS total FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ('pekko_capture_readers','pekko_capture_schemas','pekko_capture_subscriptions','pekko_capture_log') AND engine='InnoDB'").head("total")=="4","capture state requires InnoDB")
+    require(rows(c,"SELECT COUNT(*) AS total FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ('pekko_capture_readers','pekko_capture_schemas','pekko_capture_subscriptions','pekko_capture_log','pekko_capture_fences') AND engine='InnoDB'").head("total")=="5","capture state requires InnoDB")
     update(c,"INSERT IGNORE INTO pekko_capture_readers VALUES(?,?,1,0,NULL)",captureId,lineage)
     val head=rows(c,"SELECT lineage,next_seq,(SELECT COALESCE(MAX(seq),0) FROM pekko_capture_log WHERE capture_id=?) AS maximum FROM pekko_capture_readers WHERE capture_id=?",captureId,captureId).head
     require(head("lineage")==lineage,"capture lineage changed")
@@ -202,7 +203,8 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
     val parent=rows(c,"SELECT * FROM pekko_capture_log WHERE capture_id=? AND kind='ACK' ORDER BY seq DESC LIMIT 1",captureId).headOption
     val payload=MySQLCdcGroup.canonical(JsObject("offset"->offsetKey(offset).parseJson,
       "parent"->parent.map(reference).getOrElse(JsNull),"references"->JsArray(references.distinct.sorted.map(n=>reference(frame(c,n))))))
-    appendRaw(c,"ack:"+payload,"ACK",MySQLCdcGroup.hash(offsetKey(offset)),"","",payload,resume=offset)
+    val ack=appendRaw(c,"ack:"+payload,"ACK",MySQLCdcGroup.hash(offsetKey(offset)),"","",payload,resume=offset)
+    references.distinct.foreach(n=>update(c,"UPDATE pekko_capture_fences SET covered_seq=COALESCE(covered_seq,?) WHERE capture_id=? AND seq=?",ack,captureId,n))
     update(c,"UPDATE pekko_capture_readers SET frontier=? WHERE capture_id=?",offset,captureId)
   }
   private def offsetKey(offset:String):String={
@@ -215,7 +217,10 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
     tables.foreach(routes(c,_))
     val proof=rows(c,"SELECT seq FROM pekko_capture_log WHERE capture_id=? AND kind='ACK' AND table_name=? ORDER BY seq DESC LIMIT 1",captureId,MySQLCdcGroup.hash(offsetKey(offset))).headOption
       .getOrElse(throw new IllegalArgumentException("D has no durable capture coverage"))
-    var next=Option(proof("seq").toLong)
+    verifyChain(c,proof("seq").toLong)
+  }
+  private def verifyChain(c:Connection,head:Long):Unit={
+    var next=Option(head)
     while(next.nonEmpty) {
       val current=frame(c,next.get);require(current("kind")=="ACK","invalid capture proof chain")
       val p=current("payload").parseJson.asJsObject.fields
@@ -236,9 +241,62 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
       }
     }
   }
+  def fenceOperation(id:String):String=MySQLCdcGroup.hash(captureId+"|bootstrap|"+id)
+  def registerFence(id:String,subscriptionId:String,action:String,context:String):CaptureFence=tx {c=>
+    require(id.matches("[A-Za-z0-9_-]{1,128}") && Set("LOW","HIGH","F").contains(action),"invalid bootstrap fence")
+    val sub=find(c,subscriptionId).getOrElse(throw new IllegalArgumentException("unknown fence subscription"))
+    require(sub.status=="CAPTURE_READY","fence requires active capture")
+    val payload=MySQLCdcGroup.canonical(context.parseJson)
+    val old=fenceOn(c,id)
+    old match {
+      case Some(f)=>require(f.subscriptionId==subscriptionId && f.action==action && f.context==payload,"bootstrap fence intent conflict");f
+      case None=>
+        update(c,"INSERT INTO pekko_capture_fences(capture_id,fence_id,operation_id,subscription_id,action,context_json) VALUES(?,?,?,?,?,?)",captureId,id,fenceOperation(id),subscriptionId,action,payload)
+        fenceOn(c,id).get
+    }
+  }
+  private def fenceOn(c:Connection,id:String):Option[CaptureFence]=rows(c,"SELECT * FROM pekko_capture_fences WHERE capture_id=? AND fence_id=?",captureId,id).headOption.map {r=>
+    val seq=Option(r("seq")).map(_.toLong);val point=Option(r("point_json")).map(CapturePoint.parse)
+    require(seq.isDefined==point.isDefined,"incomplete bootstrap fence")
+    seq.foreach {n=>val f=frame(c,n)
+      val expected=MySQLCdcGroup.canonical(JsObject("id"->JsString(id),"action"->JsString(r("action")),"context"->r("context_json").parseJson))
+      require(f("kind")=="FENCE" && f("subscription_id")==r("subscription_id") && f("payload")==expected && f("point_json")==r("point_json"),"bootstrap fence binding conflict")}
+    val covered=Option(r("covered_seq")).map {a=>
+      verifyChain(c,a.toLong)
+      val ack=frame(c,a.toLong);require(ack("kind")=="ACK","bootstrap coverage is not an ACK proof")
+      val refs=ack("payload").parseJson.asJsObject.fields("references").asInstanceOf[JsArray].elements
+      require(seq.exists(n=>refs.exists(v=>v.asJsObject.fields("sequence")==JsNumber(n) && v.asJsObject.fields("digest")==JsString(frame(c,n)("digest")))),"bootstrap coverage reference missing")
+      true
+    }.getOrElse(false)
+    val obsolete=point.exists(p=>find(c,r("subscription_id")).flatMap(_.k).exists(p.after))
+    CaptureFence(id,r("subscription_id"),r("action"),r("context_json"),point,seq,covered && !obsolete,obsolete)
+  }
+  def fence(id:String):Option[CaptureFence]=connection(fenceOn(_,id))
+  def fenceIntent(operation:String,table:String,generation:String):Option[(CaptureFence,CaptureSubscription)]=connection {c=>
+    rows(c,"SELECT fence_id FROM pekko_capture_fences WHERE capture_id=? AND operation_id=?",captureId,operation).headOption.flatMap(r=>fenceOn(c,r("fence_id"))).map {f=>
+      val sub=find(c,f.subscriptionId).get;require(sub.table==table && sub.generation==generation,"bootstrap marker identity conflict");f->sub}
+  }
+  def bindFence(id:String,point:CapturePoint,resume:String):Long=tx {c=>
+    val f=fenceOn(c,id).getOrElse(throw new IllegalArgumentException("unknown bootstrap fence"))
+    val sub=find(c,f.subscriptionId).get
+    f.sequence match {
+      case Some(n)=>require(f.point.contains(point),"bootstrap fence moved");n
+      case None=>
+        require(sub.b.exists(point.after),"bootstrap fence precedes capture interval")
+        val payload=MySQLCdcGroup.canonical(JsObject("id"->JsString(id),"action"->JsString(f.action),"context"->f.context.parseJson))
+        val n=appendRaw(c,"fence:"+id,"FENCE",sub.table,sub.requestId,sub.schemaId,payload,Some(point),resume)
+        update(c,"UPDATE pekko_capture_fences SET point_json=?,seq=? WHERE capture_id=? AND fence_id=?",point.json,n,captureId,id);n
+    }
+  }
+  def readThrough(id:String,after:Long,fenceId:String,limit:Int):Vector[CaptureLogEntry]={
+    val f=fence(fenceId).getOrElse(throw new IllegalArgumentException("unknown read fence"))
+    require(f.subscriptionId==id && f.covered,"bootstrap fence not covered")
+    read(id,after,limit).takeWhile(_.sequence<f.sequence.get).map {entry=>
+      require(!CapturePoint.from(entry.group.members.head._2).after(f.point.get),"L order exceeds bootstrap fence");entry}
+  }
   def evidence:JsObject=connection {c=>
     def json(sql:String):JsArray=JsArray(rows(c,sql,captureId).map(r=>JsObject(r.map {case(k,v)=>k->Option(v).fold[JsValue](JsNull)(JsString(_))})))
     JsObject("reader"->json("SELECT * FROM pekko_capture_readers WHERE capture_id=?"),"subscriptions"->json("SELECT * FROM pekko_capture_subscriptions WHERE capture_id=?"),
-      "schemas"->json("SELECT * FROM pekko_capture_schemas WHERE capture_id=?"),"log"->json("SELECT * FROM pekko_capture_log WHERE capture_id=? ORDER BY seq"))
+      "schemas"->json("SELECT * FROM pekko_capture_schemas WHERE capture_id=?"),"fences"->json("SELECT * FROM pekko_capture_fences WHERE capture_id=?"),"log"->json("SELECT * FROM pekko_capture_log WHERE capture_id=? ORDER BY seq"))
   }
 }
