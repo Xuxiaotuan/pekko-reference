@@ -394,8 +394,8 @@ Actor 将第 6 批写入 Journal → Source ACK → 后续继续
 
 上一篇：[三个进度的恢复契约](02-source-and-recovery-contract.md)；下一篇：[从重放不变量构造恢复协议](04-protocol-and-validation.md)。
 
-[test-process]: ../../server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcJournalWindowProcess.scala
-[test-spec]: ../../server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcJournalWindowSpec.scala
+[test-process]: ../../../server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcJournalWindowProcess.scala
+[test-spec]: ../../../server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcJournalWindowSpec.scala
 
 [group-process]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcGroupRecoveryProcess.scala
 [group-spec]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcGroupRecoverySpec.scala
