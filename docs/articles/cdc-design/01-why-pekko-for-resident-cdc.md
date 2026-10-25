@@ -1,6 +1,105 @@
-# 一：70 万张表如何常驻——从 Pekko 的执行模型理解 CDC 的资源优势
+# 一：70 万表的常驻 CDC——共享 Reader、表级 Actor 与有界执行
 
-> **2026-10-25 状态更新：**下文保留原版本的源码分析与历史实验。新增共享捕获路径、真实故障结果及当前限制见文末“共享捕获阶段一”部分和[本轮证据报告](../../experiments/2026-10-25-shared-capture/README.md)。旧单表路径的历史限制不能直接套用到新增路径；新增路径也不代表 LOW/HIGH 初始化已经完成。
+[系列导读与验证范围](README.md) · [1：目标架构](01-why-pekko-for-resident-cdc.md) · [2：批转流源码](02-source-and-recovery-contract.md) · [3：真实实验](03-real-mysql-journal-failure.md) · [4：恢复协议](04-protocol-and-validation.md) · [5：框架比较](05-pekko-vs-flink-cdc.md) · [Flink CDC 深入系列](https://xuyinyin.cn/flink-cdc-series/)
+
+> **当前主文基线：2026-10-25，源码 [`55fad0c`](https://github.com/Xuxiaotuan/pekko-reference/tree/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059)。** 文章依据当前源码和已保存实验重排；改稿不构成数据库重跑。整体验收仍为 `evidence_incomplete`。源码结论、真实实验、条件性推理和设计提案分别标明；历史版本放在文末可展开附录，不能套作当前能力。
+
+一个 MySQL 实例有 70 多万张表，今天选择五张同步，明天再增加两张；增加的表要先同步已有数据，再持续追增量，已有任务不能停。取消一张表也不应终止整个实例的读取。这才是本系列的业务起点。70 万是源端目录背景，不是同时有 70 万张活跃表，也不是已通过的容量验收。
+
+这项需求把问题分成两层：采集端怎样共享读取、补齐新表的存量；控制端怎样管理大量身份、少量活动工作及其恢复。Pekko 的 Actor 适合后者。前者仍需 Split、LOW/HIGH、持久日志和目标提交协议。本文从两层如何衔接展开，第二篇再走进算法。
+
+## 1. 先把今天五张、明天两张写成同一条生命周期
+
+对新表，业务要求的是“先全量、后持续”，不是从点击订阅之后才保留新变化。第一版因此采用如下顺序：
+
+```text
+准备 Schema → 绑定订阅 B → 冻结扫描上界 U
+→ 逐窗口 LOW / 一致性分页 / HIGH / 回填 / 封存 / 应用
+→ 固定 F → 回放 B 到 F → 审计与激活 → 持续消费 F 之后的日志
+```
+
+B 是这代订阅开始保留日志的边界。U 是冻结的最大主键。LOW/HIGH 属于某一次窗口读取。F 是全表初始化后有限追赶的结束边界。这些符号不在同一个坐标系：U 是键值，B/LOW/HIGH/F 关联源日志位置，并各有 L 中的帧序号。它们也不是 Flink 事件时间 Watermark。
+
+取消使用独立的 K 边界。取消后重新订阅是新 generation、新 B；它不会自动补回停订空档。新的初始化应使用新的独占空目标，不能把旧代的部分目标当成可信基线。
+
+## 2. 当前数据内核怎样分工
+
+下面每一行都有当前源码，但组合后的完整平台入口还未接通。
+
+| 组件 | 当前职责 | 不承担的职责 |
+|---|---|---|
+| [SharedMySQLCapture](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala#L59) | 一个 capture 的共享 Engine、Schema、B/K/LOW/HIGH/F 控制行、原始回调覆盖和前缀确认 | 不为每个表执行全量，也不证明启动连续性已经安全 |
+| [MySQLCaptureStore](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/MySQLCaptureStore.scala#L200) | 独立状态实例中的订阅与持久化日志 L，完整组、fence、ACK 引用及校验 | 不是仅存一个最大 offset，也不是目标事务 |
+| [BootstrapRunner](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapRunner.scala#L172) | 单表初始化、有限 B→F 回放、激活、tail 和取消推进 | 不是 70 万表的运行时调度器 |
+| [BootstrapJournal](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapJournal.scala) | 用 Actor Journal 保存这张表的窗口、阶段与接受的进度 | 不与源库或目标库组成跨库原子事务 |
+| [BootstrapStore](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapStore.scala#L19) | RAW/FINAL 页、封存 manifest、范围和完成摘要链 | 不决定执行阶段；没有自动 GC |
+| [BootstrapTarget](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapTarget.scala#L44) | baseline 页效果和 receipt 同事务、激活证明 | 不提供业务端原子换表或访问权限切换 |
+
+源与状态必须是不同物理 MySQL 实例。实验发现，同实例不同 schema 仍会产生事务元数据反馈，当前启动会核对 server UUID 并拒绝这种部署。业务仍只有一个源实例；L、Journal、spool 和目标需要独立状态基础设施，不能把它省略为“只用一个库”。
+
+## 3. 共享 Reader 减少的是采集副本，不是全部表成本
+
+共享路径把 binlog 采集和表的生命周期分开。新增表先准备 Schema、登记订阅，再写真实源控制行 B；捕获组落入 L 后，表消费者按各自游标读取。慢表的目标提交不直接承担原始 SDK ACK。
+
+这允许在有限积压内出现“A 表 T/J 停住、B 表继续提交”。但 L 是有容量的。一个长期落后的消费者会保留恢复所需历史；若 L 无法再接纳数据，共享捕获也会暂停。不能把一个慢表实验扩张为无限时长的硬隔离保证。
+
+当前共享 Engine 的 `table.include.list` 覆盖业务数据库，Schema/history 与非订阅表输入的成本仍需量测。选中七张表，并不等于 SDK 在 70 万表目录上的发现、Schema 缓存和日志处理成本只与七张表有关。
+
+## 4. Actor 的执行优势，发生在消息处理期间
+
+Pekko 1.1.3 的 Mailbox 进入 Dispatcher 时，调度的是一个可运行任务；Actor 不为自己的身份永久占有一条线程。同一个 Actor 的普通消息处理串行，但异步提交到外部线程池的操作不会因此自动串行或原子化。源码入口是 [Mailbox][current-mailbox] 与 [Dispatcher][current-dispatcher]，完整的入队竞争与调度不变量推导保留在本文附录。
+
+历史机制实验中，10,000 个普通 Typed Actor、40,000 条消息共用两条工作线程；记录中没有同实体 handler 重叠或本条件下的顺序错误。这证明的是普通 Actor 的执行机制，不是 10,000 个持久化 CDC 任务，更不是 70 万真实表的端到端资源曲线。[原始机制实验](../../experiments/2026-10-18-actor-execution/README.md)
+
+资源收益成立的条件是：Actor 只在处理命令或推进短步骤时借用线程，等待数据库的工作在有界阻塞池中；冷任务只保留持久化身份与索引。当前 remember/passivation 的历史配置不能自动兑现后一个条件，不能从 Actor 模型直接推导“所有冷任务都不驻留”。
+
+## 5. 为什么当前 Runner 还没有兑现海量常驻调度
+
+[BootstrapAdmission](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapRunner.scala#L15) 的默认值是：
+
+```scala
+final class BootstrapAdmission(
+  readers: Int = 2,
+  writers: Int = 2,
+  runners: Int = 8
+)
+```
+
+`BootstrapRunner.run()` 开始时获得 run 许可和数据库会话锁，进入 STREAMING 后继续循环；空读当前用 `Thread.sleep(50)` 等待。它需要专用阻塞执行上下文，不能放进 Actor dispatcher。这里的许可是该 Admission 实例的预算，不是全主机、全 JVM 集群的资源上限。
+
+所以，“共享 Reader 已实现”和“每表常驻只剩轻量 Actor”是两种不同状态。八个长期 tail 会话可能占住八个 run 许可。把整个 `run()` 包成每个 Actor 的 Future，只是换了调用形式，没有消除长期阻塞和许可占用。
+
+目标结构应是持久冷索引、表级控制 Actor、可有界推进的快照/追赶/tail 步骤，以及分开的资源预算。当前只交付了[生命周期契约提议](../../development/specs/2026-10-25-cdc-platform-lifecycle-contract.md)，尚未把这条新链路接到生产调度器、启动恢复入口和 API/UI。旧静态 `mysql.snapshot → mysql.write` 的有界调度不能直接算作新链路已经完成。
+
+## 6. 用一个条件性成本模型约束资源讨论
+
+设 N 为注册表数，A 为正在推进的表数，G 为捕获域数。目标资源模型应接近：
+
+```text
+持久元数据：与 N 相关
+活动 Actor / 待处理消息：与活动控制集合相关
+Reader：与 G 相关，不与 N 一一对应
+JDBC 连接和在途写入：受共享资源预算约束
+L / spool：与积压、初始化窗口和保留策略相关
+```
+
+这是设计约束，不是已测内存公式。库级 Schema/history、Mailbox 中等待消息、未确认回调、最大事务和 L 保留都会使实际成本偏离简单的 A/N 比例。70 万条调度记录也不能替代 70 万张真实源表。
+
+## 7. 当前交付与本系列后续
+
+当前已实现 LOW/HIGH 批转流内核，并有 61 项真实初始化矩阵；仍有启动恢复反例，不能无保留交付。下一篇沿 `BootstrapRunner → BootstrapSnapshot → BootstrapFold → BootstrapStore` 展开数据算法；第三篇核对实测与反例；第四篇说明恢复依据；第五篇再比较框架责任和工程成本。
+
+**未验证边界：**70 万真实表目录、全量活跃吞吐、长期 churn、自动日志回收、新链路多 owner/guardian 接管及 DDL 演进。当前收益是可复用的机制和受限数据内核，不是已经测出的全平台容量优势。
+
+[current-mailbox]: https://github.com/apache/pekko/blob/38facf752b4e7d5fb43ed7c671eb91888b41bd10/actor/src/main/scala/org/apache/pekko/dispatch/Mailbox.scala#L188
+[current-dispatcher]: https://github.com/apache/pekko/blob/38facf752b4e7d5fb43ed7c671eb91888b41bd10/actor/src/main/scala/org/apache/pekko/dispatch/Dispatcher.scala#L69
+
+## 附录：历史源码分析、完整组协议与原始实验
+
+以下保留本篇此前的完整技术分析，原题为“一：70 万张表如何常驻——从 Pekko 的执行模型理解 CDC 的资源优势”。其中的“当前”“尚未实现”均指各段明确标注的历史版本；2026-10-25 的阶段一补充也只描述当时共享捕获，不覆盖后来新增的 LOW/HIGH 内核。当前结论以本文主文和系列验证表为准，历史失败及证据链接不删除。
+
+<details markdown="1">
+<summary>展开历史基线分析与实验细节</summary>
 
 上一家公司有 70 多万张表，需要长期管理数据同步任务。对这样的系统，启动一次同步并不难，难的是让大量任务持续存在：每张表有自己的配置、进度和异常，能够单独暂停、恢复；多数任务没有控制操作时，又不应各自占着一条执行线程。
 
@@ -437,3 +536,5 @@ flowchart LR
 还有一个影响部署的实测条件。Offset 和 L 与源共用物理实例时，即使写入不同 Schema，事务元数据仍可能交付零行 BEGIN/END；处理这些回调又引发 Offset 写，形成反馈循环。失败材料保留在[报告](../../experiments/2026-10-25-shared-capture/README.md)。当前 profile 要求源与状态服务器 UUID 不同；它服务一个业务源实例，但额外需要状态基础设施。
 
 **未验证边界：**70 万表的 Schema 发现/缓存成本、长期日志增长、活跃消费者准入、自动 GC、共享 Reader 接管和 LOW/HIGH 初始化。下一阶段的资源验收应分别测候选表数、订阅数、活跃消费者数和变更速率，不能再用一个“任务数”掩盖四种不同成本。
+
+</details>

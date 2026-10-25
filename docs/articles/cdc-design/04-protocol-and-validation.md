@@ -1,6 +1,166 @@
-# 四：重新分批之后，恢复为什么仍应成立——从不变量构造 T/J/D 协议
+# 四：窗口与进度怎样恢复——封存、T/J/D、确认前缀与取消
 
-> **2026-10-25 状态更新：**下文保留原版本的源码分析与历史实验。新增共享捕获路径、真实故障结果及当前限制见文末“共享捕获阶段一”部分和[本轮证据报告](../../experiments/2026-10-25-shared-capture/README.md)。旧单表路径的历史限制不能直接套用到新增路径；新增路径也不代表 LOW/HIGH 初始化已经完成。
+[系列导读与验证范围](README.md) · [1：目标架构](01-why-pekko-for-resident-cdc.md) · [2：批转流源码](02-source-and-recovery-contract.md) · [3：真实实验](03-real-mysql-journal-failure.md) · [4：恢复协议](04-protocol-and-validation.md) · [5：框架比较](05-pekko-vs-flink-cdc.md) · [Flink CDC 深入系列](https://xuyinyin.cn/flink-cdc-series/)
+
+> **当前主文基线：2026-10-25，源码 [`55fad0c`](https://github.com/Xuxiaotuan/pekko-reference/tree/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059)。** 文章依据当前源码和已保存实验重排；改稿不构成数据库重跑。整体验收仍为 `evidence_incomplete`。源码结论、真实实验、条件性推理和设计提案分别标明；历史版本放在文末可展开附录，不能套作当前能力。
+
+故障恢复首先要回答“哪些事实已经持久化”，然后才决定下一步执行什么。当前批转流新增了范围 spec、RAW/FINAL、manifest、baseline receipt 和激活证明，T/J/D 三份进度仍存在，中间还多了一份可独立回放的 L。把所有状态压成“最后读到第几页”，会丢掉恢复所需的因果关系。
+
+本篇按当前实现解释恢复协议，再把尚未落地的启动准入和平台生命周期单独列出。事件身份、完整组与原始回调前缀的历史证明保留在附录；它们是新链路复用的基础，不等于所有新增故障窗口已经完成。
+
+## 1. 六类状态分别记什么
+
+| 事实 | 当前存放位置 | 恢复时回答的问题 |
+|---|---|---|
+| 表执行身份及阶段 J | Actor Journal 的 BootstrapProgress | 属于哪次初始化，已接受哪一页/哪个 L 游标 |
+| 范围 spec | bootstrap windows | 原本负责哪个 `(lower,upper]`，不能因源边界删除而重算 |
+| RAW/FINAL 与 manifest | bootstrap pages/windows | 是否已有不可变输出，可否重新交付同一内容 |
+| B/LOW/HIGH/F/K 与原始组 L | CaptureStore | 哪一代订阅、哪些日志和覆盖引用仍可回放 |
+| 业务效果与目标证据 T | 页 receipt、完整组 ledger、激活 receipt | 某项效果已提交还是需要重试，内容是否冲突 |
+| SDK offset D | Debezium JDBC offset store | Reader 重启会加载什么上下文，包括 snapshot 阶段 |
+
+这些事实可以跨不同事务、不同数据库。J 的 revision、窗口 index、L sequence 和 D 的 file/pos/GTID 也不是同一种序号。不能取最大值“修齐进度”。
+
+## 2. 状态机与进度字段：保存恢复决策，不保存活连接
+
+[BootstrapPhases](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapProtocol.scala#L8) 的正常路径为：
+
+```text
+QUEUED → SCANNING → REPLAYING → ACTIVATING → STREAMING
+                      取消路径：CANCELING → CANCELED
+                      失败路径：PAUSED
+```
+
+[BootstrapProgress](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapProtocol.scala#L44) 保存核心字段：
+
+```scala
+upper, planned, nextLower, index,
+attempt, window, manifest, appliedPage,
+fence, deltaAfter, batchSequence,
+completionRoot, recoveryAttempts, cancelRequested, failure
+```
+
+`upper` 是冻结 U，`nextLower/index` 是已接受的范围完成进度；`attempt` 区分同范围的新读视图；`manifest` 是封存内容摘要；`appliedPage` 是目标页确认；`fence/deltaAfter` 指定有限或持续日志回放。数据库连接、RR 事务和 SDK 提交句柄都不在 Journal 中，JVM 重启不会恢复它们。
+
+因此这里的“独立恢复”是表执行可以依据持久化的范围和材料重建，窗口不必从整表第一行重来。它不意味着每个 Split 都有独立 Actor、独立 owner 或并行调度器；当前 Journal 仍是单表串行状态机。
+
+## 3. 未封存窗口：原范围保留，旧读视图放弃
+
+RAW 页保存过，不代表这次 RR 视图以后还能继续。重启或可重试中断时，[run](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapRunner.scala#L202) 检查 manifest：
+
+```scala
+if (spool.manifest(w).isEmpty) {
+  val next = id + "_" + p.index + "_" + (p.attempt + 1)
+  spool.register(next, spool.spec(w))
+  update(_.copy(
+    attempt = p.attempt + 1,
+    window = Some(next),
+    manifest = None,
+    appliedPage = 0
+  ))
+}
+```
+
+旧 spec 被原样复制，旧 RAW 和失败材料保留，新 attempt 从范围起点重新读取，并产生自己的 LOW/HIGH。旧页不能拼到新读视图前面，也不能因原上界行消失而改变范围。
+
+未封存 RAW 还没有应用到目标，因此废弃它们不需要回滚业务目标。若程序在 fold 过程中崩溃，恢复也先走这个分支，而不是信任未完成的内存 Map。
+
+## 4. 已封存窗口：原内容可重交，目标先于 J
+
+manifest 与 FINAL 页在状态事务中封存。恢复先验证 spec、LOW/HIGH、RAW 摘要和 L 组摘要链，再核对 FINAL 页摘要。任一必需材料缺失/损坏都拒绝继续，不能改成“再查一次源库补上”。
+
+[目标页提交](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapTarget.scala#L44) 的结构是：
+
+```text
+锁定目标认领
+→ 查同 operation 的 receipt
+→ 已有且内容一致：复用证明
+→ 没有：应用页 DML，并在同一事务插入 receipt
+→ COMMIT
+→ Runner 更新 J.appliedPage
+```
+
+目标只认同一 bootstrap、window、page、manifest 和内容。页身份与原始 CDC group ledger 分开，因此 baseline 的存在不会吞掉后续 B→F 的必要日志。
+
+| 故障窗口 | 当前恢复动作 | 必须保留的证据 |
+|---|---|---|
+| 目标页事务未提交 | 重交原 FINAL 页 | 同 manifest、页摘要和目标事务结果 |
+| 页 T 已提交，J 未接受 | receipt 核实相同效果，随后推进 J | 原页 identity、目标 receipt、J 前后状态 |
+| 页 J 已接受 | 先验证相应 receipt，再从下一页推进 | J.appliedPage 与原封存内容 |
+| 目标 COMMIT 结果未知 | 依故障分类核实/重试同一身份；不能换内容 | 实际目标账本及连接释放事实 |
+| J 明确拒绝 | 保留上下文暂停，不当作结果未知消耗重试 | 拒绝原因、已提交 T 和原进度 |
+
+这是各组件的协议，不是跨库原子提交。结果未知必须用原身份协调事实，不能靠把 J 改到 T 的“最大序号”消除分歧。
+
+## 5. 已完成范围与 F：恢复不能移动有限回放边界
+
+每个完成窗口通过 `spool.complete` 接到完成摘要链，随后 J 推进 `nextLower/index/completionRoot`。审计检查 ordinal 连续、parent root、相邻范围边界和页 receipt，防止缺段被当成全量结束。
+
+全部范围完成后写固定 operation 的 F。若 F 已存在，重试识别原绑定，不选择当前更晚位置作为替代。J 进入 REPLAYING，起点仍是原 B，终点仍是这个 F。
+
+[replay](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapRunner.scala#L156) 使用原始完整组进行目标应用，再推进 J.deltaAfter。SDK 回调大小变化只改变本次交付分批；目标去重身份仍来自稳定组，不能改成“这次收到的第几批”。完整物理行组包含主键修改的 d/c 成员，不等于源事务的所有行一起提交。
+
+有限回放没有剩余 GROUP 时，J.deltaAfter 设成 F 帧序号，再进入 ACTIVATING。不能取“最后一个业务组”冒充 F，尤其空表或静默区间中可能根本没有业务组。
+
+## 6. 激活的两个提交点，与持续恢复
+
+[audit](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapRunner.scala#L87) 验证范围链、封存输入/输出及目标账本后，Runner 先写目标激活 receipt，再由 J 接受 STREAMING；两处之间再次检查取消。
+
+若激活 T 已提交、J 还停在 ACTIVATING，新 JVM 重新审计，复用同一激活证明，再尝试推进 J。若 J 已是 STREAMING，当前实现恢复时会再次审计初始化证明，并检查 F 之后直到 J.deltaAfter 的目标组证据与 L 是否保留。
+
+所以激活证明不仅是一个布尔值：它依赖被引用的窗口和 L 仍存在。未来 GC 必须先证明恢复不再需要这些材料；目前没有自动 GC，不能为了让磁盘增长曲线好看而删掉历史。
+
+## 7. L、原始 ACK 与 D：表目标可以落后，捕获连续性不能凭空补
+
+共享捕获把原路径拆为两条：
+
+```text
+完整组 / Schema / marker → L 覆盖证明 → 原始回调前缀 ACK → SDK flush → D
+                         └→ 各表按游标读 L → 目标 T → Actor J
+```
+
+原始 SDK ACK 不等待每张表的目标都完成；它依赖原始回调的记录已获得完整持久覆盖。半组先保留，允许回调返回，让后续 d/c 成员抵达；完整后才能推进连续前缀，不能跳过前面尚未覆盖的回调。
+
+当前 [accept](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala#L181) 的关键顺序为：
+
+```scala
+val ready = pending.head
+assertOwner()
+store.cover(ready.offset, ready.references.toVector)
+ready.handle.markProcessedAndFinished()
+pending.dequeue()
+```
+
+`cover()` 持久化 ACK 帧和引用；句柄返回与 D 落盘依然有间隙。T/J 可以从 L 独立追赶，D 可能落后；但如果 SDK 恢复时从 INITIAL 重选起点，未曾进入 L 的变更不在任何 ACK 引用链里。已有材料完整不证明一个未观察区间也完整。
+
+这正是第三篇真实五字段反例的边界。当前源码尚未实现新的启动连续性门；不能把“D 有历史 ACK 证明”理解为“任何 SDK 重选点都安全”。
+
+## 8. 取消、暂停与释放未知
+
+初始化中收到取消，扫描每页检查标志；观察到取消后不再开始下一页；已经在途的目标提交可能完成，需要核实其结果。对已绑定订阅，当前 `cancelStep` 请求 K；若目标已经激活，会排空相应已捕获区间再完成。未激活目标可能保留部分初始化数据，取消不负责删除业务表。
+
+暂停与取消不是同义词。当前 Journal 中 PAUSED 为终态，没有通用 Resume，也不能绕过它强行 Cancel。怎样在捕获暂停、K 无法到达或释放未知时处置，需要[生命周期提议](../../development/specs/2026-10-25-cdc-platform-lifecycle-contract.md)单独定义；那份设计不是现有 API。
+
+[BootstrapJdbc](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapJdbc.scala#L12) 对 close 失败标记释放未知并保留自己的许可。[BootstrapReplaySink](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapReplaySink.scala#L16) 还检查真实连接 close 是否确认；等待 Future 超时不等于事务已经取消，Runner 不能据此释放写入额度并启动重叠尝试。
+
+这些是当前局部预算的安全行为，不是跨进程持久配额已经恢复。短 Reader 实验的服务端 dump 延迟消失进一步表明：JVM/进程组结束与远端 MySQL 资源结束仍须分别取证。
+
+## 9. 当前实现、条件性推理和下一步设计
+
+**源码结论：**未封存整段重读、已封存内容复用、T 后 J、固定 B/F、完整组重放、激活双提交点及释放未知有明确实现。
+
+**真实结果：**第三篇的 61 项初始化检查覆盖其指定窗口；确定性启动探针仍出现越过变更。不能把前者写成所有恢复成功，也不能因后者就把已通过的窗口内核写成完全未实现。
+
+**设计提案：**未 ready 的新订阅明确拒绝，已有 B/commit unknown 且原 D=INITIAL 时在重选点前暂停；保留原始 D 分类，不用后来的非 INITIAL D 覆盖历史风险。候选 heartbeat 必须先证实真实 callback、覆盖和实际 D 的关系，不能凭配置名宣布 ready。
+
+**未验证：**启动新契约的完整矩阵、DDL、跨 owner 接管、日志回收、大规模索引/活动调度和长期恢复成本。旧持久化类型继续保留，新 BootstrapProgress 不会把旧 payload 自动迁成新的证据。
+
+## 附录：历史源码分析、完整组协议与原始实验
+
+以下保留本篇此前的完整技术分析，原题为“四：重新分批之后，恢复为什么仍应成立——从不变量构造 T/J/D 协议”。其中的“当前”“尚未实现”均指各段明确标注的历史版本；2026-10-25 的阶段一补充也只描述当时共享捕获，不覆盖后来新增的 LOW/HIGH 内核。当前结论以本文主文和系列验证表为准，历史失败及证据链接不删除。
+
+<details markdown="1">
+<summary>展开历史基线分析与实验细节</summary>
 
 第三篇已经把问题缩小到一个明确边界：目标提交了一组事件，恢复后同一组事件换了回调划分，批次 ID 与内容的对应关系失效。修复不能只换一个哈希公式，也不能让 Sink 遇到账本冲突时直接忽略。
 
@@ -173,7 +333,7 @@ J 仍然是工作流意图和生命周期的权威来源，例如是否启用、
 
 2026-10-19 的真实探针让 `[d] [c]` 和 `[u,d] [c,d] [c,d] [c,u]` 经由测试装配器进入**未修改的生产 Bridge**，均完成交付。第二组的实际原始 ACK 为 0→1→2→3，待确认回调最多 2 个；旧 A 句柄确实在 B 回调中调用。覆盖前崩溃后 D 等于基线，恢复仍能配对；全部确认后的第三个 JVM 又读到新变更。[延迟确认原始证据](../../experiments/2026-10-19-deferred-ack/README.md)
 
-这个历史探针的覆盖信号来自手动 CONFIRM，没有 T/J。后续生产路径才由 Engine 的真实 T→J 成功触发 Bridge 代理完成，发布等待解除后由回调线程把组记入 covered；代理本身不调用 SDK。新生产实验验证了 [d][c] 完整组在 T/J 缺口恢复；不能把它倒灌为历史手动探针的端到端能力。
+这个历史探针的覆盖信号来自手动 CONFIRM，没有 T/J。后续生产路径才由 Engine 的真实 T→J 成功触发 Bridge 代理完成，发布等待解除后由回调线程把组记入 covered；代理本身不调用 SDK。新生产实验验证了 `[d][c]` 完整组在 T/J 缺口恢复；不能把它倒灌为历史手动探针的端到端能力。
 
 ### 4.4 确认串行化、cursor 与会话边界
 
@@ -278,9 +438,9 @@ Schema 变化也会改变事件解释。旧 Schema 数据仍在 writer 缓冲时
 
 | 固定窗口或变体 | 必须核实的事实 | 期望的新协议行为 | 当前证据 |
 |---|---|---|---|
-| 主键组跨回调与延迟句柄 | 原始 d/c、返回/进入顺序、覆盖信号和实际 D | 完整组覆盖前不确认，旧句柄按前缀串行调用 | 历史手动探针单独保留；新增真实生产 [d][c] 恢复有 T/J/D、审计与全字段对账 |
+| 主键组跨回调与延迟句柄 | 原始 d/c、返回/进入顺序、覆盖信号和实际 D | 完整组覆盖前不确认，旧句柄按前缀串行调用 | 历史手动探针单独保留；新增真实生产 `[d][c]` 恢复有 T/J/D、审计与全字段对账 |
 | 主键仅 d 确认后的旧恢复点 | 实际 D 与恢复记录 | 新协议不能制造这种不完整覆盖 | 身份探针实测 c 不再交付；不是 Sink 丢行验收 |
-| T 已提交，J 未持久化；拆批、合批、主键组 | T 中完整组覆盖、恢复记录与实际分批 | 旧组不重写，新组继续，最终全表一致 | 新协议 16→1、1→max128（实际 72 组/73 成员）、[d][c] 三组通过；每组 64 行×6 字段零差异 |
+| T 已提交，J 未持久化；拆批、合批、主键组 | T 中完整组覆盖、恢复记录与实际分批 | 旧组不重写，新组继续，最终全表一致 | 新协议 16→1、1→max128（实际 72 组/73 成员）、`[d][c]` 三组通过；每组 64 行×6 字段零差异 |
 | J 已持久化，D 未更新 | Journal 实际有凭据，D 仍旧 | 旧日志重读不重复产生效果 | 组身份源码可消化重复；该真实窗口仍未固定实测 |
 | COMMIT 成功、客户端回复丢失 | 独立查询目标事务事实 | 查询后协调，不凭异常猜回滚 | 未测 |
 | ACK 返回但 flush 失败 | ACK 日志与实际 D 分开读取 | 容忍更旧重放，告警可辨识 | 上游源码分支；未注入 |
@@ -331,3 +491,5 @@ Schema 变化也会改变事件解释。旧 Schema 数据仍在 writer 缓冲时
 还有两项刻意没有证明。第一，当前证明链在启动时可能扫描很多历史 ACK，安全性不等于恢复时间有界；第二，L 没有 GC，不能推出有限磁盘能无限期容纳慢表。容量耗尽时暂停是这版的明确行为，后续清理协议必须共同考虑表级 J、旧恢复点与保留期。
 
 **实验结果：**真实矩阵检查 B 提交与回复、回调前缀、重新分批、T/J 缺口和缺失证据拒绝；独立脚本复算保存的帧摘要、引用、D、Journal cursor 与全字段对账。脚本成功属于保存材料的再验证，不是又一次数据库运行。详细结果见[本轮报告](../../experiments/2026-10-25-shared-capture/README.md)。共享捕获没有扩展到 LOW/HIGH 回填、在线初始化、DDL 演进或自动接管。
+
+</details>
