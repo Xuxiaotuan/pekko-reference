@@ -58,7 +58,7 @@ class WorkflowExecutionEngine(
     tableScheduling.fold[Future[Done]](Future.successful(Done))(_.release(executionId, disposition, released, grantId))
 
   def supportsCompleteGroupRecovery(workflow: Workflow): Boolean = planCompiler.compile(workflow).exists {
-    case plan: MySqlCdcPlan => plan.pipeline.source.config.fields.contains("groupProtocol")
+    case plan: MySqlCdcPlan => plan.pipeline.source.nodeType == "mysql.cdc.log" || plan.pipeline.source.config.fields.contains("groupProtocol")
     case _ => false
   }
 

@@ -1,5 +1,7 @@
 # 五：70 万表的 CDC 平台，Pekko 与 Flink CDC 各自解决什么
 
+> **2026-10-25 状态更新：**下文保留原版本的源码分析与历史实验。新增共享捕获路径、真实故障结果及当前限制见文末“共享捕获阶段一”部分和[本轮证据报告](../../experiments/2026-10-25-shared-capture/README.md)。旧单表路径的历史限制不能直接套用到新增路径；新增路径也不代表 LOW/HIGH 初始化已经完成。
+
 研究 Flink CDC 的初衷，是把可靠的数据同步能力带进自己的 Pekko 项目。经过前四篇，判断已经比“Actor 轻、Flink 重”具体得多：项目有适合大量任务生命周期管理的基础；旧协议的重分批失败已经复现，新增完整组实现又通过了三个指定恢复样本。共享阻塞池的组件饥饿证据仍然存在，不能因恢复修复而删掉。
 
 我的选择倾向是：**保留 Pekko 作为海量任务的控制底座；是否由它同时承载自建 CDC 数据内核，要按复制范围、恢复要求和团队维护成本单独决定。** 70 多万表使细粒度控制值得投入，但不会自动证明当前一表一 Engine 的执行方式更省资源。
@@ -218,3 +220,22 @@ Flink 的恢复同样要承担状态加载、Source 重读和 Sink 协调成本�
 [flink-reader]: https://github.com/apache/flink-cdc/blob/bf160337ff558d70302e7884f68937611873117e/flink-cdc-connect/flink-cdc-source-connectors/flink-connector-mysql-cdc/src/main/java/org/apache/flink/cdc/connectors/mysql/source/reader/MySqlSourceReader.java#L124
 [flink-hybrid]: https://github.com/apache/flink-cdc/blob/bf160337ff558d70302e7884f68937611873117e/flink-cdc-connect/flink-cdc-source-connectors/flink-connector-mysql-cdc/src/main/java/org/apache/flink/cdc/connectors/mysql/source/assigners/MySqlHybridSplitAssigner.java#L207
 [flink-binlog]: https://github.com/apache/flink-cdc/blob/bf160337ff558d70302e7884f68937611873117e/flink-cdc-connect/flink-cdc-source-connectors/flink-connector-mysql-cdc/src/main/java/org/apache/flink/cdc/connectors/mysql/debezium/reader/BinlogSplitReader.java#L289
+
+## 共享捕获阶段一：缩小了哪项差距，还没有缩小哪项
+
+旧版对照中的“每表独立 Engine”现在需要分路径描述。旧 `mysql.cdc` 仍保持原语义；新增共享模式用一个 Reader 捕获业务实例，L 将源端确认与各表 T/J 分开。真实五表增到七表、跨回调主键、恢复重分批和慢表隔离样本支持这一变化。它已超出纯设计草图，但还没有形成完整的动态全量转流产品。
+
+| 业务要求 | 当前共享模式的事实 | 距离目标的差距 |
+|---|---|---|
+| 不停机增加捕获表 | Schema 准备、持久订阅和源 marker B；小样本真实验证 | 仅捕获就绪，B 前已有数据不会自动进入目标 |
+| 不停机取消表 | K 固定捕获终点；旧区间保留可重放 | 目标排空和取消会话仍需既有生命周期操作；重新加入不补空档 |
+| 一表慢不立即阻塞另一表 | L 接住完整组，表级 T/J 独立；固定门闩实测 | L 总容量共享，耗尽会暂停整个捕获域 |
+| 单源共享读取 | 一个真实 Engine，新增表不重启 Reader | 仍读取数据库范围的 Schema/变更，70 万表元数据成本未验 |
+| 可恢复 | 组身份、L 引用链、实际 D、T/J 缺口实测 | 无共享 Reader 自动接管、L GC 与任意旧恢复点保证 |
+| 全量转流 | 当前要求可信目标基线 | LOW/HIGH、窗口回填及在线初始化仍待实现 |
+
+Flink CDC 的快照 split、LOW/HIGH 对齐和完成交接，解决的正是最后一行的连续性问题。Pekko 的 Actor 身份、消息调度和生命周期控制，适合表达按表启停与暂停上下文；它们不会替代快照与 binlog 拼接算法。把共享捕获完成说成“已经和 Flink CDC 差不多”，仍会漏掉用户最关心的“新增表先同步已有全部数据”。
+
+成本也出现了新的交换。减少每表 Engine 的同时，增加 L 持久写入、引用校验、表级轮询和独立状态实例。后者不是理论偏好：同实例 Offset 写触发反馈循环的失败已经观察到。当前版本固定了更窄的部署 profile，并保留失败证据。没有同负载吞吐、P99、CPU、连接数及内存斜率对照，不能宣布 Pekko 在 70 万表场景已经胜出。
+
+这一阶段的价值是把下一步变成可检验的问题：在可靠捕获层之上增加 LOW/HIGH 初始化时，如何安排分页快照、窗口变更保留与回填，如何在初始化期间取消并恢复订阅，以及怎样让慢表的 L 积压和源 binlog 保留都落在预算内。当前[真实结果与验证范围](../../experiments/2026-10-25-shared-capture/README.md)只支持其已列明的部分。

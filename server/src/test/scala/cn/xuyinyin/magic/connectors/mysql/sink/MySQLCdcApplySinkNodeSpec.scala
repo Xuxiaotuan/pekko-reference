@@ -84,6 +84,13 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
   }
 
   "MySQLCdcApplySinkNode" should {
+    "apply and deduplicate a capture-log cursor without changing legacy cursor meaning" in withFixture() { f =>
+      val original=f.groupBatch(Vector(f.event(CdcOperation.Create,1,afterStatus=Some("captured"))),0)
+      val batch=original.copy(cursor=original.cursor.copy(kind="mysql.capture.groups.v1",value="{\"version\":1,\"sequence\":42}"))
+      Await.result(f.node.commitBatch(f.sinkNode,"w","e",batch,batch.rows,_=>()),5.seconds) shouldBe a[Committed]
+      Await.result(f.node.commitBatch(f.sinkNode,"w","e",batch,batch.rows,_=>()),5.seconds) shouldBe a[AlreadyCommitted]
+      f.selectStatus(1) shouldBe Some("captured")
+    }
     "classify a lost commit response while preserving the actual committed group" in withFixture() { f =>
       val batch=f.groupBatch(Vector(f.event(CdcOperation.Create,1,afterStatus=Some("committed"))),0)
       f.loseCommitReply=true

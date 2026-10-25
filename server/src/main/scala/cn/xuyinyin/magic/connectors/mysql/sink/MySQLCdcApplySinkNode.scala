@@ -556,12 +556,13 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
   }
 
   private def parseBatchIdentity(batch: SourceBatch): StreamIdentity = {
-    if (!batch.partitionId.startsWith("mysql-cdc:") || !Set("mysql.binlog.v1", MySQLCdcGroupProtocol.CursorKind).contains(batch.cursor.kind)) {
+    val groupedKinds = Set(MySQLCdcGroupProtocol.CursorKind, "mysql.capture.groups.v1")
+    if (!batch.partitionId.startsWith("mysql-cdc:") || !(groupedKinds + "mysql.binlog.v1").contains(batch.cursor.kind)) {
       throw new IllegalStateException("CDC batch partition or cursor kind is unsupported")
     }
     if (batch.cursor.upperBound.isEmpty) throw new IllegalStateException("CDC batch stream identity is missing")
     val identity = parseIdentity(batch.cursor.upperBound)
-    if ((batch.cursor.kind == MySQLCdcGroupProtocol.CursorKind) != identity.groupProtocol.nonEmpty) {
+    if (groupedKinds.contains(batch.cursor.kind) != identity.groupProtocol.nonEmpty) {
       throw new IllegalStateException("CDC cursor protocol does not match stream identity")
     }
     if (batch.partitionId != s"mysql-cdc:${identity.connectorId}") {

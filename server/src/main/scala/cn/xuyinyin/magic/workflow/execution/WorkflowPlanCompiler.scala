@@ -15,7 +15,7 @@ final class WorkflowPlanCompiler(registry: NodeRegistry) {
       val sink = registry.findSink(pipeline.sink.nodeType).get
       (source, sink) match {
         case (checkpointSource: CheckpointedNodeSource, checkpointSink: CheckpointedNodeSink) =>
-          if (pipeline.source.nodeType == "mysql.cdc") Right(MySqlCdcPlan(task, pipeline, checkpointSource, checkpointSink))
+          if (Set("mysql.cdc", "mysql.cdc.log").contains(pipeline.source.nodeType)) Right(MySqlCdcPlan(task, pipeline, checkpointSource, checkpointSink))
           else Right(CheckpointedLinearPlan(task, pipeline, checkpointSource, checkpointSink))
         case (_: CheckpointedNodeSource, _) => Left(CheckpointSinkRequired(pipeline))
         // Preserve legacy row execution even if only its Sink supports checkpoints.

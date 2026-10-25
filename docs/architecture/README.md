@@ -22,9 +22,13 @@
 
 ## 所有权与进度
 
-API/Singleton 调度器 → Sharding → Event Sourced entity → Engine → Source/Sink。entity 运行在 worker 角色，Scheduler Singleton 位于 coordinator。执行计划绑定实例级注册表，CDC 仍直连目标 Sink。
+API/Singleton 调度器 → Sharding → Event Sourced entity → Engine → Source/Sink。entity 运行在 worker 角色，Scheduler Singleton 位于 coordinator。执行计划绑定实例级注册表；旧 `mysql.cdc` 路径直连目标 Sink，新增共享捕获通过持久化 L 解耦源确认和表级应用。
 
 T 是目标事务效果与完整组账本，J 是 entity 的交付 Checkpoint，D 是 Source 实际持久化 offset。顺序为 T 提交 → J 确认 → 原始回调前缀 ACK；恢复从 D 读取，J 延续交付序号，T 仲裁组重放。当前 C2 同一 execution 最多三次持久化恢复；明确拒绝、冲突、释放不能确认或额度耗尽保留上下文暂停。
+
+新增共享路径使用 `L → 原始回调前缀 ACK → D`，各表消费者独立执行 `T → J`。B/K 和封存 Schema 描述捕获区间；J 的 `mysql.capture.groups.v1` cursor 指向保留的 L GROUP。共享服务显式管理并注入 NodeRegistry，未增加全局自动启动/接管。源和 L/Offset/History 状态库必须为不同物理 MySQL 实例；L 的实际 UUID/数据库与 owner 状态连接一致。
+
+捕获就绪不等于初始化完成；当前表级消费要求可信目标基线，没有 LOW/HIGH 在线初始化。实现与真实边界见[共享捕获阶段一报告](../experiments/2026-10-25-shared-capture/README.md)。
 
 ## 优雅停止
 
@@ -54,6 +58,6 @@ Docker EXPOSE 与默认 HTTP 8080 对齐。环境变量、角色、JDBC schema�
 
 纯函数/Actor/路由测试证明其局部契约；H2 两节点接管不替代真实 MySQL。真实 MySQL 实验保留 SourceRecord、ACK、T/J/D、Journal、SQL dump、审计和六字段对账。安全暂停保留实际差异，不计为同步收敛。
 
-优雅退出改造记录见[架构与退出实验](../experiments/2026-10-21-architecture-ha/README.md)。历史目录、源码快照和旧 C2 失败全部原样保留。DDL、共享 Reader、多 owner fencing、新快照算法、生产服务端掉电、长分区、日志清理/重置和容量测试仍在证据范围之外。
+优雅退出改造记录见[架构与退出实验](../experiments/2026-10-21-architecture-ha/README.md)。历史目录、源码快照和旧 C2 失败全部原样保留。DDL 演进、共享 Reader 自动接管、多 owner fencing、新 LOW/HIGH 快照算法、生产服务端掉电、长分区、日志清理/重置和容量测试仍在证据范围之外。新增共享 Reader 仅有上述阶段一范围的验证，不继承静态快照接管结论。
 
 当前目录迁移及恢复回归见[目录整理记录](../experiments/2026-10-21-directory-layout/README.md)，该记录对应新实现包；历史材料保留原始源码路径。

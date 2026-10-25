@@ -1,5 +1,7 @@
 # 二：一次提交，三份进度——沿源码推导 Pekko CDC 的恢复契约
 
+> **2026-10-25 状态更新：**下文保留原版本的源码分析与历史实验。新增共享捕获路径、真实故障结果及当前限制见文末“共享捕获阶段一”部分和[本轮证据报告](../../experiments/2026-10-25-shared-capture/README.md)。旧单表路径的历史限制不能直接套用到新增路径；新增路径也不代表 LOW/HIGH 初始化已经完成。
+
 一个批次已经写进 MySQL，Actor 还来不及记录它，进程就退出了。重启之后，目标账本说“已经提交”，Actor Journal 说“尚未完成”，Debezium 又从旧 offset 交出一批事件。恢复程序究竟应该相信谁？
 
 答案不能是“找最大的进度”。三份状态描述的对象不同：目标保存已产生的业务效果，Journal 保存工作流接受的确认，Debezium offset 保存读取器的恢复上下文。**可靠恢复需要重建它们之间的对应关系，而不是把三个数改成一样。** 本篇沿现有源码，推导这份对应关系在何处成立、在何处依赖未被保证的假设。
@@ -267,3 +269,32 @@ Stream 在 T/J 成功后确认本次交付，只调用 Bridge 的无 SDK 操作�
 [group-model]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/server/src/main/scala/cn/xuyinyin/magic/cdc/MySQLCdcGroup.scala#L36
 
 [group-sink]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNode.scala#L83
+
+## 共享捕获阶段一：在 D 与表级 T/J 之间增加 L
+
+原单表路径的顺序是“目标 T → Actor J → 原始 ACK → D”。共享 Reader 中，一张慢表不能持有整个源的确认句柄。新增路径将源的持久覆盖条件改为 L，表级应用仍保留 T/J：
+
+```text
+原始记录 → 完整组装配 → L 提交 → 原始回调连续前缀 ACK → SDK flush → 实际 D
+                            └→ 表级读取 → 目标 DML 与组账本同事务 T → Actor J
+```
+
+这是**新增模式的源码契约**，不是对旧 T/J/D 数据结构重新解释。D 仍是 SDK 实际写入的恢复位置；J 的新 cursor `mysql.capture.groups.v1` 则引用某个订阅的 L 序号。二者不能互换大小比较。L 序号只在本捕获域有意义，源 occurrence 仍由 binlog 文件、位置和行号定位。
+
+### B 的含义：从何处开始保留，而不是从何处完成初始化
+
+订阅先等待 Reader 的结构化 Schema 描述，再用 JDBC 校验列与主键，持久化 `B_PENDING`。源控制表中的唯一 operationId 是重试身份；marker 必须独占一个源事务。Reader 读到 marker，并确认对应事务 END 的事件数为一，才在同一个状态事务里落下 BARRIER、B 位置和 `CAPTURE_READY`。
+
+有效捕获区间为 `(B,K]`。新增表在 B 之前的已有数据没有因此出现在目标；`initialized` 明确为 false。当前 `mysql.cdc.log` 要求操作方显式提供可信目标基线，实验提前复制基线只是夹具，不能作为在线初始化能力。
+
+源 marker 的 COMMIT 回复丢失时，先读取原 operationId 的结果；不以一次 RPC 超时认定源事务回滚。L 的提交回复不确定时则停止当前捕获会话，重启后依靠相同 marker/组身份核实已有事实。重放按照持久化历史区间路由，不能用“今天选中了哪些表”过滤昨天的记录。
+
+### 为什么 L 不能只有一个“最后已写位置”
+
+L 中的 ACK 证据引用本回调依赖的 PROFILE、SCHEMA、BARRIER 和 GROUP 帧，并链接前一个 ACK 的序号与摘要。启动时实际 D 必须命中这条覆盖链；缺历史、缺 D、缺被引用的组或谱系变化都会拒绝启动。订阅行中的 B/K 也与不可变 BARRIER 核对。摘要提供损坏检测，不是可抵抗拥有数据库写权限者的密码学防篡改方案。
+
+主键修改的 DELETE/CREATE 可以跨原始回调。回调 A 返回后保留其句柄，让回调 B 抵达；两个成员装配并提交 L 后，才按原始回调前缀调用 SDK。表级 Actor 不再等待、也不能提前确认这些句柄。两次原始 ACK 之间崩溃时，L 已包含完整组；这是允许 D 前进的前提，而不是假设 SDK 会重交付另一个成员。
+
+**实验结果及边界：**本轮使用真实 Engine、目标 MySQL 与 JDBC Actor Journal 验证上述指定窗口，原始 ACK 与实际 D 分开取证。证据和逐项结论见[报告](../../experiments/2026-10-25-shared-capture/README.md)。当前没有日志截断、历史恢复点清理、自动重建丢失 D 或共享域自动接管；缺证据时安全暂停，不从 latest 猜测恢复。
+
+还要保留一个语义边界：完整组保证 PK 的 d/c 不被拆成独立恢复单位，不代表保留整个源事务。分表消费有各自的 T/J，跨表可见时刻可以不同。同事务多行实验的逐字段终值一致，不能升级为源事务在目标端原子可见。

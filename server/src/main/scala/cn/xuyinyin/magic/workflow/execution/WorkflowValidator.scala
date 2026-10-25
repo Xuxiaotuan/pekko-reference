@@ -81,7 +81,7 @@ object WorkflowValidator {
           if (pipeline.transforms.nonEmpty || sink.nodeType != "mysql.write")
             cdcErrors += WorkflowValidationError("snapshot_split_pipeline", "Split snapshots currently require a direct mysql.write sink")
         }
-        if (source.nodeType == "mysql.cdc") {
+        if (Set("mysql.cdc", "mysql.cdc.log").contains(source.nodeType)) {
           if (source.config.fields.contains("password")) {
             cdcErrors += WorkflowValidationError(
               "mysql_cdc_inline_password_not_supported",
@@ -113,7 +113,7 @@ object WorkflowValidator {
             "MySQL CDC apply sink definitions require passwordEnv and must not contain password"
           )
         }
-        if (sink.nodeType == "mysql.cdc.apply" && source.nodeType != "mysql.cdc") {
+        if (sink.nodeType == "mysql.cdc.apply" && !Set("mysql.cdc", "mysql.cdc.log").contains(source.nodeType)) {
           cdcErrors += WorkflowValidationError(
             "mysql_cdc_source_required",
             "MySQL CDC apply sinks require a mysql.cdc source"

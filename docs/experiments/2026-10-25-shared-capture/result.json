@@ -1,0 +1,102 @@
+{
+  "status": "passed_scoped",
+  "runtimeHead": "cc1c43dd7176057976af1c11375443e24206ac16",
+  "workingTreeSources": true,
+  "sourceManifestSha256": "310fabe7d526c290659a7e96fb82d3aa996d8b7cebe4bc8756211c279925264c",
+  "sourceFiles": 316,
+  "runners": {
+    "unit": "unit-all-1792924031711337000",
+    "matrix": "matrix-all-1792924046957449000",
+    "regression": "regression-all-1792924249466298000"
+  },
+  "results": {
+    "unit": {
+      "exitCode": 0,
+      "seconds": 8.369518995285034,
+      "sourceManifestSha256": "310fabe7d526c290659a7e96fb82d3aa996d8b7cebe4bc8756211c279925264c",
+      "caseDirectories": []
+    },
+    "matrix": {
+      "exitCode": 0,
+      "seconds": 198.58284425735474,
+      "sourceManifestSha256": "310fabe7d526c290659a7e96fb82d3aa996d8b7cebe4bc8756211c279925264c",
+      "caseDirectories": [
+        "target/shared-capture-matrix/R01-b950ec8e1bb7",
+        "target/shared-capture-matrix/R02-56393946d6c6",
+        "target/shared-capture-matrix/R03-63a0b113c82b",
+        "target/shared-capture-matrix/R03-late-commit-3b1d3cfa08a9",
+        "target/shared-capture-matrix/R03-late-rollback-455c444bc98f",
+        "target/shared-capture-matrix/R04-2556709e27fc",
+        "target/shared-capture-matrix/R05-5041b0dbce10",
+        "target/shared-capture-matrix/R06-cd0dd59cb062",
+        "target/shared-capture-matrix/R07-ea7edaf44d89",
+        "target/shared-capture-matrix/R08-332e02da89df",
+        "target/shared-capture-matrix/R09-a45c3dcd13cc",
+        "target/shared-capture-matrix/R10-86f2a8973dda",
+        "target/shared-capture-matrix/R10-mid-249d97265615",
+        "target/shared-capture-matrix/R11-e3ae015d76be",
+        "target/shared-capture-matrix/R11-rollback-ca28b5a31688",
+        "target/shared-capture-matrix/R12-4488a8c5d6c0",
+        "target/shared-capture-matrix/R12-ddl-2ce74897aaa1",
+        "target/shared-capture-matrix/R12-drop-3e2fcc82421e",
+        "target/shared-capture-matrix/R12-truncate-b45cb459e2be",
+        "target/shared-capture-matrix/R13-208f51f3e528",
+        "target/shared-capture-matrix/R13-reject-4c67b659e8dd",
+        "target/shared-capture-matrix/R14-05806aa18eca",
+        "target/shared-capture-matrix/R14-capacity-83fb9f23379e",
+        "target/shared-capture-matrix/R15-d526080ba52c",
+        "target/shared-capture-matrix/R16-294d16d3cb3e",
+        "target/shared-capture-matrix/R16-binlog-10df42a8efe2",
+        "target/shared-capture-matrix/R16-history-8095c481b017",
+        "target/shared-capture-matrix/R16-lineage-622e35ec1993",
+        "target/shared-capture-matrix/R16-log-5ec07b419239",
+        "target/shared-capture-matrix/R16-registry-5a786ed30fa8",
+        "target/shared-capture-matrix/R16-source-98fa4c2c3531"
+      ]
+    },
+    "regression": {
+      "exitCode": 0,
+      "seconds": 516.8288147449493,
+      "sourceManifestSha256": "310fabe7d526c290659a7e96fb82d3aa996d8b7cebe4bc8756211c279925264c",
+      "caseDirectories": [
+        "target/cdc-automatic-recovery/AUTO-A-da270c419e86",
+        "target/cdc-automatic-recovery/AUTO-B-99dabbdb008f",
+        "target/cdc-automatic-recovery/AUTO-D-595f757fce19",
+        "target/cdc-automatic-recovery/AUTO-E-b5c0b5e207cc",
+        "target/cdc-automatic-recovery/AUTO-F-84410ebd9775",
+        "target/cdc-automatic-recovery/LATE_COMMIT-89053fd46773",
+        "target/cdc-automatic-recovery/LATE_ROLLBACK-6175c59c0254",
+        "target/cdc-automatic-recovery/R1-8f043bb03562",
+        "target/cdc-automatic-recovery/R2-b9f19501f038",
+        "target/cdc-automatic-recovery/R3-b42095ffd648",
+        "target/cdc-automatic-recovery/R4-0736d5ad504b",
+        "target/cdc-automatic-recovery/R5-33b33bfaa46c",
+        "target/cdc-automatic-recovery/R6-5743928cadb0",
+        "target/cdc-automatic-recovery/R7-D-6bc285561d18",
+        "target/cdc-automatic-recovery/R7-PK-3223465001ba",
+        "target/cdc-automatic-recovery/REJECT-J-8404ff2404e9",
+        "target/cdc-automatic-recovery/REJECT-J-RETRY-6b5609b3370a",
+        "target/cdc-recovery-windows/C0-91d6be35ab16",
+        "target/cdc-recovery-windows/C1-ee1ca435a2a0",
+        "target/cdc-recovery-windows/J1-77f54c2cb4cf",
+        "target/cdc-recovery-windows/J2-64c425625f97",
+        "target/cdc-recovery-windows/K1-dffc869c9bf3",
+        "target/cdc-recovery-windows/K2-d0c7843ec2a9",
+        "target/cdc-recovery-windows/N0-e8efc9471bb4",
+        "target/cdc-session-release/cancel-T-1f3acf95ba11",
+        "target/cdc-session-release/none-409dcbadd4f7",
+        "target/cdc-session-release/stop-T-3aaea73f89f8"
+      ]
+    }
+  },
+  "testCounts": {
+    "related": 52,
+    "sharedMatrix": 31,
+    "legacyRealRegressions": 27,
+    "backendExplicitActorSpecExclusion": 589
+  },
+  "originalFullBackendGate": "evidence_incomplete: default 1GiB OOM; 3GiB 590 tests passed but old ActorSpec million-probe cleanup aborted",
+  "packageStage": "passed",
+  "lowHighInitialization": false,
+  "automaticSharedReaderTakeover": false
+}

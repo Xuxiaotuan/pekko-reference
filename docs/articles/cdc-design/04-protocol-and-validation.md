@@ -1,5 +1,7 @@
 # 四：重新分批之后，恢复为什么仍应成立——从不变量构造 T/J/D 协议
 
+> **2026-10-25 状态更新：**下文保留原版本的源码分析与历史实验。新增共享捕获路径、真实故障结果及当前限制见文末“共享捕获阶段一”部分和[本轮证据报告](../../experiments/2026-10-25-shared-capture/README.md)。旧单表路径的历史限制不能直接套用到新增路径；新增路径也不代表 LOW/HIGH 初始化已经完成。
+
 第三篇已经把问题缩小到一个明确边界：目标提交了一组事件，恢复后同一组事件换了回调划分，批次 ID 与内容的对应关系失效。修复不能只换一个哈希公式，也不能让 Sink 遇到账本冲突时直接忽略。
 
 我们真正需要的是一个性质：**同一段源历史，无论怎样分成传输批次、在允许的提交窗口崩溃多少次，都应得到规定的目标效果；重复读取不应重复制造业务效果。** 本篇从这个性质推导身份、目标事务、Actor 确认和源进度的契约。
@@ -309,3 +311,23 @@ Schema 变化也会改变事件解释。旧 Schema 数据仍在 writer 缓冲时
 [group-model]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/server/src/main/scala/cn/xuyinyin/magic/cdc/MySQLCdcGroup.scala#L36
 [group-assembler]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcGroupAssembler.scala#L34
 [group-sink]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNode.scala#L83
+
+## 共享捕获阶段一：把证明义务移到可持久核对的位置
+
+增加 L 后，旧的完整组身份和 T/J 提交次序继续存在，但源 ACK 的充分条件变化了。不能把原公式中的 J 简单替换为 L，然后省略订阅、Schema 与保留期。
+
+**模型前提：**一个固定源谱系、一个受管 Reader；源 ROW/FULL；状态表和目标组账本都使用事务存储；L 不被提前删除；选中表的活动 Schema 不变化；目标基线已由其他可信流程建立。当前实现要求独立状态服务器，且不允许通过修改 profile 重新解释已持久化记录。进程锁只阻止重复启动，不构成跨网络分区的自动 fencing 或接管证明。
+
+在这些前提下，新增路径检查以下不变量：
+
+1. **边界绑定。**每个生效订阅的 B/K、generation、Schema 与不可变 BARRIER 一致。`CAPTURE_READY` 只能表示区间捕获生效，不能推出目标包含 B 之前的数据。
+2. **完整覆盖。**原始回调只有全部成员已有持久分类或完整组覆盖，才进入 ACK 前缀。PK 两成员不能靠各自 eventId 独立确认。
+3. **D 可解释。**实际 D 对应一个 ACK 证据；其父链和引用帧全部存在且摘要匹配。L 的“最新位置”或本地观察到 ACK 返回，都不能代替实际 D。
+4. **表级可重放。**J 的 L 序号必须指向该订阅保留的 GROUP。目标以稳定组身份去重；重新分页只改变交付批次，不改变组内容。
+5. **失败不回退到猜测。**容量、Schema、源身份或恢复证据不满足时停止；不能借新 B、latest offset 或清空账本绕过保护。
+
+反例也随之具体化。如果 L 已提交但路由行的 B 被改大，仅校验 GROUP 内容仍可能跳过事件，因此读取订阅时核对 BARRIER。如果 D 已持久化却删除了其引用的 GROUP，仅保留一条“我覆盖过”的回执无法恢复，因此 ACK 要链接实际帧。如果把重新订阅当成补全取消期间的数据，新 B 之后捕获完全正确，目标仍可能永久缺少空档变化。
+
+还有两项刻意没有证明。第一，当前证明链在启动时可能扫描很多历史 ACK，安全性不等于恢复时间有界；第二，L 没有 GC，不能推出有限磁盘能无限期容纳慢表。容量耗尽时暂停是这版的明确行为，后续清理协议必须共同考虑表级 J、旧恢复点与保留期。
+
+**实验结果：**真实矩阵检查 B 提交与回复、回调前缀、重新分批、T/J 缺口和缺失证据拒绝；独立脚本复算保存的帧摘要、引用、D、Journal cursor 与全字段对账。脚本成功属于保存材料的再验证，不是又一次数据库运行。详细结果见[本轮报告](../../experiments/2026-10-25-shared-capture/README.md)。共享捕获没有扩展到 LOW/HIGH 回填、在线初始化、DDL 演进或自动接管。
