@@ -1,0 +1,137 @@
+{
+  "at_ns": 1793050079895197000,
+  "slots": {
+    "a": {
+      "identity": {
+        "checked_ns": 1793050080207959000,
+        "instances": {
+          "source": {
+            "expected": {
+              "uuid": "889e2d3f-765b-4456-a55e-a441a5ffc580",
+              "port": 14365,
+              "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/source/data"
+            },
+            "actual": {
+              "uuid": "889e2d3f-765b-4456-a55e-a441a5ffc580",
+              "port": 14365,
+              "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/source/data"
+            },
+            "matches": true
+          },
+          "state": {
+            "expected": {
+              "uuid": "97907728-948c-47ee-9b0e-fa8fbc12b6e3",
+              "port": 14366,
+              "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/state/data"
+            },
+            "actual": {
+              "uuid": "97907728-948c-47ee-9b0e-fa8fbc12b6e3",
+              "port": 14366,
+              "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/a/state/data"
+            },
+            "matches": true
+          }
+        },
+        "admitted": true,
+        "finished_ns": 1793050080241188000
+      },
+      "resources": {
+        "at_ns": 1793050079895647000,
+        "idle": true,
+        "instances": {
+          "source": {
+            "sessions": "",
+            "transactions": ""
+          },
+          "state": {
+            "sessions": "",
+            "transactions": ""
+          }
+        }
+      },
+      "userLevelLocks": {
+        "source": "",
+        "state": ""
+      },
+      "labLeaseReleased": true
+    },
+    "b": {
+      "identity": {
+        "checked_ns": 1793050080498767000,
+        "instances": {
+          "source": {
+            "expected": {
+              "uuid": "561ae360-2c2c-4de9-bf01-3b913e7226a6",
+              "port": 14375,
+              "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/b/source/data"
+            },
+            "actual": {
+              "uuid": "561ae360-2c2c-4de9-bf01-3b913e7226a6",
+              "port": 14375,
+              "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/b/source/data"
+            },
+            "matches": true
+          },
+          "state": {
+            "expected": {
+              "uuid": "542fff04-a65b-4f5f-a911-90ff25211e3d",
+              "port": 14376,
+              "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/b/state/data"
+            },
+            "actual": {
+              "uuid": "542fff04-a65b-4f5f-a911-90ff25211e3d",
+              "port": 14376,
+              "datadir": "/private/tmp/cdc-lab-pool-20261025-attempt2/b/state/data"
+            },
+            "matches": true
+          }
+        },
+        "admitted": true,
+        "finished_ns": 1793050080530662000
+      },
+      "resources": {
+        "at_ns": 1793050080242804000,
+        "idle": true,
+        "instances": {
+          "source": {
+            "sessions": "",
+            "transactions": ""
+          },
+          "state": {
+            "sessions": "",
+            "transactions": ""
+          }
+        }
+      },
+      "userLevelLocks": {
+        "source": "",
+        "state": ""
+      },
+      "labLeaseReleased": true
+    }
+  },
+  "privateBinlogs": [
+    {
+      "directory": "/private/tmp/cdc-lab-pool-20261025-attempt2/b/private-binlog-archives/5a3193215dcf47ff8647e3059f9af91a",
+      "mode": "0700",
+      "manifest": {
+        "files": {
+          "binlog.000002": "04cb24d2aaa196894eca3cd7d078ffac9e3209ecd5de0f6e1b836efa11fd98dd",
+          "binlog.000003": "16e6003689e5c069f8b4f01a49158ed63cbd1f824cbe562433bdb31086a97535"
+        },
+        "role": "source",
+        "slot": "b",
+        "uuid": "561ae360-2c2c-4de9-bf01-3b913e7226a6"
+      },
+      "publicPayload": false
+    }
+  ],
+  "applicationUnknownsPreserved": [
+    {
+      "schema": "pekko_test_cdc_window_7ee78b15b31f",
+      "owners": "default\t862d29a2-51c9-4bbd-94b9-6b5f756e55f7\tACTIVE\n",
+      "grants": "0b9bfb96-33f2-4747-b349-9969d1d33b2c\t18ed24caf816441e748cbec74007ae12e9f466f5514be605565fbae6a451088e\tACTIVE\n1e668585-7f60-4dee-b968-190d034f584a\t18ed24caf816441e748cbec74007ae12e9f466f5514be605565fbae6a451088e\tRELEASED\nfa4b5b38-0d6d-46c8-b478-46b9bdf38963\t18ed24caf816441e748cbec74007ae12e9f466f5514be605565fbae6a451088e\tRELEASED\n"
+    }
+  ],
+  "ownedLiveWorkers": []
+}
