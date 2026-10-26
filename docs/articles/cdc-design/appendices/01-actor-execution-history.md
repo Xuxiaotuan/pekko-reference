@@ -1,5 +1,7 @@
 # 历史档案：Actor 执行机制与资源实验
 
+> 历史链接校正：源码 URL 使用对应固定 commit 的真实目录；仅修正路径，版本、原结论与实验数据不变。
+
 [当前系列导读](../README.md) · [当前正文](../01-why-pekko-for-resident-cdc.md) · [技术附录索引](README.md)
 
 > **历史版本档案，整理于 2026-10-26。** 以下保留此前分析的技术内容和证据链接。“当前”“尚未实现”等词只适用于各段标明的历史版本。当前实现与实验结论以正文和最新验证表为准；原始实验文件未改动。
@@ -404,16 +406,16 @@ Bridge 的 `publish` 会等待批次确认，Engine 中的 `mapAsync(1)` 又限�
 [sharding-config]: https://github.com/apache/pekko/blob/38facf752b4e7d5fb43ed7c671eb91888b41bd10/cluster-sharding/src/main/resources/reference.conf#L339
 [persistence-running]: https://github.com/apache/pekko/blob/38facf752b4e7d5fb43ed7c671eb91888b41bd10/persistence-typed/src/main/scala/org/apache/pekko/persistence/typed/internal/Running.scala#L656
 [unfold]: https://github.com/apache/pekko/blob/38facf752b4e7d5fb43ed7c671eb91888b41bd10/stream/src/main/scala/org/apache/pekko/stream/impl/UnfoldResourceSourceAsync.scala#L100
-[project-sharding]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/server/src/main/scala/cn/xuyinyin/magic/infrastructure/cluster/sharding/WorkflowSharding.scala#L38
-[project-actor]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala#L164
-[project-actor-run]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala#L378
-[project-source]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceNode.scala#L150
-[project-source-properties]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceNode.scala#L355
-[project-bridge]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumBatchBridge.scala#L36
-[project-engine-access]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumEngineAccess.scala#L185
-[project-batch]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala#L289
+[project-sharding]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/sharding/WorkflowSharding.scala#L38
+[project-actor]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala#L164
+[project-actor-run]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala#L378
+[project-source]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcSourceNode.scala#L150
+[project-source-properties]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcSourceNode.scala#L355
+[project-bridge]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/DebeziumBatchBridge.scala#L36
+[project-engine-access]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/DebeziumEngineAccess.scala#L185
+[project-batch]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/WorkflowExecutionEngine.scala#L289
 
-[group-assembler]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcGroupAssembler.scala#L34
+[group-assembler]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcGroupAssembler.scala#L34
 
 ## 共享捕获阶段一：表的身份不再等于 Reader 的数量
 

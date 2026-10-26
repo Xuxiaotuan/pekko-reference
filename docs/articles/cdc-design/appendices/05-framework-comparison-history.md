@@ -1,5 +1,7 @@
 # 历史档案：框架比较的历史基线
 
+> 历史链接校正：源码 URL 使用对应固定 commit 的真实目录；仅修正路径，版本、原结论与实验数据不变。
+
 [当前系列导读](../README.md) · [当前正文](../05-pekko-vs-flink-cdc.md) · [技术附录索引](README.md)
 
 > **历史版本档案，整理于 2026-10-26。** 以下保留此前分析的技术内容和证据链接。“当前”“尚未实现”等词只适用于各段标明的历史版本。当前实现与实验结论以正文和最新验证表为准；原始实验文件未改动。
@@ -92,7 +94,7 @@ Flink 的托管状态则通过 Checkpoint 建立执行图的恢复关系：Sourc
 
 例如累计金额保存在某个中间对象里：源重放了，累计状态却没有回到同一恢复点，可能重复累加；累计状态回退了，Sink 却已经保留新结果，又需要提交协调。每增加一类状态，就增加一致恢复的证明义务。
 
-项目当前 CDC 可靠路径限制为直连 MySQL Apply，[WorkflowValidator 的显式校验](https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidator.scala#L78)拒绝内联 Transform；项目没有实现任意分布式算子状态快照。Pekko Stream 提供数据流组织能力，不意味着自动获得 Flink 的有状态计算恢复协议。若业务很快要进入复杂计算，自建范围会从“复制协议”扩展到“数据执行运行时”。
+项目当前 CDC 可靠路径限制为直连 MySQL Apply，[WorkflowValidator 的显式校验](https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/WorkflowValidator.scala#L78)拒绝内联 Transform；项目没有实现任意分布式算子状态快照。Pekko Stream 提供数据流组织能力，不意味着自动获得 Flink 的有状态计算恢复协议。若业务很快要进入复杂计算，自建范围会从“复制协议”扩展到“数据执行运行时”。
 
 ## 5. 资源成本应看曲线，而不是比较框架空载大小
 
@@ -216,10 +218,10 @@ Flink 的恢复同样要承担状态加载、Source 重读和 Sink 协调成本�
 
 上一篇：[恢复协议与验证矩阵](../04-protocol-and-validation.md)；[返回系列目录与验证范围](../README.md)；[Flink CDC 深入系列](https://xuyinyin.cn/flink-cdc-series/)。
 
-[sharding]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/server/src/main/scala/cn/xuyinyin/magic/infrastructure/cluster/sharding/WorkflowSharding.scala#L38
-[actor]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala#L164
-[source]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceNode.scala#L129
-[engine-access]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumEngineAccess.scala#L185
+[sharding]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/sharding/WorkflowSharding.scala#L38
+[actor]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala#L164
+[source]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcSourceNode.scala#L129
+[engine-access]: https://github.com/Xuxiaotuan/pekko-reference/blob/d88ec80f2a7166cfdaddf1284cc268a68bc62e28/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/DebeziumEngineAccess.scala#L185
 [flink-assigner]: https://github.com/apache/flink-cdc/blob/bf160337ff558d70302e7884f68937611873117e/flink-cdc-connect/flink-cdc-source-connectors/flink-connector-mysql-cdc/src/main/java/org/apache/flink/cdc/connectors/mysql/source/assigners/MySqlSnapshotSplitAssigner.java#L420
 [flink-reader]: https://github.com/apache/flink-cdc/blob/bf160337ff558d70302e7884f68937611873117e/flink-cdc-connect/flink-cdc-source-connectors/flink-connector-mysql-cdc/src/main/java/org/apache/flink/cdc/connectors/mysql/source/reader/MySqlSourceReader.java#L124
 [flink-hybrid]: https://github.com/apache/flink-cdc/blob/bf160337ff558d70302e7884f68937611873117e/flink-cdc-connect/flink-cdc-source-connectors/flink-connector-mysql-cdc/src/main/java/org/apache/flink/cdc/connectors/mysql/source/assigners/MySqlHybridSplitAssigner.java#L207

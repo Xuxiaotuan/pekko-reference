@@ -1,5 +1,7 @@
 # 历史档案：真实 MySQL 与完整组历史实验
 
+> 历史链接校正：源码 URL 使用对应固定 commit 的真实目录；仅修正路径，版本、原结论与实验数据不变。
+
 [当前系列导读](../README.md) · [当前正文](../03-real-mysql-journal-failure.md) · [技术附录索引](README.md)
 
 > **历史版本档案，整理于 2026-10-26。** 以下保留此前分析的技术内容和证据链接。“当前”“尚未实现”等词只适用于各段标明的历史版本。当前实现与实验结论以正文和最新验证表为准；原始实验文件未改动。
@@ -292,8 +294,8 @@ Actor 将第 6 批写入 Journal → Source ACK → 后续继续
 [test-process]: ../../../../server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcJournalWindowProcess.scala
 [test-spec]: ../../../../server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcJournalWindowSpec.scala
 
-[group-process]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcGroupRecoveryProcess.scala
-[group-spec]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcGroupRecoverySpec.scala
+[group-process]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcGroupRecoveryProcess.scala
+[group-spec]: https://github.com/Xuxiaotuan/pekko-reference/blob/65ab5410c32933d0aa3d23510e6c62252d84009b/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcGroupRecoverySpec.scala
 
 ## 共享捕获阶段一：把源侧持久化与目标恢复分别取证
 
