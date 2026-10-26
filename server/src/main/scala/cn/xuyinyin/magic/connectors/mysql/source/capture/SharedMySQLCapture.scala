@@ -16,9 +16,14 @@ import scala.util.Failure
 /** Single managed owner. A subscription becoming CAPTURE_READY does not initialize its target. */
 class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,val store:MySQLCaptureStore,
   factory:DebeziumEngineFactory=DebeziumEngineFactory.real,
-  observe:(String,JsObject)=>Unit=(_,_)=>()) extends AutoCloseable {
+  observe:(String,JsObject)=>Unit=(_,_)=>(),
+  snapshotMonitor:Option[CaptureSnapshotMonitor]=None) extends AutoCloseable {
   require(source.connectorId==store.captureId,"capture namespace mismatch")
   private val started=new AtomicBoolean(false);private val closed=new AtomicBoolean(false)
+  private val stopping=new AtomicBoolean(false)
+  private val startup=new CaptureStartupState(java.util.UUID.randomUUID().toString)
+  private val snapshots=snapshotMonitor.getOrElse(CaptureSnapshotMonitor.platform(store.captureId))
+  @volatile private var confirmedAckSequence=0L
   private val error=new AtomicReference[Throwable]()
   private val inside=new AtomicBoolean(false)
   private val callbackFailed=new AtomicBoolean(false)
@@ -38,15 +43,23 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   private var closeFailure:Throwable=null
   private val groupCoverage=mutable.Map.empty[String,Long]
   def failure:Option[Throwable]=Option(error.get())
-  private def active():Unit={require(!closed.get(),"shared capture closed");failure.foreach(throw _)}
+  private def active():Unit={
+    require(!closed.get(),"shared capture closed")
+    if(!started.get())throw new CaptureAdmissionException("CAPTURE_STARTING")
+    failure.foreach(throw _)
+  }
+  private def releaseUnknown(stage:String,cause:Throwable):cn.xuyinyin.magic.workflow.engine.CdcExecutionException=
+    new cn.xuyinyin.magic.workflow.engine.CdcExecutionException(
+      cn.xuyinyin.magic.workflow.engine.ExecutionFailure(cn.xuyinyin.magic.workflow.engine.ExecutionFailure.ReleaseUnknown,stage,releaseConfirmed=false),cause)
   protected def sourceConnection():Connection=DriverManager.getConnection(
     s"jdbc:mysql://${source.host}:${source.port}/${source.database}?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&connectTimeout=5000&socketTimeout=5000",source.username,source.password)
   private def withSourceConnection[A](f:Connection=>A):A={
     val c=sourceConnection();var primary:Throwable=null
     try f(c) catch {case e:Throwable=>primary=e;throw e}
     finally try c.close() catch {case release:Throwable=>
-      error.compareAndSet(null,release)
-      if(primary!=null)primary.addSuppressed(release) else throw release
+      val unknown=releaseUnknown("capture-source-close",release)
+      if(primary!=null)unknown.addSuppressed(primary)
+      error.compareAndSet(null,unknown);throw unknown
     }
   }
   private def stateConnection():Connection=DriverManager.getConnection(state.jdbcUrl,state.username,state.password)
@@ -54,36 +67,104 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     try {val r=q.executeQuery(sql);try {val b=Vector.newBuilder[String];while(r.next())b+=r.getString(1);b.result()}finally r.close()}finally q.close()}
   private def update(c:Connection,sql:String):Unit={val q=c.createStatement();q.setQueryTimeout(5);try {q.executeUpdate(sql);()}finally q.close()}
   private def assertOwner():Unit=synchronized {
-    require(owner!=null && query(owner,s"SELECT IS_USED_LOCK('pekko_capture_${store.captureId}')").headOption.contains(ownerId.toString),"capture owner control lost")
+    try require(owner!=null && query(owner,s"SELECT IS_USED_LOCK('pekko_capture_${store.captureId}')").headOption.contains(ownerId.toString),"capture owner control lost")
+    catch {case scala.util.control.NonFatal(e)=>
+      val unknown=releaseUnknown("capture-owner-control",e);error.compareAndSet(null,unknown);startup.fail();throw unknown
+    }
   }
-  def start():Future[Done]={
-    require(started.compareAndSet(false,true),"capture already started")
+  private def stateTableExists(c:Connection,name:String):Boolean={
+    require(name.matches("[A-Za-z0-9_]+"),"invalid checkpoint table")
+    query(c,s"SELECT 1 FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='$name' LIMIT 1").nonEmpty
+  }
+  private def readCheckpoint():CaptureCheckpoint={
+    val c=stateConnection()
     try {
-      val c=sourceConnection()
-      val sourceUuid=try {
+      val table=MySQLCdcSourceNode.connectorStateTables(state,store.captureId)._1
+      if(!stateTableExists(c,table))CaptureCheckpoint.missing else {
+        val q=c.createStatement();q.setQueryTimeout(5)
+        try {val r=q.executeQuery(s"SELECT offset_key,offset_val FROM `$table` WHERE offset_val IS NOT NULL LIMIT 2")
+          val rows=Vector.newBuilder[(String,String)]
+          try while(r.next())rows+=r.getString(1)->r.getString(2) finally r.close()
+          CaptureCheckpoint.decode(store.captureId,rows.result())
+        }finally q.close()
+      }
+    }finally try c.close()catch {case e:Throwable=>throw releaseUnknown("capture-checkpoint-close",e)}
+  }
+  private def validateRetainedControls():Unit=withSourceConnection {c=>
+    var after="";var more=true
+    while(more){val page=store.requiredControls(after,128);more=page.nonEmpty
+      page.foreach {case(cursor,operation,action,table,generation)=>
+        val q=c.prepareStatement("SELECT action,table_name,generation FROM pekko_capture_control WHERE operation_id=?");q.setQueryTimeout(5)
+        try {q.setString(1,operation);val r=q.executeQuery()
+          try {if(!r.next() || r.getString(1)!=action || r.getString(2)!=table || r.getString(3)!=generation)
+            throw new CaptureAdmissionException("CONTROL_ROW_MISSING_OR_CHANGED")
+          }finally r.close()
+        }finally q.close()
+        after=cursor
+      }
+    }
+  }
+  def startupEvidence:CaptureStartupEvidence=commandLock.synchronized {
+    if(stopping.get() || closed.get())startup.stop()
+    else if(failure.nonEmpty)startup.fail()
+    else if(Set("STARTING","ADMISSION_READY").contains(startup.evidence.phase)) {
+      try {
+        assertOwner()
+        val checkpoint=readCheckpoint()
+        if(checkpoint.status=="INVALID")throw new CaptureAdmissionException("CHECKPOINT_INVALID")
+        val sequence=checkpoint.value.filter(_=>checkpoint.status=="COMPLETE").map {value=>
+          try store.verifiedOffsetSequence(value) catch {
+            case scala.util.control.NonFatal(e) if !store.releaseConfirmed=>throw releaseUnknown("capture-store",e)
+            case scala.util.control.NonFatal(_) if startup.evidence.phase=="STARTING"=>0L
+          }
+        }.getOrElse(0L)
+        startup.observed(snapshots.status,checkpoint,sequence,confirmedAckSequence)
+      }catch {case e:Throwable=>error.compareAndSet(null,e);startup.fail()}
+    }
+    startup.evidence
+  }
+  private def requireAdmission():Unit={
+    active();assertOwner()
+    val evidence=startupEvidence
+    failure.foreach(throw _)
+    if(evidence.phase!="ADMISSION_READY")throw new CaptureAdmissionException(evidence.reasonCode.getOrElse("CAPTURE_STARTING"))
+  }
+  def start():Future[Done]=commandLock.synchronized {
+    require(started.compareAndSet(false,true),"capture already started")
+    if(stopping.get() || closed.get())throw new CaptureAdmissionException("CAPTURE_STOPPING")
+    try {
+      var controlPresent=false
+      val sourceUuid=withSourceConnection {c=>
         val uuid=query(c,"SELECT @@server_uuid").head
         require(uuid==store.lineage,"source lineage changed")
         require(query(c,"SELECT @@binlog_format").head=="ROW" && query(c,"SELECT @@binlog_row_image").head=="FULL","ROW/FULL required")
-        update(c,"CREATE TABLE IF NOT EXISTS pekko_capture_control(operation_id VARCHAR(128) PRIMARY KEY,action VARCHAR(32) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL)")
+        controlPresent=query(c,"SELECT 1 FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='pekko_capture_control' LIMIT 1").nonEmpty
         uuid
-      }finally c.close()
+      }
       owner=stateConnection()
       val stateUuid=query(owner,"SELECT @@server_uuid").head
       require(stateUuid!=sourceUuid,"capture state must use a different MySQL instance: transaction metadata feedback")
       require(store.location==(stateUuid->query(owner,"SELECT DATABASE()").head),"capture L must use the owner state server and database")
       require(query(owner,s"SELECT GET_LOCK('pekko_capture_${store.captureId}',0)").head=="1","another shared Reader owns this capture")
       ownerId=query(owner,"SELECT CONNECTION_ID()").head.toLong
+      val (existing,hasEvidence,hasBoundaries,unbound)=store.recoveryInventory
+      val checkpoint=readCheckpoint()
+      val (offsetTable,historyTable)=MySQLCdcSourceNode.connectorStateTables(state,store.captureId)
+      val historyPresent=stateTableExists(owner,historyTable) && query(owner,s"SELECT 1 FROM `$historyTable` LIMIT 1").nonEmpty
+      val covered=checkpoint.value.exists(v=>try {store.verifyOffset(v);true}catch {
+        case scala.util.control.NonFatal(e) if !store.releaseConfirmed=>throw releaseUnknown("capture-store",e)
+        case scala.util.control.NonFatal(_)=>false
+      })
+      startup.starting(checkpoint.status,store.lastAckSequence)
+      val facts=CaptureRecoveryFacts(existing,hasEvidence,hasBoundaries,unbound,controlPresent,historyPresent,checkpoint,covered)
+      CaptureStartupGuard.classify(facts).foreach {reason=>startup.pause(reason);throw new CaptureAdmissionException(reason)}
+      if(existing && controlPresent)validateRetainedControls()
+      if(!controlPresent)withSourceConnection(c=>update(c,"CREATE TABLE IF NOT EXISTS pekko_capture_control(operation_id VARCHAR(128) PRIMARY KEY,action VARCHAR(32) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL)"))
+      snapshots.beforeStart()
       profileSequence=store.rememberProfile(JsObject("version"->JsNumber(1),"database"->JsString(source.database),
         "sourceLineage"->JsString(sourceUuid),"stateLineage"->JsString(query(owner,"SELECT @@server_uuid").head),
         "offsetTable"->JsString(state.offsetTable),"historyTable"->JsString(state.historyTable),
         "maxLogBytes"->JsNumber(store.maxBytes),"decoder"->JsString("debezium-3.6.1/capture-v1")).compactPrint)
-      val (offsetTable,historyTable)=MySQLCdcSourceNode.connectorStateTables(state,store.captureId)
-      if(store.hasEvidence) {
-        require(query(owner,s"SELECT COUNT(*) FROM `$historyTable`").head.toLong>0,"capture schema history missing")
-        val offsets=query(owner,s"SELECT offset_val FROM `$offsetTable` WHERE offset_val IS NOT NULL")
-        require(offsets.nonEmpty,"durable D missing; latest restart forbidden")
-        offsets.foreach(store.verifyOffset)
-      }
       val props=MySQLCdcSourceNode.connectorProperties(source.copy(table="pekko_capture_control",groupProtocol=None),state)
       props.setProperty("snapshot.mode","no_data")
       props.setProperty("table.include.list",java.util.regex.Pattern.quote(source.database)+"\\..*")
@@ -93,12 +174,26 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       props.setProperty("offset.flush.timeout.ms","2000")
       props.setProperty("max.queue.size.in.bytes",(16L*1024*1024).toString)
       props.setProperty("schema.history.internal.store.only.captured.databases.ddl","true")
+      props.setProperty("heartbeat.interval.ms","1000")
+      if(stopping.get())throw new CaptureAdmissionException("CAPTURE_STOPPING")
       engine=factory.create(props)
       val running=engine.start(new DebeziumBatchConsumer {def handleBatch(rs:Vector[SourceRecord],h:CdcBatchCommitHandle):Unit=accept(rs,h)})
       completion=running
-      running.onComplete {case Failure(e)=>error.compareAndSet(null,e);case _=>()}(ExecutionContext.parasitic)
+      running.onComplete {
+        case Failure(e)=>error.compareAndSet(null,e);startup.fail()
+        case _ if !stopping.get()=>error.compareAndSet(null,new IllegalStateException("capture engine terminated unexpectedly"));startup.fail()
+        case _=>()
+      }(ExecutionContext.parasitic)
       running
-    }catch {case e:Throwable=>error.compareAndSet(null,e);if(owner!=null){owner.close();owner=null};throw e}
+    }catch {case e:Throwable=>
+      e match {case a:CaptureAdmissionException=>startup.pause(a.code);case _=>startup.fail()}
+      var problem=if(!store.releaseConfirmed)releaseUnknown("capture-store",e) else e
+      if(owner!=null)try {owner.close();owner=null}catch {case close:Throwable=>
+        problem=releaseUnknown("capture-start-owner-close",close);problem.addSuppressed(e)
+      }
+      error.compareAndSet(null,problem)
+      throw problem
+    }
   }
   private[source] def accept(records:Vector[SourceRecord],handle:CdcBatchCommitHandle):Unit={
     require(inside.compareAndSet(false,true),"concurrent shared callbacks unsupported")
@@ -180,12 +275,16 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
         }
       }
       while(pending.headOption.exists(_.remaining==0)) {
-        val ready=pending.head;assertOwner();store.cover(ready.offset,ready.references.toVector)
+        val ready=pending.head;assertOwner();val ack=store.coverSequence(ready.offset,ready.references.toVector)
         observe("RAW_ACK_BEGIN",JsObject("id"->JsNumber(ready.id),"offset"->ready.offset.parseJson))
         ready.handle.markProcessedAndFinished()
+        confirmedAckSequence=ack
         pending.dequeue();observe("RAW_ACK_RETURNED",JsObject("id"->JsNumber(ready.id)))
       }
-    }catch {case e:Throwable=>callbackFailed.set(true);error.compareAndSet(null,e);throw e}finally inside.set(false)
+    }catch {case e:Throwable=>
+      val problem=if(!store.releaseConfirmed)releaseUnknown("capture-store",e)else e
+      callbackFailed.set(true);error.compareAndSet(null,problem);throw problem
+    }finally inside.set(false)
   }
   private def rememberSchemas(v:Struct):Vector[Long]={
     if(v.getString("databaseName")!=source.database)return Vector.empty
@@ -213,6 +312,11 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   }
   def subscribe(id:String,table:String,generation:String):CaptureSubscription=commandLock.synchronized {
     active();assertOwner()
+    store.subscription(id).foreach {existing=>
+      require(existing.table==table && existing.generation==generation,"subscription request conflict")
+      return existing // Query/idempotency never rewrites an existing B, including B_PENDING.
+    }
+    requireAdmission()
     val schema=store.schema(table).getOrElse(throw new IllegalArgumentException("BLOCKED_SCHEMA: Reader schema not ready"))
     val expected=schema.definition.parseJson.asJsObject.fields
     withSourceConnection {c=>
@@ -227,15 +331,22 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       try {while(keys.next())if(keys.getString("TABLE_NAME")==table)actualKeys+=keys.getInt("KEY_SEQ")->keys.getString("COLUMN_NAME")}finally keys.close()
       require(actualKeys.result().sortBy(_._1).map(x=>JsString(x._2))==expected("primaryKeyColumnNames").asInstanceOf[JsArray].elements,"BLOCKED_SCHEMA: Reader and JDBC primary keys differ")
     }
+    requireAdmission() // The admitted in-flight command may finish while close waits for commandLock.
+    observe("SUBSCRIBE_ADMITTED",JsObject("requestId"->JsString(id)))
     val s=store.register(id,table,generation,schema.id)
     if(s.status=="B_PENDING")writeMarker(s,stop=false)
     s
   }
   def unsubscribe(id:String):Unit=commandLock.synchronized {active();assertOwner();val s=store.subscription(id).get
     require(s.status=="CAPTURE_READY" || s.status=="CAPTURE_STOPPED","subscription not ready to stop")
-    if(s.status=="CAPTURE_READY")writeMarker(s,stop=true)}
+    if(s.status=="CAPTURE_READY"){requireAdmission();writeMarker(s,stop=true)}}
   def requestFence(id:String,subscriptionId:String,action:String,context:String):CaptureFence=commandLock.synchronized {
     active();assertOwner()
+    store.fence(id).filter(_.sequence.nonEmpty).foreach {f=>
+      require(f.subscriptionId==subscriptionId && f.action==action && f.context==MySQLCdcGroup.canonical(context.parseJson),"fence request conflict")
+      return f
+    }
+    requireAdmission()
     val f=store.registerFence(id,subscriptionId,action,context)
     if(f.sequence.isEmpty) {
       val sub=store.subscription(subscriptionId).get
@@ -246,19 +357,26 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   private def writeMarker(s:CaptureSubscription,stop:Boolean):Unit=
     writeControl(store.markerId(s.requestId,stop),if(stop)"STOP"else "SUBSCRIBE",s.table,s.generation)
   private def writeControl(operation:String,action:String,table:String,generation:String):Unit={
-    withSourceConnection {c=>
+    var stage="NOT_STARTED"
+    try withSourceConnection {c=>
+      stage="WRITING"
       c.setAutoCommit(false)
       val q=c.prepareStatement("INSERT INTO pekko_capture_control VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE operation_id=operation_id")
       q.setQueryTimeout(5)
       try {q.setString(1,operation);q.setString(2,action);q.setString(3,table);q.setString(4,generation);q.executeUpdate()}finally q.close()
-      c.commit()
+      stage="COMMITTING";c.commit();stage="COMMITTED"
+    }catch {case e:Throwable=>
+      val code=if(stage=="COMMITTING")"MARKER_COMMIT_UNKNOWN" else if(stage=="COMMITTED")"MARKER_COMMITTED_RELEASE_UNKNOWN" else "MARKER_WRITE_UNPROVEN"
+      val failure=releaseUnknown("source-marker:"+code,e);error.compareAndSet(null,failure);startup.pause(code);throw failure
     }
   }
   override def close():Unit=closeLock.synchronized {
+    if(stopping.compareAndSet(false,true))observe("CAPTURE_STOP_REQUESTED",JsObject())
+    startup.stop()
     if(closed.get()) {if(closeFailure!=null)throw closeFailure}
     else {
-      closed.set(true)
       try commandLock.synchronized {
+    closed.set(true)
     // Release the owner connection only after the original Engine close is confirmed.
     // A callback failure starts SDK shutdown asynchronously; do not race a second stop request.
     if(callbackFailed.get() && completion!=null)scala.concurrent.Await.ready(completion,scala.concurrent.duration.Duration(5,"seconds"))

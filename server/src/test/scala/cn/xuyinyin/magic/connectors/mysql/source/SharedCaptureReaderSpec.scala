@@ -42,9 +42,10 @@ class SharedCaptureReaderSpec extends AnyWordSpec with Matchers {
           }).asInstanceOf[java.sql.Connection]
         }
       }
-      session.start();failClose.set(true)
+      failClose.set(true)
       try {
-        intercept[IllegalArgumentException](session.subscribe("request","missing","g1"))
+        val failure=intercept[cn.xuyinyin.magic.workflow.engine.CdcExecutionException](session.start())
+        failure.failure.releaseConfirmed shouldBe false
         session.failure should not be empty
         val before=opened.get()
         intercept[Throwable](session.subscribe("again","missing","g1"))
@@ -75,6 +76,7 @@ class SharedCaptureReaderSpec extends AnyWordSpec with Matchers {
       session.start()
       try {
         await("schema callback")(store.schema(table).nonEmpty)
+        await("recoverable capture admission")(session.startupEvidence.phase=="ADMISSION_READY")
         session.subscribe("request",table,"g1")
         await("durable B")(store.subscription("request").exists(_.status=="CAPTURE_READY"))
         store.subscription("request").get.initialized shouldBe false

@@ -1,0 +1,465 @@
+{
+  "status": "probe_evidence_complete_with_boundaries",
+  "overall_platform_status": "evidence_incomplete",
+  "production_protocol_modified": false,
+  "source_sha256": "40b901fe17fbc02ca5b94c5c667cfa1ed9a28282957515e47db6338cea516667",
+  "production_sha256": "4953d46ef2fa32c4ecc588afd04c14a067aab024f6b0a218145ea8dc67ee55f4",
+  "verifier_sha256": "4fc12191ad6ecfcdec6d236d99dd5da7c42f8b773d8078a2d0bb05b762224766",
+  "cases": [
+    {
+      "case": "first-heartbeat-0",
+      "group": "validated-shared",
+      "evidence": {
+        "durable_non_initial": true,
+        "current_non_initial_callback": true,
+        "current_acknowledged_d": true,
+        "snapshot_completed_observed": true,
+        "unique_legal_partition_observed": true,
+        "snapshot_skipped_observed": false,
+        "admission_candidate": true,
+        "sdk_current_acknowledged_d_without_L": false,
+        "local_release_confirmed": true,
+        "observed_instance_context_consistent": true,
+        "server_release_confirmed": true,
+        "reusable_candidate": true,
+        "local_end": {
+          "at": "2026-10-26T15:55:27.029693Z",
+          "attempt": "2f233fa1-3761-4df7-b8b7-89d1dd45a71a",
+          "completionCompleted": true,
+          "completionOutcome": "success",
+          "epoch_ns": 1793030127029000000,
+          "kind": "LOCAL_END",
+          "metrics": [],
+          "nanoTime": 1916091080623958,
+          "threads": []
+        },
+        "witness_equal": null,
+        "witness_missing_keys": [],
+        "witness_extra_keys": [],
+        "witness_different_fields": 0
+      },
+      "ownership": {
+        "scope": "exclusive slot and trusted live Popen worker; not HA isolation proof",
+        "dump_connections_observed": [
+          "7392"
+        ],
+        "dump_connections_mapped": [
+          "7392"
+        ],
+        "source_jdbc_connections_mapped": [
+          "7378",
+          "7379"
+        ],
+        "owner_connections_observed": [
+          "8530"
+        ],
+        "owner_connections_mapped": [
+          "8530"
+        ],
+        "dump_mapping_complete": true,
+        "owner_mapping_complete": true
+      },
+      "source_sha256": "40b901fe17fbc02ca5b94c5c667cfa1ed9a28282957515e47db6338cea516667",
+      "first_idle_observation_after_local_end_seconds": 86.847542,
+      "dump_observed_after_5_seconds": true,
+      "first_heartbeat_after_quiet_start_seconds": null,
+      "witness_rows": 0,
+      "witness_fields": 0,
+      "T_rows": 0,
+      "J_rows": 0
+    },
+    {
+      "case": "first-heartbeat-1000",
+      "group": "validated-shared",
+      "evidence": {
+        "durable_non_initial": true,
+        "current_non_initial_callback": true,
+        "current_acknowledged_d": true,
+        "snapshot_completed_observed": true,
+        "unique_legal_partition_observed": true,
+        "snapshot_skipped_observed": false,
+        "admission_candidate": true,
+        "sdk_current_acknowledged_d_without_L": false,
+        "local_release_confirmed": true,
+        "observed_instance_context_consistent": true,
+        "server_release_confirmed": true,
+        "reusable_candidate": true,
+        "local_end": {
+          "at": "2026-10-26T15:57:06.581179Z",
+          "attempt": "b042d3da-c768-40a1-8d3c-5b3de6965a03",
+          "completionCompleted": true,
+          "completionOutcome": "success",
+          "epoch_ns": 1793030226581000000,
+          "kind": "LOCAL_END",
+          "metrics": [],
+          "nanoTime": 1916190630833541,
+          "threads": []
+        },
+        "witness_equal": true,
+        "witness_missing_keys": [],
+        "witness_extra_keys": [],
+        "witness_different_fields": 0
+      },
+      "ownership": {
+        "scope": "exclusive slot and trusted live Popen worker; not HA isolation proof",
+        "dump_connections_observed": [
+          "8592"
+        ],
+        "dump_connections_mapped": [
+          "8592"
+        ],
+        "source_jdbc_connections_mapped": [
+          "8578",
+          "8579"
+        ],
+        "owner_connections_observed": [
+          "10020"
+        ],
+        "owner_connections_mapped": [
+          "10020"
+        ],
+        "dump_mapping_complete": true,
+        "owner_mapping_complete": true
+      },
+      "source_sha256": "40b901fe17fbc02ca5b94c5c667cfa1ed9a28282957515e47db6338cea516667",
+      "first_idle_observation_after_local_end_seconds": 95.932264,
+      "dump_observed_after_5_seconds": true,
+      "first_heartbeat_after_quiet_start_seconds": 0.694,
+      "witness_rows": 4,
+      "witness_fields": 24,
+      "T_rows": 1,
+      "J_rows": 4
+    },
+    {
+      "case": "resume-heartbeat-1000",
+      "group": "validated-shared",
+      "evidence": {
+        "durable_non_initial": true,
+        "current_non_initial_callback": true,
+        "current_acknowledged_d": true,
+        "snapshot_completed_observed": false,
+        "unique_legal_partition_observed": true,
+        "snapshot_skipped_observed": true,
+        "admission_candidate": true,
+        "sdk_current_acknowledged_d_without_L": false,
+        "local_release_confirmed": true,
+        "observed_instance_context_consistent": true,
+        "server_release_confirmed": true,
+        "reusable_candidate": true,
+        "local_end": {
+          "at": "2026-10-26T15:58:54.076062Z",
+          "attempt": "d2305f71-c68a-42b1-abe3-20e659b81926",
+          "completionCompleted": true,
+          "completionOutcome": "success",
+          "epoch_ns": 1793030334076000000,
+          "kind": "LOCAL_END",
+          "metrics": [],
+          "nanoTime": 1916298124336958,
+          "threads": []
+        },
+        "witness_equal": null,
+        "witness_missing_keys": [],
+        "witness_extra_keys": [],
+        "witness_different_fields": 0
+      },
+      "ownership": {
+        "scope": "exclusive slot and trusted live Popen worker; not HA isolation proof",
+        "dump_connections_observed": [
+          "9967"
+        ],
+        "dump_connections_mapped": [
+          "9967"
+        ],
+        "source_jdbc_connections_mapped": [
+          "9960",
+          "9961"
+        ],
+        "owner_connections_observed": [
+          "11752"
+        ],
+        "owner_connections_mapped": [
+          "11752"
+        ],
+        "dump_mapping_complete": true,
+        "owner_mapping_complete": true
+      },
+      "source_sha256": "40b901fe17fbc02ca5b94c5c667cfa1ed9a28282957515e47db6338cea516667",
+      "first_idle_observation_after_local_end_seconds": 87.090225,
+      "dump_observed_after_5_seconds": true,
+      "first_heartbeat_after_quiet_start_seconds": null,
+      "witness_rows": 0,
+      "witness_fields": 0,
+      "T_rows": 0,
+      "J_rows": 0
+    },
+    {
+      "case": "resume-heartbeat-0",
+      "group": "validated-shared",
+      "evidence": {
+        "durable_non_initial": true,
+        "current_non_initial_callback": true,
+        "current_acknowledged_d": true,
+        "snapshot_completed_observed": false,
+        "unique_legal_partition_observed": true,
+        "snapshot_skipped_observed": true,
+        "admission_candidate": true,
+        "sdk_current_acknowledged_d_without_L": false,
+        "local_release_confirmed": true,
+        "observed_instance_context_consistent": true,
+        "server_release_confirmed": true,
+        "reusable_candidate": true,
+        "local_end": {
+          "at": "2026-10-26T16:00:32.507676Z",
+          "attempt": "3de0a3c2-9be4-4a0e-9657-c25b38885dc2",
+          "completionCompleted": true,
+          "completionOutcome": "success",
+          "epoch_ns": 1793030432507000000,
+          "kind": "LOCAL_END",
+          "metrics": [],
+          "nanoTime": 1916396554688916,
+          "threads": []
+        },
+        "witness_equal": null,
+        "witness_missing_keys": [],
+        "witness_extra_keys": [],
+        "witness_different_fields": 0
+      },
+      "ownership": {
+        "scope": "exclusive slot and trusted live Popen worker; not HA isolation proof",
+        "dump_connections_observed": [
+          "11227"
+        ],
+        "dump_connections_mapped": [
+          "11227"
+        ],
+        "source_jdbc_connections_mapped": [
+          "11213",
+          "11214"
+        ],
+        "owner_connections_observed": [
+          "13290"
+        ],
+        "owner_connections_mapped": [
+          "13290"
+        ],
+        "dump_mapping_complete": true,
+        "owner_mapping_complete": true
+      },
+      "source_sha256": "40b901fe17fbc02ca5b94c5c667cfa1ed9a28282957515e47db6338cea516667",
+      "first_idle_observation_after_local_end_seconds": 87.295631,
+      "dump_observed_after_5_seconds": true,
+      "first_heartbeat_after_quiet_start_seconds": null,
+      "witness_rows": 0,
+      "witness_fields": 0,
+      "T_rows": 0,
+      "J_rows": 0
+    },
+    {
+      "case": "sdk-first-heartbeat-1000",
+      "group": "validated-sdk",
+      "evidence": {
+        "durable_non_initial": false,
+        "current_non_initial_callback": true,
+        "current_acknowledged_d": false,
+        "snapshot_completed_observed": true,
+        "unique_legal_partition_observed": true,
+        "snapshot_skipped_observed": false,
+        "admission_candidate": false,
+        "sdk_current_acknowledged_d_without_L": true,
+        "local_release_confirmed": true,
+        "observed_instance_context_consistent": true,
+        "server_release_confirmed": true,
+        "reusable_candidate": true,
+        "local_end": {
+          "at": "2026-10-26T15:55:25.591105Z",
+          "attempt": "3e497b95-6956-44e5-82dc-b6f628ca2ffd",
+          "completionCompleted": true,
+          "completionOutcome": "success",
+          "epoch_ns": 1793030125591000000,
+          "kind": "LOCAL_END",
+          "metrics": [],
+          "nanoTime": 1916089642055291,
+          "threads": []
+        },
+        "witness_equal": null,
+        "witness_missing_keys": [],
+        "witness_extra_keys": [],
+        "witness_different_fields": 0
+      },
+      "ownership": {
+        "scope": "exclusive slot and trusted live Popen worker; not HA isolation proof",
+        "dump_connections_observed": [
+          "3076"
+        ],
+        "dump_connections_mapped": [
+          "3076"
+        ],
+        "source_jdbc_connections_mapped": [
+          "3062",
+          "3063"
+        ],
+        "owner_connections_observed": [],
+        "owner_connections_mapped": [],
+        "dump_mapping_complete": true,
+        "owner_mapping_complete": false
+      },
+      "source_sha256": "40b901fe17fbc02ca5b94c5c667cfa1ed9a28282957515e47db6338cea516667",
+      "first_idle_observation_after_local_end_seconds": 87.264022,
+      "dump_observed_after_5_seconds": true,
+      "first_heartbeat_after_quiet_start_seconds": 0.707,
+      "witness_rows": 0,
+      "witness_fields": 0,
+      "T_rows": 0,
+      "J_rows": 0
+    },
+    {
+      "case": "sdk-resume-heartbeat-0",
+      "group": "validated-sdk",
+      "evidence": {
+        "durable_non_initial": false,
+        "current_non_initial_callback": false,
+        "current_acknowledged_d": false,
+        "snapshot_completed_observed": false,
+        "unique_legal_partition_observed": true,
+        "snapshot_skipped_observed": true,
+        "admission_candidate": false,
+        "sdk_current_acknowledged_d_without_L": false,
+        "local_release_confirmed": true,
+        "observed_instance_context_consistent": true,
+        "server_release_confirmed": true,
+        "reusable_candidate": true,
+        "local_end": {
+          "at": "2026-10-26T15:57:54.569130Z",
+          "attempt": "5ea2ece3-e779-4fd8-bbf0-ee1611a54849",
+          "completionCompleted": true,
+          "completionOutcome": "success",
+          "epoch_ns": 1793030274569000000,
+          "kind": "LOCAL_END",
+          "metrics": [],
+          "nanoTime": 1916238618169500,
+          "threads": []
+        },
+        "witness_equal": null,
+        "witness_missing_keys": [],
+        "witness_extra_keys": [],
+        "witness_different_fields": 0
+      },
+      "ownership": {
+        "scope": "exclusive slot and trusted live Popen worker; not HA isolation proof",
+        "dump_connections_observed": [
+          "4287"
+        ],
+        "dump_connections_mapped": [
+          "4287"
+        ],
+        "source_jdbc_connections_mapped": [
+          "4277",
+          "4279"
+        ],
+        "owner_connections_observed": [],
+        "owner_connections_mapped": [],
+        "dump_mapping_complete": true,
+        "owner_mapping_complete": false
+      },
+      "source_sha256": "40b901fe17fbc02ca5b94c5c667cfa1ed9a28282957515e47db6338cea516667",
+      "first_idle_observation_after_local_end_seconds": 85.065125,
+      "dump_observed_after_5_seconds": true,
+      "first_heartbeat_after_quiet_start_seconds": null,
+      "witness_rows": 0,
+      "witness_fields": 0,
+      "T_rows": 0,
+      "J_rows": 0
+    },
+    {
+      "case": "sdk-resume-heartbeat-1000",
+      "group": "validated-sdk",
+      "evidence": {
+        "durable_non_initial": false,
+        "current_non_initial_callback": true,
+        "current_acknowledged_d": false,
+        "snapshot_completed_observed": false,
+        "unique_legal_partition_observed": true,
+        "snapshot_skipped_observed": true,
+        "admission_candidate": false,
+        "sdk_current_acknowledged_d_without_L": true,
+        "local_release_confirmed": true,
+        "observed_instance_context_consistent": true,
+        "server_release_confirmed": true,
+        "reusable_candidate": true,
+        "local_end": {
+          "at": "2026-10-26T16:00:21.132241Z",
+          "attempt": "cd256a65-d466-4735-96a1-d4343ded4b0f",
+          "completionCompleted": true,
+          "completionOutcome": "success",
+          "epoch_ns": 1793030421132000000,
+          "kind": "LOCAL_END",
+          "metrics": [],
+          "nanoTime": 1916385179399625,
+          "threads": []
+        },
+        "witness_equal": null,
+        "witness_missing_keys": [],
+        "witness_extra_keys": [],
+        "witness_different_fields": 0
+      },
+      "ownership": {
+        "scope": "exclusive slot and trusted live Popen worker; not HA isolation proof",
+        "dump_connections_observed": [
+          "6290"
+        ],
+        "dump_connections_mapped": [
+          "6290"
+        ],
+        "source_jdbc_connections_mapped": [
+          "6277",
+          "6279"
+        ],
+        "owner_connections_observed": [],
+        "owner_connections_mapped": [],
+        "dump_mapping_complete": true,
+        "owner_mapping_complete": false
+      },
+      "source_sha256": "40b901fe17fbc02ca5b94c5c667cfa1ed9a28282957515e47db6338cea516667",
+      "first_idle_observation_after_local_end_seconds": 84.562215,
+      "dump_observed_after_5_seconds": true,
+      "first_heartbeat_after_quiet_start_seconds": 48.618,
+      "witness_rows": 0,
+      "witness_fields": 0,
+      "T_rows": 0,
+      "J_rows": 0
+    }
+  ],
+  "cleanup": {
+    "a": {
+      "lease_released": true,
+      "source": {
+        "sessions": "",
+        "transactions": ""
+      },
+      "state": {
+        "sessions": "",
+        "transactions": ""
+      }
+    },
+    "b": {
+      "lease_released": true,
+      "source": {
+        "sessions": "",
+        "transactions": ""
+      },
+      "state": {
+        "sessions": "",
+        "transactions": ""
+      }
+    },
+    "observed_ns": 1793030589521195000
+  },
+  "unit_tests_passed": 19,
+  "real_journal_sink_witness_cases": 1,
+  "required_equal_fields": 24,
+  "tool_sha256": {
+    "scripts/experiments/capture-admission-release/run.py": "b92258d3fdbf4d2d73b9bea56340d8d894f37f0da1d1b68635b24559fe113dba",
+    "scripts/experiments/capture-admission-release/test_verify.py": "de11582ca96f5a0787e8b0e3223bbbf5ca7c3a44b1a4f396ceca671366b22554",
+    "scripts/experiments/capture-admission-release/verify.py": "4fc12191ad6ecfcdec6d236d99dd5da7c42f8b773d8078a2d0bb05b762224766"
+  }
+}

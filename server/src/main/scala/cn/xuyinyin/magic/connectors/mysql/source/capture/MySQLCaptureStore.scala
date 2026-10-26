@@ -1,6 +1,7 @@
 package cn.xuyinyin.magic.connectors.mysql.source.capture
 
 import cn.xuyinyin.magic.cdc.{MySQLCdcGroup, MySQLCdcGroupProtocol}
+import cn.xuyinyin.magic.workflow.engine.{CdcExecutionException, ExecutionFailure}
 import java.sql.{Connection, PreparedStatement}
 import java.util.concurrent.{Semaphore, TimeUnit}
 import java.util.concurrent.atomic.AtomicBoolean
@@ -14,12 +15,21 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
   val protocol=MySQLCdcGroupProtocol(captureId,"capture-v1",lineage)
   private val permits=new Semaphore(4)
   private val fenced=new AtomicBoolean(false)
+  def releaseConfirmed:Boolean= !fenced.get()
   private def connection[A](f:Connection=>A):A={
-    require(!fenced.get(),"capture store resource release unknown")
+    if(fenced.get())throw new CdcExecutionException(
+      ExecutionFailure(ExecutionFailure.ReleaseUnknown,"capture-store-close",releaseConfirmed=false),
+      new IllegalStateException("capture store resource release unknown"))
     require(permits.tryAcquire(5,TimeUnit.SECONDS),"capture store connection admission timed out")
-    var c:Connection=null;var released=false
-    try {c=open();f(c)} finally {
-      try {if(c!=null)c.close();released=true} finally {if(released)permits.release() else fenced.set(true)}
+    var c:Connection=null;var released=false;var primary:Throwable=null
+    try {c=open();f(c)} catch {case e:Throwable=>primary=e;throw e} finally {
+      try {if(c!=null)c.close();released=true}
+      catch {case close:Throwable=>
+        val unknown=new CdcExecutionException(
+          ExecutionFailure(ExecutionFailure.ReleaseUnknown,"capture-store-close",releaseConfirmed=false),close)
+        if(primary!=null)unknown.addSuppressed(primary)
+        throw unknown
+      } finally {if(released)permits.release() else fenced.set(true)}
     }
   }
   private def stmt[A](c:Connection,sql:String,args:Seq[Any])(f:PreparedStatement=>A):A={
@@ -198,26 +208,63 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
       appendRaw(c,"group:"+group.groupId,"GROUP",s.table,s.requestId,s.schemaId,group.canonicalJson,Some(p))
     }
   }
-  def cover(offset:String,references:Vector[Long]=Vector.empty):Unit=tx {c=>
+  def cover(offset:String,references:Vector[Long]=Vector.empty):Unit={coverSequence(offset,references);()}
+  def coverSequence(offset:String,references:Vector[Long]=Vector.empty):Long=tx {c=>
     def reference(r:Map[String,String]):JsValue=JsObject("sequence"->JsNumber(r("seq").toLong),"digest"->JsString(r("digest")))
     val parent=rows(c,"SELECT * FROM pekko_capture_log WHERE capture_id=? AND kind='ACK' ORDER BY seq DESC LIMIT 1",captureId).headOption
     val payload=MySQLCdcGroup.canonical(JsObject("offset"->offsetKey(offset).parseJson,
       "parent"->parent.map(reference).getOrElse(JsNull),"references"->JsArray(references.distinct.sorted.map(n=>reference(frame(c,n))))))
     val ack=appendRaw(c,"ack:"+payload,"ACK",MySQLCdcGroup.hash(offsetKey(offset)),"","",payload,resume=offset)
     references.distinct.foreach(n=>update(c,"UPDATE pekko_capture_fences SET covered_seq=COALESCE(covered_seq,?) WHERE capture_id=? AND seq=?",ack,captureId,n))
-    update(c,"UPDATE pekko_capture_readers SET frontier=? WHERE capture_id=?",offset,captureId)
+    update(c,"UPDATE pekko_capture_readers SET frontier=? WHERE capture_id=?",offset,captureId);ack
   }
   private def offsetKey(offset:String):String={
     val f=offset.parseJson.asJsObject.fields.get("offset").getOrElse(offset.parseJson).asJsObject.fields
     MySQLCdcGroup.canonical(JsObject(f.filter {case(k,_)=>Set("file","pos","event","row","gtids","snapshot").contains(k)}))
   }
   def hasEvidence:Boolean=connection(c=>rows(c,"SELECT seq FROM pekko_capture_log WHERE capture_id=? AND kind IN ('ACK','BARRIER','GROUP') LIMIT 1",captureId).nonEmpty)
-  def verifyOffset(offset:String):Unit=connection {c=>
+  def verifyOffset(offset:String):Unit={verifiedOffsetSequence(offset);()}
+  def verifiedOffsetSequence(offset:String):Long=connection {c=>
     val tables=rows(c,"SELECT table_name FROM pekko_capture_subscriptions WHERE capture_id=? UNION SELECT table_name FROM pekko_capture_log WHERE capture_id=? AND kind='BARRIER'",captureId,captureId).map(_("table_name"))
     tables.foreach(routes(c,_))
     val proof=rows(c,"SELECT seq FROM pekko_capture_log WHERE capture_id=? AND kind='ACK' AND table_name=? ORDER BY seq DESC LIMIT 1",captureId,MySQLCdcGroup.hash(offsetKey(offset))).headOption
       .getOrElse(throw new IllegalArgumentException("D has no durable capture coverage"))
-    verifyChain(c,proof("seq").toLong)
+    verifyChain(c,proof("seq").toLong);proof("seq").toLong
+  }
+  def lastAckSequence:Long=connection(c=>rows(c,"SELECT COALESCE(MAX(seq),0) AS n FROM pekko_capture_log WHERE capture_id=? AND kind='ACK'",captureId).head("n").toLong)
+  def recoveryInventory:(Boolean,Boolean,Boolean,Boolean)=connection {c=>
+    def any(sql:String)=rows(c,sql,captureId).nonEmpty
+    val head=rows(c,"SELECT next_seq,used_bytes,frontier FROM pekko_capture_readers WHERE capture_id=?",captureId).head
+    val frames=rows(c,"SELECT COUNT(*) AS n,COALESCE(MAX(seq),0) AS maximum FROM pekko_capture_log WHERE capture_id=?",captureId).head
+    if(head("next_seq").toLong!=frames("maximum").toLong+1 || frames("n")!=frames("maximum"))
+      throw new CaptureAdmissionException("CAPTURE_LOG_HEAD_INCONSISTENT")
+    val priorHead=head("next_seq").toLong>1 || head("used_bytes").toLong>0 || head("frontier")!=null
+    val domain=priorHead || any("SELECT 1 FROM pekko_capture_log WHERE capture_id=? LIMIT 1") ||
+      any("SELECT 1 FROM pekko_capture_subscriptions WHERE capture_id=? LIMIT 1") || any("SELECT 1 FROM pekko_capture_fences WHERE capture_id=? LIMIT 1") ||
+      any("SELECT 1 FROM pekko_capture_schemas WHERE capture_id=? LIMIT 1")
+    val evidence=head("frontier")!=null || any("SELECT 1 FROM pekko_capture_log WHERE capture_id=? AND kind IN ('ACK','BARRIER','GROUP') LIMIT 1")
+    val bound=any("SELECT 1 FROM pekko_capture_subscriptions WHERE capture_id=? AND b_point IS NOT NULL LIMIT 1") ||
+      any("SELECT 1 FROM pekko_capture_log WHERE capture_id=? AND kind IN ('BARRIER','GROUP') LIMIT 1")
+    val pending=any("SELECT 1 FROM pekko_capture_subscriptions WHERE capture_id=? AND status='B_PENDING' LIMIT 1") ||
+      any("SELECT 1 FROM pekko_capture_fences WHERE capture_id=? AND seq IS NULL LIMIT 1")
+    (domain,evidence,bound,pending)
+  }
+  /** Keyset page of immutable control rows required by retained boundaries. No new source writes. */
+  def requiredControls(after:String,limit:Int):Vector[(String,String,String,String,String)]=connection {c=>
+    require(limit>0 && limit<=128)
+    val sql="""SELECT * FROM (
+      SELECT CONCAT('B:',request_id) AS cursor_key,request_id AS identity_key,'SUBSCRIBE' AS action,table_name,generation
+        FROM pekko_capture_subscriptions WHERE capture_id=? AND b_point IS NOT NULL
+      UNION ALL SELECT CONCAT('K:',request_id),request_id,'STOP',table_name,generation
+        FROM pekko_capture_subscriptions WHERE capture_id=? AND k_point IS NOT NULL
+      UNION ALL SELECT CONCAT('F:',f.fence_id),f.fence_id,f.action,s.table_name,s.generation
+        FROM pekko_capture_fences f JOIN pekko_capture_subscriptions s ON f.capture_id=s.capture_id AND f.subscription_id=s.request_id
+        WHERE f.capture_id=? AND f.seq IS NOT NULL
+      ) controls WHERE cursor_key>? ORDER BY cursor_key LIMIT ?"""
+    rows(c,sql,captureId,captureId,captureId,after,limit).map {r=>
+      val action=r("action");val operation=if(action=="SUBSCRIBE" || action=="STOP")markerId(r("identity_key"),action=="STOP")else fenceOperation(r("identity_key"))
+      (r("cursor_key"),operation,action,r("table_name"),r("generation"))
+    }
   }
   private def verifyChain(c:Connection,head:Long):Unit={
     var next=Option(head)

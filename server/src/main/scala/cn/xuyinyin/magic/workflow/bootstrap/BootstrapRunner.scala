@@ -190,8 +190,18 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
           require(after==last,"streaming Journal cursor is not retained in L")
         }
         emit("BOOTSTRAP_REGISTERED","executionId"->JsString(state.executionId))
-        if(!canceled){capture.subscribe(id,table,generation);poll("B"){logStore.subscription(id).exists(_.b.nonEmpty)}
-          if(!state.planned){val upper=source.maximum();update(_.copy(phase="SCANNING",upper=upper,planned=true))}
+        if(!canceled){
+          // A quiet skipped SDK snapshot may need a server heartbeat (~48s by default).
+          // This is a bounded compatibility wait, not the future cold-task scheduler.
+          val readyDeadline=System.nanoTime()+90000000000L
+          while(!canceled && !stop() && capture.startupEvidence.phase!="ADMISSION_READY") {
+            healthy();require(System.nanoTime()<readyDeadline,"capture admission wait expired")
+            Thread.sleep(250)
+          }
+          if(stop())return
+          if(!canceled)capture.subscribe(id,table,generation)
+          if(!canceled)poll("B"){logStore.subscription(id).exists(_.b.nonEmpty)}
+          if(!canceled && !state.planned){val upper=source.maximum();update(_.copy(phase="SCANNING",upper=upper,planned=true))}
         }
         var recovering=true
         while(!stop() && !Set("PAUSED","CANCELED").contains(state.phase)) {
