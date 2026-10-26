@@ -14,7 +14,7 @@ import org.apache.pekko.Done
 import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import org.apache.pekko.actor.typed.scaladsl.adapter._
 import org.apache.pekko.serialization.SerializationExtension
-import java.sql.{Connection,DriverManager}
+import java.sql.{Connection,DriverManager,PreparedStatement}
 import java.lang.reflect.{InvocationHandler,InvocationTargetException,Method,Proxy}
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicReference
@@ -39,6 +39,12 @@ object SharedCaptureMatrixWorker {
     val controlProxy=new MySQLCommitResponseProxy(settings.host,settings.port,event)
     val armL=new AtomicReference[String]("");val armControl=new AtomicReference[String]("")
     val factory=new CaptureObservedFactory(event)
+    val engineCreations=new java.util.concurrent.atomic.AtomicInteger()
+    val observedFactory=new DebeziumEngineFactory {
+      def create(p:java.util.Properties):DebeziumEngineAccess={
+        engineCreations.incrementAndGet();factory.create(p)
+      }
+    }
     val applicationArm=new AtomicReference[String]("")
     def takeApplication(mode:String):Boolean={val current=applicationArm.get();current==mode && applicationArm.compareAndSet(current,"")}
     val cfg=ConfigFactory.parseMap(Map[String,AnyRef](
@@ -65,13 +71,26 @@ object SharedCaptureMatrixWorker {
     val lineage=withConnection(settings,schema)(query(_,"SELECT @@server_uuid AS uuid")).elements.head.asJsObject.fields("uuid").convertTo[String]
     val store=new MySQLCaptureStore(()=>observedConnection(),captureId,lineage,sys.env.get("CAPTURE_LOG_CAPACITY").fold(64L*1024*1024)(_.toLong))
     val source=MySQLCdcSourceConfig(captureId,settings.host,settings.port,schema,"source_rows",settings.user,settings.password,761025L,batchSize.toInt,100)
-    val capture=new SharedMySQLCapture(source,MySQLCdcStateConfig(state.url(schema),state.user,state.password,"capture_offsets","capture_history",0),store,factory,event) {
+    val capture=new SharedMySQLCapture(source,MySQLCdcStateConfig(state.url(schema),state.user,state.password,"capture_offsets","capture_history",0),store,observedFactory,event) {
       override protected def sourceConnection():Connection={
         val c=DriverManager.getConnection(settings.copy(port=controlProxy.port).url(schema),settings.user,settings.password)
         Proxy.newProxyInstance(classOf[Connection].getClassLoader,Array(classOf[Connection]),new InvocationHandler {
           def invoke(o:Any,m:Method,a:Array[AnyRef]):AnyRef={
             if(m.getName=="commit"){val mode=armControl.getAndSet("");if(mode.nonEmpty)controlProxy.arm(mode,JsObject("stage"->JsString("SOURCE_MARKER_COMMIT")))}
-            try m.invoke(c,Option(a).getOrElse(Array.empty[AnyRef]):_*)catch{case e:InvocationTargetException=>throw e.getCause}
+            val result=try m.invoke(c,Option(a).getOrElse(Array.empty[AnyRef]):_*)catch{case e:InvocationTargetException=>throw e.getCause}
+            if(m.getName=="prepareStatement" && a!=null && a(0).toString.startsWith("INSERT INTO pekko_capture_control ")){
+              val statement=result.asInstanceOf[PreparedStatement]
+              val parameters=scala.collection.mutable.Map.empty[Int,String]
+              Proxy.newProxyInstance(classOf[PreparedStatement].getClassLoader,Array(classOf[PreparedStatement]),new InvocationHandler {
+                def invoke(p:Any,method:Method,args:Array[AnyRef]):AnyRef={
+                  if(method.getName=="setString")parameters.update(args(0).asInstanceOf[java.lang.Integer].intValue(),args(1).asInstanceOf[String])
+                  if(method.getName=="executeUpdate")event("SOURCE_CONTROL_ATTEMPT",JsObject(
+                    "operationId"->JsString(parameters(1)),"action"->JsString(parameters(2)),
+                    "table"->JsString(parameters(3)),"generation"->JsString(parameters(4))))
+                  try method.invoke(statement,Option(args).getOrElse(Array.empty[AnyRef]):_*)catch{case e:InvocationTargetException=>throw e.getCause}
+                }
+              }).asInstanceOf[PreparedStatement]
+            }else result
           }
         }).asInstanceOf[Connection]
       }
@@ -115,6 +134,14 @@ object SharedCaptureMatrixWorker {
       Iterator.continually(StdIn.readLine()).takeWhile(line=>line!=null && line!="STOP").foreach {line=>
         val cmd=line.split(" ")
         try cmd(0) match {
+          case "CAPTURE_ADMISSION"=>
+            val e=capture.startupEvidence
+            val value=JsObject("runtimeAttemptId"->JsString(e.runtimeAttemptId),"phase"->JsString(e.phase),
+              "reasonCode"->e.reasonCode.map(JsString(_)).getOrElse(JsNull),"loadedCheckpoint"->JsString(e.loadedCheckpoint),
+              "snapshot"->JsString(e.snapshot),"currentCheckpoint"->JsString(e.currentCheckpoint),
+              "ackFloor"->JsNumber(e.ackFloor),"durableAck"->JsNumber(e.durableAck),"confirmedAck"->JsNumber(e.confirmedAck))
+            emit("CAPTURE_ADMISSION",value.fields.toSeq:_*)
+            if(e.phase=="ADMISSION_READY")emit("CAPTURE_ADMISSION_READY",value.fields.toSeq:_*)
           case "SUBSCRIBE"=>Future {capture.subscribe(cmd(1),cmd(2),cmd(3));emit("SUBSCRIBE_ACCEPTED","id"->JsString(cmd(1)))}.failed.foreach(e=>emit("COMMAND_FAILED","command"->JsString("SUBSCRIBE"),"error"->JsString(e.toString)))
           case "PREPARE"=>store.register(cmd(1),cmd(2),cmd(3),store.schema(cmd(2)).get.id);emit("PREPARED")
           case "CANCEL_PENDING"=>store.cancelPending(cmd(1));emit("PENDING_CANCELED")
@@ -155,7 +182,9 @@ object SharedCaptureMatrixWorker {
           case _=>throw new IllegalArgumentException("unknown command")
         }catch {case e:Throwable=>emit("COMMAND_FAILED","command"->JsString(cmd(0)),"error"->JsString(e.toString))}
       }
-    }catch {case e:Throwable=>emit("START_FAILED","error"->JsString(e.toString));throw e}
+    }catch {case e:Throwable=>emit("START_FAILED","error"->JsString(e.toString),
+      "code"->(e match {case a:CaptureAdmissionException=>JsString(a.code);case _=>JsNull}),
+      "engineCreations"->JsNumber(engineCreations.get()));throw e}
     finally {factory.release();gate.countDown();capture.close();proxy.close();controlProxy.close();kit.shutdownTestKit()}
   }
 }

@@ -48,6 +48,165 @@ SHA-256(`connectorId`) 的前 32 个小写十六进制字符。这样不同 conn
 不覆盖进度。表在恢复时复用，停止或删除 workflow 不会自动清理；清理 connector
 状态属于可能造成重放或数据缺口的独立管理操作。
 
+<a id="resident-cdc-platform"></a>
+
+## 常驻 CDC 平台：显式启用
+
+这是 `/api/v1/cdc-tasks` 的共享 Reader、LOW/HIGH 初始化及持续同步入口，与旧 workflow
+和 `/snapshot-tasks` 静态快照调度独立。`reference.conf` 默认
+`pekko.workflow.cdc-platform.enabled=false`；未配置平台时相关 API 返回 503，不提供演示任务。
+`MYSQL_CDC_ENABLED` 不会代替这个独立开关。
+
+配置只在指定的一个 owner JVM 启用。其他集群节点继续关闭本平台；现有 Sharding、
+Scheduler 或 guardian 的故障接管不会自动接管这条链路。一个控制 schema 对应一个平台
+owner；首版不提供可配置的多平台命名空间。
+
+以下是当前 [`CdcPlatformSettings`](../../server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcPlatformSettings.scala)
+实际读取的 HOCON 结构。保存到权限受控的外部配置文件；`${...}` 是该文件显式引用的必填
+环境变量，示例不包含密码值，也不是新增的隐式环境变量映射。
+
+```hocon
+include classpath("application-prod.conf")
+
+# Journal 的 URL/账户可独立配置；本例与控制库同 schema、使用不同账户。
+pekko-persistence-jdbc.shared-databases.slick.db {
+  url = ${CDC_CONTROL_JDBC_URL}
+  user = ${CDC_JOURNAL_USER}
+  password = ${CDC_JOURNAL_PASSWORD}
+}
+
+# 本平台的控制/L/spool/receipt/Sink 与 SDK state 使用同一个 MySQL URL。
+# 每个 capture 的 SDK state 与 L 连接使用其专属 SDK state 账户，不能沿用控制账户。
+pekko.workflow.mysql-cdc {
+  enabled = true
+  state-jdbc {
+    url = ${CDC_CONTROL_JDBC_URL}
+    username = ${CDC_CONTROL_USER}
+    password = ${CDC_CONTROL_PASSWORD}
+    offset-table = "debezium_offset_storage"
+    history-table = "debezium_database_history"
+    offset-flush-interval-ms = 0
+  }
+}
+
+pekko.workflow.cdc-platform {
+  enabled = true
+  snapshot-steps = 2
+  tail-steps = 2
+  candidate-page = 32
+  max-pending-operations = 64
+  poll-interval-ms = 100
+  tail-delay-ms = 500
+  captures = [
+    {
+      id = "shop-source"
+      host = ${CDC_SOURCE_HOST}
+      port = 3306
+      database = "shop"
+      username = ${CDC_SOURCE_USER}
+      password = ${CDC_SOURCE_PASSWORD}
+      server-id = 540001
+      source-lineage = ${CDC_SOURCE_UUID}
+      state-lineage = ${CDC_STATE_UUID}
+
+      exclusive-sdk-accounts = true
+      sdk-state-username = ${CDC_SDK_STATE_USER}
+      sdk-state-password = ${CDC_SDK_STATE_PASSWORD}
+
+      # 成对配置；若省略，两项均省略，改用上面的 source 账户观察。
+      source-observer-username = ${CDC_SOURCE_OBSERVER_USER}
+      source-observer-password = ${CDC_SOURCE_OBSERVER_PASSWORD}
+
+      batch-size = 128
+      chunk-rows = 32
+      page-rows = 8
+      max-log-bytes = 134217728
+      max-spool-bytes = 67108864
+    }
+  ]
+}
+```
+
+`CDC_CONTROL_JDBC_URL` 应为 `jdbc:mysql://state-host:3306/cdc_control` 这样的专用 schema
+URL；源和状态实例须有不同的实际 `@@server_uuid`，分别填入两个 lineage。源数据库名
+和目标表名是受校验的 SQL 标识符；`server-id` 在源实例复制客户端中须唯一。
+一个配置最多 32 个 capture，ID 唯一，所有 capture 共享一个控制 URL；source/SDK-state
+专属账号不能跨 capture 复用。这里只显式配置一个数据库捕获域，没有按实例自动合并配置的机制。
+
+两类 step 预算均须为正、总和不超过 32；candidate-page 上限 128。
+`batch-size` 同时用于本 capture 的 SDK 与组回放上限，`chunk-rows/page-rows` 约束
+初始化窗口和页。L/spool 是有限容量，不因配置线程数增加而自动扩容；当前没有自动 GC。
+这里没有 `sink-host`、`sink-user` 或 `state-observer-user` 字段。当前 Sink 的主机、端口、库
+从控制 JDBC URL 派生，写入账户也是 `CDC_CONTROL_USER`。不能只在配置里填一个未被读取的字段，
+就认为已实现独立 Sink 部署。
+
+源端 JDBC 目前在内核中使用 `useSSL=false`；本配置没有新增源 TLS 字段，不能当作跨不可信网络的
+TLS 部署模板。通用 JDBC URL 的参数也不代表 SDK 和源端所有连接自动采用同一 TLS 配置。
+
+### 账号与可信观察边界
+
+| 角色 | 当前使用位置 | 必须满足的约束 |
+|---|---|---|
+| `CDC_SOURCE_USER` | 本 capture 的 Debezium、marker 与分页快照短连接 | 该 capture 专用；具有复制读取、源表读取及专用控制表创建/读写权限，不给其他服务复用 |
+| `CDC_SDK_STATE_USER` | 本 capture 的 offset/history、Reader owner 与全部 L Store 连接 | 该 capture 专用；与控制/Journal/Sink 长连接账户分离，具有派生 offset/history 及 L 表的必要创建、SELECT/INSERT/UPDATE/DELETE 权限 |
+| `CDC_CONTROL_USER` | SQL task/grant/dispatch、spool、目标 receipt、Sink 与 state observer | 当前控制/Sink 合用；有辅助表/索引创建及目标 DML 权限，并直接授予全局 PROCESS 供 state observer 观察；不承担 capture 的 L 事务 |
+| `CDC_JOURNAL_USER` | Pekko JDBC Journal/Snapshot/Read Journal | 预建持久化表的运行权限；本例单独配置，不属于 SDK state 观察域 |
+| `CDC_SOURCE_OBSERVER_USER` | 源服务器的只读观察连接 | 可独立于 SDK source；必须有实际全局 PROCESS 可见性，能执行身份查询、会话/事务查询与 canary 命名锁 |
+
+具体 MySQL 权限须结合固定 Debezium/MySQL 版本预部署验证；配置中的
+`exclusive-sdk-accounts=true` 是管理员对独占性的声明，代码会检查配置复用和实际遗留连接，
+不能阻止管理员把该账号交给别的程序。独占性失效时，不能靠忽略多出的连接恢复额度。
+
+source observer 两字段都省略时，source 账户还必须直接具有全局 PROCESS 权限。
+state observer 没有单独配置字段，使用控制账户；仅有某个库的可见性不够。当前实现从
+`SHOW GRANTS` 核实直接全局 PROCESS（或全局 ALL PRIVILEGES），不会把角色中的间接权限
+或“查询结果为空”当成完整观察证明。无需为此给 SDK state 账户全局 PROCESS。
+
+[`CaptureResourceObserver`](../../server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureResourceObserver.scala)
+在 Reader 启动前建立两端原始锚连接，核对 UUID、connection id 与 canary lock，期间不自动
+重连替换锚。服务端会话/事务仍存在、权限不足、锚丢失或归属不明时保持 UNKNOWN。
+source 账号下的 marker/snapshot 短连接也属于同一 capture 的资源，不能人为从统计中排除。
+
+L 的物理位置仍是控制 URL 指向的 schema，连接凭据改用该 capture 的 SDK state 账号。
+权限须覆盖 `pekko_capture_readers`、`pekko_capture_log`、`pekko_capture_schemas`、
+`pekko_capture_subscriptions` 和 `pekko_capture_fences`，不能只授权 offset/history。
+这样 L 的 COMMIT 或关闭结果不确定时，其遗留会话/事务仍在 observer 的账号域内。
+直接装配 `SharedMySQLCapture` 的调用者也必须满足这个前提；把 L Store 接到另一共享账号，
+不能取得“该 capture 全部资源已释放”的保证。观察连接本身仍使用有 PROCESS 权限的控制账号。
+
+### 持久化与目标表前提
+
+先由部署流程初始化 Journal/Snapshot 三表和完整组账本，见
+[部署指南](deployment.md#resident-cdc-prerequisites)。目标表必须预先创建在控制 URL 指向的库，
+最初为空且独占，与源的受支持字段和单列有符号整数主键匹配；使用 InnoDB，禁止业务 trigger、
+外键和额外唯一约束。初始化审计通过前不向业务发布。
+
+平台启动会创建/检查自己的 task/owner/grant/dispatch 表、L 和 Bootstrap 辅助表；
+SDK 会创建按 capture ID 派生的 offset/history 表。因此普通 workflow 的“不自动建持久化表”
+不意味着显式 CDC 平台无需 DDL 权限。不要将
+`db/mysql/pekko-cdc-schema.sql` 当作平台完整部署脚本：它含验收夹具表和未派生的基础名称，
+不能替代现存 capture 的实际 offset/history。
+
+### API 受理、状态与停止
+
+POST `/api/v1/cdc-tasks` 只接受以下五个字符串；凭据由服务配置提供：
+
+```json
+{"requestId":"add-orders-g1","captureId":"shop-source","table":"orders","generation":"g1","targetTable":"orders_replica"}
+```
+
+HTTP 202 仅表示定义已持久受理，可能仍为 QUEUED。捕获准入、LOW/HIGH 初始化、目标激活、
+当前健康与资源释放是独立状态；同 requestId 以同定义重试，同身份改变定义返回冲突。
+列表用 `after/pageSize` keyset 查询，`/api/v1/cdc-captures` 与 `/api/v1/cdc-status` 提供实际捕获域
+和 owner 状态。`/api/v1/cdc-tasks/:taskId/cancel` 受后端 cancelAllowed 约束；PAUSED 没有通用 Resume。
+旧 `/snapshot-tasks` 继续表示静态快照，不能把其完成视为 CDC 初始化完成。
+
+CoordinatedShutdown 调用受管 stop，它是维护停止，不发业务取消 K。本次等待超时可返回 false，
+但旧 operation 继续核实真实释放；本地 SDK completion 不等于 reusable。UNKNOWN grant 继续占预算，
+旧 owner 不是 STOPPED 或仍有 ACTIVE/UNKNOWN grant 时，新 runtime 不启动替代 Reader。
+当前没有新共享链路自动接管、PID/TTL 解锁或管理强制重置 API；不能手改 owner/grant 来制造可恢复状态。
+相关机制和真实验证边界见[平台实验报告](../experiments/2026-10-27-cdc-platform/README.md)。
+
 ## Seed 和角色是 typed list
 
 `pekko.cluster.seed-nodes` 与 `pekko.cluster.roles` 是 HOCON 列表。普通 shell / Docker

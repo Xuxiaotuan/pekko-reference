@@ -40,6 +40,57 @@ class RunnerIsolationTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'observer unavailable'):
             runner.observe_resources(pool, 'a', 'private-test-token')
 
+    def test_purge_requires_exact_identity_and_idle_before_archive(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            request = root/'source-purge-request.json'
+            request.write_text(json.dumps(dict(uuid='s', port=14365, captureId='capture_test')))
+            pool=Mock(); pool.slots={'a':{'source':{'uuid':'s','port':14365}}}
+            pool.verify_slot.return_value={'admitted':True}
+            pool.sql.return_value='residual'
+            with self.assertRaisesRegex(RuntimeError,'not idle'):
+                runner.fulfill_source_purge(pool,'a','token',root,root/'private')
+            pool.archive_and_purge.assert_not_called()
+            pool.sql.return_value=''
+            request.write_text(json.dumps(dict(uuid='wrong', port=14365, captureId='capture_test')))
+            with self.assertRaisesRegex(RuntimeError,'identity'):
+                runner.fulfill_source_purge(pool,'a','token',root,root/'private')
+            pool.archive_and_purge.assert_not_called()
+
+    def test_purge_success_receipt_contains_hashes_not_binlog_contents(self):
+        with TemporaryDirectory() as directory:
+            root=Path(directory)
+            (root/'source-purge-request.json').write_text(json.dumps(dict(uuid='s',port=14365,captureId='capture_test')))
+            pool=Mock();pool.slots={'a':{'source':{'uuid':'s','port':14365}}}
+            pool.verify_slot.return_value={'admitted':True};pool.sql.return_value=''
+            def archive(slot, role, token, destination):
+                destination.mkdir()
+                return {'binlog.000001':'sha'}
+            pool.archive_and_purge.side_effect=archive
+            runner.fulfill_source_purge(pool,'a','token',root,root/'private')
+            receipt=json.loads((root/'source-purge-response.json').read_text())
+            self.assertEqual(receipt['archived'],{'binlog.000001':'sha'})
+            self.assertTrue(receipt['idleBefore']['idle'])
+            self.assertTrue(receipt['purged'])
+
+    def test_purge_barrier_defers_without_mutation_until_physical_idle(self):
+        samples=[]
+        with patch.object(runner,'observe_resources',side_effect=[dict(idle=False),dict(idle=True)]), \
+                patch.object(runner,'fulfill_source_purge') as fulfill:
+            self.assertFalse(runner.try_source_purge(None,'b','token',Path('/output'),Path('/private'),samples))
+            fulfill.assert_not_called()
+            self.assertTrue(runner.try_source_purge(None,'b','token',Path('/output'),Path('/private'),samples))
+            fulfill.assert_called_once()
+        self.assertEqual(samples,[dict(idle=False),dict(idle=True)])
+
+    def test_refused_cleanup_signal_preserves_observed_local_uncertainty(self):
+        for output, expected in [('', True), ('123 123 S\n', False)]:
+            with patch.object(runner,'terminate_group',side_effect=PermissionError('signal refused')), \
+                    patch.object(runner.subprocess,'run',return_value=SimpleNamespace(returncode=0,stdout=output)):
+                result=runner.cleanup_group(123)
+                self.assertEqual(result['confirmed_exited'],expected)
+                self.assertIn('PermissionError',result['signal_error'])
+
     def test_nonidle_slot_never_starts_jvm_or_releases_lease(self):
         with TemporaryDirectory() as directory:
             pool = Mock()

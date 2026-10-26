@@ -44,6 +44,7 @@ final class CaptureStartupRecoveryFactory(emit:(String,JsObject)=>Unit,gateSchem
     val engine=original.create(props)
     new DebeziumEngineAccess {
       def start(consumer:DebeziumBatchConsumer)=engine.start(consumer)
+      override def localTerminationConfirmed:Boolean=engine.localTerminationConfirmed
       def close():Unit=try engine.close()finally {logger.detachAppender(appender);logger.setLevel(oldLevel);streamingLogger.detachAppender(appender);streamingLogger.setLevel(oldStreamingLevel);appender.stop()}
     }
   }

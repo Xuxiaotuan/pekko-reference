@@ -22,6 +22,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   const menuItems: MenuProps['items'] = [
     {
+      key: '/cdc-tasks',
+      icon: <ApartmentOutlined />,
+      label: '常驻 CDC 任务',
+    },
+    {
       key: '/dashboard',
       icon: <DashboardOutlined />,
       label: '服务状态',

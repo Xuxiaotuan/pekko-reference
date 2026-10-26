@@ -10,7 +10,9 @@ final class BootstrapJdbc(open:()=>Connection,slots:Int=2) {
   private val permits=new Semaphore(slots)
   private val fenced=new AtomicBoolean(false)
   def connection[A](f:Connection=>A):A={
-    require(!fenced.get(),"bootstrap connection release unknown")
+    if(fenced.get())throw new CdcExecutionException(
+      ExecutionFailure(ExecutionFailure.ReleaseUnknown,"bootstrap-close",releaseConfirmed=false),
+      new IllegalStateException("bootstrap connection release unknown"))
     require(permits.tryAcquire(5,TimeUnit.SECONDS),"bootstrap connection budget exhausted")
     var c:Connection=null;var primary:Throwable=null;var released=false
     try {c=open();f(c)}catch {case e:Throwable=>primary=e;throw e}
@@ -18,7 +20,8 @@ final class BootstrapJdbc(open:()=>Connection,slots:Int=2) {
       try {if(c!=null)c.close();released=true} catch {case release:Throwable=>
         fenced.set(true)
         val failure=new CdcExecutionException(ExecutionFailure(ExecutionFailure.ReleaseUnknown,"bootstrap-close",releaseConfirmed=false),release)
-        if(primary!=null){primary.addSuppressed(failure);throw failure}else throw failure
+        if(primary!=null)failure.addSuppressed(primary)
+        throw failure
       }finally if(released)permits.release()
     }
   }

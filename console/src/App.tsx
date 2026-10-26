@@ -8,6 +8,7 @@ import WorkflowCreatePage from './features/workflows/pages/WorkflowCreatePage'
 import WorkflowSummaryPage from './features/workflows/pages/WorkflowSummaryPage'
 import ExecutionHistory from './features/workflows/pages/ExecutionHistory'
 import SchedulePage from './features/schedules/pages/SchedulePage'
+import CdcTasksPage from './features/cdc/pages/CdcTasksPage'
 import './App.css'
 
 function Unavailable() {
@@ -23,6 +24,7 @@ export default function App() {
     <Route path="/workflows/:id" element={<WorkflowSummaryPage />} />
     <Route path="/history/:workflowId" element={<ExecutionHistory />} />
     <Route path="/schedules" element={<SchedulePage />} />
+    <Route path="/cdc-tasks" element={<CdcTasksPage />} />
     <Route path="/tasks" element={<Navigate to="/workflows" replace />} />
     <Route path="*" element={<Unavailable />} />
   </Routes></AppLayout></Layout>

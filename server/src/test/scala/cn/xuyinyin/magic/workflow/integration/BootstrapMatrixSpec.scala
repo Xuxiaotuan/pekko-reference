@@ -13,14 +13,23 @@ import java.util.UUID
 
 class BootstrapMatrixSpec extends AnyWordSpec with Matchers {
   import CdcJournalWindowSupport._
+  protected def markerUnknownContract:Boolean=false
+  private val markerUnknownVariants=Set("I10","I10-low-C0","I10-low-C1","I10-low-late-commit","I10-low-late-rollback",
+    "I10-F-C1","I10-high-C0","I10-high-late-commit","I10-high-late-rollback","I10-F-C0",
+    "I10-F-late-commit","I10-F-late-rollback","I22-late-low")
   "online bootstrap with real MySQL, Actor Journal and Sink" should {
     for(variant<-Vector("I01","I02","I03","I04","I05","I06","I07","I08","I09","I10","I11","I12","I13","I14","I15","I16","I17","I18","I19","I20","I21","I22","I23","I24","I10-low-C0","I10-low-C1","I10-low-late-commit","I10-low-late-rollback","I10-F-C1","I17-C0","I17-late-commit","I17-late-rollback","I13-prefix","I15-raw","I15-schema","I15-L","I18-reject","I18-budget","I18-release","I19-last-window","I20-split","I21-postF","I22-beforeB","I22-target","I23-activation","I24-capacity","I18-replay-timeout","I18-replay-close","I17-replay-C0","I17-replay-C1","I17-replay-late-commit","I17-replay-late-rollback","I15-registry","I22-late-low","I10-high-C0","I10-high-late-commit","I10-high-late-rollback","I10-F-C0","I10-F-late-commit","I10-F-late-rollback","I18-reject-after-T")) {
+      if(!markerUnknownContract || markerUnknownVariants(variant)){
       val scenario=variant.take(3)
-      s"preserve window, application and acknowledgement evidence for $variant" taggedAs ExternalIntegration in {
+      val safePauseCase=markerUnknownVariants(variant) &&
+        (markerUnknownContract || !sys.env.get("BOOTSTRAP_LEGACY_MARKER_EXPECTATIONS").contains("1"))
+      val caseName=if(safePauseCase)s"retain SAFE_PAUSED source-marker-unknown evidence for $variant"
+        else s"preserve window, application and acknowledgement evidence for $variant"
+      caseName taggedAs ExternalIntegration in {
         if(!sys.env.get("RUN_SHARED_CAPTURE_MATRIX").contains("1"))cancel("dedicated dual MySQL required")
         val source=Settings.environment();val state=source.copy(port=sys.env("CAPTURE_STATE_PORT").toInt)
         val suffix=UUID.randomUUID().toString.replace("-","").take(12);val schema="pekko_test_cdc_window_"+suffix;val captureId="boot_"+suffix
-        val dir=Path.of("target/bootstrap-matrix",sys.env.getOrElse("BOOTSTRAP_EVIDENCE_RUN","manual"),variant+"-"+suffix).toAbsolutePath;Files.createDirectories(dir)
+        val dir=Path.of(if(markerUnknownContract)"target/bootstrap-marker-unknown"else"target/bootstrap-matrix",sys.env.getOrElse("BOOTSTRAP_EVIDENCE_RUN","manual"),variant+"-"+suffix).toAbsolutePath;Files.createDirectories(dir)
         initialize(source,schema);initialize(state,schema)
         def sql(s:Settings,q:String)=withConnection(s,schema)(executeSql(_,q))
         val names=if(scenario=="I01")Vector("a","b","c","d","e","f","g")else if(Set("I22-late-low","I24-capacity")(variant))Vector("a","b")else Vector("a")
@@ -52,14 +61,50 @@ class BootstrapMatrixSpec extends AnyWordSpec with Matchers {
         def release(c:Child):Unit={c.send("RELEASE");c.awaitEvent("GATE_RELEASED")}
         def crash(c:Child):Unit={c.send("CRASH");c.exit() shouldBe 86}
         def save(label:String,c:Child):Unit={write(dir,label+".json",JsObject("case"->JsString(variant),"pid"->JsNumber(c.pid),"worker"->c.state(),"comparisons"->JsObject(names.map(t=>t->comparison(t)).toMap),
+          "sourceControls"->withConnection(source,schema)(query(_,"SELECT * FROM pekko_capture_control ORDER BY operation_id")),
           "T"->withConnection(state,schema)(query(_,"SELECT * FROM pekko_sync_cdc_group_ledger ORDER BY group_id")),
           "baselineT"->withConnection(state,schema)(query(_,"SELECT * FROM pekko_bootstrap_receipts ORDER BY bootstrap_id,operation_id")),
           "sourceTransactions"->withConnection(source,schema)(query(_,"SELECT trx_mysql_thread_id,trx_state,trx_started,trx_query FROM information_schema.innodb_trx")),
           "stateTransactions"->withConnection(state,schema)(query(_,"SELECT trx_mysql_thread_id,trx_state,trx_started,trx_query FROM information_schema.innodb_trx")),
           "sourceConnections"->withConnection(source,schema)(query(_,s"SELECT ID,DB,COMMAND,STATE FROM information_schema.processlist WHERE DB='$schema'")),
           "stateConnections"->withConnection(state,schema)(query(_,s"SELECT ID,DB,COMMAND,STATE FROM information_schema.processlist WHERE DB='$schema'"))))}
+        def safeMarkerPause(c:Child):Unit={
+          awaitCondition("source marker uncertainty safely pauses"){
+            val value=status(c);val actors=value.fields("actors").asJsObject.fields
+            value.fields("captureFailure")!=JsNull && actors.values.forall(_.asJsObject.fields("phase")==JsString("PAUSED"))
+          }
+          val before=c.state();val actors=before.fields("actors").asJsObject.fields
+          actors.values.foreach {v=>val f=v.asJsObject.fields
+            f("failure") shouldBe JsString("local_release_unconfirmed");f("recoveryAttempts") shouldBe JsNumber(0)}
+          before.fields("captureFailureCode") shouldBe JsString("local_release_unconfirmed")
+          before.fields("captureFailureStage") shouldBe JsString("source-marker:MARKER_COMMIT_UNKNOWN")
+          before.fields("captureReleaseConfirmed") shouldBe JsBoolean(false)
+          val action=if(variant.contains("low"))"LOW"else if(variant.contains("F-"))"F"else"HIGH"
+          val fenceId=if(action=="F")"a_F"else if(action=="LOW")"a_0_0_L"else"a_0_0_H"
+          val attempts=c.events.filter(e=>e.fields.get("kind").contains(JsString("SOURCE_CONTROL_ATTEMPT")) &&
+            e.fields.get("table").contains(JsString("a")) && e.fields.get("action").contains(JsString(action)))
+          attempts.size shouldBe 1
+          attempts.head.fields("operationId") shouldBe JsString(store.fenceOperation(fenceId))
+          val targetBefore=withConnection(state,schema)(query(_,"SELECT * FROM pekko_bootstrap_receipts ORDER BY bootstrap_id,operation_id"))
+          val groupsBefore=withConnection(state,schema)(query(_,"SELECT * FROM pekko_sync_cdc_group_ledger ORDER BY group_id"))
+          targetBefore.elements.filter {r=>val f=r.asJsObject.fields;f("bootstrap_id")==JsString("a") && f("operation_id")==JsString("ACTIVATE")} shouldBe empty
+          save("safe-paused-before-retry",c)
+          c.send("RETRY_FENCE "+fenceId)
+          val rejection=c.awaitEvent("COMMAND_FAILED");rejection.fields("command") shouldBe JsString("RETRY_FENCE")
+          val after=c.state()
+          after.fields("actors") shouldBe before.fields("actors")
+          withConnection(state,schema)(query(_,"SELECT * FROM pekko_bootstrap_receipts ORDER BY bootstrap_id,operation_id")) shouldBe targetBefore
+          withConnection(state,schema)(query(_,"SELECT * FROM pekko_sync_cdc_group_ledger ORDER BY group_id")) shouldBe groupsBefore
+          c.events.count(e=>e.fields.get("kind").contains(JsString("SOURCE_CONTROL_ATTEMPT")) &&
+            e.fields.get("operationId")==Some(JsString(store.fenceOperation(fenceId)))) shouldBe 1
+          save("safe-paused-after-retry",c)
+          write(dir,"acceptance.json",JsObject("status"->JsString("SAFE_PAUSED"),"converged"->JsBoolean(false),
+            "initializationCompleted"->JsBoolean(false),"variant"->JsString(variant),"originalFence"->JsString(fenceId),
+            "operationId"->JsString(store.fenceOperation(fenceId)),"sourceWriteAttempts"->JsNumber(1),
+            "recoveryAttempts"->JsNumber(0),"releaseConfirmed"->JsBoolean(false)))
+        }
         var child:Child=null;var recovered:Child=null;var transaction:Connection=null;var blocker:Connection=null
-        write(dir,"environment.json",JsObject("case"->JsString(variant),"sourceManifestSha256"->JsString(sys.env.getOrElse("BOOTSTRAP_SOURCE_MANIFEST_SHA256","unfrozen")),"schema"->JsString(schema),"captureId"->JsString(captureId),"sourceLineage"->JsString(lineage),"sourceVersion"->withConnection(source,schema)(query(_,"SELECT VERSION() AS version,@@binlog_format AS format,@@binlog_row_image AS row_image")),"targetBaseline"->JsString("exclusive initially empty; business publication only after durable STREAMING")))
+        write(dir,"environment.json",JsObject("case"->JsString(variant),"acceptanceMode"->JsString(if(safePauseCase)"SAFE_PAUSED_MARKER_UNKNOWN"else"LEGACY_ASSERTION"),"sourceManifestSha256"->JsString(sys.env.getOrElse("BOOTSTRAP_SOURCE_MANIFEST_SHA256","unfrozen")),"schema"->JsString(schema),"captureId"->JsString(captureId),"sourceLineage"->JsString(lineage),"sourceVersion"->withConnection(source,schema)(query(_,"SELECT VERSION() AS version,@@binlog_format AS format,@@binlog_row_image AS row_image")),"targetBaseline"->JsString("exclusive initially empty; business publication only after durable STREAMING")))
         try {
           child=start(if(variant=="I20-split")128 else 1,"original");child.awaitEvent("PROCESS_READY");awaitCondition("schema ready"){names.forall(t=>store.schema(t).nonEmpty)}
           scenario match {
@@ -88,7 +133,8 @@ class BootstrapMatrixSpec extends AnyWordSpec with Matchers {
               val mode=if(variant.endsWith("C0"))"C0"else if(variant.endsWith("late-commit"))"LATE_COMMIT"else if(variant.endsWith("late-rollback"))"LATE_ROLLBACK"else "C1"
               child.send((if(scenario=="I10")"ARM_CONTROL "else if(variant.contains("replay"))"ARM_REPLAY "else "ARM_TARGET ")+mode);child.awaitEvent("ARMED");release(child);child.awaitEvent("CUTPOINT");save("commit-uncertain",child)
               if(mode.startsWith("LATE")){child.send("RESOLVE_TX");child.awaitEvent("TX_RESOLVE_REQUESTED")}else {child.send("DROP_RESPONSE");child.awaitEvent("RESPONSE_RELEASED")}
-              ready(child);awaitCondition("uncertain commit recovered"){equal("a")}
+              if(safePauseCase)safeMarkerPause(child)
+              else {ready(child);awaitCondition("uncertain commit recovered"){equal("a")}}
             case "I11"|"I12"|"I14"|"I16"|"I19"|"I20"|"I21"=>
               val gate0=Map("I11"->"RAW_PAGE","I12"->"RAW_PAGE","I14"->"FOLD_GROUP","I16"->"BASELINE_T","I19"->"F_READY","I20"->"REPLAY_T","I21"->"ACTIVATION_T")(scenario)
               val gate=if(variant=="I19-last-window")"LAST_WINDOW_COMPLETE"else if(variant=="I21-postF")"F_READY"else gate0
@@ -161,10 +207,26 @@ class BootstrapMatrixSpec extends AnyWordSpec with Matchers {
               boot(child,"b","b");ready(child,"b")
               arm(child,"WINDOW_REGISTERED");boot(child);child.awaitEvent("CUTPOINT")
               child.send("ARM_CONTROL LATE_COMMIT");child.awaitEvent("ARMED");release(child);child.awaitEvent("CUTPOINT");save("LOW-transaction-held",child)
-              child.send("CANCEL a");child.awaitEvent("CANCEL_ACCEPTED");awaitCondition("K before late LOW"){phase(child)=="CANCELED"};save("K-before-LOW",child)
-              child.send("RESOLVE_TX");child.awaitEvent("TX_RESOLVE_REQUESTED");child.awaitEvent("PROXY_LATE_COMMIT_OK")
-              awaitCondition("late LOW obsolete"){store.fence("a_0_0_L").exists(_.obsolete)}
-              mutation("b","other-table-after-late-LOW");awaitCondition("other table continues"){equal("b")}
+              if(safePauseCase){
+                awaitCondition("capture domain pauses before cancel"){
+                  val value=status(child);value.fields("captureFailure")!=JsNull &&
+                    value.fields("actors").asJsObject.fields.values.forall(_.asJsObject.fields("phase")==JsString("PAUSED"))}
+                child.send("CANCEL a")
+                val decision=child.awaitEvent("CANCEL_RESULT")
+                decision.fields("phase") shouldBe JsString("PAUSED")
+                decision.fields("cancelRequested") shouldBe JsBoolean(false)
+                child.awaitEvent("CANCEL_NOT_ACCEPTED")
+                store.subscription("a").get.k shouldBe None
+                save("cancel-not-accepted-no-K",child)
+                child.send("RESOLVE_TX");child.awaitEvent("TX_RESOLVE_REQUESTED");child.awaitEvent("PROXY_LATE_COMMIT_OK")
+                safeMarkerPause(child)
+                store.subscription("a").get.k shouldBe None
+              }else {
+                child.send("CANCEL a");child.awaitEvent("CANCEL_ACCEPTED");awaitCondition("K before late LOW"){phase(child)=="CANCELED"};save("K-before-LOW",child)
+                child.send("RESOLVE_TX");child.awaitEvent("TX_RESOLVE_REQUESTED");child.awaitEvent("PROXY_LATE_COMMIT_OK")
+                awaitCondition("late LOW obsolete"){store.fence("a_0_0_L").exists(_.obsolete)}
+                mutation("b","other-table-after-late-LOW");awaitCondition("other table continues"){equal("b")}
+              }
             case "I22"|"I23"=>
               arm(child,if(variant=="I22-beforeB")"BOOTSTRAP_REGISTERED"else if(variant=="I22-target")"BASELINE_T"else if(variant=="I23-activation")"ACTIVATION_T"else if(scenario=="I22")"READ_OPEN"else "BEFORE_ACTIVATE");boot(child);child.awaitEvent("CUTPOINT");save("before-cancel",child)
               child.send("CANCEL a");child.awaitEvent("CANCEL_ACCEPTED");release(child);awaitCondition("cancel drained"){phase(child)=="CANCELED"}
@@ -178,7 +240,7 @@ class BootstrapMatrixSpec extends AnyWordSpec with Matchers {
               if(variant=="I24-capacity"){mutation("b","other-table-after-spool-full");awaitCondition("capacity pause isolated"){equal("b")}}
           }
           val active=Option(recovered).getOrElse(child)
-          if(!Set("I15","I18","I22","I23","I24")(scenario)){ready(active);names.foreach(t=>equal(t) shouldBe true)}
+          if(!safePauseCase && !Set("I15","I18","I22","I23","I24")(scenario)){ready(active);names.foreach(t=>equal(t) shouldBe true)}
           if(Set("I15-schema","I15-L")(variant)){
             write(dir,"safe-start-refusal.json",JsObject("readerRestarted"->JsBoolean(false),"businessPublished"->JsBoolean(false),"L"->withConnection(state,schema)(query(_,"SELECT * FROM pekko_capture_log ORDER BY seq"))))
           }else save("final",active)
@@ -189,6 +251,7 @@ class BootstrapMatrixSpec extends AnyWordSpec with Matchers {
           write(dir,"release.json",JsObject("workerExited"->JsBoolean(true),"sourceAndStateSessionsReleased"->JsBoolean(true)))
         }catch{case e:Throwable=>write(dir,"failure.json",JsObject("error"->JsString(e.toString)));throw e}
         finally {if(transaction!=null){transaction.rollback();transaction.close()};if(blocker!=null){blocker.rollback();blocker.close()};if(recovered!=null)recovered.kill();if(child!=null)child.kill()}
+      }
       }
     }
   }

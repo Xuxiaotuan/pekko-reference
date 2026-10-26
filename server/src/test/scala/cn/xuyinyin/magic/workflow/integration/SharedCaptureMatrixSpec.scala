@@ -56,8 +56,23 @@ class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
         }
         def equal(t:String):Boolean=comparison(t).fields("equal")==JsBoolean(true)
         def mutation(t:String,label:String):Unit=sql(source,s"UPDATE $t SET label='$label',revision=revision+1,amount=amount+0.1250,note='',updated_at='2026-10-25 01:02:03.123456' WHERE id=1")
+        val legacyStartupExpectations=sys.env.get("SHARED_LEGACY_STARTUP_EXPECTATIONS").contains("1")
+        var startupOutcome:Option[String]=None
         var child:Child=null;var recovered:Child=null;var blocker:Connection=null
-        def subscribe(c:Child,id:String,table:String):Unit={c.send(s"SUBSCRIBE $id $table g1");c.awaitEvent("SUBSCRIBE_ACCEPTED");awaitCondition("B "+id){store.subscription(id).exists(_.status=="CAPTURE_READY")}}
+        def subscribe(c:Child,id:String,table:String):Unit={
+          // Compatibility of the normal caller, not a change to the raw PREPARE/R02 trigger.
+          // PROCESS_READY and Schema persistence are deliberately not admission signals.
+          awaitCondition("current capture admission before new subscription",scala.concurrent.duration.Duration(90,"seconds")){
+            c.send("CAPTURE_ADMISSION")
+            val observed=c.awaitEvent("CAPTURE_ADMISSION")
+            val phase=observed.fields("phase").convertTo[String]
+            require(!Set("FAILED","PAUSED_UNPROVEN","STOPPING").contains(phase),"capture cannot admit: "+observed.compactPrint)
+            phase=="ADMISSION_READY"
+          }
+          c.awaitEvent("CAPTURE_ADMISSION_READY")
+          c.send(s"SUBSCRIBE $id $table g1");c.awaitEvent("SUBSCRIBE_ACCEPTED")
+          awaitCondition("B "+id){store.subscription(id).exists(_.status=="CAPTURE_READY")}
+        }
         def apply(c:Child,id:String,table:String,recover:Boolean=false):Unit={c.send(s"${if(recover)"RECOVER_APPLY" else "APPLY"} $id $table");c.awaitEvent("APPLY_READY")}
         def save(label:String,c:Child):Unit={
           if(label=="final" && variant!="R13-reject" && variant!="R14-capacity")awaitCondition("J caught up to captured groups"){
@@ -76,6 +91,59 @@ class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
         }
         def crash(c:Child):Unit={c.send("CRASH");c.exit() shouldBe 86}
         def restart():Child={val r=start(128,"recovered");r.awaitEvent("PROCESS_READY");apply(r,"a","a",recover=true);r}
+        // Only the fixture's real SQL facts classify the restart; a case name is not proof of COMMIT.
+        def oldTransactions(s:Settings,stage:String):JsArray={
+          val ids=child.events.filter(_.fields.get("batch").exists {
+            case x:JsObject=>x.fields.get("stage").contains(JsString(stage));case _=>false
+          }).flatMap(_.fields.get("connectionId").collect {case JsNumber(n)=>n.toLongExact}).distinct
+          val known=if(ids.isEmpty)"" else " OR t.trx_mysql_thread_id IN ("+ids.mkString(",")+")"
+          withConnection(s,schema)(query(_,s"SELECT t.trx_mysql_thread_id,t.trx_state,t.trx_started,t.trx_query FROM information_schema.innodb_trx t LEFT JOIN information_schema.processlist p ON p.ID=t.trx_mysql_thread_id WHERE (p.DB='$schema'$known) ORDER BY t.trx_mysql_thread_id"))
+        }
+        def durableSnapshot():JsObject={
+          val hash=java.security.MessageDigest.getInstance("SHA-256").digest(captureId.getBytes(java.nio.charset.StandardCharsets.UTF_8)).map(b=>f"${b&255}%02x").mkString.take(32)
+          def stateRows(sql:String)=withConnection(state,schema)(query(_,sql))
+          JsObject("L"->JsObject(
+            "reader"->stateRows("SELECT * FROM pekko_capture_readers ORDER BY capture_id"),
+            "subscriptions"->stateRows("SELECT * FROM pekko_capture_subscriptions ORDER BY capture_id,request_id"),
+            "schemas"->stateRows("SELECT * FROM pekko_capture_schemas ORDER BY capture_id,table_name"),
+            "fences"->stateRows("SELECT * FROM pekko_capture_fences ORDER BY capture_id,fence_id"),
+            "log"->stateRows("SELECT * FROM pekko_capture_log ORDER BY capture_id,seq")),
+            "D"->stateRows(s"SELECT offset_key,offset_val FROM `capture_offsets_$hash` ORDER BY offset_key"),
+            "T"->stateRows("SELECT * FROM pekko_sync_cdc_group_ledger ORDER BY group_id"),
+            "J"->stateRows("SELECT persistence_id,sequence_number,event_ser_id,event_ser_manifest,HEX(event_payload) AS payload_hex FROM event_journal ORDER BY ordering"),
+            "sourceControls"->withConnection(source,schema)(query(_,"SELECT * FROM pekko_capture_control ORDER BY operation_id")),
+            "comparisons"->JsObject(names.map(t=>t->comparison(t)).toMap))
+        }
+        def safePendingStartup(id:String):Boolean={
+          awaitCondition("old fixture transactions ended before durable startup classification",scala.concurrent.duration.Duration(120,"seconds")){
+            oldTransactions(source,"SOURCE_MARKER_COMMIT").elements.isEmpty && oldTransactions(state,"B_L_COMMIT").elements.isEmpty
+          }
+          write(dir,"before-startup-transactions.json",JsObject("source"->oldTransactions(source,"SOURCE_MARKER_COMMIT"),"state"->oldTransactions(state,"B_L_COMMIT")))
+          val before=durableSnapshot();write(dir,"before-startup-independent-sql.json",before)
+          val subscription=store.subscription(id).getOrElse(fail("expected persisted subscription intent"))
+          if(subscription.status=="CAPTURE_READY" && subscription.b.nonEmpty){
+            write(dir,"startup-classification.json",JsObject("classification"->JsString("BOUND_RETAIN_ORIGINAL_RECOVERY_ASSERTIONS"),"subscriptionId"->JsString(id),"B"->subscription.b.get.json.parseJson))
+            false
+          }else {
+            subscription.status shouldBe "B_PENDING";subscription.b shouldBe empty
+            val operation=store.markerId(id,stop=false)
+            recovered=start(128,"unbound-marker-rejected")
+            val failed=recovered.awaitEvent("START_FAILED")
+            failed.fields("code") shouldBe JsString("UNBOUND_MARKER_UNPROVEN")
+            failed.fields("engineCreations") shouldBe JsNumber(0)
+            recovered.exit() should not be 0
+            recovered.events.exists(_.fields("kind")==JsString("PROCESS_READY")) shouldBe false
+            val writes=recovered.events.filter(_.fields("kind")==JsString("SOURCE_CONTROL_ATTEMPT"))
+            writes shouldBe empty
+            val after=durableSnapshot();write(dir,"after-rejection-independent-sql.json",after)
+            after shouldBe before
+            startupOutcome=Some("SAFE_PAUSED")
+            write(dir,"startup-acceptance.json",JsObject("status"->JsString("SAFE_PAUSED"),"converged"->JsBoolean(false),"initializationCompleted"->JsBoolean(false),
+              "reason"->JsString("UNBOUND_MARKER_UNPROVEN"),"subscriptionId"->JsString(id),"originalOperationId"->JsString(operation),
+              "engineCreations"->failed.fields("engineCreations"),"sourceControlAttempts"->JsNumber(writes.size),"independentSqlUnchanged"->JsBoolean(true),"failedStartup"->failed))
+            true
+          }
+        }
         write(dir,"environment.json",JsObject("case"->JsString(scenario),"schema"->JsString(schema),"captureId"->JsString(captureId),"sourceLineage"->JsString(lineage),
           "fixtureBaseline"->JsString("known copied baseline before B; not LOW/HIGH online initialization"),"sourceVersion"->withConnection(source,schema)(query(_,"SELECT VERSION() AS version,@@binlog_format AS format,@@binlog_row_image AS row_image"))))
         try {
@@ -83,7 +151,9 @@ class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
           awaitCondition("Reader Schema"){names.forall(t=>store.schema(t).nonEmpty)}
           if(scenario=="R02") {
             child.send("PREPARE a a g1");child.awaitEvent("PREPARED");save("before-marker",child);crash(child)
-            recovered=start(128,"recovered");recovered.awaitEvent("PROCESS_READY");subscribe(recovered,"a","a");apply(recovered,"a","a");mutation("a","after-R02");awaitCondition("R02 equal"){equal("a")};save("final",recovered)
+            if(legacyStartupExpectations){
+              recovered=start(128,"recovered");recovered.awaitEvent("PROCESS_READY");subscribe(recovered,"a","a");apply(recovered,"a","a");mutation("a","after-R02");awaitCondition("R02 equal"){equal("a")};save("final",recovered)
+            }else safePendingStartup("a") shouldBe true
           } else {
             subscribe(child,"a","a");apply(child,"a","a");mutation("a","baseline");awaitCondition("baseline T/J"){equal("a")};save("baseline",child)
             scenario match {
@@ -104,11 +174,18 @@ class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
                 if(scenario=="R03")awaitCondition("lost source COMMIT reply"){child.events.exists(e=>e.fields("kind")==JsString("COMMAND_FAILED") && e.fields.get("command").contains(JsString("SUBSCRIBE")))}
                 else awaitCondition("capture stopped on uncertain L"){child.state().fields("captureFailure")!=JsNull}
                 save("cut",child);crash(child)
-                recovered=restart();subscribe(recovered,"f","f");apply(recovered,"f","f");mutation("a","recovered");mutation("f","recovered-F")
-                awaitCondition("recovered A/F"){equal("a")&&equal("f")};save("final",recovered)
+                if(legacyStartupExpectations || !safePendingStartup("f")){
+                  recovered=restart();subscribe(recovered,"f","f");apply(recovered,"f","f");mutation("a","recovered");mutation("f","recovered-F")
+                  awaitCondition("recovered A/F"){equal("a")&&equal("f")};save("final",recovered)
+                }
               case "R06"|"R07"=>
                 child.send("ARM_ACK "+(if(scenario=="R06")"B_BOUND"else "MARKER_RETURNED"));child.awaitEvent("ARMED");child.send("SUBSCRIBE f f g1");child.awaitEvent("CUTPOINT")
-                save("cut",child);crash(child);recovered=restart();subscribe(recovered,"f","f");apply(recovered,"f","f");mutation("f","after-marker-crash");awaitCondition("F recovered"){equal("f")};save("final",recovered)
+                save("cut",child);crash(child)
+                // MARKER_RETURNED covers the row callback, not necessarily its later transaction END/B binding.
+                // R06 remains a fixed B_BOUND recovery assertion; only R07 branches on the durable cut.
+                if(scenario=="R06" || legacyStartupExpectations || !safePendingStartup("f")){
+                  recovered=restart();subscribe(recovered,"f","f");apply(recovered,"f","f");mutation("f","after-marker-crash");awaitCondition("F recovered"){equal("f")};save("final",recovered)
+                }
               case "R09"=>
                 val suffixHash=java.security.MessageDigest.getInstance("SHA-256").digest(captureId.getBytes(java.nio.charset.StandardCharsets.UTF_8)).map(b=>f"${b&255}%02x").mkString.take(32)
                 blocker=DriverManager.getConnection(state.url(schema),state.user,state.password);blocker.setAutoCommit(false)
@@ -163,6 +240,17 @@ class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
                 else if(variant=="R16-lineage")sql(state,"UPDATE pekko_capture_readers SET lineage='wrong-lineage'")
                 else if(variant!="R16-source" && variant!="R16-binlog")sql(state,s"DELETE FROM capture_offsets_$suffixHash")
                 if(variant=="R16-binlog"){
+                  sys.env.get("CAPTURE_SOURCE_PURGE_GATE") match {
+                    case Some(gate) =>
+                      val path=Path.of(gate)
+                      write(path,"source-purge-request.json",JsObject("uuid"->JsString(lineage),"port"->JsNumber(source.port),"captureId"->JsString(captureId)))
+                      awaitCondition("leased external archive and purge",scala.concurrent.duration.Duration(200,"seconds")){
+                        Files.exists(path.resolve("source-purge-response.json"))
+                      }
+                      val proof=Files.readString(path.resolve("source-purge-response.json")).parseJson.asJsObject
+                      proof.fields("purged") shouldBe JsBoolean(true)
+                      write(dir,"binlog-archive.json",proof)
+                    case None =>
                   require(source.port==13365,"binlog fault is restricted to the dedicated lab instance")
                   val base=Path.of("/tmp/pekko-shared-capture-20261025")
                   val archive=base.resolve("preserved-binlogs-"+suffix);Files.createDirectories(archive)
@@ -172,6 +260,7 @@ class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
                   Files.copy(base.resolve("mysql-bin.index"),archive.resolve("mysql-bin.index"))
                   write(dir,"binlog-archive.json",JsObject("privateArchive"->JsString(archive.toString),"files"->JsArray(logs.map(JsString(_)))))
                   sql(source,s"PURGE BINARY LOGS TO '${logs.last}'")
+                  }
                 }
                 recovered=start(128,"missing-D")
                 if(variant=="R16-binlog") {recovered.awaitEvent("PROCESS_READY");awaitCondition("missing required binlog pauses"){recovered.state().fields("captureFailure")!=JsNull};write(dir,"rejected-reader.json",recovered.state())}
@@ -179,7 +268,7 @@ class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
                 write(dir,"final.json",JsObject("safePause"->JsBoolean(true),"L"->store.evidence,"comparison"->comparison("a")))
             }
           }
-          write(dir,"result.json",JsObject("scenario"->JsString(scenario),"variant"->JsString(variant),"status"->JsString("passed"),"initializationImplemented"->JsBoolean(false)))
+          write(dir,"result.json",JsObject("scenario"->JsString(scenario),"variant"->JsString(variant),"status"->JsString("passed"),"startupOutcome"->JsString(startupOutcome.getOrElse("ORIGINAL_ASSERTIONS")),"legacyStartupExpectations"->JsBoolean(legacyStartupExpectations),"initializationImplemented"->JsBoolean(false)))
         }finally {
           if(blocker!=null){blocker.rollback();blocker.close()}
           Vector(recovered,child).filter(_!=null).foreach {c=>c.kill();require(!c.alive,"owned worker did not exit")}

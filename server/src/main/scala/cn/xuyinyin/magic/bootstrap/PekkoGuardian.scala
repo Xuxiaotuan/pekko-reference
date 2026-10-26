@@ -31,6 +31,7 @@ object PekkoGuardian {
   def apply(): Behavior[Command] = Behaviors.setup { implicit ctx =>
     val cluster = Cluster(ctx.system)
     val selfMember = cluster.selfMember
+    cn.xuyinyin.magic.workflow.cdc.CdcPlatformExtension(ctx.system)
     logger.info(s"Pekko System Guardian Launching, roles: ${selfMember.roles.mkString(",")}")
 
     // Create an actor that handles cluster domain events

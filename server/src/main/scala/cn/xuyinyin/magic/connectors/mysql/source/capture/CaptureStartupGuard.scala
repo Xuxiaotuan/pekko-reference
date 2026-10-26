@@ -82,6 +82,7 @@ final class CaptureStartupState(attempt:String) {
 trait CaptureSnapshotMonitor {
   def beforeStart():Unit
   def status:String
+  def streamingConnected:Option[Boolean]=None
 }
 object CaptureSnapshotMonitor {
   def platform(captureId:String):CaptureSnapshotMonitor=new CaptureSnapshotMonitor {
@@ -89,6 +90,13 @@ object CaptureSnapshotMonitor {
     private def names=server.queryNames(new ObjectName("debezium.mysql:*"),null).asScala.toVector
       .filter(n=>Option(n.getKeyProperty("server")).contains(captureId))
     def beforeStart():Unit=require(names.isEmpty,"stale capture metrics namespace")
+    override def streamingConnected:Option[Boolean]=try {
+      val streaming=names.filter(n=>Option(n.getKeyProperty("context")).contains("streaming"))
+      if(streaming.size!=1)None else server.getAttribute(streaming.head,"Connected") match {
+        case v:java.lang.Boolean=>Some(v.booleanValue())
+        case _=>None
+      }
+    }catch {case NonFatal(_)=>None}
     def status:String=try {
       val snapshot=names.filter(n=>Option(n.getKeyProperty("context")).contains("snapshot"))
       if(snapshot.size!=1)"UNKNOWN" else {

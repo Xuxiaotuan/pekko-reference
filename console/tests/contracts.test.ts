@@ -15,6 +15,10 @@ if (typeof globalThis.sessionStorage === 'undefined') {
 }
 import { createServer, type IncomingMessage } from 'node:http'
 import apiClient from '../src/shared/api/client'
+import { cdcTaskAPI } from '../src/features/cdc/api'
+import { pendingCdcSubmission, reserveCdcSubmission, confirmCdcSubmission } from '../src/features/cdc/submissions'
+import { reconcileCdcSelection, cdcTaskForDisplay } from '../src/features/cdc/projections'
+import type { CdcTaskView } from '../src/features/cdc/types'
 import { workflowAPI } from '../src/features/workflows/api'
 import { pendingExecution, reserveExecution, confirmExecution } from '../src/features/workflows/executionRequests'
 
@@ -24,7 +28,23 @@ const server = createServer(async (req: IncomingMessage, res) => {
   for await (const chunk of req) body += chunk
   requests.push({ method: req.method!, path: req.url!, body })
   res.setHeader('Content-Type', 'application/json')
-  if (req.url?.includes('/execute?')) {
+  if (req.url === '/api/v1/cdc-status') {
+    res.end('{"enabled":true,"ownerState":"ACTIVE","reason":null,"activeSteps":1,"maxActiveSteps":4}')
+  } else if (req.url === '/api/v1/cdc-captures') {
+    res.end('{"items":[{"captureId":"capture-a","database":"shop","readiness":"STARTING","runtimeHealth":"UNKNOWN","reason":null}]}')
+  } else if (req.url?.startsWith('/api/v1/cdc-tasks')) {
+    if (req.url.endsWith('/cancel')) {
+      res.statusCode = 202
+      res.end('{"taskId":"cdc-a","desiredState":"CANCELED","phase":"CANCELING"}')
+    } else if (req.method === 'POST') {
+      res.statusCode = 202
+      res.end('{"task":{"taskId":"cdc-a","requestId":"request-a","phase":"QUEUED","desiredState":"RUNNING"},"created":true}')
+    } else if (req.url.includes('/cdc-a')) {
+      res.end('{"taskId":"cdc-a","requestId":"request-a","phase":"ACTIVATING","desiredState":"RUNNING"}')
+    } else {
+      res.end('{"items":[{"taskId":"cdc-a","phase":"QUEUED"}],"nextAfter":"cdc-a"}')
+    }
+  } else if (req.url?.includes('/execute?')) {
     res.statusCode = 202
     res.end('{"workflowId":"wf-a","executionId":"run-a"}')
   } else if (req.url?.startsWith('/api/history/')) {
@@ -78,4 +98,86 @@ test('pending execution survives component lifetimes, isolates workflows and ign
   assert.equal(pendingExecution('wf-a'), null)
   assert.notEqual(reserveExecution('wf-a'), first)
   sessionStorage.clear()
+})
+
+
+test('CDC submit retries the same complete request and exposes acceptance without claiming initialization', async () => {
+  const definition = { requestId: 'request-a', captureId: 'capture-a', table: 'orders', generation: 'g1', targetTable: 'target_orders' }
+  const accepted = await cdcTaskAPI.submit(definition)
+  await cdcTaskAPI.submit(definition)
+  assert.deepEqual(accepted, { task: { taskId: 'cdc-a', requestId: 'request-a', phase: 'QUEUED', desiredState: 'RUNNING' }, created: true })
+  assert.deepEqual(JSON.parse(requests.at(-1)!.body), definition)
+  assert.equal(requests.at(-1)?.body, requests.at(-2)?.body)
+})
+
+test('CDC list uses a keyset cursor, detail and cancel keep their resource identity', async () => {
+  assert.deepEqual(await cdcTaskAPI.list('before', 2), { items: [{ taskId: 'cdc-a', phase: 'QUEUED' }], nextAfter: 'cdc-a' })
+  const url = new URL(requests.at(-1)!.path, 'http://fixture')
+  assert.equal(url.searchParams.get('after'), 'before')
+  assert.equal(url.searchParams.get('pageSize'), '2')
+  assert.equal((await cdcTaskAPI.get('cdc-a')).phase, 'ACTIVATING')
+  assert.equal(requests.at(-1)?.path, '/api/v1/cdc-tasks/cdc-a')
+  assert.equal((await cdcTaskAPI.cancel('cdc-a')).phase, 'CANCELING')
+  assert.equal(requests.at(-1)?.path, '/api/v1/cdc-tasks/cdc-a/cancel')
+})
+
+test('an uncertain CDC submission preserves its definition and identity across page lifetimes', () => {
+  sessionStorage.clear()
+  const definition = { captureId: 'capture-a', table: 'orders', generation: 'g1', targetTable: 'target_orders' }
+  const first = reserveCdcSubmission(definition)
+  assert.deepEqual(reserveCdcSubmission(definition), first)
+  assert.deepEqual(pendingCdcSubmission(), first)
+  assert.throws(() => reserveCdcSubmission({ ...definition, table: 'changed' }))
+  confirmCdcSubmission('other-request')
+  assert.deepEqual(pendingCdcSubmission(), first)
+  confirmCdcSubmission(first.requestId)
+  assert.equal(pendingCdcSubmission(), null)
+})
+
+
+test('CDC status and capture metadata do not turn a starting Reader into initialized tasks', async () => {
+  assert.deepEqual(await cdcTaskAPI.status(), { enabled: true, ownerState: 'ACTIVE', reason: null, activeSteps: 1, maxActiveSteps: 4 })
+  assert.deepEqual(await cdcTaskAPI.captures(), [{ captureId: 'capture-a', database: 'shop', readiness: 'STARTING', runtimeHealth: 'UNKNOWN', reason: null }])
+})
+
+test('corrupt pending CDC state is not silently replaced by a new request', () => {
+  sessionStorage.setItem('pekko.cdc.pending-submission.v1', '{corrupt')
+  assert.throws(() => pendingCdcSubmission())
+  assert.throws(() => reserveCdcSubmission({ captureId: 'capture-a', table: 'orders', generation: 'g1', targetTable: 'target_orders' }))
+  assert.equal(sessionStorage.getItem('pekko.cdc.pending-submission.v1'), '{corrupt')
+  sessionStorage.clear()
+})
+
+const healthyCdcTask: CdcTaskView = {
+  taskId: 'cdc-a', requestId: 'request-a', captureId: 'capture-a', table: 'orders', generation: 'g1', targetTable: 'target_orders',
+  definitionFingerprint: 'definition-a', desiredState: 'RUNNING', controlRevision: 1, phase: 'STREAMING', journalRevision: 20,
+  executionId: 'execution-a', captureReadiness: 'READY', initializationEvidence: 'historical-init-proof', runtimeHealth: 'HEALTHY',
+  releaseStatus: 'RELEASED', failureCode: null, observedAt: 100, lastVerifiedAt: 90, cancelAllowed: true,
+}
+
+test('CDC selected detail follows newer list projections without regressing revisions or observation time', () => {
+  const paused = { ...healthyCdcTask, phase: 'PAUSED', journalRevision: 21, runtimeHealth: 'UNKNOWN', observedAt: 110, cancelAllowed: false }
+  assert.deepEqual(reconcileCdcSelection(healthyCdcTask, [paused]), paused)
+  assert.deepEqual(reconcileCdcSelection(paused, [healthyCdcTask]), paused)
+  assert.deepEqual(reconcileCdcSelection(paused, [{ ...healthyCdcTask, observedAt: 120 }]), paused)
+  assert.deepEqual(reconcileCdcSelection(paused, [{ ...paused, controlRevision: 0, observedAt: 120 }]), paused)
+  assert.deepEqual(reconcileCdcSelection(paused, [{ ...paused, taskId: 'other' }]), paused)
+  assert.equal(reconcileCdcSelection(null, [paused]), null)
+})
+
+test('CDC health observation can change without a persisted revision and stale replies cannot restore health', () => {
+  const unknown = { ...healthyCdcTask, runtimeHealth: 'UNKNOWN', observedAt: 120, cancelAllowed: false }
+  assert.deepEqual(reconcileCdcSelection(healthyCdcTask, [unknown]), unknown)
+  assert.deepEqual(reconcileCdcSelection(unknown, [healthyCdcTask]), unknown)
+})
+
+test('CDC main or detail query failure masks cached detail health and cancel permission while retaining historical proof', () => {
+  const shown = cdcTaskForDisplay(healthyCdcTask, true)
+  assert.equal(shown.runtimeHealth, 'UNKNOWN')
+  assert.equal(shown.cancelAllowed, false)
+  assert.equal(shown.initializationEvidence, 'historical-init-proof')
+  assert.equal(shown.lastVerifiedAt, 90)
+  assert.equal(cdcTaskForDisplay(healthyCdcTask, false), healthyCdcTask)
+  assert.equal(healthyCdcTask.runtimeHealth, 'HEALTHY')
+  assert.equal(healthyCdcTask.cancelAllowed, true)
 })

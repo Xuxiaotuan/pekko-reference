@@ -12,7 +12,7 @@ import org.slf4j.{LoggerFactory, Marker}
 
 import java.util.IdentityHashMap
 import java.util.Properties
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.concurrent.{CountDownLatch, Executors, ThreadFactory, TimeUnit}
 import scala.concurrent.{Future, Promise}
 import scala.jdk.CollectionConverters._
@@ -24,6 +24,8 @@ trait DebeziumBatchConsumer {
 
 trait DebeziumEngineAccess extends AutoCloseable {
   def start(consumer: DebeziumBatchConsumer): Future[Done]
+  /** Unknown by default for external adapters; completion alone is not termination. */
+  def localTerminationConfirmed:Boolean=false
 }
 
 trait DebeziumEngineFactory {
@@ -183,6 +185,7 @@ final class RealDebeziumEngineAccess private[source] (
   private val logBoundary = new AtomicReference[LogBoundary](NoLogBoundary)
   private val closeError = new AtomicReference[IllegalStateException]()
   private val runnerFinished = new CountDownLatch(1)
+  private val callbacksInFlight = new AtomicInteger()
   private val completion = Promise[Done]()
   private val executor = Executors.newSingleThreadExecutor(threadFactory())
 
@@ -210,7 +213,9 @@ final class RealDebeziumEngineAccess private[source] (
           }
           event.record()
         }
-        consumer.handleBatch(records, new DebeziumRecordCommitHandle(delivered, committer))
+        callbacksInFlight.incrementAndGet()
+        try consumer.handleBatch(records, new DebeziumRecordCommitHandle(delivered, committer))
+        finally callbacksInFlight.decrementAndGet()
       }
 
       override def supportsTombstoneEvents(): Boolean = true
@@ -297,6 +302,9 @@ final class RealDebeziumEngineAccess private[source] (
       if (failure != null) throw failure
     }
   }
+
+  override def localTerminationConfirmed:Boolean=
+    runnerFinished.getCount==0L && executor.isTerminated && callbacksInFlight.get()==0
 
   private def closeEngineWithRetry(current: Engine): Unit = {
     val deadline = System.nanoTime() + CloseTimeoutNanos

@@ -169,6 +169,223 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
     if(target.activation.nonEmpty && finalSub.exists(_.k.nonEmpty))while(replay(tail=true)){}
     update(_.copy(phase="CANCELED"));emit("CANCELED","K"->finalSub.flatMap(_.k).map(_.json.parseJson).getOrElse(JsNull))
   }
+
+  // A scheduled step owns no JDBC connection or run permit after a confirmed return.
+  // Keeping this small per-active-runner state is optional: cache eviction can use the
+  // control index's exact clean outcome, while process restart must not reuse that proof.
+  private var stepPrepared=false
+  private var stepLastClean:Option[BootstrapProgress]=None
+  private var stepLastObserved:Option[BootstrapProgress]=None
+  private var stepReleaseUnknown=false
+  private var stepRestoring=false
+  private var stepAudit:Option[StepAudit]=None
+  private var stepCancelIssued=false
+
+  private final class StepAudit(val accepted:BootstrapProgress) {
+    private var ordinal=0L
+    private var root=""
+    private var bound:Option[String]=None
+    private var baseline=true
+    private val sub=logStore.subscription(id).get
+    private val f=logStore.fence(accepted.fence.get).get
+    require(f.covered,"activation fence not covered")
+    private var after=sub.bSequence.get
+    private var finite=true
+    private var proof:Option[String]=None
+
+    /** One completed window or one group batch; never a table-wide loop in one step. */
+    def advance():Option[String]={
+      if(baseline){
+        val rows=spool.completed(ordinal-1,1)
+        if(rows.nonEmpty){
+          val (i,w,parent,expected)=rows.head
+          require(i==ordinal && parent==root,"bootstrap completed index has gaps")
+          val spec=spool.spec(w)
+          require(lower(spec)==bound,"bootstrap completed ranges have gaps/overlaps")
+          val manifest=spool.manifest(w).get
+          verifyWindow(w,manifest)
+          val digest=MySQLCdcGroup.hash(parent+"|"+i+"|"+w+"|"+MySQLCdcGroup.hash(manifest))
+          require(expected==digest,"bootstrap completion root corrupted")
+          val pages=manifest.parseJson.asJsObject.fields("pages").asInstanceOf[JsArray].elements.size
+          (0 until math.max(1,pages)).foreach {p=>target.verifyPage(w,p,manifest,if(pages==0)Vector.empty else spool.verifyFinal(w,p,manifest))}
+          root=expected;bound=Some(number(spec,"upper"));ordinal+=1
+        }else {
+          require(ordinal==accepted.index && root==accepted.completionRoot && bound==accepted.upper,"bootstrap baseline coverage proof incomplete")
+          baseline=false
+        }
+        None
+      }else if(finite){
+        val entries=logStore.readThrough(id,after,f.id,limits.groupBatch)
+        if(entries.nonEmpty){
+          val b=log.readBatch(id,after,entries.size,"source",accepted.executionId,0).get
+          b.rows.foreach(g=>target.verifyGroup(g,b.cursor.upperBound));after=entries.last.sequence
+          None
+        }else {
+          val p=canonical(JsObject("version"->JsNumber(1),"bootstrap"->JsString(id),"definition"->JsString(MySQLCdcGroup.hash(boundDefinition)),
+            "baselineRoot"->JsString(root),"windows"->JsNumber(ordinal),"B"->sub.b.get.json.parseJson,
+            "F"->f.point.get.json.parseJson,"fenceSequence"->JsNumber(f.sequence.get),"schema"->JsString(source.codec.schemaId)))
+          proof=Some(p);finite=false;after=f.sequence.get
+          if(accepted.phase=="STREAMING"){
+            require(target.activation.contains(p),"durable STREAMING has no target activation proof")
+            if(after==accepted.deltaAfter)proof else None
+          }else proof
+        }
+      }else if(accepted.phase=="STREAMING"){
+        val entries=logStore.read(id,after,limits.groupBatch).takeWhile(_.sequence<=accepted.deltaAfter)
+        if(entries.nonEmpty){
+          val b=log.readBatch(id,after,entries.size,"source",accepted.executionId,0).get
+          b.rows.foreach(g=>target.verifyGroup(g,b.cursor.upperBound));after=entries.last.sequence
+          if(after==accepted.deltaAfter)proof else None
+        }else {
+          require(after==accepted.deltaAfter,"streaming Journal cursor is not retained in L")
+          proof
+        }
+      }else proof
+    }
+  }
+
+  private def scheduledCancel():Boolean={
+    logStore.subscription(id) match {
+      case Some(sub) if sub.status=="B_PENDING"=>
+        // Bind can win after the read. A known effective route must progress through K.
+        try logStore.cancelPending(id) catch {
+          case e:IllegalArgumentException if logStore.subscription(id).exists(_.status=="CAPTURE_READY")=>return true
+        }
+      case Some(sub) if sub.status=="CAPTURE_READY"=>
+        if(!stepCancelIssued){capture.unsubscribe(id);stepCancelIssued=true;return true}
+        return false
+      case _=>()
+    }
+    val sub=logStore.subscription(id)
+    if(sub.exists(_.status=="CAPTURE_READY"))return false
+    if(target.activation.nonEmpty && sub.exists(_.k.nonEmpty) && replay(tail=true))return true
+    update(_.copy(phase="CANCELED"));emit("CANCELED","K"->sub.flatMap(_.k).map(_.json.parseJson).getOrElse(JsNull));true
+  }
+
+  private def scheduledScan():Boolean={
+    val s=state
+    if(s.window.isEmpty && s.planned && s.nextLower==s.upper){
+      val name=id+"_F"
+      logStore.fence(name) match {
+        case None=>emit("BEFORE_F");capture.requestFence(name,id,"F",context("F"));true
+        case Some(f) if f.covered=>
+          emit("F_READY","sequence"->JsNumber(f.sequence.get))
+          update(_.copy(phase="REPLAYING",fence=Some(f.id),deltaAfter=logStore.subscription(id).get.bSequence.get));true
+        case _=>false
+      }
+    }else {scanStep();true}
+  }
+
+  /** Execute on the bounded blocking pool. One snapshot window (one RR view), one
+    * group batch or one audit unit is the scheduling quantum; JDBC/query/fence
+    * timeouts still bound each blocking operation. No empty tail loop owns a thread.
+    * continuation is accepted only from the caller's same-owner, durably completed,
+    * release-confirmed previous grant. The Runner independently checks its full J.
+    */
+  def step(stop:()=>Boolean=()=>false,continuation:Option[BootstrapProgress]=None):BootstrapStepResult=synchronized {
+    if(stepReleaseUnknown)return BootstrapStepResult(stepLastObserved.getOrElse(state),false,false,0,validationComplete=false)
+    val initial=state
+    if(stop() || Set("PAUSED","CANCELED").contains(initial.phase))
+      return BootstrapStepResult(initial,false,true,0)
+    if(capture.cachedStartupEvidence.phase!="ADMISSION_READY"){
+      healthy();return BootstrapStepResult(initial,false,true,250,validationComplete=false)
+    }
+    admission.reserveRun()
+    val leaseJdbc=new BootstrapJdbc(leaseOpen,1)
+    var release=true
+    var didWork=false
+    var complete=true
+    try leaseJdbc.connection {c=>
+      val name="bootstrap-"+MySQLCdcGroup.hash(logStore.captureId+"|"+id).take(40)
+      val acquired=leaseJdbc.query(c,"SELECT GET_LOCK(?,0) AS acquired",name).head("acquired")=="1"
+      require(acquired,"bootstrap already running")
+      try {
+        val before=state
+        val proof=stepLastClean.orElse(continuation)
+        proof.foreach(p=>require(BootstrapStepContinuation.matches(p,before),"clean bootstrap step no longer matches Journal"))
+        if(!stepPrepared){
+          spool.initialize(boundDefinition,before.definition.nonEmpty)
+          source.validate(Some(logStore.lineage));target.claim()
+          if(before.definition.isEmpty)update(_.copy(definition=MySQLCdcGroup.hash(boundDefinition),executionId=java.util.UUID.randomUUID().toString))
+          else {
+            require(before.definition==MySQLCdcGroup.hash(boundDefinition),"bootstrap definition changed")
+            if(proof.isEmpty){recover(ExecutionFailure.Interrupted);stepRestoring=true}
+            else {
+              // Cache replacement loses every former RR transaction even if the
+              // previous scheduling grant closed cleanly after a retryable failure.
+              // Do this only on first preparation, never between normal steps.
+              if(BootstrapStepContinuation.needsReadViewRecovery(before,before.window.exists(w=>spool.manifest(w).nonEmpty)))
+                stepRestoring=true
+              if(before.phase=="STREAMING")require(target.activation.nonEmpty,"durable STREAMING has no target activation proof")
+            }
+          }
+          stepPrepared=true
+          emit("BOOTSTRAP_REGISTERED","executionId"->JsString(state.executionId))
+        }
+        if(!Set("PAUSED","CANCELED").contains(state.phase) && !stop()){
+          healthy()
+          if(canceled){stepAudit=None;didWork=scheduledCancel()}
+          else {
+            val s=state
+            if(stepRestoring && BootstrapStepContinuation.needsReadViewRecovery(s,s.window.exists(w=>spool.manifest(w).nonEmpty))){
+              val old=s.window.get;val next=id+"_"+s.index+"_"+(s.attempt+1)
+              spool.register(next,spool.spec(old))
+              update(_.copy(attempt=s.attempt+1,window=Some(next),manifest=None,appliedPage=0))
+              emit("ABANDONED","window"->JsString(old));didWork=true
+            }
+            if(stepRestoring && state.phase!="STREAMING")stepRestoring=false
+            if(stepRestoring){
+              if(stepAudit.isEmpty)stepAudit=Some(new StepAudit(state))
+              if(stepAudit.get.advance().nonEmpty){stepAudit=None;stepRestoring=false}
+              didWork=true;complete= !stepRestoring
+            }else if(logStore.subscription(id).isEmpty){capture.subscribe(id,table,generation);didWork=true}
+            else if(logStore.subscription(id).exists(_.b.isEmpty))complete=false
+            else if(!state.planned){
+              val upper=source.maximum();update(_.copy(phase="SCANNING",upper=upper,planned=true));didWork=true
+            }else state.phase match {
+              case "SCANNING"=>didWork=scheduledScan()
+              case "REPLAYING"=>
+                if(!replay(false))update(_.copy(phase="ACTIVATING",deltaAfter=logStore.fence(state.fence.get).get.sequence.get))
+                didWork=true
+              case "ACTIVATING"=>
+                if(stepAudit.isEmpty)stepAudit=Some(new StepAudit(state))
+                stepAudit.get.advance().foreach {proof=>
+                  emit("BEFORE_ACTIVATE","proof"->proof.parseJson)
+                  if(!canceled && !stop()){
+                    target.activate(proof);emit("ACTIVATION_T","proof"->proof.parseJson)
+                    if(!canceled){val accepted=update(_.copy(phase="STREAMING"));if(accepted.phase=="STREAMING")emit("STREAMING","proof"->proof.parseJson)}
+                  }
+                  stepAudit=None
+                }
+                didWork=true;complete=state.phase=="STREAMING"
+              case "STREAMING"=>didWork=replay(true)
+              case other=>throw new IllegalArgumentException("unexpected bootstrap phase: "+other)
+            }
+          }
+        }
+      }catch {case NonFatal(e)=>
+        val failure=ExecutionFailure.from(e,"bootstrap-step")
+        emit("FAILURE","code"->JsString(failure.code),"error"->JsString(e.toString))
+        stepAudit=None
+        if(failure.releaseConfirmed && ExecutionFailure.Retryable(failure.code) && capture.failure.isEmpty){recover(failure.code);stepRestoring=true}
+        else {release=failure.releaseConfirmed;update(_.copy(phase="PAUSED",failure=Some(failure.code)))}
+      }finally {
+        if(leaseJdbc.query(c,"SELECT RELEASE_LOCK(?) AS released",name).head("released")!="1")
+          throw new cn.xuyinyin.magic.workflow.engine.CdcExecutionException(
+            ExecutionFailure(ExecutionFailure.ReleaseUnknown,"bootstrap-step-lease",releaseConfirmed=false),
+            new IllegalStateException("bootstrap lease release unconfirmed"))
+      }
+    }catch {case NonFatal(e)=>
+      if(!ExecutionFailure.from(e,"bootstrap-step-close").releaseConfirmed){release=false;stepReleaseUnknown=true}
+      throw e
+    }finally if(release)admission.releaseRun()
+    val accepted=state
+    stepLastObserved=Some(accepted)
+    if(!release)stepReleaseUnknown=true
+    if(release)stepLastClean=Some(accepted)
+    BootstrapStepResult(accepted,didWork,release,if(didWork)0 else 250,complete && !stepRestoring)
+  }
+
   def run(stop:()=>Boolean=()=>false):Unit={
     admission.reserveRun();val leaseJdbc=new BootstrapJdbc(leaseOpen,1);var release=true
     try leaseJdbc.connection {c=>
@@ -210,7 +427,7 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
             if(canceled)cancelStep()
             else {
               // Any incomplete read view is discarded on invocation/retry; sealed windows survive unchanged.
-              if(recovering){val p=state;p.window.foreach {w=>if(spool.manifest(w).isEmpty){
+              if(recovering){val p=state;p.window.foreach {w=>if(BootstrapStepContinuation.needsReadViewRecovery(p,spool.manifest(w).nonEmpty)){
                 val next=id+"_"+p.index+"_"+(p.attempt+1)
                 spool.register(next,spool.spec(w))
                 update(_.copy(attempt=p.attempt+1,window=Some(next),manifest=None,appliedPage=0));emit("ABANDONED","window"->JsString(w))}}

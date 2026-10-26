@@ -8,7 +8,7 @@ import com.typesafe.config.ConfigFactory
 import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import org.apache.pekko.actor.typed.scaladsl.adapter._
 import org.apache.pekko.serialization.SerializationExtension
-import java.sql.{Connection,DriverManager}
+import java.sql.{Connection,DriverManager,PreparedStatement}
 import java.lang.reflect.{InvocationHandler,InvocationTargetException,Method,Proxy}
 import java.util.concurrent.{CountDownLatch,Executors}
 import java.util.concurrent.atomic.{AtomicBoolean,AtomicReference}
@@ -59,7 +59,22 @@ object BootstrapMatrixWorker {
         def invoke(o:Any,m:Method,a:Array[AnyRef]):AnyRef={
           if(m.getName=="commit"){val mode=armed.getAndSet("");if(mode.startsWith("REPEAT_"))armed.set(mode);if(mode.nonEmpty)p.arm(mode.stripPrefix("REPEAT_"),JsObject("stage"->JsString(stage)))}
           if(m.getName=="close" && stage==closeStage.get() && closeUnknown.compareAndSet(true,false)){c.close();throw new java.sql.SQLException("test: physical close confirmation lost")}
-          try m.invoke(c,Option(a).getOrElse(Array.empty[AnyRef]):_*)catch{case e:InvocationTargetException=>throw e.getCause}
+          val result=try m.invoke(c,Option(a).getOrElse(Array.empty[AnyRef]):_*)catch{case e:InvocationTargetException=>throw e.getCause}
+          if(stage=="SOURCE_MARKER_COMMIT" && m.getName=="prepareStatement" && a!=null &&
+            a(0).toString.startsWith("INSERT INTO pekko_capture_control ")){
+            val statement=result.asInstanceOf[PreparedStatement]
+            val parameters=scala.collection.mutable.Map.empty[Int,String]
+            Proxy.newProxyInstance(classOf[PreparedStatement].getClassLoader,Array(classOf[PreparedStatement]),new InvocationHandler {
+              def invoke(p:Any,method:Method,args:Array[AnyRef]):AnyRef={
+                if(method.getName=="setString")parameters.update(args(0).asInstanceOf[java.lang.Integer].intValue(),args(1).asInstanceOf[String])
+                if(method.getName=="executeUpdate")event("SOURCE_CONTROL_ATTEMPT",JsObject(
+                  "operationId"->JsString(parameters(1)),"action"->JsString(parameters(2)),
+                  "table"->JsString(parameters(3)),"generation"->JsString(parameters(4))))
+                try method.invoke(statement,Option(args).getOrElse(Array.empty[AnyRef]):_*)
+                catch {case e:InvocationTargetException=>throw e.getCause}
+              }
+            }).asInstanceOf[PreparedStatement]
+          }else result
         }}).asInstanceOf[Connection]}
     val lineage=withConnection(settings,schema)(query(_,"SELECT @@server_uuid AS uuid")).elements.head.asJsObject.fields("uuid").convertTo[String]
     val store=new MySQLCaptureStore(()=>stateConnection(),captureId,lineage,sys.env.get("CAPTURE_LOG_CAPACITY").fold(128L*1024*1024)(_.toLong))
@@ -93,7 +108,15 @@ object BootstrapMatrixWorker {
             val f=Future(r.run(()=>stopping.get()))(blocking);futures.put(id,f)
             f.failed.foreach(e=>emit("RUN_FAILED","id"->JsString(id),"error"->JsString(e.toString)))
             emit("BOOT_ACCEPTED","id"->JsString(id))
-          case "CANCEL"=>Await.result(journals.get(cmd(1)).cancel(),20.seconds);emit("CANCEL_ACCEPTED")
+          case "CANCEL"=>
+            val result=Await.result(journals.get(cmd(1)).cancel(),20.seconds)
+            emit("CANCEL_RESULT","id"->JsString(cmd(1)),"phase"->JsString(result.phase),
+              "revision"->JsNumber(result.revision),"cancelRequested"->JsBoolean(result.cancelRequested))
+            emit(if(result.cancelRequested)"CANCEL_ACCEPTED"else"CANCEL_NOT_ACCEPTED")
+          case "RETRY_FENCE"=>
+            val f=store.fence(cmd(1)).get
+            capture.requestFence(f.id,f.subscriptionId,f.action,f.context)
+            emit("FENCE_RETRIED","fence"->JsString(f.id))
           case "ARM"=>latch.set(new CountDownLatch(1));filterTable.set(cmd.lift(2).getOrElse(""));arm.set(cmd(1));emit("ARMED")
           case "ARM_NEXT"=>arm.set(cmd(1));filterTable.set("");emit("ARMED")
           case "REJECT_J"=>rejectJournal.set(true);emit("ARMED")
@@ -115,7 +138,12 @@ object BootstrapMatrixWorker {
                 JsObject(f+("decoded"->JsString(e.toString)))})}finally c.close()
             val d=stateConnection();val offsets=try query(d,s"SELECT offset_key,offset_val FROM `${MySQLCdcSourceNode.connectorStateTables(MySQLCdcStateConfig(state.url(schema),state.user,state.password,"capture_offsets","capture_history",0),captureId)._1}`")finally d.close()
             val spools=JsObject(runners.asScala.keys.toVector.map(id=>id->new BootstrapStore(()=>stateConnection(),id,64L*1024*1024).evidence).toMap)
-            emit("STATE","admission"->admission.evidence,"L"->store.evidence,"D"->offsets,"J"->j,"actors"->actorState,"spools"->spools,"captureFailure"->capture.failure.map(x=>JsString(x.toString)).getOrElse(JsNull))
+            val failure=capture.failure.map(cn.xuyinyin.magic.workflow.engine.ExecutionFailure.from(_,"test-observation"))
+            emit("STATE","admission"->admission.evidence,"L"->store.evidence,"D"->offsets,"J"->j,"actors"->actorState,"spools"->spools,
+              "captureFailure"->capture.failure.map(x=>JsString(x.toString)).getOrElse(JsNull),
+              "captureFailureCode"->failure.map(x=>JsString(x.code)).getOrElse(JsNull),
+              "captureFailureStage"->failure.map(x=>JsString(x.stage)).getOrElse(JsNull),
+              "captureReleaseConfirmed"->failure.map(x=>JsBoolean(x.releaseConfirmed)).getOrElse(JsNull))
           case "CRASH"=>System.out.flush();Runtime.getRuntime.halt(86)
           case _=>throw new IllegalArgumentException("unknown command")
         }catch{case e:Throwable=>emit("COMMAND_FAILED","command"->JsString(cmd(0)),"error"->JsString(e.toString))}

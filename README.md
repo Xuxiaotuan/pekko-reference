@@ -78,9 +78,13 @@ CDC Sink 在一次事务内复用语句并保留逐条事件顺序；列表查�
 
 [初次实验](docs/experiments/2026-10-22-table-scheduling/README.md)区分真实多表 Source/Journal/Sink、原恢复回归和 70 万条目录元数据；[提交前整体审查](docs/experiments/2026-10-22-table-scheduling-review/README.md)保存授权重试、Stop 归还修复及新版本回归。元数据实验不代表 70 万张物理表或常驻 CDC 容量；不包含共享 CDC 或多 owner 自动接管。
 
+## 常驻 CDC 平台入口
+
+新共享 Reader、LOW/HIGH 初始化、有界步骤与动态选表走独立的 `/api/v1/cdc-tasks`，默认 `pekko.workflow.cdc-platform.enabled=false`。显式启用、专用 SDK/控制账号、空目标表和 schema 前提见[配置指南](docs/guides/configuration.md#常驻-cdc-平台显式启用)，实际版本与验证边界见[平台报告](docs/experiments/2026-10-27-cdc-platform/README.md)。当前采用 SQL 冷控制索引和活动步骤的 Journal；旧静态快照接管不代表新链路已具备 HA，元数据规模也不代表 70 万真实表运行能力。
+
 ## MySQL schema
 
-生产进程不会创建或删除持久化表。先在专用数据库执行版本化 schema：
+Journal/Snapshot 和完整组目标账本须由部署流程预建。以下命令初始化 Journal schema；显式 CDC 平台还会初始化自己的控制/L/Bootstrap 辅助表，SDK 会创建派生的 offset/history 表，权限和完整前提见[配置指南](docs/guides/configuration.md#持久化与目标表前提)。
 
 ```bash
 mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_NAME" \

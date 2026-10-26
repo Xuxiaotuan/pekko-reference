@@ -17,7 +17,9 @@ import scala.util.Failure
 class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,val store:MySQLCaptureStore,
   factory:DebeziumEngineFactory=DebeziumEngineFactory.real,
   observe:(String,JsObject)=>Unit=(_,_)=>(),
-  snapshotMonitor:Option[CaptureSnapshotMonitor]=None) extends AutoCloseable {
+  snapshotMonitor:Option[CaptureSnapshotMonitor]=None,
+  resourceObserver:Option[CaptureResourceObserver]=None,
+  closeBudget:CaptureCloseBudget=CaptureCloseBudget()) extends AutoCloseable {
   require(source.connectorId==store.captureId,"capture namespace mismatch")
   private val started=new AtomicBoolean(false);private val closed=new AtomicBoolean(false)
   private val stopping=new AtomicBoolean(false)
@@ -41,7 +43,39 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   private val commandLock=new AnyRef
   private val closeLock=new AnyRef
   private var closeFailure:Throwable=null
+  private val localCloseFinished=new AtomicBoolean(false)
+  private val ownerCloseConfirmed=new AtomicBoolean(false)
+  private val localCloseSignal=scala.concurrent.Promise[Unit]()
   private val groupCoverage=mutable.Map.empty[String,Long]
+  /** Per-table scheduling reads this cache; only the capture coordinator refreshes full D/L evidence. */
+  def cachedStartupEvidence:CaptureStartupEvidence={
+    if(stopping.get() || closed.get())startup.stop()
+    else if(failure.nonEmpty)startup.fail()
+    startup.evidence
+  }
+  def streamingConnected:Option[Boolean]=
+    if(stopping.get() || closed.get() || failure.nonEmpty)Some(false)else snapshots.streamingConnected
+  private lazy val releaseGuard=new CaptureReleaseGuard(startup.evidence.runtimeAttemptId,()=>closeLocal(),
+    ()=>localCloseFinished.get() && !inside.get() && (engine==null || engine.localTerminationConfirmed),
+    includeOwner=>if(!started.get())CaptureServerRelease(startup.evidence.runtimeAttemptId,"CONFIRMED",None)
+      else resourceObserver.map(_.sample(startup.evidence.runtimeAttemptId,ownerId,includeOwner))
+        .getOrElse(CaptureServerRelease(startup.evidence.runtimeAttemptId,"UNKNOWN",Some("OBSERVER_UNAVAILABLE"))),
+    ()=>closeOwner(),()=>ownerCloseConfirmed.get(),()=>resourceObserver.foreach(_.close()),
+    if(resourceObserver.isEmpty)closeBudget.copy(localMillis=1)else closeBudget)
+  private def closeOwner():Unit={
+    if(!ownerCloseConfirmed.get()) {
+      if(owner!=null){owner.close();owner=null}
+      ownerCloseConfirmed.set(true)
+    }
+  }
+  def requestClose():Future[CaptureReleaseEvidence]={
+    if(stopping.compareAndSet(false,true))observe("CAPTURE_STOP_REQUESTED",JsObject())
+    startup.stop();releaseGuard.request()
+  }
+  def refreshRelease():Future[CaptureReleaseEvidence]={requestClose();releaseGuard.refresh()}
+  def releaseEvidence:CaptureReleaseEvidence=
+    if(!stopping.get())CaptureReleaseEvidence(startup.evidence.runtimeAttemptId,"",cachedStartupEvidence.phase=="ADMISSION_READY","IN_USE","IN_USE",false,false,
+      Some("CLOSE_NOT_REQUESTED"),System.currentTimeMillis())else releaseGuard.evidence
   def failure:Option[Throwable]=Option(error.get())
   private def active():Unit={
     require(!closed.get(),"shared capture closed")
@@ -159,6 +193,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       val facts=CaptureRecoveryFacts(existing,hasEvidence,hasBoundaries,unbound,controlPresent,historyPresent,checkpoint,covered)
       CaptureStartupGuard.classify(facts).foreach {reason=>startup.pause(reason);throw new CaptureAdmissionException(reason)}
       if(existing && controlPresent)validateRetainedControls()
+      resourceObserver.foreach(_.beforeStart(startup.evidence.runtimeAttemptId,ownerId))
       if(!controlPresent)withSourceConnection(c=>update(c,"CREATE TABLE IF NOT EXISTS pekko_capture_control(operation_id VARCHAR(128) PRIMARY KEY,action VARCHAR(32) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL)"))
       snapshots.beforeStart()
       profileSequence=store.rememberProfile(JsObject("version"->JsNumber(1),"database"->JsString(source.database),
@@ -370,20 +405,27 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       val failure=releaseUnknown("source-marker:"+code,e);error.compareAndSet(null,failure);startup.pause(code);throw failure
     }
   }
-  override def close():Unit=closeLock.synchronized {
-    if(stopping.compareAndSet(false,true))observe("CAPTURE_STOP_REQUESTED",JsObject())
-    startup.stop()
-    if(closed.get()) {if(closeFailure!=null)throw closeFailure}
-    else {
-      try commandLock.synchronized {
+  private def closeLocal():Unit=closeLock.synchronized {
+    try {
+      if(closed.get()) {if(closeFailure!=null)throw closeFailure}
+      else try commandLock.synchronized {
     closed.set(true)
     // Release the owner connection only after the original Engine close is confirmed.
     // A callback failure starts SDK shutdown asynchronously; do not race a second stop request.
     if(callbackFailed.get() && completion!=null)scala.concurrent.Await.ready(completion,scala.concurrent.duration.Duration(5,"seconds"))
     if(engine!=null)engine.close()
     assemblers.values.foreach(_.close());assemblers.clear();pending.clear();markers.clear()
-    if(owner!=null){owner.close();owner=null}
+    // Legacy AutoCloseable users get local cleanup, never reusable evidence. Managed
+    // captures keep owner control until the independent server observer confirms release.
+    if(resourceObserver.isEmpty)closeOwner()
+    localCloseFinished.set(true)
       }catch {case e:Throwable=>closeFailure=e;throw e}
-    }
+      localCloseSignal.trySuccess(())
+    }catch {case e:Throwable=>localCloseSignal.tryFailure(e);throw e}
+  }
+  override def close():Unit={
+    requestClose()
+    try scala.concurrent.Await.result(localCloseSignal.future,scala.concurrent.duration.Duration(closeBudget.localMillis,"milliseconds"))
+    catch {case scala.util.control.NonFatal(e)=>throw releaseUnknown("capture-local-close",e)}
   }
 }

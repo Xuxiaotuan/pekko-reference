@@ -2,9 +2,15 @@
 
 > 执行方式：后续按 `superpowers:executing-plans` 逐任务实施；本文件仅交付方案和验收矩阵，不批准生产改造、数据库操作、提交、推送或发布。任务使用复选框记录未来执行结果，不能把计划中的预期当成实测。
 
-**状态：**方案待讨论，运行验收 `evidence_incomplete`。2026-10-26 只读核对源码和既存证据，未运行新的 MySQL/Journal/Sink 实验。
+**原始状态（2026-10-26）：**方案待讨论，运行验收 `evidence_incomplete`。当时只读核对源码和既存证据，未运行新的 MySQL/Journal/Sink 实验。
 
-**后续执行记录（2026-10-27）：**上句描述方案初写时的状态。A0/B0 已完成七个启动/恢复探针组合和一项真实 Journal/Sink witness，见[探针报告](../../experiments/2026-10-26-capture-admission-release/README.md)。随后用户授权继续下一步及本地提交，现已接入 A1/A2 的启动前分类和命令准入，实际实现及定点验证见[生产准入报告](../../experiments/2026-10-27-capture-admission/README.md)。B1/AB 尚未实施；两轮材料都不能记作下面全部 26 项生产故障矩阵通过。
+**第一轮执行记录（2026-10-27，A0/B0 与 A1/A2）：**A0/B0 已完成七个启动/恢复探针组合和一项真实 Journal/Sink witness，见[探针报告](../../experiments/2026-10-26-capture-admission-release/README.md)。随后接入 A1/A2 的启动前分类和命令准入，实际实现及定点验证见[生产准入报告](../../experiments/2026-10-27-capture-admission/README.md)。截至该轮，B1/AB 尚未实施；两轮材料都不能记作下面全部 26 项生产故障矩阵通过。
+
+**后续实施记录（2026-10-27，平台主线）：**已接入受管关闭的 `requestClose` / `refreshRelease`、本地终止与服务端释放证据，以及持久冷控制索引、有界执行步骤和 API/UI 入口。旧 `AutoCloseable.close` 保留本地清理兼容语义，调用返回不代表 `reusable`；受管平台只有取得对应 attempt/operation 的真实释放证据，才允许将 owner 标为 STOPPED。释放 UNKNOWN 的 grant 和 owner 不按 PID、TTL 或进程退出自动归零。
+
+E/F 当前采用 **SQL 冷控制索引 + 活动步骤的 Bootstrap Journal**：无变化的 tail 停放，持久 L 分发游标在有新 GROUP 时唤醒；审计中的 Journal/Runner 缓存受限。没有为每张表实现一个长期驻留的控制 Actor，也没有把旧静态快照 guardian 接到新共享链路。实现、最终候选版本、实际实验及未验证项统一见[平台报告](../../experiments/2026-10-27-cdc-platform/README.md)。
+
+**阅读范围：**下文保留当时的设计、任务和验收要求，不能用历史“未实施”反推当前源码，也不能用已有实现反推所有复选项均已验收。A/B 26 个基础编号的完整分支展开尚未全部验证；新共享链路 HA、DDL、GC 与 70 万真实表常驻容量均不在本次已完成能力中。最终报告分别列源码结论、实际结果和未验证边界，不在本计划预填通过总数。
 
 **Goal：**在单个受控 owner 内，阻止 Reader 重新选点越过已承诺区间，阻止未就绪时写入新的订阅 B；关闭超时或资源释放未知时保留隔离状态，不宣称可重新使用额度。
 
