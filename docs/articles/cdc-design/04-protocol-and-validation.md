@@ -2,6 +2,8 @@
 
 [系列导读与验证范围](README.md) · [1：目标架构](01-why-pekko-for-resident-cdc.md) · [2：批转流源码](02-source-and-recovery-contract.md) · [3：真实实验](03-real-mysql-journal-failure.md) · [4：恢复协议](04-protocol-and-validation.md) · [5：自建与复用](05-pekko-vs-flink-cdc.md) · [Flink CDC 深入系列](https://xuyinyin.cn/flink-cdc-series/)
 
+[A/B 补测](../../experiments/2026-10-27-ab-followup/README.md)中，源 marker 回复不确定时保留原身份并暂停；观察连接断开与权限缺失单列为真实 MySQL 组件结果。取消先于 marker 绑定的样本中，订阅未复活，但代码仍可能发出 `B_BOUND` 观察事件；判断持久绑定须读取实际屏障。尚缺的固定门、旧状态证明和跨 JVM 资源准入仍为 `evidence_incomplete`。
+
 > **文章修订：2026-10-27。** G1—G4 的原实验链接保留原冻结版本；启动门已提交于 [`74b6d9a`](https://github.com/Xuxiaotuan/pekko-reference/tree/74b6d9ad1ebcfe19a786f4e1869aed276a63bb52)。有界 step、SQL owner/grant 与受管释放按本轮候选源码论证；其冻结版本及真实验证结果见[平台实验报告](../../experiments/2026-10-27-cdc-platform/README.md)。源码分支不是自动恢复的实验结果。
 
 五表增加到七表时，f/g 的初始化需要跨越多个数据库事务、一次或多次进程故障。本文回答：哪些持久事实足以让恢复安全地继续，哪些事实缺失时必须暂停？我们先推导 G1—G4，再说明有界调度为什么不能削弱这些数据协议。第三篇的 I08/I11/I16/I21 给出指定窗口的证据；旧启动反例与新版安全拒绝，则划出了 G0 尚不能无条件成立的边界。
@@ -178,6 +180,18 @@ observer 锚点丢失、权限不足、服务端仍有会话时返回 UNKNOWN，
 控制面的过载也不能被当成存储事实。一次已复现的问题是：HTTP 请求占满控制预算后，调度尚未进入执行体就收到 BUSY，却把健康 owner 永久改成 UNKNOWN。修复仅让这类前置拒绝等待下次调度；已获准工作内的 BUSY 或 SQLException 仍暂停。三个有界 H2/假 Kernel 检查支持这个分类，不能将它说成 MySQL 故障恢复实测。
 
 G1—G4 由此仍是一条条件性证明：范围固定，输出封存，效果可核实，终点不移动，完整回放后才激活。新增调度与释放协议负责保护它的运行前提，不自动扩大它的输入类型、恢复范围或规模结论。[本轮平台实验](../../experiments/2026-10-27-cdc-platform/README.md)分别记录源码结论、定点实测和未验证边界；尚未取得结果的路径保持 `evidence_incomplete`。
+
+## 原始事实比观察事件更严格
+
+一次 A14 定点实验中，源 marker 的 COMMIT 返回未知且事务仍在途，Store 取消却先将待定订阅标为 CANCELED，随后源事务实际迟提交。这是验收失败。实验直接调用与 Runner 共用的 Store 路径，而非完整 Runner 的端到端复现；其他活动表的对账相等也不能修补该失败。`B_BOUND` 事件在晚到 bind 未写入时仍可能出现，应以持久订阅状态和源事务事实判断。
+
+A12 还注入过 ACK 父引用摘要错误，并重算该帧摘要；真实重启仍返回 `CHECKPOINT_UNCOVERED`，没有创建 Engine，停写后的四行 24 字段相等。这只覆盖一种引用损坏。
+
+B06 的 Reader 级实验暴露了另一条边界：源 marker 事务仍在 MySQL 运行时，关闭结果仍不可复用且服务器状态 UNKNOWN，但 capture 的 owner 命名锁已释放。活动表 T/J 不变且逐字段相等，这不证明事务已结束或可以接管；该样本未配置资源观察器，也没有测试平台 owner。
+
+B09 的双 JVM 样本中，新 JVM 已安全暂停后，旧执行者才进入 STREAMING；新 JVM 仍为 UNKNOWN、Engine 创建数为 0。旧执行者继续运行后 64 行 384 字段相等；这是并存实例隔离实验，不是向新 JVM 注入所有可能的迟到消息。
+
+A09 的未绑定 B 样本当前选择启动前安全暂停；可证明能够重放时自动继续的协议尚未完成。B02/B03 只证明指定测试门下的有界关闭行为，B05 则保留未释放观察期的失败。证据及未覆盖项见[补测报告](../../experiments/2026-10-28-ab-matrix/README.md)。
 
 ## 技术附录与证据入口
 

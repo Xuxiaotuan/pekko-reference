@@ -25,6 +25,7 @@ SUITES = {
     'reader': 'connectors.mysql.source.SharedCaptureReaderSpec',
     'bootstrap': 'workflow.integration.BootstrapMatrixSpec',
     'release': 'workflow.integration.ManagedCaptureReleaseSpec',
+    'observer-privilege': 'workflow.integration.CaptureObserverPrivilegeSpec',
     'l-ownership': 'workflow.integration.CaptureLogResourceOwnershipSpec',
     'platform': 'workflow.integration.CdcPlatformMatrixSpec',
     'metadata': 'workflow.integration.CdcPlatformMetadataSpec',
@@ -79,6 +80,54 @@ def try_source_purge(pool, slot, token, root, private_archive, observations):
     return True
 
 
+def restart_exact_test_source(pool, slot, token, root):
+    request = json.loads((root / 'source-restart-request.json').read_text())
+    expected = pool.slots[slot]['source']
+    if request.get('uuid') != expected['uuid'] or request.get('port') != expected['port']:
+        raise RuntimeError('source restart identity mismatch')
+    identity = pool.verify_slot(slot, token)
+    if not identity['admitted']:
+        raise RuntimeError('source restart slot identity mismatch')
+    sample = observe_resources(pool, slot, token)
+    sessions = sample['instances']['source']['sessions'].strip().splitlines()
+    actual = {int(line.split('\t', 1)[0]) for line in sessions}
+    allowed = set(request['sourceConnectionIds'])
+    if actual != allowed or sample['instances']['source']['transactions'].strip():
+        raise RuntimeError('unowned source session or active transaction; restart refused')
+    before = pool.sql(slot, 'source', "SHOW GLOBAL STATUS LIKE 'Uptime'", token)
+    base = pool.instance_dir(slot, 'source')
+    pid = int((base / 'mysqld.pid').read_text())
+    result = dict(before=identity, resourcesBefore=sample, oldPid=pid, beforeUptime=before)
+    stopped = False
+    try:
+        pool.stop(slot, 'source', token)
+        stopped = True
+        deadline = time.monotonic() + 20
+        while subprocess.run(['ps', '-p', str(pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+            if time.monotonic() >= deadline:
+                raise RuntimeError('owned MySQL process has not exited')
+            time.sleep(.1)
+        pool.start(slot, 'source', token)
+        stopped = False
+        result['after'] = pool.verify_slot(slot, token)
+        if not result['after']['admitted']:
+            raise RuntimeError('restarted source identity mismatch')
+        result['newPid'] = int((base / 'mysqld.pid').read_text())
+        result['afterUptime'] = pool.sql(slot, 'source', "SHOW GLOBAL STATUS LIKE 'Uptime'", token)
+        result['restarted'] = True
+    except Exception as error:
+        result['error'] = type(error).__name__ + ': ' + str(error)
+        if stopped:
+            try:
+                pool.start(slot, 'source', token)
+                result['recoveryStart'] = 'succeeded'
+            except Exception as recovery:
+                result['recoveryStart'] = type(recovery).__name__ + ': ' + str(recovery)
+        write_json(root / 'source-restart-response.json', result)
+        raise
+    write_json(root / 'source-restart-response.json', result)
+
+
 def cleanup_group(group):
     try:
         return terminate_group(group)
@@ -101,9 +150,12 @@ def main():
     parser.add_argument('--case', help='ScalaTest name substring; e.g. "for I11"')
     parser.add_argument('--test-name', action='append', default=[])
     parser.add_argument('--source-purge', action='store_true', help='Explicit isolated R16-binlog only; archives remain private')
+    parser.add_argument('--source-restart', action='store_true', help='Exact B08 observer restart probe on leased disposable source only')
     a = parser.parse_args()
     if a.source_purge and (a.suite != ['shared'] or a.case != 'for R16-binlog'):
         parser.error('source purge requires only shared and exact --case for R16-binlog')
+    if a.source_restart and (a.suite != ['observer-privilege'] or a.case != 'original observer anchor after source restart' or a.source_purge):
+        parser.error('source restart requires only the exact observer restart case')
     if 'admission' in a.suite and not a.legacy_candidate:
         parser.error('admission requires a pre-fix frozen --legacy-candidate')
     pool = Pool(a.config)
@@ -135,6 +187,8 @@ def run_locked(a, pool, lease):
     env['CDC_PLATFORM_EVIDENCE'] = str(a.output / 'cases')
     if getattr(a, 'source_purge', False):
         env['CAPTURE_SOURCE_PURGE_GATE'] = str(a.output)
+    if getattr(a, 'source_restart', False):
+        env['CAPTURE_SOURCE_RESTART_GATE'] = str(a.output)
     args = [str(a.java), '-Xmx768m', '-Duser.timezone=UTC', '-cp',
             os.pathsep.join(candidate['classpath']), 'org.scalatest.tools.Runner', '-o']
     for suite in a.suite:
@@ -165,12 +219,14 @@ def run_locked(a, pool, lease):
                                        stderr=subprocess.STDOUT, start_new_session=True)
             result['pid'] = process.pid
             try:
-                if getattr(a, 'source_purge', False):
+                if getattr(a, 'source_purge', False) or getattr(a, 'source_restart', False):
                     deadline = time.monotonic() + 1000
                     while process.poll() is None:
                         if (a.output / 'source-purge-request.json').exists() and not (a.output / 'source-purge-response.json').exists():
                             try_source_purge(pool, slot, token, a.output,
                                 pool.root / slot / 'private-binlog-archives' / uuid.uuid4().hex, purge_observations)
+                        if getattr(a, 'source_restart', False) and (a.output / 'source-restart-request.json').exists() and not (a.output / 'source-restart-response.json').exists():
+                            restart_exact_test_source(pool, slot, token, a.output)
                         if time.monotonic() >= deadline:
                             raise subprocess.TimeoutExpired(args, 1000)
                         time.sleep(.2)

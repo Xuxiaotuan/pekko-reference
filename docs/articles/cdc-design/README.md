@@ -64,6 +64,8 @@
 
 ## 当前验证范围汇总
 
+> **2026-10-27 A/B 补测：**[证据与未完成清单](../../experiments/2026-10-27-ab-followup/README.md)记录真实 MySQL、部分 Journal/Sink 故障及逐字段复算。A/B 展开矩阵尚未跑完；A05 的可证明未源写分支目前安全暂停，不能宣称自动继续。
+
 | 对象 | 证据与结果 | 支持的结论 | 未覆盖/失败边界 |
 |---|---|---|---|
 | Actor 执行模型 | 历史 10,000 普通 Actor、40,000 消息、2 线程 | 本条件下 handler 串行及共享线程机制 | 持久 CDC 实体、70 万真实表与资源斜率 |
@@ -92,6 +94,25 @@
 - [双槽与资源释放报告](../../experiments/2026-10-25-cdc-lab-pool/README.md)、[双槽 suite 与后置结果](../../experiments/2026-10-25-cdc-lab-pool/scala-dual-slot-summary.json)。
 - [A0/B0 探针](../../experiments/2026-10-26-capture-admission-release/README.md)、[A1/A2 准入实测](../../experiments/2026-10-27-capture-admission/README.md)、[本轮平台报告](../../experiments/2026-10-27-cdc-platform/README.md)：按版本追踪后续变化。
 - [启动准入设计](../../development/specs/2026-10-25-shared-reader-startup-recovery-design.md)、[平台生命周期设计](../../development/specs/2026-10-25-cdc-platform-lifecycle-contract.md)：原设计背景；实际实施范围以源码和对应报告为准。
+
+## A/B 矩阵补测范围
+
+| 证据 | 实际结果 | 限制 |
+|---|---|---|
+| A10、A13、A16 | 指定真实 MySQL、Actor Journal、Sink 样本逐字段相等 | 预复制基线和指定旧版本；不是所有故障窗口或在线初始化 |
+| A11 完成态 D 命名空间冲突 | 真实 Reader 重启前安全暂停，Engine 创建数 0；4 行 24 字段相等 | 文件名由测试注入；不是自动恢复收敛 |
+| A12 ACK 父引用摘要错误 | 真实 Reader 重启前安全暂停，Engine 创建数 0；4 行 24 字段相等 | 测试注入一种引用损坏；不是自动恢复收敛 |
+| A14 未知 COMMIT 取消 | 定点 Store 路径实际失败，事务迟提交 | 不将其他表对账相等写成该路径成功；完整 Runner 仍需验证 |
+| B06 未决 COMMIT 与关闭 | 实际事务仍在途时 capture owner 锁已释放；结果不可复用 | Reader 级失败，不代表平台 owner 或接管结论 |
+| B05 启停竞态 | factory 前门与真实 MySQL task start 门在 180 秒内未确认释放 | 不能断言永久泄漏；测试门位于调用原 task 的 start 实现之前 |
+| A05、A09 | 未绑定 B 当前可安全暂停 | 尚无可靠证据支持自动继续；`B_BOUND` 观察事件不能替代持久状态 |
+| B04 callback 异常 | 异常回调未 ACK，T/J 不变；4 行中有 2 个字段差异 | Actor 在异常前已停止；未验证自动恢复 |
+| B10 旧 JVM 崩溃、L 事务仍在 | 新 JVM UNKNOWN，Engine 创建数 0；事务回滚后仍暂停 | 初始化基线 64 行相等，故障后 5 字段差异；未自动接管 |
+| B08 观察连接断开 | 关闭及复查均 UNKNOWN、owner 保留；4 行 24 字段相等，T 1/J 4 | 人为断开观察连接；未验证恢复观察或自动重启 |
+| B09 双 JVM 旧执行者迟到 ready | 新 JVM 保持 UNKNOWN、Engine 数 0，旧执行者继续后 64 行 384 字段相等 | 未覆盖所有跨实例旧消息形式 |
+| B02/B03/B08/B09 | 指定关闭、观察器和过期回复切点已取证 | 测试门或组件探针不升级为端到端保证 |
+
+[2026-10-28 补测报告与原始证据](../../experiments/2026-10-28-ab-matrix/README.md)保留各候选源码摘要、实际 T/J/D、回调及失败记录。矩阵整体仍为 `evidence_incomplete`。
 
 ## 独立技术附录
 

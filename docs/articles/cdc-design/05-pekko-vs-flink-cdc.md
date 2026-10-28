@@ -2,6 +2,8 @@
 
 [系列导读与验证范围](README.md) · [1：目标架构](01-why-pekko-for-resident-cdc.md) · [2：批转流源码](02-source-and-recovery-contract.md) · [3：真实实验](03-real-mysql-journal-failure.md) · [4：恢复协议](04-protocol-and-validation.md) · [5：自建与复用](05-pekko-vs-flink-cdc.md) · [Flink CDC 深入系列](https://xuyinyin.cn/flink-cdc-series/)
 
+[A/B 补测](../../experiments/2026-10-27-ab-followup/README.md)支持对具体准入与资源释放边界的分析，但矩阵仍未完成；这些数据不是 Pekko/Flink 吞吐、资源占用或高可用能力的同负载比较。
+
 > **文章修订：2026-10-27。** 已提交的启动准入与五个 Bootstrap 定点结果见 [`74b6d9a`](https://github.com/Xuxiaotuan/pekko-reference/tree/74b6d9ad1ebcfe19a786f4e1869aed276a63bb52)及[A1/A2 报告](../../experiments/2026-10-27-capture-admission/README.md)；本轮平台候选的源码版本、实测与未验证项见[平台实验报告](../../experiments/2026-10-27-cdc-platform/README.md)。没有 Pekko/Flink 同负载 benchmark，也没有 70 万真实源表容量结果。
 
 一个实例的表目录很大，今天同步五张，明天增加两张，还要单独取消、恢复。本文回答：为这种长期复制任务，哪些控制与数据职责值得自建，哪些应复用成熟运行时？前四篇的源码与故障证据支持若干机制选择，但没有提供 Pekko 与 Flink CDC 同负载的总体成本或性能胜负。
@@ -121,6 +123,12 @@ Flink 的成熟协调机制可以减少一部分自建工作，但它与具体 M
 如果主要问题是少量持续活跃表与海量长期控制身份、细粒度动态选择，SQL 冷索引加 Pekko 活动执行值得继续验证。如果需要广泛连接器、复杂 Join/窗口、跨算子一致恢复，成熟数据运行时能减少自建责任。把 Pekko 仅作为控制面、数据交给现成 CDC 运行时也可评估，但当前没有实现该组合。
 
 因此本文支持的是一种有边界的架构选择：让长期身份与活动计算分开，让动态控制与数据正确性分别取证。它尚未支持“比 Flink CDC 更省资源”或“已适合 70 万表生产常驻”的总体结论。
+
+## 新故障证据如何影响比较
+
+本轮在真实 MySQL、Actor Journal 和 Sink 中补充了 ACK/D 故障、并发订阅和旧记录恢复的逐字段对账；它们支持指定窗口的行为，不证明所有恢复窗口均收敛。A14 未知 COMMIT 取消失败，B05 真正的 MySQL task 启动与关闭竞争在两个样本中均未能在观察期确认释放，B06 在源事务未决时已释放 capture owner 锁；A05 的自动继续仍缺可靠证明。这些未解决项是自建 CDC 平台需要承担的工程工作，不能因 Actor 的资源模型而省略。
+
+这些实验没有在相同负载下运行 Flink，也没有验证 70 万张真实表。具体切点和失败材料见[补测报告](../../experiments/2026-10-28-ab-matrix/README.md)。
 
 ## 技术附录与证据入口
 

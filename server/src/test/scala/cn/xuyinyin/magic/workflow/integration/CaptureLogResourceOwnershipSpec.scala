@@ -11,6 +11,8 @@ import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import java.nio.file.{Files,Path}
+import java.io.File
+import java.net.URLClassLoader
 import java.sql.DriverManager
 import java.util.UUID
 import java.util.concurrent.{ConcurrentLinkedQueue,CountDownLatch,TimeUnit}
@@ -149,6 +151,26 @@ class CaptureLogResourceOwnershipSpec extends AnyWordSpec with Matchers {
         write(out,"local-ended-L-still-held.json",JsObject("state"->stateSnapshot(),"connectionId"->JsNumber(connection),
           "reusableBeforeResolve"->JsBoolean(reusableBeforeResolve),"platformOwnerReleasedBeforeResolve"->JsBoolean(ownerReleasedBeforeResolve),
           "heldTransaction"->heldRows,"samples"->JsArray(samples.result())))
+        // A fresh JVM attempts the same platform while the prior real L transaction and owner are unresolved.
+        val loaders=Iterator.iterate(Option(getClass.getClassLoader))(_.flatMap(x=>Option(x.getParent))).takeWhile(_.nonEmpty).flatten
+          .collect {case l:URLClassLoader=>l.getURLs.iterator}.flatten.filter(_.getProtocol=="file").map(x=>Path.of(x.toURI).toString)
+        val cp=(loaders++System.getProperty("java.class.path","").split(File.pathSeparator).iterator).filter(_.nonEmpty).toVector.distinct.mkString(File.pathSeparator)
+        val builder=new ProcessBuilder(Path.of(System.getProperty("java.home"),"bin","java").toString,"-Xmx768m","-Duser.timezone=UTC","-cp",cp,
+          CdcPlatformMatrixWorker.getClass.getName.stripSuffix("$"),schema,id,sourceUser,sdkUser,lineage,stateLineage,"false")
+        builder.redirectErrorStream(true)
+        val next=new Child(builder.start(),out.resolve("unresolved-new-jvm.log"))
+        val other=DriverManager.getConnection(source.url(schema),source.user,source.password)
+        try {
+          next.awaitEvent("PROCESS_READY")
+          val fresh=next.state()
+          fresh.fields("engineCreations") shouldBe JsNumber(0)
+          fresh.fields("platform").asJsObject.fields("ownerState") shouldBe JsString("UNKNOWN")
+          heldRows.elements should not be empty
+          query(other,"SELECT 1 AS alive").elements should not be empty
+          write(out,"unresolved-new-jvm.json",JsObject("freshWorker"->fresh,"oldHeldTransaction"->heldRows,
+            "priorOwner"->JsString(platform.ownerStatus),"otherSessionAlive"->JsBoolean(true),"state"->stateSnapshot()))
+          next.send("STOP");next.exit() shouldBe 0
+        }finally {other.close();next.kill()}
         proxy.resolveHeldTransaction();resolved=true
         awaitCondition("actual old L transaction rollback")(heldRows.elements.isEmpty)
         awaitCondition("same close operation reusable after old transaction ends",180.seconds){finalReusable=kernel.closeAndVerify();finalReusable}

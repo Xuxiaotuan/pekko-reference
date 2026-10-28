@@ -6,6 +6,8 @@ import io.debezium.engine.format.ChangeEventFormat
 import org.apache.kafka.connect.source.SourceRecord
 import spray.json._
 import java.util.Properties
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.jdk.CollectionConverters._
 
 object CaptureAdmissionProbeFactory {
@@ -25,8 +27,11 @@ object CaptureAdmissionProbeFactory {
 }
 
 /** Test-only observation. All records and original committers pass through unchanged. */
-final class CaptureAdmissionProbeFactory(heartbeatMillis: Int, emit: (String, JsObject) => Unit)
+final class CaptureAdmissionProbeFactory(heartbeatMillis: Int, emit: (String, JsObject) => Unit, holdFirstCallback:Boolean=false)
   extends DebeziumEngineFactory {
+  private val gate=new CountDownLatch(1)
+  private val gateArmed=new AtomicBoolean(holdFirstCallback)
+  def releaseGate():Unit=gate.countDown()
   override def create(props: Properties): DebeziumEngineAccess = {
     props.setProperty("heartbeat.interval.ms", heartbeatMillis.toString)
     emit("EFFECTIVE_CONFIG", JsObject("heartbeatMillis" -> JsNumber(heartbeatMillis),
@@ -44,8 +49,17 @@ final class CaptureAdmissionProbeFactory(heartbeatMillis: Int, emit: (String, Js
               "offset" -> MySQLCdcSourceNode.cursorValue(r).parseJson,
               "value" -> JsString(String.valueOf(r.value()))))
           }
-          consumer.handleBatch(records, committer)
-          emit("ORIGINAL_CALLBACK_RETURNED", JsObject())
+          var interrupted=false
+          if(gateArmed.compareAndSet(true,false)){
+            emit("TEST_CALLBACK_HELD",JsObject("records"->JsNumber(records.size)))
+            var released=false
+            while(!released)try {gate.await();released=true}catch {case _:InterruptedException=>interrupted=true;emit("TEST_CALLBACK_GATE_INTERRUPTED",JsObject())}
+          }
+          try {
+            consumer.handleBatch(records, committer)
+            emit("ORIGINAL_CALLBACK_RETURNED", JsObject())
+          } catch {case e:Throwable=>emit("ORIGINAL_CALLBACK_FAILED",JsObject("errorKind"->JsString(e.getClass.getName)));throw e}
+          finally {if(interrupted)Thread.currentThread().interrupt()}
         }
       }
       val lifecycle = new DebeziumEngine.ConnectorCallback {

@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import socket
 import sys
 import tempfile
 import time
@@ -12,6 +13,16 @@ import unittest
 HERE = Path(__file__).resolve().parent
 
 class PoolTests(unittest.TestCase):
+    def test_port_probe_rejects_live_listener_and_allows_closed_server_time_wait(self):
+        listener=socket.socket();listener.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+        listener.bind(('127.0.0.1',0));listener.listen(1);port=listener.getsockname()[1]
+        try:
+            with self.assertRaises(OSError):self.pool.assert_loopback_bind_available(port)
+            client=socket.socket();client.connect(('127.0.0.1',port));accepted,_=listener.accept()
+            accepted.close();client.recv(1);client.close()
+        finally:listener.close()
+        self.pool.assert_loopback_bind_available(port)
+
     def setUp(self):
         self.assertTrue((HERE / 'pool.py').exists(), 'lab pool implementation is missing')
         spec = importlib.util.spec_from_file_location('pool', HERE / 'pool.py')

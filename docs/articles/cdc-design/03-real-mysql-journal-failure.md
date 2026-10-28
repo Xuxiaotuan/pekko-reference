@@ -2,6 +2,8 @@
 
 [系列导读与验证范围](README.md) · [1：目标架构](01-why-pekko-for-resident-cdc.md) · [2：批转流源码](02-source-and-recovery-contract.md) · [3：真实实验](03-real-mysql-journal-failure.md) · [4：恢复协议](04-protocol-and-validation.md) · [5：自建与复用](05-pekko-vs-flink-cdc.md) · [Flink CDC 深入系列](https://xuyinyin.cn/flink-cdc-series/)
 
+[A/B 补测材料](../../experiments/2026-10-27-ab-followup/README.md)记录了 R06、R09、R10-mid 的真实恢复和逐字段复算，也记录预复制基线、停止订阅后的预期差异以及安全暂停；不能把这些样本称为整个矩阵通过。
+
 > **文章修订：2026-10-27。** I08/I11/I16/I21 与 E0 保留原冻结版本；启动准入的已提交实现和新定点实验对应 [`74b6d9a`](https://github.com/Xuxiaotuan/pekko-reference/tree/74b6d9ad1ebcfe19a786f4e1869aed276a63bb52)。本轮有界执行、资源释放和平台调度候选的源码版本、运行摘要及实际结果另见[平台实验报告](../../experiments/2026-10-27-cdc-platform/README.md)，不把不同版本的通过项相加。
 
 仍以五张表增加到七张为例：f/g 要先获得完整存量，再持续追上变更。本文回答这条路径在故障窗口中凭什么被接受。我们先从原初始化实验选取三个恢复案例和一个启动反例，再检验后续启动门是否阻止同类不安全重入。最后讨论有界执行和资源释放怎样改变验收条件。它们检验不同命题，不能合并成无条件的端到端保证。
@@ -175,6 +177,18 @@ I21 进一步覆盖 G3：切点已经存在目标激活 receipt，但 J 仍为 A
 R07 也说明回调名不能替代边界：batch=1 时，原始 marker 行的 callback 返回，事务 END 还在后续回调。实际切点 f 仍 B_PENDING，重启安全拒绝。当前测试保留原切点，按持久 B 状态分别验证拒绝或恢复，不把 MARKER_RETURNED 写成完整 B 接受或原始 ACK 已完成。
 
 [本轮报告](../../experiments/2026-10-27-cdc-platform/README.md)逐项给出最终候选、源码摘要、真实切点、结果类型、复算和资源确认。旧 61 项、旧 58 项、启动定点和新 P/B/H 各有版本，不能累加成一张“全系统已保证”的通过票。
+
+## 本轮补测：通过和失败必须分开
+
+A10 固定主键变化的原始 ACK 与真实 D 行锁，崩溃后重启，四行共 24 字段相等；A13 并发请求样本中的三张活动表各四行、24 字段相等。它们有真实 Actor Journal、Sink 和独立对账，但使用预复制基线。旧版本创建的 CBOR Journal 与 L 前缀也在一次新版本恢复中保留，不能外推到所有旧 manifest。
+
+B04 则先让真实 Actor 和 Sink 应用一次更新，再关闭 Actor 并在真实 Reader 回调中注入异常。失败回调 4 未确认，ACK 只返回 0—3，T/J 保持不变；源与目标有两个字段差异。服务端资源最初为 UNKNOWN，后续观察到可复用。此样本没有执行异常后的自动恢复，不能把差异写成收敛。
+
+B08 在真实 Actor/Sink 已应用更新后切断观察连接：关闭和复查均为 server UNKNOWN、owner 未释放且不可复用，4 行 24 字段相等、T 1/J 4。它没有验证恢复观察或自动重启。
+
+B10 使用独立旧 JVM 和测试代理保留真实 L 事务：旧 JVM 退出后，新 JVM 未创建 Engine、保持 UNKNOWN，事务回滚后仍未自动接管。初始化基线 64 行 384 字段相等，故障后保留五字段差异，不能称目标已收敛。
+
+A14 在源 COMMIT 未知时的取消测试失败；B05 的启动与关闭竞争在 180 秒观察期内未确认释放；进一步在真实 Debezium MySQL task 的 `start` 前加测试门，两组独立槽均复现，测试 JVM 退出后槽位空闲。该切点位于 调用原 task 的 start 实现之前，不能断言永久泄漏。首轮 B08 专用 MySQL 重启还暴露测试设施 TIME_WAIT 检查问题；恢复该专用实例、修正测试设施后重试通过。失败与重试材料分别见[补测报告](../../experiments/2026-10-28-ab-matrix/README.md)。
 
 ## 技术附录与证据入口
 

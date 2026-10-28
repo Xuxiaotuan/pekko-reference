@@ -21,7 +21,7 @@ def main():
     p.add_argument('--candidate', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--java', type=Path, required=True)
-    p.add_argument('--suite', choices=['all', 'cold', 'warm', 'sdk'], default='all')
+    p.add_argument('--suite', choices=['all', 'cold', 'warm', 'warm-zero', 'sdk'], default='all')
     a = p.parse_args()
     pool = Pool(a.config)
     lease = json.loads(a.lease.read_text())
@@ -86,6 +86,8 @@ def main():
                 mode, schema, capture, str(heartbeat), str(folder.resolve())]
         case_env = env.copy()
         case_env['CAPTURE_PROBE_WITNESS'] = '1' if witness else '0'
+        case_env['CAPTURE_REQUIRE_SKIP_REFUSAL'] = '1' if a.suite == 'warm-zero' and label == 'resume-heartbeat-0' else '0'
+        case_env['CAPTURE_REQUIRE_K_DURABLE'] = '1' if a.suite == 'warm-zero' and witness else '0'
         case_env['CAPTURE_PROBE_QUIET_SECONDS'] = '60' if label.startswith(('sdk-resume','resume-heartbeat')) else '10'
         log = pool.root / ('a0-b0-' + uuid.uuid4().hex + '.log')
         observations = []
@@ -140,14 +142,15 @@ def main():
     try:
         cold = uuid.uuid4().hex[:12]
         warm = uuid.uuid4().hex[:12]
-        definitions = [('cold', cold)] if a.suite == 'cold' else [('warm', warm)] if a.suite in ('warm', 'sdk') else [('cold', cold), ('warm', warm)]
+        definitions = [('cold', cold)] if a.suite == 'cold' else [('warm', warm)] if a.suite in ('warm', 'warm-zero', 'sdk') else [('cold', cold), ('warm', warm)]
         for prefix, suffix in definitions:
             run(prefix + '-init', 'init', 'pekko_test_cdc_window_' + suffix, 'a0_' + suffix, 0)
         if a.suite in ('all', 'cold'):
             run('first-heartbeat-0', 'observe', 'pekko_test_cdc_window_' + cold, 'a0_' + cold, 0)
-        if a.suite in ('all', 'warm'):
+        if a.suite in ('all', 'warm', 'warm-zero'):
             run('first-heartbeat-1000', 'observe', 'pekko_test_cdc_window_' + warm, 'a0_' + warm, 1000, True)
-            run('resume-heartbeat-1000', 'observe', 'pekko_test_cdc_window_' + warm, 'a0_' + warm, 1000)
+            if a.suite != 'warm-zero':
+                run('resume-heartbeat-1000', 'observe', 'pekko_test_cdc_window_' + warm, 'a0_' + warm, 1000)
             run('resume-heartbeat-0', 'observe', 'pekko_test_cdc_window_' + warm, 'a0_' + warm, 0)
         if a.suite == 'sdk':
             run('sdk-first-heartbeat-1000', 'observe-sdk', 'pekko_test_cdc_window_' + warm, 'a0_' + warm, 1000)

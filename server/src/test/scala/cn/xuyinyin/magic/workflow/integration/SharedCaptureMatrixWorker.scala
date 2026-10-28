@@ -5,6 +5,7 @@ import cn.xuyinyin.magic.connectors.mysql.source.capture._
 import cn.xuyinyin.magic.connectors.mysql.sink.MySQLCdcApplySinkNode
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
 import cn.xuyinyin.magic.workflow.checkpoint._
+import cn.xuyinyin.magic.workflow.engine.ExecutionFailure
 import cn.xuyinyin.magic.workflow.execution.{WorkflowExecutionEngine,ReliableRunContext}
 import cn.xuyinyin.magic.workflow.execution.registry.NodeRegistry
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
@@ -33,8 +34,10 @@ object SharedCaptureMatrixWorker {
     val settings=Settings.environment();val state=settings.copy(port=sys.env("CAPTURE_STATE_PORT").toInt)
     val gate=new CountDownLatch(1)
     val barrierGate=new java.util.concurrent.atomic.AtomicBoolean(false)
+    val admissionGate=new java.util.concurrent.atomic.AtomicBoolean(false)
     val event:(String,JsObject)=>Unit=(k,v)=>{emit(k,v.fields.toSeq:_*)
-      if(k=="B_BOUND" && barrierGate.compareAndSet(true,false)){emit("CUTPOINT","window"->JsString("B_COMMITTED_ACK_PENDING"));gate.await()}}
+      if(k=="B_BOUND" && barrierGate.compareAndSet(true,false)){emit("CUTPOINT","window"->JsString("B_COMMITTED_ACK_PENDING"));gate.await()}
+      if(k=="SUBSCRIBE_ADMITTED" && admissionGate.compareAndSet(true,false)){emit("CUTPOINT","window"->JsString("SUBSCRIBE_ADMITTED_HELD"));gate.await()}}
     val proxy=new MySQLCommitResponseProxy(settings.host,state.port,event)
     val controlProxy=new MySQLCommitResponseProxy(settings.host,settings.port,event)
     val armL=new AtomicReference[String]("");val armControl=new AtomicReference[String]("")
@@ -142,7 +145,13 @@ object SharedCaptureMatrixWorker {
               "ackFloor"->JsNumber(e.ackFloor),"durableAck"->JsNumber(e.durableAck),"confirmedAck"->JsNumber(e.confirmedAck))
             emit("CAPTURE_ADMISSION",value.fields.toSeq:_*)
             if(e.phase=="ADMISSION_READY")emit("CAPTURE_ADMISSION_READY",value.fields.toSeq:_*)
-          case "SUBSCRIBE"=>Future {capture.subscribe(cmd(1),cmd(2),cmd(3));emit("SUBSCRIBE_ACCEPTED","id"->JsString(cmd(1)))}.failed.foreach(e=>emit("COMMAND_FAILED","command"->JsString("SUBSCRIBE"),"error"->JsString(e.toString)))
+          case "SUBSCRIBE"=>
+            emit("SUBSCRIBE_DISPATCHED","id"->JsString(cmd(1)),"table"->JsString(cmd(2)))
+            Future {capture.subscribe(cmd(1),cmd(2),cmd(3));emit("SUBSCRIBE_ACCEPTED","id"->JsString(cmd(1)))}.failed.foreach {e=>
+              val f=ExecutionFailure.from(e,"shared-subscribe")
+              emit("COMMAND_FAILED","command"->JsString("SUBSCRIBE"),"error"->JsString(e.toString),
+                "failureCode"->JsString(f.code),"failureStage"->JsString(f.stage),"releaseConfirmed"->JsBoolean(f.releaseConfirmed))
+            }
           case "PREPARE"=>store.register(cmd(1),cmd(2),cmd(3),store.schema(cmd(2)).get.id);emit("PREPARED")
           case "CANCEL_PENDING"=>store.cancelPending(cmd(1));emit("PENDING_CANCELED")
           case "UNSUBSCRIBE"=>capture.unsubscribe(cmd(1));emit("UNSUBSCRIBE_ACCEPTED")
@@ -156,9 +165,16 @@ object SharedCaptureMatrixWorker {
             emit("APPLY_READY","id"->JsString(cmd(1)))
           case "ARM_L"=>armL.set(cmd(1));emit("ARMED")
           case "ARM_CONTROL"=>armControl.set(cmd(1));emit("ARMED")
+          case "ARM_SUBSCRIBE"=>admissionGate.set(true);emit("ARMED")
           case "ARM_ACK"=>if(cmd(1)=="B_BOUND")barrierGate.set(true)else factory.armed.set(cmd(1));emit("ARMED")
           case "ARM_APP"=>applicationArm.set(cmd(1));emit("ARMED")
           case "RESOLVE_TX"=>proxy.resolveHeldTransaction();controlProxy.resolveHeldTransaction();emit("TX_RESOLVE_REQUESTED")
+          case "REQUEST_CLOSE"=>
+            val close=Await.result(capture.requestClose(),15.seconds)
+            emit("CLOSE_EVIDENCE","attempt"->JsString(close.runtimeAttemptId),"operation"->JsString(close.operationId),
+              "local"->JsString(close.localTermination),"server"->JsString(close.serverRelease),
+              "ownerReleased"->JsBoolean(close.ownerReleased),"reusable"->JsBoolean(close.reusable),
+              "reason"->close.reasonCode.map(JsString(_)).getOrElse(JsNull))
           case "DROP_RESPONSE"=>proxy.dropHeldResponse();controlProxy.dropHeldResponse();emit("RESPONSE_RELEASED")
           case "RELEASE"=>gate.countDown();factory.release();emit("GATE_RELEASED")
           case "STATE"=>
@@ -177,7 +193,8 @@ object SharedCaptureMatrixWorker {
             val d=stateConnection()
             val offsets=try query(d,s"SELECT offset_key,offset_val FROM `${MySQLCdcSourceNode.connectorStateTables(MySQLCdcStateConfig(state.url(schema),state.user,state.password,"capture_offsets","capture_history",0),captureId)._1}`")finally d.close()
             emit("STATE","L"->store.evidence,"D"->offsets,"J"->j,
-              "actors"->actorSnapshots,"captureFailure"->capture.failure.map(x=>JsString(x.toString)).getOrElse(JsNull))
+              "actors"->actorSnapshots,"engineCreations"->JsNumber(engineCreations.get()),
+              "captureFailure"->capture.failure.map(x=>JsString(x.toString)).getOrElse(JsNull))
           case "CRASH"=>System.out.flush();Runtime.getRuntime.halt(86)
           case _=>throw new IllegalArgumentException("unknown command")
         }catch {case e:Throwable=>emit("COMMAND_FAILED","command"->JsString(cmd(0)),"error"->JsString(e.toString))}

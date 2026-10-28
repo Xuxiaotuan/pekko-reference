@@ -18,7 +18,7 @@ class CdcPlatformMatrixSpec extends AnyWordSpec with Matchers {
   import CdcJournalWindowSupport._
   private val client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()
   private val variants = Vector("P01-dynamic-seven", "P02-tail-capacity", "P03-queued-cancel",
-    "P04-initializing-cancel", "P05-streaming-cancel", "P06-controlled-restart", "P07-unknown-owner", "P08-api-projection")
+    "P04-initializing-cancel", "P05-streaming-cancel", "P06-controlled-restart", "P07-unknown-owner", "P07-live-owner", "P07-stale-ready", "P07-crash-held-l", "P08-api-projection")
 
   "the resident CDC platform with real MySQL, Actor Journal and Sink" should {
     for (variant <- variants) {
@@ -62,6 +62,9 @@ class CdcPlatformMatrixSpec extends AnyWordSpec with Matchers {
         }
         fixtureStep("create-source-account")(account(source, sourceUser, sourceRole = true))
         fixtureStep("create-state-account")(account(state, stateUser, sourceRole = false))
+        val proxyEvents=new java.util.concurrent.ConcurrentLinkedQueue[JsObject]()
+        val heldProxy=if(variant=="P07-crash-held-l")Some(new MySQLCommitResponseProxy(state.host,state.port,
+          (k,v)=>proxyEvents.add(JsObject(v.fields+("kind"->JsString(k))))))else None
         val store = new MySQLCaptureStore(() => java.sql.DriverManager.getConnection(state.url(schema), state.user, state.password), captureId, lineage, 128L * 1024 * 1024)
         def start(label: String, holdStart: Boolean): Child = {
           val loaders = Iterator.iterate(Option(getClass.getClassLoader))(_.flatMap(x => Option(x.getParent))).takeWhile(_.nonEmpty).flatten
@@ -69,7 +72,9 @@ class CdcPlatformMatrixSpec extends AnyWordSpec with Matchers {
           val cp = (loaders ++ System.getProperty("java.class.path", "").split(File.pathSeparator).iterator).filter(_.nonEmpty).toVector.distinct.mkString(File.pathSeparator)
           val builder = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin", "java").toString, "-Xmx768m", "-Duser.timezone=UTC", "-cp", cp,
             CdcPlatformMatrixWorker.getClass.getName.stripSuffix("$"), schema, captureId, sourceUser, stateUser, lineage, stateLineage, holdStart.toString)
-          builder.redirectErrorStream(true); new Child(builder.start(), dir.resolve(label + ".log"))
+          builder.redirectErrorStream(true)
+          if(label=="original")heldProxy.foreach(p=>builder.environment().put("CAPTURE_TEST_CONTROL_PROXY_PORT",p.port.toString))
+          new Child(builder.start(), dir.resolve(label + ".log"))
         }
         var port = 0
         def call(method: String, path: String, body: Option[JsValue] = None): (Int, JsValue) = {
@@ -102,7 +107,7 @@ class CdcPlatformMatrixSpec extends AnyWordSpec with Matchers {
           case "P01" | "P02" | "P06" => "CONVERGED"
           case "P03" => "PREEXEC_CANCELED"
           case "P04" | "P05" => "CANCELED_WITH_K"
-          case "P07" => "SAFE_PAUSED"
+          case "P07" => if(Set("P07-live-owner","P07-stale-ready")(variant)) "OWNER_REJECTED_OTHER_CONTINUES" else "SAFE_PAUSED"
           case _ => "CONTROL_PLANE_ONLY"
         }
         def save(label: String, worker: Child): Unit = write(dir, label + ".json", JsObject("case" -> JsString(variant), "point" -> JsString(label),
@@ -165,10 +170,39 @@ class CdcPlatformMatrixSpec extends AnyWordSpec with Matchers {
               recovered = start("recovered", holdStart = false); port = recovered.awaitEvent("PROCESS_READY").fields("httpPort").convertTo[Int]
               ready(id); awaitCondition("controlled restart fields equal", 180.seconds)(equal("a"))
             case "P07" =>
+              if(variant=="P07-crash-held-l"){
+                val id=submit("a").fields("taskId").convertTo[String];ready(id)
+                awaitCondition("initialized baseline equal",180.seconds)(equal("a"));save("before-held-L",worker)
+                worker.send("ARM RAW_CALLBACK");worker.awaitEvent("ARMED")
+                mutate("a","held-l-after-crash");worker.awaitEvent("CUTPOINT")
+                heldProxy.get.arm("LATE_ROLLBACK",JsObject("stage"->JsString("CAPTURE_L_COMMIT")))
+                worker.send("RELEASE");worker.awaitEvent("GATE_RELEASED")
+                awaitCondition("actual proxied transaction held",60.seconds)(proxyEvents.toArray.toVector.exists(_.asInstanceOf[JsObject].fields("kind")==JsString("PROXY_TX_HELD")))
+                val heldEvent=proxyEvents.toArray.toVector.map(_.asInstanceOf[JsObject]).find(_.fields("kind")==JsString("PROXY_TX_HELD")).get
+                val connection=heldEvent.fields("connectionId").convertTo[Long]
+                def heldRows=withConnection(state,schema)(query(_,s"SELECT t.trx_id,t.trx_state,t.trx_mysql_thread_id,p.USER FROM information_schema.INNODB_TRX t JOIN information_schema.PROCESSLIST p ON p.ID=t.trx_mysql_thread_id WHERE t.trx_mysql_thread_id=$connection"))
+                awaitCondition("actual InnoDB transaction visible")(heldRows.elements.nonEmpty)
+                val account=heldRows.elements.head.asJsObject.fields("USER").convertTo[String]
+                write(dir,"held-l-before-crash.json",JsObject("held"->heldRows,"event"->heldEvent,"expectedAccount"->JsString(stateUser),"actualAccount"->JsString(account),"worker"->worker.state(),"comparison"->comparison("a")))
+                account shouldBe stateUser
+                worker.send("CRASH");worker.exit() shouldBe 86
+                heldRows.elements should not be empty
+                recovered=start("unproven-owner",holdStart=false);port=recovered.awaitEvent("PROCESS_READY").fields("httpPort").convertTo[Int]
+                val paused=recovered.state();paused.fields("platform").asJsObject.fields("ownerState") shouldBe JsString("UNKNOWN")
+                paused.fields("engineCreations") shouldBe JsNumber(0)
+                write(dir,"held-l-after-crash.json",JsObject("held"->heldRows,"newWorker"->paused,"comparison"->comparison("a")))
+                heldProxy.get.resolveHeldTransaction();awaitCondition("old L transaction rollback",60.seconds)(heldRows.elements.isEmpty)
+                write(dir,"held-l-resolved.json",JsObject("held"->heldRows,"newWorker"->recovered.state(),"comparison"->comparison("a"),
+                  "proxyEvents"->JsArray(proxyEvents.toArray.toVector.map(_.asInstanceOf[JsObject]))))
+              }else {
               worker.send("ARM BASELINE_T"); worker.awaitEvent("ARMED")
-              submit("a"); worker.awaitEvent("CUTPOINT"); save("active-grant-before-crash", worker)
-              worker.send("CRASH"); worker.exit() shouldBe 86
-              awaitCondition("crashed worker actual sessions and transactions end", 180.seconds)(idle())
+              val id=submit("a").fields("taskId").convertTo[String]; worker.awaitEvent("CUTPOINT"); save("active-grant-before-crash", worker)
+              val oldPort=port
+              val live=Set("P07-live-owner","P07-stale-ready")(variant)
+              if(!live){
+                worker.send("CRASH"); worker.exit() shouldBe 86
+                awaitCondition("crashed worker actual sessions and transactions end", 180.seconds)(idle())
+              }
               recovered = start("unproven-owner", holdStart = false); port = recovered.awaitEvent("PROCESS_READY").fields("httpPort").convertTo[Int]
               val status = call("GET", "cdc-status")._2.asJsObject
               status.fields("ownerState") shouldBe JsString("UNKNOWN")
@@ -176,6 +210,26 @@ class CdcPlatformMatrixSpec extends AnyWordSpec with Matchers {
               val paused = recovered.state().fields
               paused("engineCreations") shouldBe JsNumber(0)
               paused("grants").asInstanceOf[JsArray].elements.exists(r => Set("ACTIVE", "UNKNOWN").contains(r.asJsObject.fields("status").convertTo[String])) shouldBe true
+              if(live){
+                worker.alive shouldBe true
+                write(dir,"live-owner-refusal.json",JsObject("newStatus"->status,"newWorker"->JsObject(paused),
+                  "originalWorkerAlive"->JsBoolean(worker.alive),"originalWorker"->worker.state()))
+                if(variant=="P07-stale-ready"){
+                  val newPort=port
+                  worker.send("RELEASE");worker.awaitEvent("GATE_RELEASED");port=oldPort;ready(id)
+                  val oldReady=worker.state();port=newPort
+                  val newAfter=call("GET","cdc-status")._2.asJsObject
+                  val next=recovered.state()
+                  write(dir,"late-old-ready.json",JsObject("oldWorker"->oldReady,"newStatus"->newAfter,"newWorker"->next))
+                  newAfter.fields("ownerState") shouldBe JsString("UNKNOWN")
+                  next.fields("engineCreations") shouldBe JsNumber(0)
+                }
+                stop(recovered);recovered=null;port=oldPort
+                if(variant=="P07-live-owner"){worker.send("RELEASE");worker.awaitEvent("GATE_RELEASED")}
+                ready(id);mutate("a","live-owner-still-progresses")
+                awaitCondition("original owner continues to Sink",180.seconds)(equal("a"))
+              }
+              }
             case "P08" =>
               val rows = names.map(t => submit(t)); val ids = rows.map(_.fields("taskId").convertTo[String]).sorted
               val repeated = submit("a"); repeated.fields("taskId") shouldBe rows.head.fields("taskId")
@@ -200,7 +254,7 @@ class CdcPlatformMatrixSpec extends AnyWordSpec with Matchers {
           current.filter(_.alive).foreach(c => try save("failure-state", c) catch { case _: Throwable => () })
           write(dir, "failure.json", JsObject("errorClass" -> JsString(e.getClass.getSimpleName), "message" -> JsString(Option(e.getMessage).getOrElse("").replace(source.password, "[REDACTED]"))))
           throw e
-        } finally { if (recovered != null) recovered.kill(); if (worker != null) worker.kill() }
+        } finally { heldProxy.foreach(_.close()); if (recovered != null) recovered.kill(); if (worker != null) worker.kill() }
       }
     }
   }

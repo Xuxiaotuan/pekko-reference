@@ -2,6 +2,8 @@
 
 [系列导读与验证范围](README.md) · [1：目标架构](01-why-pekko-for-resident-cdc.md) · [2：批转流源码](02-source-and-recovery-contract.md) · [3：真实实验](03-real-mysql-journal-failure.md) · [4：恢复协议](04-protocol-and-validation.md) · [5：自建与复用](05-pekko-vs-flink-cdc.md) · [Flink CDC 深入系列](https://xuyinyin.cn/flink-cdc-series/)
 
+[A/B 补测](../../experiments/2026-10-27-ab-followup/README.md)保留了静默源的 ACK 与实际 D、旧 B/INITIAL 的安全暂停，以及 D 滞后和原始 ACK 切点；A05 尚不能仅从现有持久状态证明源写从未发生。
+
 > **文章修订：2026-10-27。** 当前源码使用仓库相对入口，版本与新平台组合实测见[平台报告](../../experiments/2026-10-27-cdc-platform/README.md)；历史 LOW/HIGH 矩阵与旧失败保留原版本。新增源码行为不预填为实验通过。
 
 一个实例中已有五张表持续同步，现在增加 f/g。本文回答：怎样在分页期间接住变化，并把新表完整地交给持续增量消费？沿 `CdcTaskStore → CdcPlatformRuntime → BootstrapRunner.step → BootstrapSnapshot/BootstrapStore` 的调用链，本文解释固定范围、LOW/HIGH、封存与 B→F。平台现在按有限步骤驱动这条内核；计算规则没有因为调度方式改变而简化，恢复与启动前提仍由第四篇推导、第三篇检验。
@@ -262,6 +264,16 @@ J 已接受 manifest hash 或目标页后，丢失 seal 已经是证据损坏，
 这验证了上文“进度可以延续，读视图不能延续”的指定窗口。异常来自测试探针，Runner 替换也由测试显式触发，不能写成真实网络断线或任意自动驱逐恢复。原始页、连接、范围、L/T/J/D 及全字段证据见[平台实验 P09](../../experiments/2026-10-27-cdc-platform/README.md)。
 
 当前源码还明确区分源 marker 和目标事务：LOW/HIGH/F 的源 COMMIT 结果未知时，捕获域暂停，保留原 operation，不靠反复写 marker 继续初始化。对应 13 个故障切点验的是 SAFE_PAUSED，而非自动收敛；已完成态 D 仅落后于新的已绑定边界则仍可能合法重放，不能把它混同 INITIAL。
+
+## 未绑定 B 与未知 COMMIT 的反例
+
+已提交但未绑定的 B，即使 D 是完成态且位于 B 之前，本轮重启仍返回 `UNBOUND_MARKER_UNPROVEN`、没有创建 Engine。这是安全暂停，不是自动重放收敛；A05 需要的未发出源写证明仍未建立。另一个实验将源 COMMIT 的回复固定为未知，再直接走 Store 的待定取消路径，观察到 B_PENDING 被标为 CANCELED，随后源事务迟提交。这个结果违反“结果未知时不提前完成取消”的验收预期；测试没有覆盖完整 Runner 取消链路，不能据此声称所有调用路径都会发生。
+
+完成态 D 的文件名被测试改为另一 binlog 命名空间后，真实重启以 `CHECKPOINT_UNCOVERED` 拒绝并且没有创建 Engine；此时四行 24 字段对账相等。这是对已停写样本的安全暂停，不是恢复收敛。
+
+在一项测试门固定的 A15 实验中，关闭后的迟到 SDK callback 被消费逻辑拒绝，状态保持 STOPPING，新订阅未登记；它只覆盖同一实例，不能推广到所有跨 JVM 迟到信号。
+
+`B_BOUND` 是观察事件名，不足以单独证明 B 已持久绑定。上面的实际事务、状态与对账见[补测报告](../../experiments/2026-10-28-ab-matrix/README.md)；本轮没有修改恢复协议。
 
 ## 技术附录与证据入口
 

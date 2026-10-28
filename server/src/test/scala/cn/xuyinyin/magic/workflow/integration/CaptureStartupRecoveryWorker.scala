@@ -131,6 +131,12 @@ object CaptureStartupRecoveryWorker {
       Iterator.continually(StdIn.readLine()).takeWhile(line=>line!=null && line!="STOP").foreach {line=>
         val cmd=line.split(" ")
         try cmd(0) match {
+          case "CAPTURE_ADMISSION"=>
+            val e=capture.startupEvidence
+            emit("CAPTURE_ADMISSION","runtimeAttemptId"->JsString(e.runtimeAttemptId),"phase"->JsString(e.phase),
+              "reasonCode"->e.reasonCode.map(JsString(_)).getOrElse(JsNull),"loadedCheckpoint"->JsString(e.loadedCheckpoint),
+              "snapshot"->JsString(e.snapshot),"currentCheckpoint"->JsString(e.currentCheckpoint),
+              "ackFloor"->JsNumber(e.ackFloor),"durableAck"->JsNumber(e.durableAck),"confirmedAck"->JsNumber(e.confirmedAck))
           case "SUBSCRIBE"=>Future {capture.subscribe(cmd(1),cmd(2),cmd(3));emit("SUBSCRIBE_ACCEPTED","id"->JsString(cmd(1)))}.failed.foreach(e=>emit("COMMAND_FAILED","command"->JsString("SUBSCRIBE"),"error"->JsString(e.toString)))
           case "PREPARE"=>store.register(cmd(1),cmd(2),cmd(3),store.schema(cmd(2)).get.id);emit("PREPARED")
           case "CANCEL_PENDING"=>store.cancelPending(cmd(1));emit("PENDING_CANCELED")

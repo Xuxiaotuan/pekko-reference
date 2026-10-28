@@ -95,7 +95,7 @@ object CaptureAdmissionReleaseProbe {
     record("BEFORE_START", JsObject("pid" -> JsNumber(ProcessHandle.current().pid()), "captureId" -> JsString(captureId),
       "jvmStartedMillis" -> JsNumber(ManagementFactory.getRuntimeMXBean.getStartTime),
       "schema" -> JsString(schema), "sourceUuid" -> JsString(lineage), "stateUuid" -> JsString(stateUuid), "D" -> checkedOffsets()))
-    val factory = new CaptureAdmissionProbeFactory(heartbeat.toInt, record)
+    val factory = new CaptureAdmissionProbeFactory(heartbeat.toInt, record,sys.env.get("CAPTURE_REQUIRE_SKIP_REFUSAL").contains("1"))
     val sourceCfg = MySQLCdcSourceConfig(captureId, source.host, source.port, schema, "a", source.user, source.password,
       (captureId.hashCode.toLong & 0x7fffffffL) + 100000L, 128, 100)
     val capture = new SharedMySQLCapture(sourceCfg, cfg, store, factory, record) {
@@ -162,6 +162,24 @@ object CaptureAdmissionReleaseProbe {
       "captureFailure" -> capture.failure.map(e => JsString(e.toString)).getOrElse(JsNull)))
     var kit: ActorTestKit = null
     try {
+      if(!sdkOnly && sys.env.get("CAPTURE_REQUIRE_SKIP_REFUSAL").contains("1")) {
+        val e=capture.startupEvidence
+        val before=withConnection(source,schema)(query(_,"SELECT * FROM pekko_capture_control ORDER BY operation_id"))
+        val request="quiet_probe"
+        require(events.iterator().asScala.exists(_.fields.get("kind").contains(JsString("TEST_CALLBACK_HELD"))),
+          "first callback gate was not reached")
+        require(e.snapshot=="SKIPPED" && e.loadedCheckpoint=="COMPLETE" && e.phase=="STARTING" && e.confirmedAck<=e.ackFloor,
+          "quiet skipped restart did not reach the no-current-ACK window")
+        val attempted=scala.util.Try(capture.subscribe(request,"a","g2"))
+        val after=withConnection(source,schema)(query(_,"SELECT * FROM pekko_capture_control ORDER BY operation_id"))
+        val code=attempted.failed.toOption.collect {case x:CaptureAdmissionException=>x.code}
+        record("QUIET_SKIP_REFUSAL",JsObject("snapshot"->JsString(e.snapshot),"loadedCheckpoint"->JsString(e.loadedCheckpoint),
+          "phase"->JsString(e.phase),"ackFloor"->JsNumber(e.ackFloor),"confirmedAck"->JsNumber(e.confirmedAck),
+          "code"->code.map(JsString(_)).getOrElse(JsNull),"beforeControls"->before,"afterControls"->after,
+          "subscriptionAbsent"->JsBoolean(store.subscription(request).isEmpty),"D"->checkedOffsets(),"L"->store.evidence))
+        require(code.contains("CAPTURE_STARTING") && before==after && store.subscription(request).isEmpty,
+          "no-current-ACK subscription was not refused without effects")
+      }
       if (!sdkOnly && verified && sys.env.get("CAPTURE_PROBE_WITNESS").contains("1")) {
         capture.subscribe("a", "a", "g1")
         awaitCondition("B bound", 20.seconds)(store.subscription("a").exists(_.b.nonEmpty))
@@ -205,8 +223,30 @@ object CaptureAdmissionReleaseProbe {
         // Stop the table by its original K boundary before terminating its test ActorSystem.
         capture.unsubscribe("a")
         awaitCondition("K bound", 20.seconds)(store.subscription("a").exists(_.k.nonEmpty))
+        if(sys.env.get("CAPTURE_REQUIRE_K_DURABLE").contains("1")){
+          val k=store.barrierSequence("a",true).get
+          def dChainReferencesK(value:String):Boolean={
+            val head=store.verifiedOffsetSequence(value)
+            val frames=store.evidence.fields("log").asInstanceOf[JsArray].elements.map(_.asJsObject.fields)
+              .map(f=>f("seq").convertTo[String].toLong->f).toMap
+            var cursor=Option(head);var found=false;var visited=Set.empty[Long]
+            while(cursor.nonEmpty && !found){
+              val seq=cursor.get;require(!visited(seq),"ACK cycle");visited+=seq
+              val payload=frames(seq)("payload").convertTo[String].parseJson.asJsObject.fields
+              found=payload("references").asInstanceOf[JsArray].elements.exists(_.asJsObject.fields("sequence")==JsNumber(k))
+              cursor=payload("parent") match {case JsNull=>None;case x:JsObject=>Some(x.fields("sequence").asInstanceOf[JsNumber].value.toLongExact)}
+            }
+            found
+          }
+          awaitCondition("actual D covers K",90.seconds){
+            val d=checkedOffsets().elements
+            d.size==1 && scala.util.Try(dChainReferencesK(d.head.asJsObject.fields("offset_val").convertTo[String])).getOrElse(false)
+          }
+          record("K_DURABLE_D",JsObject("KSequence"->JsNumber(k),"D"->checkedOffsets(),"L"->store.evidence))
+        }
       }
     } finally {
+      factory.releaseGate()
       if (kit != null) kit.shutdownTestKit()
       val closing = Executors.newSingleThreadExecutor((r: Runnable) => { val t = new Thread(r, "probe-close"); t.setDaemon(true); t })
       val f = closing.submit(new Runnable { def run(): Unit = {

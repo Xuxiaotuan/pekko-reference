@@ -21,6 +21,13 @@ ROLES = ('source', 'state')
 PROTECTED_PORTS = {3306, 13365, 13366}
 
 
+def assert_loopback_bind_available(port):
+    # Permit stale TIME_WAIT sockets while still refusing an active listener.
+    with socket.socket() as probe:
+        probe.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+        probe.bind(('127.0.0.1',port))
+
+
 def digest(path):
     with Path(path).open('rb') as source:
         return hashlib.file_digest(source, 'sha256').hexdigest()
@@ -239,7 +246,7 @@ skip-name-resolve=ON
         cfg = self.slots[name][role]
         auto = (Path(cfg['datadir'])/'auto.cnf').read_text()
         if 'server-uuid='+cfg['uuid'] not in auto: raise ValueError('datadir UUID mismatch')
-        with socket.socket() as probe: probe.bind(('127.0.0.1',cfg['port']))
+        assert_loopback_bind_available(cfg['port'])
         result = subprocess.run(['mysqld','--defaults-file='+str(base/'server.cnf'),'--daemonize'],capture_output=True,text=True,timeout=30)
         if result.returncode: raise RuntimeError('mysqld start failed; retained '+str(base/'mysqld.log'))
         if check_identity: self.sql(name,role,'SELECT 1',token)

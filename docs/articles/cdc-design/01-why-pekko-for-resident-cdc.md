@@ -2,6 +2,8 @@
 
 [系列导读与验证范围](README.md) · [1：目标架构](01-why-pekko-for-resident-cdc.md) · [2：批转流源码](02-source-and-recovery-contract.md) · [3：真实实验](03-real-mysql-journal-failure.md) · [4：恢复协议](04-protocol-and-validation.md) · [5：自建与复用](05-pekko-vs-flink-cdc.md) · [Flink CDC 深入系列](https://xuyinyin.cn/flink-cdc-series/)
 
+启动和资源释放的新补测见[A/B 故障记录](../../experiments/2026-10-27-ab-followup/README.md)。其中包含真实 MySQL 观察器故障，但尚未覆盖完整矩阵，也没有 70 万真实源表的资源结论。
+
 > **文章修订：2026-10-27。** 当前平台路径按仓库源码说明，最终源码版本与本轮运行结果统一见[平台报告](../../experiments/2026-10-27-cdc-platform/README.md)。已提交 `74b6d9a` 的启动准入实测另见[A1/A2 报告](../../experiments/2026-10-27-capture-admission/README.md)。历史版本和失败材料保留，不把新增代码直接写成端到端验收通过。
 
 一个 MySQL 实例有 70 多万张表，今天选择五张同步，明天增加两张。新增表先同步已有数据，再持续追增量；取消一张表时，其余任务仍应运行。这个业务需要长期保存表的身份与进度，同时按实际工作量分配采集和执行资源。
@@ -113,6 +115,10 @@ dispatch 游标、任务唤醒与 grant 完成是 SQL 持久事实，不是每�
 另一个 H 探针确实写入并精确计数 700,000 条冷索引，完整走过 7,000 页 keyset，保存首中尾和 claim 查询计划，并在固定 60 秒内观察堆、线程、连接、事务及配额。它未创建 ActorSystem、Reader 或同量源表。因而它支持冷控制记录与活动执行分离这一段判断；SDK 在 70 万真实表目录下的 Schema/history 成本仍然未知。
 
 这些是两种独立实测，不能拼成“70 万表 CDC 已跑通”。版本、失败和原始材料见[平台报告](../../experiments/2026-10-27-cdc-platform/README.md)。DDL、GC、新共享链路自动接管、长期活跃吞吐和同负载 Flink 性能比较仍未覆盖。
+
+## 资源复用仍取决于可证明的释放
+
+真实关闭实验中，静默和忙源样本分别完成四行逐字段对账；当测试门阻塞 SDK close 或 runner 退出时，资源仍保持 UNKNOWN，不能立即给新执行者复用。在真实 MySQL task 启动期间触发关闭的两组独立实验均在 180 秒内未确认空闲，测试进程退出后槽位才空闲；这属于实际失败，不是已经解决的容量保障。测试门位于 调用原 task 的 start 实现之前。同账号的一条非 capture 连接在组件探针中使观察结果保持 UNKNOWN，连接本身仍可用；这说明账号级观察不能自动区分连接归属。旧 JVM 被杀后，测试代理仍保留真实 L 事务的新窗口中，新 JVM 保持 UNKNOWN、没有创建 Reader；事务回滚后也没有自动接管。[补测报告](../../experiments/2026-10-28-ab-matrix/README.md)区分测试门、服务端采样与端到端样本；这些结果不构成 70 万表容量结论。
 
 ## 技术附录与证据入口
 

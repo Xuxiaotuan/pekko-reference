@@ -52,8 +52,9 @@ object CdcPlatformMatrixWorker {
     implicit val classic: org.apache.pekko.actor.ActorSystem = kit.system.classicSystem
     val sourceCfg = MySQLCdcSourceConfig(captureId, source.host, source.port, schema, "pekko_capture_control", sourceUser, source.password,
       (captureId.hashCode.toLong & 0x7fffffffL) + 100000L, 128, 100)
-    val controlCfg = MySQLCdcStateConfig(state.url(schema), state.user, state.password, "capture_offsets", "capture_history", 0)
-    val sdkCfg = controlCfg.copy(username = stateUser)
+    val controlPort=sys.env.get("CAPTURE_TEST_CONTROL_PROXY_PORT").fold(state.port)(_.toInt)
+    val controlCfg = MySQLCdcStateConfig(state.copy(port=controlPort).url(schema), state.user, state.password, "capture_offsets", "capture_history", 0)
+    val sdkCfg = controlCfg.copy(jdbcUrl=state.url(schema),username = stateUser)
     val limits = CdcPlatformLimits(snapshotSteps = 2, tailSteps = 2, candidatePage = 32, tailDelayMillis = 100L)
     val settings = CdcPlatformSettings(Vector(CdcCaptureSettings(captureId, sourceCfg, sdkCfg, controlCfg,
       sourceLineage, stateLineage, bootstrapLimits = BootstrapLimits(chunkRows = 16, pageRows = 4, groupBatch = 128),
