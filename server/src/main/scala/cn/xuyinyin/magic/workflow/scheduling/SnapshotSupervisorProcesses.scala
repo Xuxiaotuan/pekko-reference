@@ -66,10 +66,76 @@ final class SnapshotSupervisorSettings(val path:Path) extends AutoCloseable {
     val journal=config.getConfig("pekko-persistence-jdbc.shared-databases.slick.db")
     val routes=(Vector((jdbc.getString("url"),jdbc.getString("username"),jdbc.getString("password")),(journal.getString("url"),journal.getString("user"),journal.getString("password")))++
       config.getConfigList("pekko.workflow.snapshot-ha.instances").asScala.map(c=>(c.getString("url"),c.getString("username"),c.getString("password")))).map { case(url,user,password)=>SnapshotOwnerJdbc.endpoint(url)->(url,user,password)}.toMap
+    val worker=ConfigFactory.parseFile(workerConfig.toFile).withFallback(ConfigFactory.load()).resolve()
+    val exclusive=cn.xuyinyin.magic.workflow.cdc.CdcPlatformSettings.load(worker).toVector.flatMap(_.captures).flatMap {c=>
+      Vector(SnapshotOwnerJdbc.endpoint(s"jdbc:mysql://${c.source.host}:${c.source.port}/${c.source.database}")->c.source.username,
+        SnapshotOwnerJdbc.endpoint(c.sdkState.jdbcUrl)->c.sdkState.username)
+    }.groupMap(_._1)(_._2).view.mapValues(_.toSet).toMap
     new MySqlOwnerDrainObserver(tableStore.ownership.get,key=>{
       val (url,user,password)=routes.getOrElse(key,throw new IllegalStateException("unregistered observation endpoint"))
       java.sql.DriverManager.getConnection(SnapshotSupervisorSettings.appendParameters(url,"connectTimeout=5000&socketTimeout=10000&connectionAttributes=pekko_owner:observer,pekko_role:observer"),user,password)
-    })
+    },exclusiveAccounts=exclusive)
+  }
+  /** One bounded, independently observable control-table insert per recovery tick. */
+  def wakeCdc(boot:String,instance:(String,String,Long)):Unit={
+    val worker=ConfigFactory.parseFile(workerConfig.toFile).withFallback(ConfigFactory.load()).resolve()
+    cn.xuyinyin.magic.workflow.cdc.CdcPlatformSettings.load(worker).foreach {cdc=>
+      val state=cn.xuyinyin.magic.connectors.mysql.source.MySQLCdcStateConfig.load(worker)
+      val control=new cn.xuyinyin.magic.workflow.cdc.CdcTaskStore(()=>java.sql.DriverManager.getConnection(
+        SnapshotSupervisorSettings.appendParameters(state.jdbcUrl,"connectTimeout=5000&socketTimeout=5000"),state.username,state.password),cdc.limits)
+      if(control.managedOwnerIs(boot))cdc.captures.foreach {capture=>
+        val url=s"jdbc:mysql://${capture.source.host}:${capture.source.port}/${capture.source.database}?useSSL=false&allowPublicKeyRetrieval=true&connectTimeout=5000&socketTimeout=5000"
+        val endpoint=SnapshotOwnerJdbc.endpoint(url)
+        if(endpoint==instance._1){
+          val ownership=tableStore.ownership.get
+          require(ownership.owner(boot).exists(o=>Set("fenced","drain_wait")(o.phase)) && instance._2==capture.sourceLineage &&
+            ownership.databaseUsers(boot,endpoint)(capture.source.username),"CDC wake lacks isolated source manifest")
+          val user=capture.sourceObserverUsername.getOrElse(capture.source.username)
+          val password=capture.sourceObserverPassword.getOrElse(capture.source.password)
+          val c=java.sql.DriverManager.getConnection(url,user,password)
+          try {
+            val (sourceUuid,sourceStarted,_)=SnapshotOwnerJdbc.databaseIdentity(c)
+            require(sourceUuid==capture.sourceLineage && math.abs(sourceStarted-instance._3)<=3000,"CDC wake source instance changed")
+            val grants=c.createStatement();grants.setQueryTimeout(5)
+            val visible=try {val r=grants.executeQuery("SHOW GRANTS");val b=Vector.newBuilder[String];try while(r.next())b+=r.getString(1)finally r.close();b.result()}finally grants.close()
+            require(MySqlOwnerDrainObserver.hasProcessPrivilege(visible),"CDC wake observer lacks PROCESS visibility")
+            val q=c.prepareStatement("SELECT 1 FROM information_schema.PROCESSLIST WHERE USER=? AND COMMAND LIKE 'Binlog Dump%' LIMIT 1");q.setQueryTimeout(5)
+            val stalled=try {q.setString(1,capture.source.username);val r=q.executeQuery();try r.next() finally r.close()}finally q.close()
+            if(stalled){
+              val wake=cn.xuyinyin.magic.connectors.mysql.source.capture.CaptureWake
+              val slot=wake.nextAvailable {n=>
+                val q=c.prepareStatement("SELECT 1 FROM pekko_capture_control WHERE operation_id=?");q.setQueryTimeout(5)
+                try {q.setString(1,wake.operation(capture.id,boot,n));val r=q.executeQuery();try r.next() finally r.close()}finally q.close()
+              }
+              slot.foreach {slot=>
+              val operation=wake.operation(capture.id,boot,slot)
+              val generation=wake.generation(boot,slot)
+              val insert=c.prepareStatement("INSERT IGNORE INTO pekko_capture_control VALUES(?,'WAKE',?,?)");insert.setQueryTimeout(5)
+              try {insert.setString(1,operation);insert.setString(2,wake.table(capture.id));insert.setString(3,generation);insert.executeUpdate()}finally insert.close()
+              val check=c.prepareStatement("SELECT action,table_name,generation FROM pekko_capture_control WHERE operation_id=?");check.setQueryTimeout(5)
+              try {check.setString(1,operation);val r=check.executeQuery();try require(r.next() && r.getString(1)=="WAKE" && r.getString(2)==wake.table(capture.id) && r.getString(3)==generation && !r.next(),"CDC wake marker conflict")finally r.close()}finally check.close()
+              }
+            }
+          }finally c.close()
+        }
+      }
+    }
+  }
+  def cdcNeedsIsolation(boot:String,expectedProfile:String):Boolean={
+    val worker=ConfigFactory.parseFile(workerConfig.toFile).withFallback(ConfigFactory.load()).resolve()
+    cn.xuyinyin.magic.workflow.cdc.CdcPlatformSettings.load(worker).exists {cdc=>
+      require(profileHash==expectedProfile,"worker configuration changed")
+      val launch=metadata.launch(boot).getOrElse(throw new IllegalStateException("worker launch missing"))
+      require(launch.profileHash==expectedProfile,"worker launch profile changed")
+      val identity=launch.identity.getOrElse(throw new IllegalStateException("worker identity missing"))
+      require(identity.bootId==boot && identity.deploymentId==binding.deploymentId,"guardian launch identity changed")
+      val expected=cn.xuyinyin.magic.workflow.cdc.CdcManagedOwner(boot,binding.deploymentId,binding.hostId,binding.bootId,
+        binding.publicKey,identity.pid,identity.startIdentity,expectedProfile)
+      val state=cn.xuyinyin.magic.connectors.mysql.source.MySQLCdcStateConfig.load(worker)
+      val store=new cn.xuyinyin.magic.workflow.cdc.CdcTaskStore(()=>java.sql.DriverManager.getConnection(
+        SnapshotSupervisorSettings.appendParameters(state.jdbcUrl,"connectTimeout=5000&socketTimeout=5000"),state.username,state.password),cdc.limits)
+      store.managedOwnerNeedsIsolation(expected)
+    }
   }
   def close():Unit=dataSource.close()
 }
@@ -87,7 +153,7 @@ object SnapshotGuardianMain {
       val probe=SnapshotGuardianWire.sign(spray.json.JsObject.empty,key)
       SnapshotGuardianWire.verified(probe,settings.binding.publicKey)
       val service=new SnapshotGuardianService(settings.metadata,new ManagedJvmIsolation(settings.binding.deploymentId,settings.maxWorkers),settings.builder(profile),key)
-      val server=new SnapshotGuardianWire.Server(settings.socket,settings.secret,settings.binding,key,service.handle)
+      val server=new SnapshotGuardianWire.Server(settings.socket,settings.secret,settings.binding,key,service.handle,attest=service.attest)
       try server.run()finally server.close()
     }finally {try {if(lock!=null)lock.close()}finally settings.close()}
   }
@@ -102,8 +168,13 @@ object SnapshotSupervisorMain {
       lock=settings.lock("supervisor");settings.validateWorkerProfile();val boot=UUID.randomUUID().toString
       val control=try settings.metadata.claimController(boot)catch{case e:Exception=>settings.metadata.current.filter(_.bootId==boot).getOrElse(throw e)}
       val client=new SnapshotGuardianWire.Client(settings.socket,settings.secret,control)
-      val runtime=new SnapshotSupervisorRuntime(settings.metadata,control,client,settings.observer.observe,settings.profileHash,event=(kind,value)=>
-        org.slf4j.LoggerFactory.getLogger(getClass).info("Snapshot supervisor {} ({})",kind,value))
+      val profile=settings.profileHash
+      val runtime=new SnapshotSupervisorRuntime(settings.metadata,control,client,settings.observer.observe,profile,event=(kind,value)=>
+        org.slf4j.LoggerFactory.getLogger(getClass).info("Snapshot supervisor {} ({})",kind,value),
+        needsIsolation=boot=>settings.cdcNeedsIsolation(boot,profile),wake=(boot,instance)=>{
+          require(settings.profileHash==profile,"worker configuration changed")
+          settings.wakeCdc(boot,instance)
+        })
       while(!Thread.currentThread().isInterrupted){runtime.tick();Thread.sleep(250)}
     }finally {try {if(lock!=null)lock.close()}finally settings.close()}
   }

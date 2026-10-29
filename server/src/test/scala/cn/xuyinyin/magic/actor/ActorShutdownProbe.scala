@@ -48,7 +48,7 @@ object ActorShutdownProbe {
     (1 to messages).grouped(10000).foreach { batch =>
       batch.foreach(i => router ! MyActor.ProcessMessage(s"msg-$i",
         shared.getOrElse(kit.createTestProbe[String]()).ref))
-      Thread.sleep(100) // Same pacing as ActorSpec.
+      Thread.sleep(100) // Preserve the pacing of the historical million-message experiment.
     }
     val sample = kit.createTestProbe[String]()
     router ! MyActor.ProcessMessage("test-msg", sample.ref)

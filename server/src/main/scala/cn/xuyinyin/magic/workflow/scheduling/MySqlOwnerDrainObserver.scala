@@ -5,7 +5,17 @@ import spray.json._
 import scala.util.control.NonFatal
 
 /** Authoritative fixed-instance observations. Errors and truncated inventory are never represented as an empty result. */
-final class MySqlOwnerDrainObserver(ownership:SnapshotOwnershipStore,open:String=>Connection,maxRows:Int=10000) {
+object MySqlOwnerDrainObserver {
+  private[scheduling] def hasProcessPrivilege(grants:Vector[String]):Boolean=grants.exists {g=>
+    val text=g.toUpperCase(java.util.Locale.ROOT)
+    val global=text.takeWhile(_!='\n').split(" ON \\*\\.\\* ").headOption.getOrElse("")
+    text.contains(" ON *.* ") && (global.contains("ALL PRIVILEGES") || global.stripPrefix("GRANT ").split(",").exists(_.trim=="PROCESS"))
+  }
+  private[scheduling] def unattributed(row:Map[String,String],owner:String,users:Set[String],exclusive:Set[String]):Boolean=
+    (users(row("user")) && row("owner")==null) || (exclusive(row("user")) && row("owner")!=owner)
+}
+final class MySqlOwnerDrainObserver(ownership:SnapshotOwnershipStore,open:String=>Connection,maxRows:Int=10000,
+  exclusiveAccounts:Map[String,Set[String]]=Map.empty) {
   require(maxRows>0 && maxRows<=10000)
   def observe(owner:String,instance:(String,String,Long)):SnapshotDatabaseObservation={
     val at=System.currentTimeMillis()
@@ -22,6 +32,7 @@ final class MySqlOwnerDrainObserver(ownership:SnapshotOwnershipStore,open:String
             require(n<=maxRows,"database observation exceeds bounded inventory");out.result()}finally r.close()
         }finally q.close()
       }
+      require(MySqlOwnerDrainObserver.hasProcessPrivilege(rows("SHOW GRANTS").flatMap(_.values).filter(_!=null)),"observer requires directly granted global PROCESS visibility")
       val lost=rows("SHOW GLOBAL STATUS WHERE Variable_name IN ('Performance_schema_session_connect_attrs_lost','Performance_schema_thread_instances_lost')")
       require(lost.size==2 && lost.forall(_("value")=="0"),"database observation lost connection identity information")
       val sessions=rows(s"""SELECT p.ID AS id,p.USER AS user,p.COMMAND AS command,p.STATE AS state,p.INFO AS info,
@@ -38,7 +49,7 @@ final class MySqlOwnerDrainObserver(ownership:SnapshotOwnershipStore,open:String
       val oldTransactions=transactions.filter(t=>ids(t("trx_mysql_thread_id").toLong))
       val workerUsers=ownership.databaseUsers(owner,instance._1)
       require(workerUsers.nonEmpty,"worker database account inventory is incomplete")
-      val unassigned=sessions.filter(s=>s("owner")==null && workerUsers(s("user")))
+      val unassigned=sessions.filter(s=>MySqlOwnerDrainObserver.unattributed(s,owner,workerUsers,exclusiveAccounts.getOrElse(instance._1,Set.empty)))
       val visible=sessions.map(_("id").toLong).toSet+selfId
       val orphan=transactions.filter(t=> !visible(t("trx_mysql_thread_id").toLong) && !ids(t("trx_mysql_thread_id").toLong))
       def json(v:Vector[Map[String,String]])=JsArray(v.map(m=>JsObject(m.map{case(k,value)=>k->Option(value).map(JsString(_)).getOrElse(JsNull)})))

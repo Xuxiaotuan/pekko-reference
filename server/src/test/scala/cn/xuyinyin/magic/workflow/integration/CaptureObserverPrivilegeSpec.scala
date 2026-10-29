@@ -16,6 +16,95 @@ class CaptureObserverPrivilegeSpec extends AnyWordSpec with Matchers {
   import CdcJournalWindowSupport._
 
   "a live capture release observer" should {
+    "show that an idle old JVM can reconnect after a clean database observation" taggedAs ExternalIntegration in {
+      if(!sys.env.get("RUN_CAPTURE_ADMISSION_MATRIX").contains("1"))cancel("exclusive dual-MySQL slot required")
+      require(sys.env.get("CDC_LAB_EXCLUSIVE_LEASE").exists(_.nonEmpty))
+      val source=Settings.environment();val state=source.copy(port=sys.env("CAPTURE_STATE_PORT").toInt)
+      require(source.port!=state.port && !Set(3306,13365,13366).contains(source.port) && !Set(3306,13365,13366).contains(state.port))
+      def uuid(s:Settings)=withConnection(s,"")(query(_,"SELECT @@server_uuid AS uuid")).elements.head.asJsObject.fields("uuid").convertTo[String]
+      val su=uuid(source);val tu=uuid(state);require(su==sys.env("CAPTURE_EXPECT_SOURCE_UUID") && tu==sys.env("CAPTURE_EXPECT_STATE_UUID"))
+      val suffix=UUID.randomUUID().toString.replace("-","").take(12);val schema="pekko_test_cdc_window_"+suffix
+      val user="late_"+suffix;val secret=UUID.randomUUID().toString
+      val out=Path.of(sys.env("CAPTURE_ADMISSION_EVIDENCE")).resolve("late_writer_"+suffix);Files.createDirectories(out)
+      withConnection(source,""){c=>executeSql(c,s"CREATE DATABASE `$schema`");executeSql(c,s"CREATE USER '$user'@'127.0.0.1' IDENTIFIED BY '$secret'");executeSql(c,s"GRANT ALL ON `$schema`.* TO '$user'@'127.0.0.1'")}
+      withConnection(source,schema)(executeSql(_,"CREATE TABLE marker (operation_id VARCHAR(64) PRIMARY KEY, action VARCHAR(16) NOT NULL) ENGINE=InnoDB"))
+      val b=new ProcessBuilder(Path.of(System.getProperty("java.home"),"bin","java").toString,"-Xmx128m","-cp",System.getProperty("java.class.path"),
+        CaptureLateReconnectWorker.getClass.getName.stripSuffix("$"),source.port.toString,schema)
+      b.redirectErrorStream(true);b.environment().put("TEST_LATE_SOURCE_USER",user);b.environment().put("TEST_LATE_SOURCE_PASSWORD",secret)
+      val child=new Child(b.start(),out.resolve("old-worker.log"))
+      val observer=CaptureResourceObserver.exclusiveAccounts(()=>DriverManager.getConnection(source.url(""),source.user,source.password),
+        ()=>DriverManager.getConnection(state.url(""),state.user,state.password),user,"unused_"+suffix,su,tu)
+      try {
+        child.awaitEvent("READY");observer.beforeStart("new-attempt",0L)
+        val before=observer.sample("new-attempt",0L,includeOwner=true)
+        before.status shouldBe "CONFIRMED"
+        child.send("CONNECT");val written=child.awaitEvent("WRITTEN")
+        val after=observer.sample("new-attempt",0L,includeOwner=true)
+        val rows=withConnection(source,schema)(query(_,"SELECT operation_id,action FROM marker"))
+        write(out,"result.json",JsObject("oldPid"->JsNumber(child.pid),"oldAlive"->JsBoolean(child.alive),"beforeStatus"->JsString(before.status),
+          "afterStatus"->JsString(after.status),"oldConnectionId"->written.fields("connectionId"),"observedSessions"->JsArray(after.sourceSessions.map(JsNumber(_))),
+          "committedRows"->rows,"scope"->JsString("independent unfenced old JVM; observer component only, no Journal or Sink")))
+        child.alive shouldBe true;after.status shouldBe "UNKNOWN"
+        after.sourceSessions should contain (written.fields("connectionId").convertTo[Long])
+        rows.elements.size shouldBe 1
+      }finally {child.kill();observer.close()}
+    }
+    for(outcome<-Vector("commit","rollback","late-commit")) {
+      s"observe an actual marker transaction before and after $outcome" taggedAs ExternalIntegration in {
+        if(!sys.env.get("RUN_CAPTURE_ADMISSION_MATRIX").contains("1"))cancel("exclusive dual-MySQL slot required")
+        require(sys.env.get("CDC_LAB_EXCLUSIVE_LEASE").exists(_.nonEmpty))
+        val source=Settings.environment();val state=source.copy(port=sys.env("CAPTURE_STATE_PORT").toInt)
+        require(source.port!=state.port && !Set(3306,13365,13366).contains(source.port) && !Set(3306,13365,13366).contains(state.port))
+        def uuid(s:Settings)=withConnection(s,"")(query(_,"SELECT @@server_uuid AS uuid")).elements.head.asJsObject.fields("uuid").convertTo[String]
+        val sourceUuid=uuid(source);val stateUuid=uuid(state)
+        require(sourceUuid==sys.env("CAPTURE_EXPECT_SOURCE_UUID") && stateUuid==sys.env("CAPTURE_EXPECT_STATE_UUID"))
+        val suffix=UUID.randomUUID().toString.replace("-","").take(12);val schema="pekko_test_cdc_window_"+suffix
+        val user="tx_"+suffix;val secret=UUID.randomUUID().toString
+        val out=Path.of(sys.env("CAPTURE_ADMISSION_EVIDENCE")).resolve("marker_tx_"+outcome+"_"+suffix);Files.createDirectories(out)
+        withConnection(source,""){c=>executeSql(c,s"CREATE DATABASE `$schema`");executeSql(c,s"CREATE USER '$user'@'127.0.0.1' IDENTIFIED BY '$secret'");executeSql(c,s"GRANT ALL ON `$schema`.* TO '$user'@'127.0.0.1'")}
+        withConnection(source,schema)(executeSql(_,"CREATE TABLE marker (operation_id VARCHAR(64) PRIMARY KEY, action VARCHAR(16) NOT NULL) ENGINE=InnoDB"))
+        def observer=CaptureResourceObserver.exclusiveAccounts(()=>DriverManager.getConnection(source.url(""),source.user,source.password),
+          ()=>DriverManager.getConnection(state.url(""),state.user,state.password),user,"unused_"+suffix,sourceUuid,stateUuid)
+        def sourceRows=withConnection(source,schema)(query(_,"SELECT operation_id,action FROM marker ORDER BY operation_id"))
+        def sessions=withConnection(source,"")(query(_,s"SELECT ID,USER,COMMAND,STATE FROM information_schema.PROCESSLIST WHERE USER='$user'"))
+        def transactions=withConnection(source,"")(query(_,"SELECT trx_id,trx_state,trx_mysql_thread_id FROM information_schema.INNODB_TRX"))
+        var transaction:java.sql.Connection=null
+        try {
+          transaction=DriverManager.getConnection(source.url(schema),user,secret);transaction.setAutoCommit(false)
+          val id=query(transaction,"SELECT CONNECTION_ID() AS id").elements.head.asJsObject.fields("id")
+          executeSql(transaction,"INSERT INTO marker VALUES('operation-1','SUBSCRIBE')")
+          awaitCondition("the marker transaction is visible in InnoDB",30.seconds){
+            transactions.elements.exists(_.asJsObject.fields("trx_mysql_thread_id")==id)
+          }
+          val before=JsObject("connectionId"->id,"sessions"->sessions,"transactions"->transactions,"visibleRows"->sourceRows)
+          if(outcome=="late-commit"){
+            val blocked=observer
+            val refusal=Try(blocked.beforeStart("attempt-before-resolution",0L))
+            write(out,"held.json",JsObject("before"->before,"observerRefused"->JsBoolean(refusal.isFailure),"errorClass"->refusal.failed.toOption.map(e=>JsString(e.getClass.getName)).getOrElse(JsNull),
+              "reason"->refusal.failed.toOption.map(e=>JsString(Option(e.getMessage).getOrElse(""))).getOrElse(JsNull)))
+            refusal.isFailure shouldBe true
+            refusal.failed.get.getMessage should include ("capture account has unresolved previous sessions or transactions")
+            Try(blocked.close())
+          }
+          if(outcome=="rollback")transaction.rollback() else transaction.commit()
+          transaction.close();transaction=null
+          awaitCondition("the original account session and transaction are actually gone",30.seconds){
+            sessions.elements.isEmpty && transactions.elements.isEmpty
+          }
+          val allowed=observer
+          try {
+            allowed.beforeStart("attempt-after-resolution",0L)
+            val proof=allowed.sample("attempt-after-resolution",0L,includeOwner=true)
+            val rows=sourceRows
+            write(out,"result.json",JsObject("outcome"->JsString(outcome),"before"->before,"afterSessions"->sessions,
+              "afterTransactions"->transactions,"visibleRows"->rows,"observerStatus"->JsString(proof.status),
+              "scope"->JsString("real MySQL transaction and observer component; no Reader, Journal, Sink or owner isolation")))
+            proof.status shouldBe "CONFIRMED"
+            rows.elements.size shouldBe (if(outcome=="rollback")0 else 1)
+          } finally allowed.close()
+        } finally if(transaction!=null){Try(transaction.rollback());Try(transaction.close())}
+      }
+    }
     "retain UNKNOWN for an unowned session sharing the capture account" taggedAs ExternalIntegration in {
       if(!sys.env.get("RUN_CAPTURE_ADMISSION_MATRIX").contains("1"))cancel("exclusive dual-MySQL slot required")
       require(sys.env.get("CDC_LAB_EXCLUSIVE_LEASE").exists(_.nonEmpty))

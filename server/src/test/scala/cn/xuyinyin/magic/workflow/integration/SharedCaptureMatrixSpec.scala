@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
   import CdcJournalWindowSupport._
   "shared capture with real MySQL, Journal and Sink" should {
-    for(variant<-Vector("R01","R01-concurrent","R02","R03","R03-late-commit","R03-late-rollback","R03-close-unknown","R04","R05","R06","R07","R07-d-before","R07-d-after","R08","R09","R10","R10-mid","R10-ack-d","R11","R11-rollback","R12","R12-ddl","R12-drop","R12-truncate","R13","R13-reject","R14","R14-capacity","R15","R15-late-bind","R15-bound-cancel","R15-unknown-cancel","R16","R16-history","R16-log","R16-lineage","R16-source","R16-registry","R16-control-row","R16-ack-chain","R16-ack-ref","R16-namespace","R16-binlog")) {
+    for(variant<-Vector("R01","R01-concurrent","R02","R03","R03-late-commit","R03-late-rollback","R03-close-unknown","R04","R05","R06","R07","R07-d-before","R07-d-after","R08","R09","R10","R10-mid","R10-ack-d","R11","R11-rollback","R12","R12-ddl","R12-drop","R12-truncate","R13","R13-reject","R14","R14-capacity","R15","R15-late-bind","R15-bound-cancel","R15-unknown-cancel","R15-unknown-cancel-rollback","R16","R16-history","R16-log","R16-lineage","R16-source","R16-registry","R16-control-row","R16-ack-chain","R16-ack-ref","R16-namespace","R16-binlog")) {
       val scenario=variant.take(3)
       s"retain independent capture/application evidence for $variant" taggedAs ExternalIntegration in {
         if(!sys.env.get("RUN_SHARED_CAPTURE_MATRIX").contains("1"))cancel("disposable dual MySQL required")
@@ -347,8 +347,9 @@ class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
                 mutation("b","independent-B");awaitCondition("B not blocked by A"){equal("b")};save("cut",child);child.send("RELEASE");child.awaitEvent("GATE_RELEASED");awaitCondition("both equal"){equal("a")&&equal("b")};save("final",child)
                 }
               case "R15"=>
-                if(variant=="R15-unknown-cancel"){
-                  child.send("ARM_CONTROL LATE_COMMIT");child.awaitEvent("ARMED")
+                if(variant.startsWith("R15-unknown-cancel")){
+                  val rollback=variant.endsWith("rollback")
+                  child.send("ARM_CONTROL "+(if(rollback)"LATE_ROLLBACK"else"LATE_COMMIT"));child.awaitEvent("ARMED")
                   child.send("SUBSCRIBE f f g1");child.awaitEvent("CUTPOINT")
                   awaitCondition("real source transaction still open",30.seconds){
                     oldTransactions(source,"SOURCE_MARKER_COMMIT").elements.nonEmpty
@@ -375,7 +376,7 @@ class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
                   afterCancel.fields("T") shouldBe beforeCancel.fields("T")
                   afterCancel.fields("J") shouldBe beforeCancel.fields("J")
                   child.send("RESOLVE_TX");child.awaitEvent("TX_RESOLVE_REQUESTED")
-                  awaitCondition("late source commit outcome",30.seconds){child.events.exists(_.fields.get("kind").contains(JsString("PROXY_LATE_COMMIT_OK")))}
+                  awaitCondition("late source transaction outcome",30.seconds){child.events.exists(_.fields.get("kind").contains(JsString(if(rollback)"PROXY_LATE_ROLLBACK_DISCONNECTED"else"PROXY_LATE_COMMIT_OK")))}
                   awaitCondition("source transaction ended",30.seconds){oldTransactions(source,"SOURCE_MARKER_COMMIT").elements.isEmpty}
                   val afterResolution=durableSnapshot()
                   write(dir,"unknown-after-resolution.json",JsObject("state"->afterResolution,
@@ -396,8 +397,9 @@ class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
                   store.subscription("f").get.status shouldBe "CANCELED"
                   child.send("RELEASE");child.awaitEvent("GATE_RELEASED")
                   awaitCondition("late marker transaction end observed",30.seconds){child.events.exists(e=>
-                    e.fields.get("kind").contains(JsString("B_BOUND")) && e.fields.get("requestId").contains(JsString("f")))}
+                    e.fields.get("kind").contains(JsString("MARKER_IGNORED_CANCELED")) && e.fields.get("requestId").contains(JsString("f")))}
                   store.subscription("f").get.status shouldBe "CANCELED"
+                  child.events.exists(e=>e.fields.get("kind").contains(JsString("B_BOUND")) && e.fields.get("requestId").contains(JsString("f"))) shouldBe false
                   store.subscription("f").get.b shouldBe None
                   store.barrierSequence("f",false) shouldBe None
                   mutation("a","other-table-continues-after-cancel")

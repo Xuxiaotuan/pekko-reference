@@ -104,7 +104,7 @@ lazy val commonSettings = Seq(
     // "-XX:GCLogFileSize=10M"
   ),
   
-  Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-l", "cn.xuyinyin.magic.tags.ExternalIntegration"),
+  Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-l", "cn.xuyinyin.magic.tags.ExternalIntegration cn.xuyinyin.magic.tags.Benchmark"),
   
   // ================================
   // 通用依赖库

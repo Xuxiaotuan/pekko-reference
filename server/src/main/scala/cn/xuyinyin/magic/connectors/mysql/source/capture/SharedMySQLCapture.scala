@@ -19,7 +19,8 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   observe:(String,JsObject)=>Unit=(_,_)=>(),
   snapshotMonitor:Option[CaptureSnapshotMonitor]=None,
   resourceObserver:Option[CaptureResourceObserver]=None,
-  closeBudget:CaptureCloseBudget=CaptureCloseBudget()) extends AutoCloseable {
+  closeBudget:CaptureCloseBudget=CaptureCloseBudget(),
+  authorizePendingB:Option[(String,Vector[String])=>Boolean]=None) extends AutoCloseable {
   require(source.connectorId==store.captureId,"capture namespace mismatch")
   private val started=new AtomicBoolean(false);private val closed=new AtomicBoolean(false)
   private val stopping=new AtomicBoolean(false)
@@ -45,6 +46,9 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   private var closeFailure:Throwable=null
   private val localCloseFinished=new AtomicBoolean(false)
   private val ownerCloseConfirmed=new AtomicBoolean(false)
+  // Without a server observer an uncertain source connection cannot prove that
+  // its transaction has ended, even after the local JDBC handle has failed.
+  private val sourceReleaseUncertain=new AtomicBoolean(false)
   private val localCloseSignal=scala.concurrent.Promise[Unit]()
   private val groupCoverage=mutable.Map.empty[String,Long]
   /** Per-table scheduling reads this cache; only the capture coordinator refreshes full D/L evidence. */
@@ -91,6 +95,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     val c=sourceConnection();var primary:Throwable=null
     try f(c) catch {case e:Throwable=>primary=e;throw e}
     finally try c.close() catch {case release:Throwable=>
+      sourceReleaseUncertain.set(true)
       val unknown=releaseUnknown("capture-source-close",release)
       if(primary!=null)unknown.addSuppressed(primary)
       error.compareAndSet(null,unknown);throw unknown
@@ -183,6 +188,10 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       ownerId=query(owner,"SELECT CONNECTION_ID()").head.toLong
       val (existing,hasEvidence,hasBoundaries,unbound)=store.recoveryInventory
       val checkpoint=readCheckpoint()
+      val pendingRecovery=if(authorizePendingB.nonEmpty && unbound && checkpoint.status=="COMPLETE" && checkpoint.value.nonEmpty){
+        val ids=store.recoverablePendingAt(checkpoint.value.get)
+        if(ids.nonEmpty && authorizePendingB.get(checkpoint.value.get,ids))ids else Vector.empty[String]
+      }else Vector.empty[String]
       val (offsetTable,historyTable)=MySQLCdcSourceNode.connectorStateTables(state,store.captureId)
       val historyPresent=stateTableExists(owner,historyTable) && query(owner,s"SELECT 1 FROM `$historyTable` LIMIT 1").nonEmpty
       val covered=checkpoint.value.exists(v=>try {store.verifyOffset(v);true}catch {
@@ -190,7 +199,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
         case scala.util.control.NonFatal(_)=>false
       })
       startup.starting(checkpoint.status,store.lastAckSequence)
-      val facts=CaptureRecoveryFacts(existing,hasEvidence,hasBoundaries,unbound,controlPresent,historyPresent,checkpoint,covered)
+      val facts=CaptureRecoveryFacts(existing,hasEvidence,hasBoundaries,unbound && pendingRecovery.isEmpty,controlPresent,historyPresent,checkpoint,covered)
       CaptureStartupGuard.classify(facts).foreach {reason=>startup.pause(reason);throw new CaptureAdmissionException(reason)}
       if(existing && controlPresent)validateRetainedControls()
       resourceObserver.foreach(_.beforeStart(startup.evidence.runtimeAttemptId,ownerId))
@@ -212,8 +221,15 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       props.setProperty("heartbeat.interval.ms","1000")
       if(stopping.get())throw new CaptureAdmissionException("CAPTURE_STOPPING")
       engine=factory.create(props)
+      // A stop can arrive while the factory is blocked. Do not start a newly
+      // created engine after that stop: an early SDK close can race initialization.
+      if(stopping.get())throw new CaptureAdmissionException("CAPTURE_STOPPING")
       val running=engine.start(new DebeziumBatchConsumer {def handleBatch(rs:Vector[SourceRecord],h:CdcBatchCommitHandle):Unit=accept(rs,h)})
       completion=running
+      pendingRecovery.foreach {id=>
+        val pending=store.subscription(id).getOrElse(throw new IllegalStateException("pending recovery subscription missing"))
+        if(pending.status=="B_PENDING")writeMarker(pending,stop=false)
+      }
       running.onComplete {
         case Failure(e)=>error.compareAndSet(null,e);startup.fail()
         case _ if !stopping.get()=>error.compareAndSet(null,new IllegalStateException("capture engine terminated unexpectedly"));startup.fail()
@@ -223,7 +239,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     }catch {case e:Throwable=>
       e match {case a:CaptureAdmissionException=>startup.pause(a.code);case _=>startup.fail()}
       var problem=if(!store.releaseConfirmed)releaseUnknown("capture-store",e) else e
-      if(owner!=null)try {owner.close();owner=null}catch {case close:Throwable=>
+      if(owner!=null && !stopping.get() && !sourceReleaseUncertain.get())try {owner.close();owner=null}catch {case close:Throwable=>
         problem=releaseUnknown("capture-start-owner-close",close);problem.addSuppressed(e)
       }
       error.compareAndSet(null,problem)
@@ -261,7 +277,9 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
             }else Some(store.bindFence(m.id,m.point,MySQLCdcSourceNode.cursorValue(r)))
             barrier.foreach(p.references.add)
             m.done(barrier.getOrElse(0L))
-            observe(if(ordinary){if(m.action=="STOP")"K_BOUND"else "B_BOUND"}else m.action+"_BOUND",JsObject("requestId"->JsString(m.id),"point"->m.point.json.parseJson))
+            val event=if(ordinary && barrier.isEmpty)"MARKER_IGNORED_CANCELED"
+              else if(ordinary){if(m.action=="STOP")"K_BOUND"else "B_BOUND"}else m.action+"_BOUND"
+            observe(event,JsObject("requestId"->JsString(m.id),"point"->m.point.json.parseJson))
           }
           done()
         } else if(name=="io.debezium.connector.common.Heartbeat")done()
@@ -274,7 +292,11 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
             require(value.getString("op")=="c","control markers are immutable inserts")
             val a=value.getStruct("after");val id=a.getString("operation_id")
             val action=a.getString("action")
-            require(Set("SUBSCRIBE","STOP","LOW","HIGH","F").contains(action),"unknown control action")
+            require(Set("SUBSCRIBE","STOP","LOW","HIGH","F","WAKE").contains(action),"unknown control action")
+            if(action=="WAKE"){
+              require(store.validWake(id,a.getString("table_name"),a.getString("generation")),"invalid wake marker")
+              done()
+            }else {
             val intent=if(action=="SUBSCRIBE" || action=="STOP")store.markerIntent(id,a.getString("table_name"),a.getString("generation"),action=="STOP").map(s=>s.requestId)
               else store.fenceIntent(id,a.getString("table_name"),a.getString("generation")).map {case(f,_)=>require(f.action==action,"bootstrap action changed");f.id}
             intent match {
@@ -283,6 +305,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
                 val transaction=value.getStruct("transaction").getString("id")
                 require(!markers.contains(transaction),"multiple markers in one transaction")
                 markers(transaction)=Marker(intentId,a.getString("table_name"),a.getString("generation"),action,CapturePoint.from(e),n=>{if(n>0)p.references+=n;done()})
+            }
             }
           } else if(value.getString("op")=="t") {
             require(!store.hasActive(table),"TRUNCATE requires explicit reinitialization; capture paused")
@@ -368,13 +391,20 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     }
     requireAdmission() // The admitted in-flight command may finish while close waits for commandLock.
     observe("SUBSCRIBE_ADMITTED",JsObject("requestId"->JsString(id)))
-    val s=store.register(id,table,generation,schema.id)
+    val checkpoint=readCheckpoint()
+    require(checkpoint.status=="COMPLETE" && checkpoint.value.nonEmpty,"completed checkpoint required for marker intent")
+    val s=store.registerAnchored(id,table,generation,schema.id,checkpoint.value.get)
     if(s.status=="B_PENDING")writeMarker(s,stop=false)
     s
   }
   def unsubscribe(id:String):Unit=commandLock.synchronized {active();assertOwner();val s=store.subscription(id).get
     require(s.status=="CAPTURE_READY" || s.status=="CAPTURE_STOPPED","subscription not ready to stop")
     if(s.status=="CAPTURE_READY"){requireAdmission();writeMarker(s,stop=true)}}
+  /** Serialize pending cancellation with marker writes and refuse uncertain attempts. */
+  def cancelPending(id:String):Unit=commandLock.synchronized {
+    active();assertOwner();requireAdmission()
+    store.cancelPending(id)
+  }
   def requestFence(id:String,subscriptionId:String,action:String,context:String):CaptureFence=commandLock.synchronized {
     active();assertOwner()
     store.fence(id).filter(_.sequence.nonEmpty).foreach {f=>
@@ -401,6 +431,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       try {q.setString(1,operation);q.setString(2,action);q.setString(3,table);q.setString(4,generation);q.executeUpdate()}finally q.close()
       stage="COMMITTING";c.commit();stage="COMMITTED"
     }catch {case e:Throwable=>
+      sourceReleaseUncertain.set(true)
       val code=if(stage=="COMMITTING")"MARKER_COMMIT_UNKNOWN" else if(stage=="COMMITTED")"MARKER_COMMITTED_RELEASE_UNKNOWN" else "MARKER_WRITE_UNPROVEN"
       val failure=releaseUnknown("source-marker:"+code,e);error.compareAndSet(null,failure);startup.pause(code);throw failure
     }
@@ -413,11 +444,11 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     // Release the owner connection only after the original Engine close is confirmed.
     // A callback failure starts SDK shutdown asynchronously; do not race a second stop request.
     if(callbackFailed.get() && completion!=null)scala.concurrent.Await.ready(completion,scala.concurrent.duration.Duration(5,"seconds"))
-    if(engine!=null)engine.close()
+    if(engine!=null)engine.closeManaged()
     assemblers.values.foreach(_.close());assemblers.clear();pending.clear();markers.clear()
     // Legacy AutoCloseable users get local cleanup, never reusable evidence. Managed
     // captures keep owner control until the independent server observer confirms release.
-    if(resourceObserver.isEmpty)closeOwner()
+    if(resourceObserver.isEmpty && !sourceReleaseUncertain.get())closeOwner()
     localCloseFinished.set(true)
       }catch {case e:Throwable=>closeFailure=e;throw e}
       localCloseSignal.trySuccess(())

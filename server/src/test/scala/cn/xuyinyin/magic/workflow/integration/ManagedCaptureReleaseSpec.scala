@@ -209,10 +209,38 @@ class ManagedCaptureReleaseSpec extends AnyWordSpec with Matchers {
             application.fields("J").asInstanceOf[JsArray].elements should not be empty
             if(busy)application.fields("T").asInstanceOf[JsArray].elements should not be empty
           }
+          if(callbackFailure){
+            val recoveryEvents=new ConcurrentLinkedQueue[JsObject]()
+            val resumed=new SharedMySQLCapture(MySQLCdcSourceConfig(id,source.host,source.port,schema,"a",sourceUser,secret,
+              (id.hashCode.toLong & 0x7fffffffL)+100000,128,100),config,store,DebeziumEngineFactory.real,
+              observe=(k,v)=>recoveryEvents.add(JsObject(v.fields+("kind"->JsString(k)))))
+            try {
+              resumed.start()
+              awaitCondition("recovered capture admission",90.seconds)(resumed.startupEvidence.phase=="ADMISSION_READY")
+              val actorConfig=ConfigFactory.parseMap(Map[String,AnyRef](
+                "pekko-persistence-jdbc.shared-databases.slick.profile"->"slick.jdbc.MySQLProfile$",
+                "pekko-persistence-jdbc.shared-databases.slick.db.driver"->"com.mysql.cj.jdbc.Driver",
+                "pekko-persistence-jdbc.shared-databases.slick.db.url"->state.url(schema),
+                "pekko-persistence-jdbc.shared-databases.slick.db.user"->state.user,
+                "pekko-persistence-jdbc.shared-databases.slick.db.password"->state.password,
+                "pekko.loglevel"->"WARNING","pekko.stdout-loglevel"->"WARNING").asJava).withFallback(ConfigFactory.load("application-test"))
+              kit=ActorTestKit("release-recovery-"+id,actorConfig)
+              implicit val ec:ExecutionContext=kit.system.executionContext
+              val registry=NodeRegistry.builtins().withSource(new CapturedLogSource(store,schema)).withSink(new MySQLCdcApplySinkNode)
+              val engine=new WorkflowExecutionEngine(nodeRegistry=registry)(kit.system,ec)
+              kit.spawn(EventSourcedWorkflowActor("release-"+id,engine)(ec))
+              awaitCondition("callback failure recovery full fields",90.seconds)(rows(source,"a")==rows(state,"target_a"))
+              sql(source,"UPDATE a SET label='b04-after-recovery',amount=amount+0.1250,revision=revision+1 WHERE id=2")
+              awaitCondition("recovered capture remains live",90.seconds)(rows(source,"a")==rows(state,"target_a"))
+              write(out,"callback-recovery.json",JsObject("application"->applicationState,"L"->store.evidence,
+                "D"->withConnection(state,schema)(query(_,s"SELECT offset_key,offset_val FROM `$offset`")),
+                "events"->JsArray(recoveryEvents.iterator().asScala.toVector)))
+            }finally {if(kit!=null){kit.shutdownTestKit();kit=null};scala.util.Try(resumed.close())}
+          }
           write(out,"result.json",JsObject("status"->JsString("REUSABLE"),"release"->release(finalEvidence),
             "samples"->JsArray(samples.result()),"otherAccountStillAlive"->JsBoolean(true),
             "L"->store.evidence,"events"->JsArray(events.iterator().asScala.toVector),
-            "application"->application,"scope"->JsString(if(callbackFailure)"copied baseline; applied update followed by injected callback failure; no automatic recovery" else if(mode=="quiet" || busy)"copied baseline; real Actor/Journal/Sink, busy includes one applied update" else "Reader termination only; no Actor/Sink execution"),
+            "application"->application,"scope"->JsString(if(callbackFailure)"copied baseline; application is the pre-recovery state; recovery is recorded separately" else if(mode=="quiet" || busy)"copied baseline; real Actor/Journal/Sink, busy includes one applied update" else "Reader termination only; no Actor/Sink execution"),
             "testInjectedCloseGate"->JsBoolean(held),"testInjectedStaleAttempt"->JsBoolean(stale),"closeCalls"->JsNumber(closeCalls.get())))
           }
         }finally {if(kit!=null)kit.shutdownTestKit();releaseClose.countDown();runnerFactory.release.countDown();other.close();observerProxy.foreach(_.close());capture.close()}

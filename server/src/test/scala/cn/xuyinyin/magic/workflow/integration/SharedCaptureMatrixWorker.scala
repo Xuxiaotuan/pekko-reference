@@ -153,7 +153,7 @@ object SharedCaptureMatrixWorker {
                 "failureCode"->JsString(f.code),"failureStage"->JsString(f.stage),"releaseConfirmed"->JsBoolean(f.releaseConfirmed))
             }
           case "PREPARE"=>store.register(cmd(1),cmd(2),cmd(3),store.schema(cmd(2)).get.id);emit("PREPARED")
-          case "CANCEL_PENDING"=>store.cancelPending(cmd(1));emit("PENDING_CANCELED")
+          case "CANCEL_PENDING"=>capture.cancelPending(cmd(1));emit("PENDING_CANCELED")
           case "UNSUBSCRIBE"=>capture.unsubscribe(cmd(1));emit("UNSUBSCRIBE_ACCEPTED")
           case "APPLY"|"RECOVER_APPLY"=>
             val w=workflow(cmd(1),cmd(2));val a=kit.spawn(EventSourcedWorkflowActor(w.id,engine)(ec),"apply-"+cmd(1));actors(cmd(1))=a

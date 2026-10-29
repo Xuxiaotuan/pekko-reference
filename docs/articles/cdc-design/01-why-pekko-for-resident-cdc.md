@@ -68,7 +68,7 @@ B 绑定 → 冻结键上界 U
 
 B 是开始保留增量的边界；U 是扫描键上界；LOW/HIGH 属于一次窗口读视图；F 固定有限追赶终点。捕获就绪、初始化完成和当前持续健康需要分别查询。
 
-写 B 之前还有一道 capture 级门。已经提交的 [A1/A2](../../experiments/2026-10-27-capture-admission/README.md)要求当前 attempt 的 snapshot 生命周期、原始 ACK 和实际完成态 D 共同成立。已有 B 而 D 仍为 INITIAL、未决源 marker 或缺少必要恢复证据时，创建 Engine 前安全暂停。这个行为阻止特定旧风险状态继续启动，不会自动补齐历史漏数。
+写 B 之前还有一道 capture 级门。已经提交的 [A1/A2](../../experiments/2026-10-27-capture-admission/README.md)要求当前 attempt 的 snapshot 生命周期、原始 ACK 和实际完成态 D 共同成立。在该历史版本中，已有 B 而 D 仍为 INITIAL、未决源 marker 或缺少必要恢复证据时，创建 Engine 前安全暂停；后续未知 B 受管恢复候选见下文。这个行为阻止特定旧风险状态继续启动，不会自动补齐历史漏数。
 
 平台调度读取当前 attempt 的缓存准入状态，避免每个表步骤都重新查询 D、遍历整条 ACK 链。capture 协调器负责刷新完整证据；真正新增 B/fence 的生产入口仍做实际 owner/准入校验。缓存用于分配工作，不能代替源端副作用发生前的检查。
 
@@ -102,7 +102,7 @@ capture 级 dispatch 游标按有限页扫描 L，将 GROUP 的订阅身份和�
 
 dispatch 游标、任务唤醒与 grant 完成是 SQL 持久事实，不是每表创建一个定时器。调度页面采用 keyset 查询；当前配置的 capture 数量、步骤预算和冷恢复页大小都有上界。恢复过程可以分页重新激活任务验证，却不会据此一次唤醒全部 Journal Actor。
 
-维护停机也不等于业务退订：停止 runtime 不默默写 K。受控干净停止要核实 Reader 本地结束、服务端资源和 owner 释放，再保存 owner 结束事实；旧 owner 是否结束不清楚时安全暂停。这个单 owner 协议没有自动升级成共享 Reader 的多 owner/guardian 接管。
+维护停机也不等于业务退订：停止 runtime 不默默写 K。受控干净停止要核实 Reader 本地结束、服务端资源和 owner 释放，再保存 owner 结束事实；旧 owner 是否结束不清楚时安全暂停。这一历史版本的单 owner 协议没有自动升级成共享 Reader 的多 owner/guardian 接管；候选恢复实现见下文。
 
 ## 7. 实测支持了哪一段资源判断
 
@@ -114,11 +114,45 @@ dispatch 游标、任务唤醒与 grant 完成是 SQL 持久事实，不是每�
 
 另一个 H 探针确实写入并精确计数 700,000 条冷索引，完整走过 7,000 页 keyset，保存首中尾和 claim 查询计划，并在固定 60 秒内观察堆、线程、连接、事务及配额。它未创建 ActorSystem、Reader 或同量源表。因而它支持冷控制记录与活动执行分离这一段判断；SDK 在 70 万真实表目录下的 Schema/history 成本仍然未知。
 
-这些是两种独立实测，不能拼成“70 万表 CDC 已跑通”。版本、失败和原始材料见[平台报告](../../experiments/2026-10-27-cdc-platform/README.md)。DDL、GC、新共享链路自动接管、长期活跃吞吐和同负载 Flink 性能比较仍未覆盖。
+这些是两种独立实测，不能拼成“70 万表 CDC 已跑通”。版本、失败和原始材料见[平台报告](../../experiments/2026-10-27-cdc-platform/README.md)。该平台实验未覆盖 DDL、GC、新共享链路自动接管、长期活跃吞吐和同负载 Flink 性能比较。
 
 ## 资源复用仍取决于可证明的释放
 
 真实关闭实验中，静默和忙源样本分别完成四行逐字段对账；当测试门阻塞 SDK close 或 runner 退出时，资源仍保持 UNKNOWN，不能立即给新执行者复用。在真实 MySQL task 启动期间触发关闭的两组独立实验均在 180 秒内未确认空闲，测试进程退出后槽位才空闲；这属于实际失败，不是已经解决的容量保障。测试门位于 调用原 task 的 start 实现之前。同账号的一条非 capture 连接在组件探针中使观察结果保持 UNKNOWN，连接本身仍可用；这说明账号级观察不能自动区分连接归属。旧 JVM 被杀后，测试代理仍保留真实 L 事务的新窗口中，新 JVM 保持 UNKNOWN、没有创建 Reader；事务回滚后也没有自动接管。[补测报告](../../experiments/2026-10-28-ab-matrix/README.md)区分测试门、服务端采样与端到端样本；这些结果不构成 70 万表容量结论。
+
+## 后续补测与边界
+
+补充实测中，关闭请求在工厂创建前到达和 MySQL SDK task 启动时到达这两个固定窗口均已观察到资源空闲。关闭期间结果仍按 UNKNOWN 处理；task 长期无法结束时，有限的关闭工作线程仍可能被占满。它们是资源释放样本，并非 70 万表容量或高可用接管证明。 详见[后续实验](../../experiments/2026-10-28-cdc-followup/README.md)。上文的失败是当时版本的历史结果，原始材料保留。
+
+## 2026-10-29 补充验证
+
+2026-10-29 补测中，工厂返回后、SDK 启动前收到关闭曾在 180 秒内无法确认连接全部释放；后续修复该固定窗口及相邻两个启动窗口已实测通过。SDK 长期未进入轮询或结束时，有限关闭线程仍可能被占满；单次释放不构成容量或高可用保证。 [实验材料与范围](../../experiments/2026-10-29-p0-followup/README.md)。
+
+## 2026-10-29 写前锚点实验
+
+2026-10-29 写前锚点实验的版本中，Reader 对未绑定 B 采取安全暂停；当时平台 grant 和旧资源确认后的自动接续尚未打通。 详见[本轮证据](../../experiments/2026-10-29-unknown-b/README.md)。
+
+## 事务释放与隔离探针
+
+真实 MySQL 与独立旧 JVM 探针中，数据库暂时没有旧账号连接时观察器返回 CONFIRMED，但未隔离的旧 JVM 随后仍重新连接并提交；后续采样才变为 UNKNOWN。恢复配额需要进程隔离与数据库排空共同证明。 [实验与边界](../../experiments/2026-10-29-b-release-proof/README.md)。
+
+## 受管恢复改变了什么
+
+共享 Reader 的未知 B 恢复候选把 guardian 隔离、旧连接与事务排空和持久许可串起来。只有隔离与排空得到证明，旧 UNKNOWN grant 才能按严格条件释放；无法证明时仍暂停。隔离是执行者边界，数据库一时无连接并不能代替它。
+
+**实验结果：**旧候选在独立 guardian JVM、真实 MySQL、Journal 和 Sink 下完成一例迟提交恢复，新表源和目标各 64 行、384 字段一致；该次没有人工业务写入，但后继 worker 在清理中被强制终止，不能证明 CDC 正常停机。[样本与源码摘要](../../experiments/2026-10-29-cdc-managed-b-e2e-wake-candidate/README.md)。更早样本需人工触发 binlog，保留为[失败及干预证据](../../experiments/2026-10-29-cdc-managed-b-e2e-old-candidate/README.md)。
+
+**边界：**当前候选基于提交 `62ec856f20a81f3da8d56caf290754f8361ac732` 之后的未提交工作区；不同实验的精确源码摘要以各自证据目录为准，不能把旧样本归给后续修改。 同一候选版本的六项固定窗口结果见下文；除单个 C1 样本外的生产入口窗口、guardian 自身重启和跨主机接管未验证，这些结果不是 70 万表容量或多 owner 高可用证明。
+
+## 六个固定窗口的验证范围
+
+[六项固定窗口的完整证据](../../experiments/2026-10-29-cdc-managed-b-e2e-frozen/README.md)使用同一候选源码、独立 guardian JVM、真实 MySQL、Actor Journal 与 MySQL Sink；这六项的协调器运行在测试 JVM、worker 显式接线；另有一个 [生产入口 C1 样本](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)，实际经过独立 `SnapshotGuardianMain`、`SnapshotSupervisorMain` 和 `PekkoServer` 内的 `CdcPlatformExtension`。
+
+C0、C1、迟提交和迟回滚四项在接管后进入 STREAMING，各自源与目标 64 行、384 字段相等。guardian 进程失联或 socket 不可达的两项保留 UNKNOWN grant 和无许可状态，源有 64 行而目标仍为空，是安全暂停，不是数据完成。四个收敛样本清理时强制停止后继 worker，CDC owner 仍为 ACTIVE；正常停机与整个系统的高可用尚未由此证明。
+
+生产入口的独立 C1 样本在真实 MySQL、Journal 和 Sink 上恢复至 STREAMING，源与目标各 64 行、384 字段相等。前两次运行分别在故障注入前因测试配置缺项和明文代理不兼容而失败，原始材料保留；本样本没有生产 raw ACK 顺序证据，强制清理后 CDC owner 仍为 ACTIVE，不证明正常停机。其余故障窗口仍仅有测试入口证据。 [生产入口 C1 证据](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)。
+
+当前未知 B 恢复还受一个明确的规模边界约束：源控制表反查最多 4096 行，且当前没有控制行 GC。历史控制行超过该上限时，未知 B 的恢复会安全暂停。持续新增和取消表会积累控制行，所以 70 万表长期动态订阅不能仅凭共享 Reader 和冷索引实验推断可恢复。 [组件实验与限制](../../experiments/2026-10-29-cdc-b-proof-component/README.md)。
 
 ## 技术附录与证据入口
 

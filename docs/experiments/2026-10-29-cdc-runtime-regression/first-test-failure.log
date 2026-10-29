@@ -1,0 +1,72 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+21:45:22,677 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+21:45:22,678 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485755e3 - No custom configurators were discovered as a service.
+21:45:22,678 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485755e3 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+21:45:22,678 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485755e3 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+21:45:22,679 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+21:45:22,679 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+21:45:22,680 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485755e3 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+21:45:22,680 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485755e3 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+21:45:22,680 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485755e3 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+21:45:22,680 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+21:45:22,680 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+21:45:22,711 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+21:45:22,711 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+21:45:22,714 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+21:45:22,724 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+21:45:22,724 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+21:45:22,724 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+21:45:22,724 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+21:45:22,725 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+21:45:22,725 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+21:45:22,726 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+21:45:22,726 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+21:45:22,726 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+21:45:22,726 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+21:45:22,727 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+21:45:22,727 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+21:45:22,727 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@fc56907 - End of configuration.
+21:45:22,727 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@15adf418 - Registering current configuration as safe fallback point
+21:45:22,727 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485755e3 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 47 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+[info] CdcPlatformMatrixSpec:
+[info] the resident CDC platform with real MySQL, Actor Journal and Sink
+[info] - should preserve durable control, bounded execution and field evidence for P01-dynamic-seven *** FAILED ***
+[info]   java.sql.SQLSyntaxErrorException: Access denied for user 'cdc_lab'@'127.0.0.1' to database 'pekko_test_cdc_window_050527bf40a5'
+[info]   at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:112)
+[info]   at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:114)
+[info]   at com.mysql.cj.jdbc.StatementImpl.executeInternal(StatementImpl.java:837)
+[info]   at com.mysql.cj.jdbc.StatementImpl.execute(StatementImpl.java:685)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcJournalWindowSupport$.executeSql(RealMySQLCdcJournalWindowSpec.scala:190)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcPlatformMatrixSpec.$anonfun$new$18(CdcPlatformMatrixSpec.scala:60)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcPlatformMatrixSpec.$anonfun$new$18$adapted(CdcPlatformMatrixSpec.scala:57)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcJournalWindowSupport$.withConnection(RealMySQLCdcJournalWindowSpec.scala:186)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcPlatformMatrixSpec.account$1(CdcPlatformMatrixSpec.scala:57)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcPlatformMatrixSpec.$anonfun$new$19(CdcPlatformMatrixSpec.scala:63)
+[info]   ...
+[info] Run completed in 730 milliseconds.
+[info] Total number of tests run: 1
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 0, failed 1, canceled 0, ignored 0, pending 0
+[info] *** 1 TEST FAILED ***
+[error] Failed tests:
+[error] 	cn.xuyinyin.magic.workflow.integration.CdcPlatformMatrixSpec
+[error] (Test / testOnly) sbt.TestsFailedException: Tests unsuccessful
+[error] Total time: 2 s, completed 2026年10月29日 下午9:45:23

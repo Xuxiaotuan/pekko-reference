@@ -20,7 +20,7 @@
 | A1：输入可解释 | 稳定源谱系、InnoDB、ROW/FULL、`binlog_order_commits=1`、固定 Schema、合法单主键 | 当前校验与首版类型限制；不等于支持 DDL 演进 |
 | A2：窗口可定位 | B、U、spec 和本次 LOW/HIGH 可核对，所有窗口 HIGH 在固定 F 之前 | 固定范围、fence 与完成链审计 |
 | A3：效果可重放 | 页与组身份稳定、完整行替换/删除按规定顺序应用；证据与效果同目标事务 | 当前目标 receipt/组账本；不允许额外目标写者改写业务行 |
-| A4：材料可恢复 | J、L、RAW/FINAL、manifest 和目标证据保留且可验证，执行不发生未隔离重叠 | 缺失/冲突应暂停；本轮增加持久 grant 与受管释放，未扩展新链路自动接管或 GC |
+| A4：材料可恢复 | J、L、RAW/FINAL、manifest 和目标证据保留且可验证，执行不发生未隔离重叠 | 缺失/冲突应暂停；2026-10-27 版本增加持久 grant 与受管释放，当时未扩展新链路自动接管或 GC；后续候选见下文 |
 
 A0 不是一句“代码应当如此”的声明。新版可以在创建 Engine 前拒绝旧 B+INITIAL，然而已经静默越过变化、后来又写回完成态 D 的旧历史，并不一定可由现有证据识别。因此下面仍是满足前提时的推理和已检验的局部性质，不能宣称全部历史都已连续。
 
@@ -128,7 +128,7 @@ Runner 先写激活 T，再由 J 接受 STREAMING。若在两者之间崩溃，�
 
 [`CaptureStartupGuard`](https://github.com/Xuxiaotuan/pekko-reference/blob/2fd592f0c7e43af9b15f68801b7ac8f242da696b/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureStartupGuard.scala)已经把这项判定接到 Engine 创建之前。[A1/A2 真实实验](../../experiments/2026-10-27-capture-admission/README.md)确认旧 PREPARED/INITIAL 与 B-bound/INITIAL 被拒绝，Engine 创建次数为 0；后者的旧五字段差异保留。新 B 另需本 attempt 的生命周期、原始 ACK 和完成态实际 D，而不是仅凭旧 Schema 或一次 start Future。
 
-这闭合的是“能否从这些已识别状态继续”的准入决策，没有证明旧缺失事件被补进 L。若旧命名空间已静默跳点再写出合法完成态 D，现有引用校验只能核实已交付输入，不能重建从未交付的变化。源 marker COMMIT 不确定也保留原 operation 暂停，不重新写一个 B 来逃避判断。
+这闭合的是“能否从这些已识别状态继续”的准入决策，没有证明旧缺失事件被补进 L。若旧命名空间已静默跳点再写出合法完成态 D，现有引用校验只能核实已交付输入，不能重建从未交付的变化。当时源 marker COMMIT 不确定会保留原 operation 并暂停，不重新写一个 B 来逃避判断；后续候选须先完成隔离与持久证据校验。
 
 ## 8. SQL 调度资格如何衔接 T/J/D，而不成为另一套数据进度
 
@@ -144,7 +144,7 @@ Runner 先写激活 T，再由 J 接受 STREAMING。若在两者之间崩溃，�
 归还预算 ⇒ 本轮资源释放已确认，且 disposition 已持久化
 ```
 
-内存里 worker 已结束，不能跳过最后一条持久 disposition。若它在 J 已接受之后、grant 结束之前崩溃，新 runtime 看到旧 ACTIVE/UNKNOWN，不能凭 J 看起来完整而领取替代资格。当前 owner 启动要求上一个状态为 STOPPED 且无 ACTIVE/UNKNOWN grant。拒绝自动接管是这一版的安全边界，不是 HA 已经完成。
+内存里 worker 已结束，不能跳过最后一条持久 disposition。若它在 J 已接受之后、grant 结束之前崩溃，新 runtime 看到旧 ACTIVE/UNKNOWN，不能凭 J 看起来完整而领取替代资格。该历史版本的 owner 启动要求上一个状态为 STOPPED 且无 ACTIVE/UNKNOWN grant。拒绝自动接管是该版的安全边界，后续候选恢复机制见下文。
 
 clean continuation 是这种让出协议的附属证据：它只对原 owner 生效，完整内容须与真实 J 匹配；跨 owner 恢复不能拿 SQL 缓存的 clean 标记跳过重验。维护停止也不是取消：它不写业务 K，不把 desiredState 改成 CANCELED。只有步骤排空、Journal 停止、Reader 物理释放及 grant 清理都确认，owner 才能持久为 STOPPED。
 
@@ -191,7 +191,43 @@ B06 的 Reader 级实验暴露了另一条边界：源 marker 事务仍在 MySQL
 
 B09 的双 JVM 样本中，新 JVM 已安全暂停后，旧执行者才进入 STREAMING；新 JVM 仍为 UNKNOWN、Engine 创建数为 0。旧执行者继续运行后 64 行 384 字段相等；这是并存实例隔离实验，不是向新 JVM 注入所有可能的迟到消息。
 
-A09 的未绑定 B 样本当前选择启动前安全暂停；可证明能够重放时自动继续的协议尚未完成。B02/B03 只证明指定测试门下的有界关闭行为，B05 则保留未释放观察期的失败。证据及未覆盖项见[补测报告](../../experiments/2026-10-28-ab-matrix/README.md)。
+A09 的未绑定 B 历史样本选择启动前安全暂停；该实验版本尚未完成可证明重放时自动继续的协议。B02/B03 只证明指定测试门下的有界关闭行为，B05 则保留未释放观察期的失败。证据及未覆盖项见[补测报告](../../experiments/2026-10-28-ab-matrix/README.md)。
+
+## 后续补测与边界
+
+后续源码把 B_PENDING 取消与 marker 写入串行化，并在 COMMIT 结果未知时暂停；这不新增跨重启的事务结果证明。工厂阻塞时如果先收到关闭，不再启动刚创建的 Reader。需要注意，检查后到启动之间以及其他 SDK 内部窗口还需进一步故障验证；该实验版本的 A05/A09 自动继续仍是未完成项。 详见[后续实验](../../experiments/2026-10-28-cdc-followup/README.md)。上文的失败是当时版本的历史结果，原始材料保留。
+
+## 2026-10-29 补充验证
+
+2026-10-29 的源码检查确认，旧 B_PENDING 不能独自证明源事务未执行；安全自动恢复仍需要源事务结果、原始 B 和 D/L 覆盖的持久证明。工厂返回后、SDK 启动前收到关闭的固定窗口先失败，基于 SDK 生命周期信号的修复后通过；长期阻塞与线程容量仍未验证。 [实验材料与范围](../../experiments/2026-10-29-p0-followup/README.md)。
+
+## 2026-10-29 写前锚点实验
+
+写前锚点实验版本开始持久化 B 意图与实际 D/L ACK 锚点；该版本不接受缺锚点、D 变化或其他未绑定 fence。后续 B_BOUND 候选对 D 变化另有 ACK 父链及 BARRIER 覆盖条件。该实验版本的自动恢复仍缺旧资源结束证明和 Journal/UNKNOWN grant 的持久化状态转换。 详见[本轮证据](../../experiments/2026-10-29-unknown-b/README.md)。
+
+## 事务释放与隔离探针
+
+旧执行者隔离与数据库排空需要绑定到同一恢复许可：真实探针证明一次空闲观察后未隔离的旧 JVM 仍可写入。该探针版本的 B 意图、Journal 和 UNKNOWN grant 自动状态转换仍未完成。 [实验与边界](../../experiments/2026-10-29-b-release-proof/README.md)。
+
+## 当前候选：未知 B 的受管恢复边界
+
+**源码结论：**恢复入口先验证 guardian 与 worker 的身份绑定、隔离票据及账号事务排空，再将完成态 D 对应 ACK 父链与 B 意图核对；B_BOUND 还要证明 BARRIER 被实际 ACK 引用，或满足同原 D 的重放条件。反查源控制表时未知操作、未绑定 fence、证明超限均暂停。经过证明后，恢复事务把许可、次数预算和旧 grant 状态一起持久化；新 owner 领取许可，Journal 接受后消费许可，明确拒绝时许可作废且预算最多回退一次。提交回复未知时只有精确读回才能确认状态。
+
+多个 grant 的候选代码进一步限制其他执行者：仅允许满足身份、阶段和初始化证据等条件的 STREAMING TAIL 按原 Journal 与目标组账本重读；不满足条件保持暂停。这是源码路径和安全约束，真实多任务 T/J 故障窗口仍需验证。其他快照存在尚不可见 B 的可能，不能仅凭 ACTIVE 状态释放。
+
+**实验结果：**[真实 MySQL 组件测试](../../experiments/2026-10-29-cdc-b-proof-component/README.md)覆盖合成 ACK 链、B 绑定和许可事务，[旧候选迟提交样本](../../experiments/2026-10-29-cdc-managed-b-e2e-wake-candidate/README.md)覆盖一条真实端到端数据恢复路径。两者版本与层级不同；前者不是实际 Reader/Journal/Sink，后者不是全部故障矩阵。当前候选基于提交 `62ec856f20a81f3da8d56caf290754f8361ac732` 之后的未提交工作区；不同实验的精确源码摘要以各自证据目录为准，不能把旧样本归给后续修改。
+
+## 六项固定窗口的实测与边界
+
+[六项固定窗口的完整证据](../../experiments/2026-10-29-cdc-managed-b-e2e-frozen/README.md)使用同一候选源码、独立 guardian JVM、真实 MySQL、Actor Journal 与 MySQL Sink；这六项的协调器运行在测试 JVM、worker 显式接线；另有一个 [生产入口 C1 样本](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)，实际经过独立 `SnapshotGuardianMain`、`SnapshotSupervisorMain` 和 `PekkoServer` 内的 `CdcPlatformExtension`。
+
+C0、C1、迟提交和迟回滚四项分别在恢复后达到 STREAMING，各有 64 行、384 字段逐字段相等，旧 grant 释放且许可已消费；B 许可中的 `marker_present` 分别为 0、1、1、0。真实 guardian 失联和 socket 不可达两项均在许可发放前安全暂停，旧 grant UNKNOWN，源 64 行、目标 0 行。故障切点、隔离票据、事务、ACK、T/J/D 和对账记录见报告；四项收敛不等于所有恢复窗口。
+
+四个收敛样本的后继 worker 在清理中被强制停止，CDC owner 仍 ACTIVE；guardian 失联样本的后继 snapshot owner 与票据未确认排空退休。多 grant 的 TAIL 重读属于另一源码路径，本矩阵未覆盖。
+
+生产入口的独立 C1 样本在真实 MySQL、Journal 和 Sink 上恢复至 STREAMING，源与目标各 64 行、384 字段相等。前两次运行分别在故障注入前因测试配置缺项和明文代理不兼容而失败，原始材料保留；本样本没有生产 raw ACK 顺序证据，强制清理后 CDC owner 仍为 ACTIVE，不证明正常停机。其余故障窗口仍仅有测试入口证据。 [生产入口 C1 证据](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)。
+
+当前 `CdcManagedPendingB` 的源控制表反查最多 4096 行，超限安全暂停；当前没有控制行 GC。历史新增、取消及其他控制行持续积累时，即使本次 B 和 ACK 证据本身有效，也可能因超限无法自动恢复。该机制尚未证明能支撑 70 万表长期动态订阅。 [组件实验与限制](../../experiments/2026-10-29-cdc-b-proof-component/README.md)。
 
 ## 技术附录与证据入口
 

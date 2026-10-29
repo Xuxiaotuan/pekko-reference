@@ -105,7 +105,7 @@
 | A14 未知 COMMIT 取消 | 定点 Store 路径实际失败，事务迟提交 | 不将其他表对账相等写成该路径成功；完整 Runner 仍需验证 |
 | B06 未决 COMMIT 与关闭 | 实际事务仍在途时 capture owner 锁已释放；结果不可复用 | Reader 级失败，不代表平台 owner 或接管结论 |
 | B05 启停竞态 | factory 前门与真实 MySQL task start 门在 180 秒内未确认释放 | 不能断言永久泄漏；测试门位于调用原 task 的 start 实现之前 |
-| A05、A09 | 未绑定 B 当前可安全暂停 | 尚无可靠证据支持自动继续；`B_BOUND` 观察事件不能替代持久状态 |
+| A05、A09（历史版本） | 未绑定 B 安全暂停 | 当时尚无可靠证据支持自动继续；`B_BOUND` 观察事件不能替代持久状态，后续候选见下表 |
 | B04 callback 异常 | 异常回调未 ACK，T/J 不变；4 行中有 2 个字段差异 | Actor 在异常前已停止；未验证自动恢复 |
 | B10 旧 JVM 崩溃、L 事务仍在 | 新 JVM UNKNOWN，Engine 创建数 0；事务回滚后仍暂停 | 初始化基线 64 行相等，故障后 5 字段差异；未自动接管 |
 | B08 观察连接断开 | 关闭及复查均 UNKNOWN、owner 保留；4 行 24 字段相等，T 1/J 4 | 人为断开观察连接；未验证恢复观察或自动重启 |
@@ -117,3 +117,53 @@
 ## 独立技术附录
 
 [技术附录索引](appendices/README.md)提供六份独立历史档案、固定版本入口和完整实验报告。原始证据、失败样本与校验脚本留在既有实验目录；后续报告另存新结果，不覆盖原始实验内容，也不把文章整理当作新增运行证据。
+
+## 2026-10-28 后续修复的范围
+
+| 对象 | 证据 | 边界 |
+|---|---|---|
+| B_PENDING 取消 / 未决 COMMIT（历史版本） | 提交迟到与回滚 Reader 样本安全暂停；完整作业未知 B 保持暂停 | 当时目标表尚未完成初始化，自动恢复未完成 |
+| 关闭与 owner | 工厂阻塞、实际 task 启动、未决事务关闭各有固定窗口样本 | 非全部启动时序；无观察器时可能持续占用 owner 和有限关闭线程 |
+| 端到端对账 | 未知 B 实验中运行表 64 行、384 字段相等，暂停表 64 行待初始化 | 不证明自动收敛或全量矩阵通过 |
+| 平台目标 | [本轮证据与限制](../../experiments/2026-10-28-cdc-followup/README.md) | 该历史版本的 A05/A09、DDL、GC、多 owner 接管、70 万真实表和长时负载仍未完成或未验证；后续未知 B 固定窗口见下表 |
+
+## 2026-10-29 P0 补测
+
+| 场景 | 实验结果 | 边界 |
+|---|---|---|
+| B04 回调异常后恢复 | 资源释放后重建 Reader 与同一 Journal 身份的 Actor，4 行 24 字段相等，并验证后续写入 | 预复制基线；指定窗口，不证明所有异常自动恢复 |
+| 工厂返回后、SDK 启动前关闭 | 修复前 180 秒内未观察到全部连接退出；修复后此窗口及相邻两个窗口空闲 | 修复前 JVM 退出后才空闲；长期阻塞及线程容量仍未验证 |
+| 测试入口 | 默认测试 623 项通过；移出无断言示例，百万条 mock 基准改为按需运行 | 真实 MySQL 故障实验需独立环境执行；当时未知 B 持久判定仍未完成 |
+
+[详细实验材料](../../experiments/2026-10-29-p0-followup/README.md)。
+
+## 未知 B 的写前证据
+
+新订阅在源 marker 写入前保存 D/L ACK 锚点，严格匹配和旧记录拒绝已经过组件测试；真实迟提交样本的锚点与当时 D 相等，但新表仍在 PAUSED、目标为空。该实验版本的自动恢复、原事务释放、Journal 与 UNKNOWN grant 联动尚未完成。[证据与边界](../../experiments/2026-10-29-unknown-b/README.md)。
+
+## 未知 B 的事务释放探针
+
+真实 MySQL 组件实验分别观察提交、回滚和迟提交；另一个独立旧 JVM 在数据库空闲确认后重新连接并写入，说明资源空闲不足以证明进程隔离。[实验材料](../../experiments/2026-10-29-b-release-proof/README.md)；该探针版本的自动恢复和端到端验收当时仍未完成。
+
+## 2026-10-29 受管未知 B 的新增证据
+
+当前候选基于提交 `62ec856f20a81f3da8d56caf290754f8361ac732` 之后的未提交工作区；不同实验的精确源码摘要以各自证据目录为准，不能把旧样本归给后续修改。
+
+| 范围 | 已观察结果 | 限制 |
+| --- | --- | --- |
+| D/ACK 与许可组件 | [真实 MySQL 事务与合成证明](../../experiments/2026-10-29-cdc-b-proof-component/README.md)：B_PENDING、B_BOUND、许可、预算与明确拒绝路径 | D/ACK、guardian 身份为合成；无真实 Reader、Journal、业务 Sink；反查有行数和时间上限 |
+| 迟提交旧候选 | [WAKE 样本](../../experiments/2026-10-29-cdc-managed-b-e2e-wake-candidate/README.md)：独立 guardian、真实 Reader/Journal/Sink，新表 64 行、384 字段相等 | 指定一次迟提交；worker 显式启用候选，清理时强制终止后继 worker，CDC owner 仍 ACTIVE |
+| 保留失败 | [更早样本](../../experiments/2026-10-29-cdc-managed-b-e2e-old-candidate/README.md)需要人工业务写入唤醒 binlog，清理证据不足 | 不算无人工干预恢复或正常资源释放成功 |
+| 当前候选源码 | 隔离、排空、D/L 证明、许可与 Journal 分支已衔接；多 grant 有保守准入 | 下方六项固定窗口使用同一候选；除单个 C1 样本外的生产入口窗口、多任务 TAIL 恢复、70 万表规模和长期运行未验证 |
+
+## 同一候选版固定窗口矩阵
+
+[六项固定窗口的完整证据](../../experiments/2026-10-29-cdc-managed-b-e2e-frozen/README.md)使用同一候选源码、独立 guardian JVM、真实 MySQL、Actor Journal 与 MySQL Sink；这六项的协调器运行在测试 JVM、worker 显式接线；另有一个 [生产入口 C1 样本](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)，实际经过独立 `SnapshotGuardianMain`、`SnapshotSupervisorMain` 和 `PekkoServer` 内的 `CdcPlatformExtension`。
+
+| 窗口 | 实际结果 | 边界 |
+| --- | --- | --- |
+| C0、C1、LATE_COMMIT、LATE_ROLLBACK | 四项 STREAMING；各自 64 行、384 字段相等；许可已消费、旧 grant RELEASED；许可中的 `marker_present` 依次为 0、1、1、0 | 清理强制停止后继 worker，CDC owner 仍 ACTIVE，不证明正常停机 |
+| GUARDIAN_LOST、GUARDIAN_UNREACHABLE | 两项 UNKNOWN grant、无 permit；源 64 行、目标 0 行 | 安全暂停，不是对账完成；失联样本后继 snapshot owner 仍 active、ticket launched，未确认排空 |
+| 版本与入口 | 六项样本各保存源码摘要、故障前后 B/F、D、L、T、J 和 ACK 日志 | 测试 JVM 协调器、测试 worker 显式接线；不证明所有生产入口窗口或时序 |
+| 生产入口 C1 | [真实三入口样本](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)：COMMIT 已提交、回复丢失后恢复 STREAMING；64 行、384 字段相等 | 单个 C1；无生产 raw ACK 顺序；后继强制清理后 CDC owner 仍 ACTIVE；前两次配置及代理失败和未退休尾态保留 |
+| 长期动态订阅的恢复上限 | `CdcManagedPendingB` 最多反查 4096 条源控制表记录；当前无控制行 GC | 超限时未知 B 安全暂停；历史记录会累积，70 万表长期动态订阅及恢复可用性尚未验证。详见[组件实验](../../experiments/2026-10-29-cdc-b-proof-component/README.md) |

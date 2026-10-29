@@ -139,7 +139,7 @@ object CaptureStartupRecoveryWorker {
               "ackFloor"->JsNumber(e.ackFloor),"durableAck"->JsNumber(e.durableAck),"confirmedAck"->JsNumber(e.confirmedAck))
           case "SUBSCRIBE"=>Future {capture.subscribe(cmd(1),cmd(2),cmd(3));emit("SUBSCRIBE_ACCEPTED","id"->JsString(cmd(1)))}.failed.foreach(e=>emit("COMMAND_FAILED","command"->JsString("SUBSCRIBE"),"error"->JsString(e.toString)))
           case "PREPARE"=>store.register(cmd(1),cmd(2),cmd(3),store.schema(cmd(2)).get.id);emit("PREPARED")
-          case "CANCEL_PENDING"=>store.cancelPending(cmd(1));emit("PENDING_CANCELED")
+          case "CANCEL_PENDING"=>capture.cancelPending(cmd(1));emit("PENDING_CANCELED")
           case "UNSUBSCRIBE"=>capture.unsubscribe(cmd(1));emit("UNSUBSCRIBE_ACCEPTED")
           case "APPLY"|"RECOVER_APPLY"=>
             val w=workflow(cmd(1),cmd(2));val a=kit.spawn(EventSourcedWorkflowActor(w.id,engine)(ec),"apply-"+cmd(1));actors(cmd(1))=a

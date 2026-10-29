@@ -18,7 +18,7 @@ class BootstrapMatrixSpec extends AnyWordSpec with Matchers {
     "I10-F-C1","I10-high-C0","I10-high-late-commit","I10-high-late-rollback","I10-F-C0",
     "I10-F-late-commit","I10-F-late-rollback","I22-late-low")
   "online bootstrap with real MySQL, Actor Journal and Sink" should {
-    for(variant<-Vector("I01","I02","I03","I04","I05","I06","I07","I08","I09","I10","I11","I12","I13","I14","I15","I16","I17","I18","I19","I20","I21","I22","I23","I24","I10-low-C0","I10-low-C1","I10-low-late-commit","I10-low-late-rollback","I10-F-C1","I17-C0","I17-late-commit","I17-late-rollback","I13-prefix","I15-raw","I15-schema","I15-L","I18-reject","I18-budget","I18-release","I19-last-window","I20-split","I21-postF","I22-beforeB","I22-target","I23-activation","I24-capacity","I18-replay-timeout","I18-replay-close","I17-replay-C0","I17-replay-C1","I17-replay-late-commit","I17-replay-late-rollback","I15-registry","I22-late-low","I10-high-C0","I10-high-late-commit","I10-high-late-rollback","I10-F-C0","I10-F-late-commit","I10-F-late-rollback","I18-reject-after-T")) {
+    for(variant<-Vector("I01","I02","I03","I04","I05","I06","I07","I08","I09","I10","I11","I12","I13","I14","I15","I16","I17","I18","I19","I20","I21","I22","I23","I24","I10-low-C0","I10-low-C1","I10-low-late-commit","I10-low-late-rollback","I10-F-C1","I17-C0","I17-late-commit","I17-late-rollback","I13-prefix","I15-raw","I15-schema","I15-L","I18-reject","I18-budget","I18-release","I19-last-window","I20-split","I21-postF","I22-beforeB","I22-target","I22-unknown-B","I23-activation","I24-capacity","I18-replay-timeout","I18-replay-close","I17-replay-C0","I17-replay-C1","I17-replay-late-commit","I17-replay-late-rollback","I15-registry","I22-late-low","I10-high-C0","I10-high-late-commit","I10-high-late-rollback","I10-F-C0","I10-F-late-commit","I10-F-late-rollback","I18-reject-after-T")) {
       if(!markerUnknownContract || markerUnknownVariants(variant)){
       val scenario=variant.take(3)
       val safePauseCase=markerUnknownVariants(variant) &&
@@ -32,7 +32,7 @@ class BootstrapMatrixSpec extends AnyWordSpec with Matchers {
         val dir=Path.of(if(markerUnknownContract)"target/bootstrap-marker-unknown"else"target/bootstrap-matrix",sys.env.getOrElse("BOOTSTRAP_EVIDENCE_RUN","manual"),variant+"-"+suffix).toAbsolutePath;Files.createDirectories(dir)
         initialize(source,schema);initialize(state,schema)
         def sql(s:Settings,q:String)=withConnection(s,schema)(executeSql(_,q))
-        val names=if(scenario=="I01")Vector("a","b","c","d","e","f","g")else if(Set("I22-late-low","I24-capacity")(variant))Vector("a","b")else Vector("a")
+        val names=if(scenario=="I01")Vector("a","b","c","d","e","f","g")else if(Set("I22-late-low","I22-unknown-B","I24-capacity")(variant))Vector("a","b")else Vector("a")
         names.foreach {t=>sql(source,s"CREATE TABLE $t LIKE source_rows");sql(source,s"INSERT INTO $t SELECT * FROM source_rows");sql(state,s"CREATE TABLE target_$t LIKE source_rows")}
         withConnection(state,schema){c=>val input=getClass.getClassLoader.getResourceAsStream("db/mysql/pekko-sync-cdc-group-ledger-schema.sql");val ddl=try scala.io.Source.fromInputStream(input).mkString finally input.close();ddl.split(";").map(_.trim).filter(_.nonEmpty).foreach(executeSql(c,_))}
         if(scenario=="I02")sql(source,"DELETE FROM a")
@@ -203,6 +203,21 @@ class BootstrapMatrixSpec extends AnyWordSpec with Matchers {
               awaitCondition("failure safely pauses"){phase(child)=="PAUSED"}
               val s=status(child).fields("actors").asJsObject.fields("a").asJsObject
               s.fields("recoveryAttempts") shouldBe JsNumber(if(variant=="I18-budget")3 else 0)
+            case "I22" if variant=="I22-unknown-B"=>
+              boot(child,"b","b");ready(child,"b")
+              arm(child,"BOOTSTRAP_REGISTERED");boot(child);child.awaitEvent("CUTPOINT")
+              child.send("ARM_CONTROL LATE_COMMIT");child.awaitEvent("ARMED");release(child);child.awaitEvent("CUTPOINT")
+              save("B-transaction-held",child)
+              child.send("CANCEL a");val decision=child.awaitEvent("CANCEL_RESULT");save("cancel-requested",child)
+              awaitCondition("unknown B pauses runner",scala.concurrent.duration.Duration(90,"seconds"))(phase(child)=="PAUSED")
+              store.subscription("a").get.status shouldBe "B_PENDING"
+              store.subscription("a").get.b shouldBe None;store.subscription("a").get.k shouldBe None
+              write(dir,"B-cancel-decision.json",decision)
+              child.send("RESOLVE_TX");child.awaitEvent("TX_RESOLVE_REQUESTED");child.awaitEvent("PROXY_LATE_COMMIT_OK")
+              save("B-late-commit",child)
+              store.subscription("a").get.status shouldBe "B_PENDING"
+              phase(child) shouldBe "PAUSED"
+              equal("b") shouldBe true
             case "I22" if variant=="I22-late-low"=>
               boot(child,"b","b");ready(child,"b")
               arm(child,"WINDOW_REGISTERED");boot(child);child.awaitEvent("CUTPOINT")

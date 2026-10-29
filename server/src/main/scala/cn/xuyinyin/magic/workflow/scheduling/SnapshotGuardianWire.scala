@@ -4,7 +4,7 @@ import java.net.{StandardProtocolFamily,UnixDomainSocketAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{ServerSocketChannel,SocketChannel}
 import java.nio.file.Path
-import java.security.{KeyFactory,MessageDigest,PrivateKey,Signature}
+import java.security.{KeyFactory,MessageDigest,PrivateKey,SecureRandom,Signature}
 import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
 import javax.crypto.Mac
@@ -69,9 +69,36 @@ object SnapshotGuardianWire {
       }finally channel.close()
     }
   }
+  /** Worker challenges use a fresh nonce and cannot affect supervisor control sequencing. */
+  final class WorkerClient(socket:Path,secret:Array[Byte],binding:GuardianBinding) {
+    require(secret.length>=32)
+    private val random=new SecureRandom()
+    def attest(identity:SnapshotOwnerIdentity,profile:String):Unit={
+      val bytes=new Array[Byte](32);random.nextBytes(bytes)
+      val nonce=Base64.getUrlEncoder.withoutPadding().encodeToString(bytes)
+      val args=JsObject("nonce"->JsString(nonce),"identity"->identity.toJson,"profile"->JsString(profile))
+      val request=JsObject("method"->JsString("ATTEST_WORKER"),"args"->args)
+      val raw=request.compactPrint
+      val envelope=JsObject("payload"->JsString(raw),"mac"->JsString(Base64.getEncoder.encodeToString(mac(raw,secret))))
+      val channel=SocketChannel.open(StandardProtocolFamily.UNIX)
+      try {
+        channel.configureBlocking(false);channel.connect(UnixDomainSocketAddress.of(socket));val end=System.nanoTime()+5000000000L
+        while(!channel.finishConnect())progress(end)
+        write(channel,envelope)
+        val response=verified(read(channel).parseJson.asJsObject,binding.publicKey)
+        require(response.fields("request")==request && response.fields("guardian").convertTo[GuardianBinding]==binding,"worker challenge binding mismatch")
+        require(response.fields("ok")==JsBoolean(true),"guardian rejected worker challenge")
+        val result=response.fields("result").asJsObject.fields
+        require(result.get("nonce").contains(JsString(nonce)) && result.get("identity").contains(identity.toJson) &&
+          result.get("profile").contains(JsString(profile)) && result.get("provider").contains(JsString("managed-child-jvm")) &&
+          result.get("alive").contains(JsBoolean(true)),"worker challenge proof mismatch")
+      } finally channel.close()
+    }
+  }
   /** Serial processing makes cancellation and in-flight fork reconciliation mutually exclusive. */
   final class Server(socket:Path,secret:Array[Byte],binding:GuardianBinding,key:PrivateKey,
-    handle:(SupervisorControl,String,JsObject)=>JsObject,audit:JsObject=>Unit=_=>()) extends AutoCloseable {
+    handle:(SupervisorControl,String,JsObject)=>JsObject,audit:JsObject=>Unit=_=>(),
+    attest:JsObject=>JsObject=_=>throw new IllegalStateException("worker attestation unavailable")) extends AutoCloseable {
     require(secret.length>=32)
     private val server=ServerSocketChannel.open(StandardProtocolFamily.UNIX)
     server.bind(UnixDomainSocketAddress.of(socket))
@@ -83,12 +110,18 @@ object SnapshotGuardianWire {
         val envelope=read(c).parseJson.asJsObject;val raw=text(envelope,"payload");val request=raw.parseJson.asJsObject
         val result=try {
           require(MessageDigest.isEqual(mac(raw,secret),Base64.getDecoder.decode(text(envelope,"mac"))),"guardian authentication failed")
-          val control=request.fields("control").convertTo[SupervisorControl];val seq=request.fields("sequence").convertTo[Long]
-          require(control.guardian==binding && seq>0,"guardian binding mismatch")
-          if(lastControl.contains(control))require(seq>lastSequence,"replayed request")
-          else require(text(request,"method")=="BIND" && lastControl.forall(_.epoch<control.epoch),"controller binding required")
-          val value=handle(control,text(request,"method"),request.fields("args").asJsObject)
-          lastControl=Some(control);lastSequence=seq
+          val method=text(request,"method")
+          val value=if(method=="ATTEST_WORKER") {
+            require(request.fields.keySet==Set("method","args"),"invalid worker challenge envelope")
+            attest(request.fields("args").asJsObject)
+          }else {
+            val control=request.fields("control").convertTo[SupervisorControl];val seq=request.fields("sequence").convertTo[Long]
+            require(control.guardian==binding && seq>0,"guardian binding mismatch")
+            if(lastControl.contains(control))require(seq>lastSequence,"replayed request")
+            else require(method=="BIND" && lastControl.forall(_.epoch<control.epoch),"controller binding required")
+            val value=handle(control,method,request.fields("args").asJsObject)
+            lastControl=Some(control);lastSequence=seq;value
+          }
           JsObject("ok"->JsBoolean(true),"result"->value)
         }catch{case NonFatal(e)=>JsObject("ok"->JsBoolean(false),"errorClass"->JsString(e.getClass.getName))}
         val response=sign(JsObject(result.fields++Map("request"->request,"guardian"->binding.toJson)),key)

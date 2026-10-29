@@ -20,6 +20,79 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
     }finally ds.close()
   }
   "supervisor control transactions" should {
+    "attest only the original live worker independently of supervisor sequence" in fixture { s=>
+      import spray.json._
+      import spray.json.DefaultJsonProtocol._
+      import SnapshotGuardianWire._
+      val keys=java.security.KeyPairGenerator.getInstance("Ed25519").generateKeyPair()
+      val binding=GuardianBinding("d","host","guardian",java.util.Base64.getEncoder.encodeToString(keys.getPublic.getEncoded))
+      val metadata=new SnapshotSupervisorStore(s,binding,2);metadata.enroll();val control=metadata.claimController("supervisor")
+      val manager=new ManagedJvmIsolation("d",2)
+      val service=new SnapshotGuardianService(metadata,manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
+      metadata.prepare(control,"worker","profile")
+      val identity=service.handle(control,"LAUNCH",JsObject("boot"->JsString("worker"))).fields("identity").convertTo[SnapshotOwnerIdentity]
+      s.ownership.get.registerOwner(identity)
+      val socket=java.nio.file.Path.of("/tmp","sa-"+java.util.UUID.randomUUID().toString.take(12));val secret=Array.fill[Byte](32)(8)
+      val frames=new java.util.concurrent.ConcurrentLinkedQueue[JsObject]()
+      val wrongNonce=new java.util.concurrent.atomic.AtomicBoolean(false)
+      val server=new SnapshotGuardianWire.Server(socket,secret,binding,keys.getPrivate,service.handle,audit=f=>{frames.add(f);()},attest=args=>{
+        val result=service.attest(args)
+        if(wrongNonce.get())JsObject(result.fields.updated("nonce",JsString("stale")))else result
+      })
+      val thread=new Thread(()=>try server.run()catch{case _:java.nio.channels.AsynchronousCloseException=>()},"worker-attestation-test");thread.setDaemon(true);thread.start()
+      try {
+        val supervisor=new SnapshotGuardianWire.Client(socket,secret,control)
+        supervisor.request("BIND")
+        val worker=new SnapshotGuardianWire.WorkerClient(socket,secret,binding)
+        worker.attest(identity,"profile")
+        worker.attest(identity,"profile")
+        import scala.jdk.CollectionConverters._
+        val challenges=frames.iterator().asScala.toVector.map(_.fields("request").asJsObject.fields("payload").convertTo[String].parseJson.asJsObject)
+          .filter(_.fields("method")==JsString("ATTEST_WORKER"))
+        val nonces=challenges.map(_.fields("args").asJsObject.fields("nonce").convertTo[String])
+        nonces.size shouldBe 2;nonces.distinct.size shouldBe 2
+        wrongNonce.set(true);intercept[IllegalArgumentException](worker.attest(identity,"profile"));wrongNonce.set(false)
+        supervisor.request("INVENTORY").fields.contains("worker") shouldBe true
+        intercept[IllegalArgumentException](worker.attest(identity.copy(startIdentity="other"),"profile"))
+        intercept[IllegalArgumentException](worker.attest(identity,"wrong-profile"))
+        val other=GuardianBinding("d","host","guardian",java.util.Base64.getEncoder.encodeToString(java.security.KeyPairGenerator.getInstance("Ed25519").generateKeyPair().getPublic.getEncoded))
+        intercept[IllegalArgumentException](new SnapshotGuardianWire.WorkerClient(socket,secret,other).attest(identity,"profile"))
+        intercept[IllegalArgumentException](new SnapshotGuardianWire.WorkerClient(socket,Array.fill[Byte](32)(9),binding).attest(identity,"profile"))
+        val operation=metadata.operation(control,"worker")
+        intercept[IllegalArgumentException](worker.attest(identity,"profile"))
+        service.handle(control,"STOP",JsObject("boot"->JsString("worker"),"operation"->JsString(operation),"identity"->identity.toJson))
+        intercept[IllegalArgumentException](worker.attest(identity,"profile"))
+        metadata.prepare(control,"worker-dead","profile")
+        val dead=service.handle(control,"LAUNCH",JsObject("boot"->JsString("worker-dead"))).fields("identity").convertTo[SnapshotOwnerIdentity]
+        s.ownership.get.registerOwner(dead)
+        worker.attest(dead,"profile")
+        manager.managed.find(_.identity==dead).get.process.destroyForcibly().waitFor()
+        metadata.launch("worker-dead").get.operation shouldBe None
+        intercept[IllegalArgumentException](worker.attest(dead,"profile"))
+      } finally {server.close();thread.join(2000);java.nio.file.Files.deleteIfExists(socket);manager.managed.foreach(_.process.destroyForcibly().waitFor())}
+    }
+    "isolate a live worker when its managed CDC owner needs recovery" in fixture { s=>
+      val keys=java.security.KeyPairGenerator.getInstance("Ed25519").generateKeyPair()
+      val g=GuardianBinding("d","host","guardian",java.util.Base64.getEncoder.encodeToString(keys.getPublic.getEncoded))
+      val h=new SnapshotSupervisorStore(s,g,1);h.enroll();val control=h.claimController("supervisor")
+      val manager=new ManagedJvmIsolation("d",1)
+      val service=new SnapshotGuardianService(h,manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
+      val socket=java.nio.file.Path.of("/tmp","sg-"+java.util.UUID.randomUUID().toString.take(12));val secret=Array.fill[Byte](32)(1)
+      val server=new SnapshotGuardianWire.Server(socket,secret,g,keys.getPrivate,service.handle)
+      val thread=new Thread(()=>try server.run()catch{case _:java.nio.channels.AsynchronousCloseException=>()},"cdc-isolation-test");thread.setDaemon(true);thread.start()
+      var retire=false;var observed=1000L
+      try {
+        val runtime=new SnapshotSupervisorRuntime(h,control,new SnapshotGuardianWire.Client(socket,secret,control),
+          (_,i)=>{observed+=1000;SnapshotDatabaseObservation(i._1,true,0,0,0,"{}",observed)},"profile",100,
+          needsIsolation=_=>retire)
+        runtime.tick();val boot=runtime.workerBoot.get;val id=h.launch(boot).get.identity.get
+        s.ownership.get.registerOwner(id);s.ownership.get.registerSession(boot,"mysql","uuid",10,11,"source","user")
+        retire=true;runtime.tick();runtime.tick();runtime.tick()
+        h.launch(boot).get.phase shouldBe "retired"
+        h.launch(boot).get.proof should not be empty
+        s.ownership.get.owner(boot).get.phase shouldBe "db_drained"
+      } finally {server.close();thread.join(2000);java.nio.file.Files.deleteIfExists(socket);manager.managed.foreach(_.process.destroyForcibly().waitFor())}
+    }
     "keep a fork with failed identity lookup unknown instead of cancelling it as never started" in fixture { s=>
       import spray.json._
       val keys=java.security.KeyPairGenerator.getInstance("Ed25519").generateKeyPair()
@@ -78,6 +151,37 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
         val remaining=ha.knownSessions(id.bootId,"mysql");remaining.size shouldBe 3072;remaining should contain(12L);remaining should not contain 11L
         ha.registerSession(id.bootId,"mysql","uuid",10,5000,"target","u")
         ha.knownSessions(id.bootId,"mysql") should contain(5000L)
+      }finally {server.close();thread.join(2000);java.nio.file.Files.deleteIfExists(socket);manager.managed.foreach(_.process.destroyForcibly().waitFor())}
+    }
+    "continue drain observation after the wake budget is exhausted" in fixture { s=>
+      import spray.json._
+      import SnapshotGuardianWire._
+      val keys=java.security.KeyPairGenerator.getInstance("Ed25519").generateKeyPair()
+      val g=GuardianBinding("d","host","guardian",java.util.Base64.getEncoder.encodeToString(keys.getPublic.getEncoded))
+      val h=new SnapshotSupervisorStore(s,g,1);h.enroll();val a=h.claimController("a")
+      val manager=new ManagedJvmIsolation("d",1)
+      val service=new SnapshotGuardianService(h,manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
+      h.prepare(a,"old","profile")
+      val id=service.handle(a,"LAUNCH",JsObject("boot"->JsString("old"))).fields("identity").convertTo[SnapshotOwnerIdentity]
+      val ha=s.ownership.get;ha.registerOwner(id);ha.registerInstance("old","mysql","uuid",10)
+      val socket=java.nio.file.Path.of("/tmp","sg-"+java.util.UUID.randomUUID().toString.take(12))
+      val secret=Array.fill[Byte](32)(1)
+      val server=new SnapshotGuardianWire.Server(socket,secret,g,keys.getPrivate,service.handle)
+      val thread=new Thread(()=>try server.run()catch{case _:java.nio.channels.AsynchronousCloseException=>()},"guardian-exhausted-wake-test")
+      thread.setDaemon(true);thread.start()
+      try {
+        val b=h.claimController("b");var rounds=0;var wakeCalls=0
+        val runtime=new SnapshotSupervisorRuntime(h,b,new SnapshotGuardianWire.Client(socket,secret,b),(_,_)=>{
+          rounds+=1
+          SnapshotDatabaseObservation("mysql",true,if(rounds==1)1 else 0,0,0,"{}",1000+rounds*200)
+        },"profile",100,wake=(_,_)=>{
+          wakeCalls+=1
+          cn.xuyinyin.magic.connectors.mysql.source.capture.CaptureWake.nextAvailable(_=>true) shouldBe None
+        })
+        runtime.tick();rounds shouldBe 1;ha.owner("old").get.phase shouldBe "drain_wait"
+        runtime.tick();rounds shouldBe 2
+        runtime.tick();rounds shouldBe 3;wakeCalls shouldBe 3
+        ha.owner("old").get.phase shouldBe "db_drained"
       }finally {server.close();thread.join(2000);java.nio.file.Files.deleteIfExists(socket);manager.managed.foreach(_.process.destroyForcibly().waitFor())}
     }
     "pause before drain transitions when guardian control disappears after receiving its proof" in fixture { s=>

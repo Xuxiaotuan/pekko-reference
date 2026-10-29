@@ -255,7 +255,7 @@ J 已接受 manifest hash 或目标页后，丢失 seal 已经是证据损坏，
 
 源码包含分页、真实 marker、窗口回填、封存、整段恢复重读、B→F、激活与持续消费；平台还增加了持久意图、有限步骤和 L 唤醒。两层需要分别验收。[第三篇](03-real-mysql-journal-failure.md)以 I08、I11、I16 和启动反例检验这条路径；[第四篇 G4](04-protocol-and-validation.md#g4)给出有限回放收敛的逐键推理。完整矩阵的 61 项检查另见导读。
 
-[启动反例 E0](03-real-mysql-journal-failure.md#e-startup)仍保留 B 已绑定且实际 D=INITIAL 后重启越过变更的真实结果。它破坏的是本篇所依赖的捕获连续性。A1/A2 的安全门改变了后续特定风险状态的启动行为，不删除旧反例，也不把“暂停”写成“历史已经一致”。本轮平台的步骤、API 和资源结果以独立报告为准，不能直接合并进旧 61 项数字。当前没有同表并行 Split、DDL 演进、新共享链路自动接管或 70 万真实表容量保证。
+[启动反例 E0](03-real-mysql-journal-failure.md#e-startup)仍保留 B 已绑定且实际 D=INITIAL 后重启越过变更的真实结果。它破坏的是本篇所依赖的捕获连续性。A1/A2 的安全门改变了后续特定风险状态的启动行为，不删除旧反例，也不把“暂停”写成“历史已经一致”。本轮平台的步骤、API 和资源结果以独立报告为准，不能直接合并进旧 61 项数字。当前没有同表并行 Split、DDL 演进或 70 万真实表容量保证；共享链路受管未知 B 候选及其证据见下文，不能推广为全面自动接管。
 
 ### 同 owner 的干净 continuation 也不能保存 RR
 
@@ -274,6 +274,42 @@ J 已接受 manifest hash 或目标页后，丢失 seal 已经是证据损坏，
 在一项测试门固定的 A15 实验中，关闭后的迟到 SDK callback 被消费逻辑拒绝，状态保持 STOPPING，新订阅未登记；它只覆盖同一实例，不能推广到所有跨 JVM 迟到信号。
 
 `B_BOUND` 是观察事件名，不足以单独证明 B 已持久绑定。上面的实际事务、状态与对账见[补测报告](../../experiments/2026-10-28-ab-matrix/README.md)；本轮没有修改恢复协议。
+
+## 后续补测与边界
+
+新版本将待绑定 B 的取消经过 capture 的命令锁和准入检查：源事务结果不确定时拒绝确认取消；只有实际持久化绑定后才发出 `B_BOUND`。真实 MySQL 的提交迟到、回滚和取消后迟到绑定样本支持对应窗口的行为；该实验版本中未知结果下的自动恢复仍未完成。 详见[后续实验](../../experiments/2026-10-28-cdc-followup/README.md)。上文的失败是当时版本的历史结果，原始材料保留。
+
+## 2026-10-29 补充验证
+
+2026-10-29 的 B04 指定窗口在确认旧资源释放后，重建 Reader 和相同 Journal 身份的 Actor；异常前未 ACK 的写入被追平，再次写入后 4 行、24 字段相等。该实验没有解决 B_PENDING 在 COMMIT 结果未知时的持久化判定。 [实验材料与范围](../../experiments/2026-10-29-p0-followup/README.md)。
+
+## 2026-10-29 写前锚点实验
+
+2026-10-29 写前锚点实验版本在源 B 写入前，把实际 D 的 L ACK 序号和摘要与 B 意图一起持久化；该版本的恢复校验只接受相同的已覆盖 D。后续 B_BOUND 候选的 ACK 父链和覆盖条件见下文。真实迟提交样本记录到锚点与 D 相等，但 Journal 仍为 PAUSED，不能称自动恢复。 详见[本轮证据](../../experiments/2026-10-29-unknown-b/README.md)。
+
+## 事务释放与隔离探针
+
+真实源事务的提交、回滚和迟提交组件探针分别保存了连接 ID 与 InnoDB 事务；迟提交在旧事务未结束时被拒绝。写前 B 锚点仍不能单独证明旧 JVM 无法重连，该探针版本中 UNKNOWN grant 自动恢复尚未接入。 [实验与边界](../../experiments/2026-10-29-b-release-proof/README.md)。
+
+## 受管未知 B：从锚点到恢复许可
+
+**源码结论：**候选恢复先核对 guardian 身份和隔离证明及旧资源排空，再验证实际完成态 D 与 L 的 ACK 父链、B 意图、订阅和 Schema。B_PENDING 可从匹配的原 D 重读；B_BOUND 只有在 ACK 链引用其 BARRIER 时可认定覆盖，否则须满足原 D 重放条件。源控制表反查遇到未知 STOP、fence 或不匹配的 WAKE 等情况会暂停。源 marker 行本身不是原始 ACK 或 D 已推进的证据。
+
+确认条件后，状态库事务记录恢复许可、预算和 grant 转换；Journal 接受恢复后消费许可。明确拒绝和结果未知按不同分支处理。原始回调 ACK 与 D 仍由 Reader 的现有确认路径推进，许可不会直接推进它们。源码中有界反查超限会暂停，不保证大规模历史均可自动恢复。
+
+**实验结果：**[真实 MySQL 组件样本](../../experiments/2026-10-29-cdc-b-proof-component/README.md)验证上述 D/ACK 证明及许可事务的若干路径，但其中 D、ACK、guardian 身份为合成数据。另有[真实迟提交旧候选样本](../../experiments/2026-10-29-cdc-managed-b-e2e-wake-candidate/README.md)，其数据对账通过但不代表完整矩阵。当前候选基于提交 `62ec856f20a81f3da8d56caf290754f8361ac732` 之后的未提交工作区；不同实验的精确源码摘要以各自证据目录为准，不能把旧样本归给后续修改。
+
+## 固定窗口如何验证 B 与许可
+
+[六项固定窗口的完整证据](../../experiments/2026-10-29-cdc-managed-b-e2e-frozen/README.md)使用同一候选源码、独立 guardian JVM、真实 MySQL、Actor Journal 与 MySQL Sink；这六项的协调器运行在测试 JVM、worker 显式接线；另有一个 [生产入口 C1 样本](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)，实际经过独立 `SnapshotGuardianMain`、`SnapshotSupervisorMain` 和 `PekkoServer` 内的 `CdcPlatformExtension`。
+
+C0（COMMIT 未转发）、C1（COMMIT 已成功但回复丢失）、迟提交、迟回滚均恢复至 STREAMING；四项许可记录的 `marker_present` 分别为 0、1、1、0，许可均已消费、旧 grant 已释放，最终各 64 行、384 字段相等。样本保留切点 B、实际 D、L、T、J 和原始 ACK 日志，不以 marker 行推断 ACK。
+
+后继恢复前 guardian 进程失联或 socket 不可达的两项没有发许可，旧 grant 保持 UNKNOWN，目标 0 行；它们验证的是暂停边界。清理四个收敛样本时强制停止后继 worker，CDC owner 仍 ACTIVE，不能把对账通过写成正常停机。
+
+生产入口的独立 C1 样本在真实 MySQL、Journal 和 Sink 上恢复至 STREAMING，源与目标各 64 行、384 字段相等。前两次运行分别在故障注入前因测试配置缺项和明文代理不兼容而失败，原始材料保留；本样本没有生产 raw ACK 顺序证据，强制清理后 CDC owner 仍为 ACTIVE，不证明正常停机。其余故障窗口仍仅有测试入口证据。 [生产入口 C1 证据](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)。
+
+`CdcManagedPendingB` 在证明未知 B 时最多反查 4096 条源控制表记录；超过上限即拒绝恢复并安全暂停。当前没有控制行 GC，长期新增、取消表可能积累历史记录；这是恢复可用性的明确上限，而不是已经验证的 70 万表支持能力。 [组件实验与限制](../../experiments/2026-10-29-cdc-b-proof-component/README.md)。
 
 ## 技术附录与证据入口
 

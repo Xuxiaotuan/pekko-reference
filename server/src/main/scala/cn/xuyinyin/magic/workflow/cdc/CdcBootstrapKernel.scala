@@ -5,11 +5,12 @@ import cn.xuyinyin.magic.connectors.mysql.source.capture._
 import cn.xuyinyin.magic.workflow.bootstrap._
 import cn.xuyinyin.magic.workflow.engine.{CdcExecutionException,ExecutionFailure}
 import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Node,Position}
+import cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbc
 import org.apache.pekko.Done
 import org.apache.pekko.actor.typed.{ActorRef,ActorSystem}
 import org.apache.pekko.actor.typed.scaladsl.{Behaviors,adapter}
 import org.apache.pekko.actor.typed.scaladsl.adapter._
-import java.sql.{Connection,DriverManager}
+import java.sql.Connection
 import java.util.UUID
 import java.util.concurrent.{Executors,ThreadFactory,TimeUnit}
 import java.util.concurrent.atomic.AtomicBoolean
@@ -21,7 +22,8 @@ import spray.json._
 
 /** Real kernel assembly; control/query rows never substitute for the existing T/J/D evidence. */
 final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_],
-  observe:(String,JsObject)=>Unit=(_,_)=>(),engineFactory:DebeziumEngineFactory=DebeziumEngineFactory.real) extends CdcPlatformKernel {
+  observe:(String,JsObject)=>Unit=(_,_)=>(),engineFactory:DebeziumEngineFactory=DebeziumEngineFactory.real,
+  managed:Boolean=false,private[cdc] val recoveryStore:Option[CdcTaskStore]=None) extends CdcPlatformKernel {
   private implicit val actorEc:ExecutionContext=system.executionContext
   private implicit val scheduler:org.apache.pekko.actor.typed.Scheduler=system.scheduler
   private val stopping=new AtomicBoolean()
@@ -48,16 +50,52 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
     "cachedJournals"->JsNumber(sessions.size),"creatingSessions"->JsNumber(reservations.size),"peakCachedJournals"->JsNumber(peakSessions),
     "configuredCaptures"->JsNumber(settings.captures.size),"liveCaptures"->JsNumber(capturesById.size))}
   def captureReleaseEvidence:Vector[(String,CaptureReleaseEvidence)]=synchronized(capturesById.toVector.collect {case(id,c) if closing.contains(id)=>id->c.reader.releaseEvidence})
-  private def stateOpen(c:CdcCaptureSettings):Connection=DriverManager.getConnection(CdcJdbc.withTimeouts(c.controlState.jdbcUrl),c.controlState.username,c.controlState.password)
-  private def captureLogOpen(c:CdcCaptureSettings):Connection=DriverManager.getConnection(CdcJdbc.withTimeouts(c.controlState.jdbcUrl),c.sdkState.username,c.sdkState.password)
+  private def stateOpen(c:CdcCaptureSettings):Connection=SnapshotOwnerJdbc.open(CdcJdbc.withTimeouts(c.controlState.jdbcUrl),c.controlState.username,c.controlState.password,"control",managed)
+  private def captureLogOpen(c:CdcCaptureSettings):Connection=SnapshotOwnerJdbc.open(CdcJdbc.withTimeouts(c.controlState.jdbcUrl),c.sdkState.username,c.sdkState.password,"control",managed)
   private def sourceOpen(c:CdcCaptureSettings,observer:Boolean=false):Connection={
     val username=if(observer)c.sourceObserverUsername.getOrElse(c.source.username)else c.source.username
     val password=if(observer)c.sourceObserverPassword.getOrElse(c.source.password)else c.source.password
-    DriverManager.getConnection(s"jdbc:mysql://${c.source.host}:${c.source.port}/${c.source.database}?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&connectTimeout=5000&socketTimeout=5000",username,password)
+    SnapshotOwnerJdbc.open(s"jdbc:mysql://${c.source.host}:${c.source.port}/${c.source.database}?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&connectTimeout=5000&socketTimeout=5000",username,password,"source",managed)
   }
   private def stateIdentity(c:CdcCaptureSettings):Unit={
     val jdbc=new BootstrapJdbc(()=>stateOpen(c),1)
     jdbc.connection {connection=>require(jdbc.query(connection,"SELECT @@server_uuid AS uuid").head("uuid")==c.stateLineage,"CDC platform state lineage changed")}
+  }
+  override def prepareManagedManifest():String={
+    require(managed,"resource manifest is only valid for a managed owner")
+    val context=SnapshotOwnerJdbc.context.getOrElse(throw new IllegalStateException("managed owner bootstrap missing"))
+    val records=Vector.newBuilder[(String,String,String)]
+    def record(open:()=>Connection,expected:String):Unit={
+      val c=open()
+      try {
+        val (uuid,_,_)=SnapshotOwnerJdbc.databaseIdentity(c)
+        require(uuid==expected,"managed manifest database identity changed")
+        val endpoint=SnapshotOwnerJdbc.endpoint(c.getMetaData.getURL)
+        val user=SnapshotOwnerJdbc.databaseUser(c)
+        val ownership=context.store.ownership.get
+        require(ownership.databaseUsers(context.identity.bootId,endpoint)(user),"managed account registration missing")
+        records+=((endpoint,uuid,user))
+      } finally c.close()
+    }
+    settings.captures.foreach {cfg=>
+      record(()=>stateOpen(cfg),cfg.stateLineage)
+      record(()=>captureLogOpen(cfg),cfg.stateLineage)
+      record(()=>sourceOpen(cfg),cfg.sourceLineage)
+      if(cfg.sourceObserverUsername.nonEmpty)record(()=>sourceOpen(cfg,observer=true),cfg.sourceLineage)
+    }
+    val journal=system.settings.config.getConfig("pekko-persistence-jdbc.shared-databases.slick.db")
+    val journalUrl=journal.getString("url")
+    val endpoint=SnapshotOwnerJdbc.endpoint(journalUrl)
+    val journalUuid=context.routes.getOrElse(endpoint,throw new IllegalStateException("managed journal endpoint missing"))
+    val journalUser=journal.getString("user")
+    val ownership=context.store.ownership.get
+    require(ownership.instances(context.identity.bootId).exists(i=>i._1==endpoint && i._2==journalUuid) &&
+      ownership.databaseUsers(context.identity.bootId,endpoint)(journalUser),"managed journal registration missing")
+    records+=((endpoint,journalUuid,journalUser))
+    val entries=records.result().distinct.sortBy(x=>(x._1,x._2,x._3)).map {case(host,uuid,user)=>
+      JsObject("endpoint"->JsString(host),"serverUuid"->JsString(uuid),"user"->JsString(user))
+    }
+    JsObject("version"->JsNumber(1),"accounts"->JsArray(entries)).compactPrint
   }
   def start():Unit={
     require(!stopping.get(),"CDC kernel stopping")
@@ -69,11 +107,16 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
       val observer=CaptureResourceObserver.exclusiveAccounts(()=>sourceOpen(cfg,observer=true),()=>stateOpen(cfg),
         cfg.source.username,cfg.sdkState.username,cfg.sourceLineage,cfg.stateLineage)
       val reader=new SharedMySQLCapture(cfg.source,cfg.sdkState.copy(jdbcUrl=CdcJdbc.withTimeouts(cfg.sdkState.jdbcUrl)),store,engineFactory,
-        (kind,data)=>observe(kind,JsObject(data.fields+("captureId"->JsString(cfg.id)))),resourceObserver=Some(observer))
-      synchronized {capturesById.update(cfg.id,Capture(cfg,store,reader))}
+        (kind,data)=>observe(kind,JsObject(data.fields+("captureId"->JsString(cfg.id)))),resourceObserver=Some(observer),
+        authorizePendingB=recoveryStore.map(s=>(offset:String,ids:Vector[String])=>s.authorizedBPermits(cfg.id,offset,ids)))
+      val registered=synchronized {
+        if(stopping.get())false else {capturesById.update(cfg.id,Capture(cfg,store,reader));true}
+      }
+      if(!registered){reader.requestClose();throw new IllegalStateException("CDC kernel stopping")}
       reader.start()
     }
-    refresh.scheduleWithFixedDelay(new Runnable {def run():Unit=refreshCaptures()},0L,250L,TimeUnit.MILLISECONDS)
+    if(!stopping.get())try refresh.scheduleWithFixedDelay(new Runnable {def run():Unit=refreshCaptures()},0L,250L,TimeUnit.MILLISECONDS)
+    catch {case _:java.util.concurrent.RejectedExecutionException if stopping.get()=>()}
   }
   private val nextEvidence=mutable.Map.empty[String,Long]
   private def refreshCaptures():Unit={
@@ -103,7 +146,10 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
   private def create(task:CdcTaskRequest,id:String,pool:String):Session={
     val c=synchronized(capturesById.getOrElse(task.captureId,throw new CdcPlatformException("CAPTURE_NOT_CONFIGURED")))
     val codec=new BootstrapRowCodec(c.store.schema(task.table).getOrElse(throw new CdcPlatformException("SCHEMA_NOT_READY")).definition)
-    val journal=system.systemActorOf(BootstrapJournal(task.captureId+"-"+id),"cdc-journal-"+UUID.randomUUID().toString)
+    val validate:(String,BootstrapProgress)=>Future[Boolean]=(permit,_)=>Future {
+      scala.concurrent.blocking(recoveryStore.exists(_.authorizedBPermit(permit,id)))
+    }(scala.concurrent.ExecutionContext.global)
+    val journal=system.systemActorOf(BootstrapJournal(task.captureId+"-"+id,validate),"cdc-journal-"+UUID.randomUUID().toString)
     try {
       val access=new BootstrapJournalAccess(journal)
       val spool=new BootstrapStore(()=>stateOpen(c.settings),id,c.settings.maxSpoolBytes)
@@ -163,6 +209,43 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
     }
     var released=true
     try {
+      val access=new BootstrapJournalAccess(session.journal)
+      if(!cancel)recoveryStore.flatMap(_.pendingBPermit(task.captureId,id)).filterNot(_.consumed).foreach {p=>
+        def uncertain(stage:String,e:Throwable)=new CdcExecutionException(
+          ExecutionFailure(ExecutionFailure.ReleaseUnknown,stage,releaseConfirmed=false),e)
+        val previous=try Await.result(access.read(),10.seconds) catch {case NonFatal(e)=>throw uncertain("pending-b-journal-read",e)}
+        val resumed=if(previous.phase=="PAUSED"){
+          val outcome=try Await.result(access.resumePendingB(previous.revision,previous.executionId,previous.definition,p.id),10.seconds)
+            catch {case NonFatal(error)=>
+              val readback=try Some(Await.result(access.read(),10.seconds))catch{case NonFatal(_)=>None}
+              if(readback.exists(s=>s.revision==previous.revision+1 && s.phase=="QUEUED" && s.executionId==previous.executionId && s.definition==previous.definition && s.failure.isEmpty))"ACCEPTED"
+              else throw uncertain("pending-b-journal-result",error)
+            }
+          outcome match {
+            case "ACCEPTED"=>true
+            case "REJECTED"=>false
+            case _=>throw uncertain("pending-b-permit-validation",new IllegalStateException("pending B permit validation result unknown"))
+          }
+        }
+          else previous.phase=="QUEUED" && previous.executionId.nonEmpty && previous.definition.nonEmpty && !previous.planned && previous.window.isEmpty && previous.index==0 && !previous.cancelRequested
+        if(!resumed){
+          val rejected=try recoveryStore.get.rejectBPermit(p.id,id) catch {case NonFatal(error)=>
+            val failure=ExecutionFailure.from(error,"pending-b-rejection")
+            val readback=if(failure.code==ExecutionFailure.CommitUnknown && failure.releaseConfirmed)
+              try recoveryStore.get.rejectedBPermit(p.id,id)catch{case NonFatal(_)=>false} else false
+            if(readback)true else throw uncertain("pending-b-rejection-result",error)
+          }
+          if(!rejected)throw uncertain("pending-b-rejection",new IllegalStateException("pending B rejection not persisted"))
+          throw new CdcExecutionException(ExecutionFailure("checkpoint_rejected","pending-b-journal"),new IllegalStateException("pending B Journal transition rejected"))
+        }
+        val consumed=try recoveryStore.get.consumeBPermit(p.id,id) catch {case NonFatal(error)=>
+          val failure=ExecutionFailure.from(error,"pending-b-permit")
+          val readback=if(failure.code==ExecutionFailure.CommitUnknown && failure.releaseConfirmed)
+            try recoveryStore.get.consumedBPermit(p.id,id)catch{case NonFatal(_)=>false} else false
+          if(readback)true else throw uncertain("pending-b-permit-result",error)
+        }
+        if(!consumed)throw uncertain("pending-b-permit",new IllegalStateException("pending B permit consumption rejected"))
+      }
       if(cancel)Await.result(new BootstrapJournalAccess(session.journal).cancel(),10.seconds)
       val result=session.runner.step(stop,continuation)
       released=result.releaseConfirmed
@@ -178,11 +261,16 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
       throw e
     }
   }
-  def closeAndVerify():Boolean={
-    if(stopping.compareAndSet(false,true)){
-      refresh.shutdown()
-      synchronized {capturesById.foreach {case(id,c)=>closing.update(id,c.reader.requestClose())}}
+  override def requestStop():Unit={
+    stopping.set(true);refresh.shutdown()
+    val all=synchronized(capturesById.values.toVector)
+    all.foreach {c=>
+      val request=c.reader.requestClose()
+      synchronized {closing.getOrElseUpdate(c.settings.id,request)}
     }
+  }
+  def closeAndVerify():Boolean={
+    requestStop()
     // Retry observation of the same Journal stop promise; never allocate replacement writers.
     var localReleased=true
     val idle=synchronized(sessions.toVector)

@@ -65,6 +65,82 @@ class CaptureAdmissionMatrixSpec extends AnyWordSpec with Matchers {
     "reason"->e.reasonCode.map(JsString(_)).getOrElse(JsNull),"loadedCheckpoint"->JsString(e.loadedCheckpoint))
 
   "the production capture admission guard" should {
+    "approve pending B only with a matching durable write-ahead anchor" taggedAs ExternalIntegration in {
+      val (_,_,dir,store)=fixture();val schema=store.rememberSchema("a","{}")
+      val anchor="""{"file":"mysql-bin.000001","pos":110}"""
+      val advanced="""{"file":"mysql-bin.000001","pos":120}"""
+      store.cover(anchor);store.registerAnchored("r","a","g",schema.id,anchor)
+      val same=store.recoverablePendingAt(anchor);same shouldBe Vector("r")
+      store.cover(anchor);store.recoverablePendingAt(anchor) shouldBe Vector("r")
+      store.cover(advanced);store.recoverablePendingAt(advanced) shouldBe empty
+      store.register("legacy","b","g",store.rememberSchema("b","{}").id)
+      store.recoverablePendingAt(anchor) shouldBe empty
+      write(dir,"anchor-proof-result.json",JsObject("same"->JsArray(same.map(JsString(_))),"advanced"->JsArray(),"legacy"->JsArray(),"L"->store.evidence))
+    }
+    "close when stop arrives after the factory and before SDK start" taggedAs ExternalIntegration in {
+      val (schema,id,dir,store)=fixture()
+      val entered=new CountDownLatch(1); val release=new CountDownLatch(1)
+      val factory=new DebeziumEngineFactory {def create(p:java.util.Properties):DebeziumEngineAccess={
+        val delegate=DebeziumEngineFactory.real.create(p)
+        new DebeziumEngineAccess {
+          def start(c:DebeziumBatchConsumer):Future[org.apache.pekko.Done]={entered.countDown();release.await();delegate.start(c)}
+          def close():Unit=delegate.close()
+          override def closeManaged():Unit=delegate.closeManaged()
+          override def localTerminationConfirmed:Boolean=delegate.localTerminationConfirmed
+        }
+      }}
+      val events=new java.util.concurrent.ConcurrentLinkedQueue[JsObject]()
+      val c=session(schema,id,store,factory,(k,v)=>events.add(JsObject(v.fields+("kind"->JsString(k)))))
+      val executor=Executors.newSingleThreadExecutor();implicit val ec:ExecutionContext=ExecutionContext.fromExecutorService(executor)
+      def resources(s:Settings):JsObject=withConnection(s,"")(db=>JsObject(
+        "sessions"->query(db,"SELECT ID,USER,HOST,DB,COMMAND,STATE FROM information_schema.PROCESSLIST WHERE ID<>CONNECTION_ID()"),
+        "transactions"->query(db,"SELECT trx_id,trx_state,trx_mysql_thread_id FROM information_schema.INNODB_TRX")))
+      try {
+        val started=Future(scala.util.Try(c.start()))
+        entered.await(30,TimeUnit.SECONDS) shouldBe true
+        val close=Await.result(c.requestClose(),15.seconds)
+        write(dir,"before-sdk-start-close.json",JsObject("local"->JsString(close.localTermination),
+          "server"->JsString(close.serverRelease),"ownerReleased"->JsBoolean(close.ownerReleased),"reusable"->JsBoolean(close.reusable)))
+        close.reusable shouldBe false
+        release.countDown();Await.result(started,30.seconds)
+        val released=scala.util.Try(awaitCondition("close after delayed SDK start",180.seconds)(idle()))
+        write(dir,"after-sdk-start-close.json",JsObject("idle"->JsBoolean(released.isSuccess),
+          "error"->released.failed.toOption.map(e=>JsString(e.toString)).getOrElse(JsNull),
+          "source"->resources(settings),"state"->resources(stateSettings),
+          "startup"->evidence(c.cachedStartupEvidence),"events"->JsArray(events.toArray.toVector.map(_.asInstanceOf[JsObject]))))
+        released.get
+      }finally {release.countDown();scala.util.Try(c.close());executor.shutdownNow()}
+    }
+    "retain owner when startup source close has an unknown outcome" taggedAs ExternalIntegration in {
+      val (schema,id,dir,store)=fixture()
+      val count=new AtomicInteger()
+      val held=new java.util.concurrent.atomic.AtomicReference[java.sql.Connection]()
+      val never=new DebeziumEngineFactory {def create(p:java.util.Properties):DebeziumEngineAccess=
+        throw new AssertionError("engine must not start")}
+      val c=new SharedMySQLCapture(MySQLCdcSourceConfig(id,settings.host,settings.port,schema,"a",settings.user,settings.password,
+        (id.hashCode.toLong & 0x7fffffffL)+100000,128,100),
+        MySQLCdcStateConfig(stateSettings.url(schema),stateSettings.user,stateSettings.password,"capture_offsets","capture_history",0),store,never,(_,_)=>()) {
+        override protected def sourceConnection():java.sql.Connection={
+          val delegate=super.sourceConnection()
+          if(count.incrementAndGet()!=2)delegate else {
+            held.set(delegate)
+            java.lang.reflect.Proxy.newProxyInstance(getClass.getClassLoader,Array(classOf[java.sql.Connection]),
+              (_,method,args)=>if(method.getName=="close")throw new java.sql.SQLException("injected unknown close")
+                else try method.invoke(delegate,Option(args).getOrElse(Array.empty[AnyRef]):_*)
+                catch {case e:java.lang.reflect.InvocationTargetException=>throw e.getCause}).asInstanceOf[java.sql.Connection]
+          }
+        }
+      }
+      try {
+        intercept[Throwable](c.start())
+        val free=withConnection(stateSettings,schema)(query(_,s"SELECT IS_FREE_LOCK('pekko_capture_${id}') AS free"))
+        val source=withConnection(settings,"")(query(_,"SELECT ID,USER,COMMAND,STATE FROM information_schema.PROCESSLIST WHERE ID<>CONNECTION_ID() AND USER NOT IN ('event_scheduler','system user')"))
+        write(dir,"startup-close-unknown.json",JsObject("free"->free,"sourceSessions"->source,"L"->store.evidence,
+          "sourceConnectionHeld"->JsBoolean(held.get()!=null && !held.get().isClosed)))
+        held.get() should not be null
+        free.elements.head.asJsObject.fields("free").convertTo[String].toInt shouldBe 0
+      }finally {Option(held.get()).foreach(_.close());scala.util.Try(c.close())}
+    }
     "keep the command gate closed when a held SDK callback returns after close" taggedAs ExternalIntegration in {
       val (schema,id,dir,store)=fixture()
       val events=new java.util.concurrent.ConcurrentLinkedQueue[JsObject]()

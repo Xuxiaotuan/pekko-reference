@@ -8,6 +8,11 @@ import spray.json._
 
 class SnapshotGuardianSpec extends AnyWordSpec with Matchers {
   "production launch configuration" should {
+    "allow ordinary JDBC connections without installing a managed owner" in {
+      val url="jdbc:h2:mem:owner_jdbc_"+java.util.UUID.randomUUID()+";DB_CLOSE_DELAY=-1"
+      val connection=SnapshotOwnerJdbc.open(url,"sa","","control")
+      try connection.isValid(1) shouldBe true finally connection.close()
+    }
     "refuse managed launch properties when the worker HA bootstrap is disabled" in {
       val c=com.typesafe.config.ConfigFactory.parseString("pekko.workflow.snapshot-ha.enabled=false\npekko.workflow.snapshot-ha.supervisor-config=\"must-not-be-read\"")
       intercept[IllegalArgumentException](SnapshotOwnerBootstrap.prepare(c))
@@ -28,6 +33,12 @@ class SnapshotGuardianSpec extends AnyWordSpec with Matchers {
     }
   }
   "guardian signed evidence" should {
+    "count a foreign-tagged session that uses an exclusive CDC account" in {
+      val row=Map("user"->"cdc_sdk","owner"->"foreign")
+      MySqlOwnerDrainObserver.unattributed(row,"old",Set("cdc_sdk"),Set("cdc_sdk")) shouldBe true
+      MySqlOwnerDrainObserver.unattributed(row,"old",Set("cdc_sdk"),Set.empty) shouldBe false
+      MySqlOwnerDrainObserver.unattributed(row.updated("owner","old"),"old",Set("cdc_sdk"),Set("cdc_sdk")) shouldBe false
+    }
     "reject a modified response or another guardian public key" in {
       val keys=KeyPairGenerator.getInstance("Ed25519").generateKeyPair()
       val key=Base64.getEncoder.encodeToString(keys.getPublic.getEncoded)

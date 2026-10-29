@@ -11,6 +11,22 @@ class CdcTaskStoreSpec extends STSpec {
   }
   private def request(id:String)=CdcTaskRequest(id,"capture","rows_"+id,"g1","target_"+id)
   "durable CDC task index" should {
+    "refuse pre-execution cancellation while a B recovery permit is pending" in {
+      val url="jdbc:h2:mem:cdc_b_cancel_"+UUID.randomUUID().toString.replace('-','_')+";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
+      val s=new CdcTaskStore(()=>DriverManager.getConnection(url),CdcPlatformLimits());s.initialize()
+      val managed=CdcManagedOwner("boot","d","host","guardian","key",123,"start","profile")
+      s.beginOwner("new-owner",1L,Some(managed)) shouldBe true
+      val task=s.submit(request("cancel"),2L).task
+      val c=DriverManager.getConnection(url)
+      try {val q=c.prepareStatement("INSERT INTO pekko_cdc_b_recovery_v1(owner_attempt,permit_id,task_id,capture_id,offset_json,marker_present,table_name,generation,operation_id,signed_proof,created_at,claimed_by,consumed) VALUES('old','permit',?,'capture','{}',FALSE,?,'g1','op','proof',1,'new-owner',FALSE)")
+        try {q.setString(1,task.taskId);q.setString(2,task.table);q.executeUpdate()}finally q.close()}finally c.close()
+      intercept[CdcPlatformException](s.cancel(task.taskId,3L)).code shouldBe "CANCEL_NOT_PERMITTED"
+      s.get(task.taskId).get.desiredState shouldBe "RUNNING"
+      s.get(task.taskId).get.cancelAllowed shouldBe false
+      s.listAfter(None,100).items.find(_.taskId==task.taskId).get.cancelAllowed shouldBe false
+      s.endOwner("new-owner",confirmed=true,4L) shouldBe false
+      s.ownerStatus shouldBe "UNKNOWN"
+    }
     "preserve the identity of duplicate requests and reject a changed definition" in {
       val s=store();val first=s.submit(request("a"),1L);first.created shouldBe true
       s.submit(request("a"),2L).task.taskId shouldBe first.task.taskId
@@ -39,6 +55,19 @@ class CdcTaskStoreSpec extends STSpec {
       s.claim("one","SNAPSHOT",Set("capture"),5L) shouldBe None
       s.beginOwner("two",6L) shouldBe false
       s.get(grant.task.view.taskId).get.releaseStatus shouldBe "UNKNOWN"
+    }
+    "fence managed admission as soon as a grant becomes unknown" in {
+      val s=store();val managed=CdcManagedOwner("boot","d","host","guardian","key",123,"start","profile")
+      s.beginOwner("managed",1L,Some(managed)) shouldBe true;s.submit(request("a"),2L)
+      val grant=s.claim("managed","SNAPSHOT",Set("capture"),3L).get
+      s.finishUnknown(grant,"local_release_unconfirmed",4L)
+      s.ownerStatus shouldBe "UNKNOWN"
+      s.managedOwnerNeedsIsolation(managed) shouldBe true
+      s.managedOwnerNeedsIsolation(managed.copy(bootId="other")) shouldBe false
+      intercept[IllegalArgumentException](s.managedOwnerNeedsIsolation(managed.copy(profileHash="wrong")))
+      intercept[IllegalArgumentException](s.managedOwnerNeedsIsolation(managed.copy(pid=124)))
+      s.claim("managed","TAIL",Set("capture"),5L) shouldBe None
+      s.beginOwner("replacement",6L) shouldBe false
     }
     "park idle streaming tasks and wake them from a bounded durable L dispatch" in {
       val url="jdbc:h2:mem:cdc_dispatch_"+UUID.randomUUID().toString.replace('-','_')+";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"

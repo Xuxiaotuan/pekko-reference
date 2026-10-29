@@ -13,7 +13,7 @@ import spray.json._
   * Only the armed Sink COMMIT is affected. Authentication payloads are never logged.
   */
 private[integration] final class MySQLCommitResponseProxy(host: String, upstreamPort: Int,
-  observe: (String, JsObject) => Unit) extends AutoCloseable {
+  observe: (String, JsObject) => Unit, advertisePlaintextOnly:Boolean=false) extends AutoCloseable {
   import MySQLCommitResponseProxy._
   require(Set("127.0.0.1", "localhost").contains(host))
   private case class Armed(mode: String, batch: JsObject)
@@ -97,6 +97,10 @@ private[integration] final class MySQLCommitResponseProxy(host: String, upstream
         if (greeting) {
           val end = packet.indexOf(0.toByte, 5)
           if (end >= 5 && end + 4 < packet.length) connectionId.set(JsNumber((1 to 4).foldLeft(0L)((v,i) => v | ((packet(end+i)&255L) << (8*(i-1))))))
+          if(advertisePlaintextOnly){
+            require(end>=5 && end+15<packet.length,"short server greeting")
+            packet(end+15)=(packet(end+15) & 0xf7).toByte // CLIENT_SSL, test-only loopback proxy
+          }
           greeting = false
         } else if (!authenticated.get() && isOk(packet)) authenticated.set(true)
         val a = intercepted.get()

@@ -1,0 +1,91 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[info] done compiling
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[info] done compiling
+[info] CdcManagedIsolationSpec:
+[info] CDC managed isolation proof
+[info] - should bind the retired worker, signed guardian proof and all registered accounts
+21:34:22,892 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+21:34:22,893 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1fbfe85f - No custom configurators were discovered as a service.
+21:34:22,893 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1fbfe85f - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+21:34:22,893 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1fbfe85f - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+21:34:22,893 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+21:34:22,893 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+21:34:22,894 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1fbfe85f - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+21:34:22,894 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1fbfe85f - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+21:34:22,895 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1fbfe85f - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+21:34:22,895 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+21:34:22,895 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+21:34:22,918 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+21:34:22,919 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+21:34:22,921 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+21:34:22,928 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+21:34:22,928 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+21:34:22,929 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+21:34:22,929 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+21:34:22,929 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+21:34:22,929 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+21:34:22,930 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+21:34:22,930 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+21:34:22,930 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+21:34:22,930 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+21:34:22,930 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+21:34:22,930 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+21:34:22,931 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@7b43ffad - End of configuration.
+21:34:22,931 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@1cf50d9 - Registering current configuration as safe fallback point
+21:34:22,931 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1fbfe85f - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 36 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+[info] CdcPlatformRuntimeSpec:
+[info] bounded CDC runtime
+[info] - should bind a unique durable owner attempt to its managed worker identity
+[info] - should not start the reader when its managed resource manifest cannot be proven
+[info] - should let idle streaming tasks yield while another table initializes
+[info] - should bound a blocked maintenance close without releasing its durable owner
+[info] CdcTaskStoreSpec:
+[info] durable CDC task index
+[info] - should preserve the identity of duplicate requests and reject a changed definition
+[info] - should cancel an unexecuted task without claiming a Journal or source boundary
+[info] - should page cold records without materializing their execution resources
+[info] - should retain unknown grants and refuse a new owner after an unclean stop
+[info] - should park idle streaming tasks and wake them from a bounded durable L dispatch
+[info] - should skip terminal and unready capture prefixes when claiming the oldest eligible task
+[info] SnapshotGuardianSpec:
+[info] production launch configuration
+[info] - should allow ordinary JDBC connections without installing a managed owner
+[info] - should refuse managed launch properties when the worker HA bootstrap is disabled
+[info] - should append control attributes to both legal MySQL URL forms without changing the database
+[info] - should refuse a worker profile with another deployment or scheduling database
+[info] guardian signed evidence
+[info] - should reject a modified response or another guardian public key
+[info] - should bind proof to the original worker and operation, not merely a provider string
+[info] CaptureStartupGuardSpec:
+[info] startup recovery
+[info] - should allow a new domain while rejecting an uncertain legacy marker
+[info] - should pause an existing B with INITIAL before any SDK restart
+[info] - should never rebuild an old missing control table or silently replace missing D
+[info] - should require history and L coverage for a completed checkpoint
+[info] - should allow an incomplete schema-only start without an accepted boundary
+[info] checkpoint decoding
+[info] - should reject ambiguous keys, wrong partitions and unknown snapshot states
+[info] admission evidence
+[info] - should require the current ACK, actual D, completed lifecycle and matching attempt
+[info] - should never turn a stopping attempt back into ready
+[info] Run completed in 11 seconds, 397 milliseconds.
+[info] Total number of tests run: 25
+[info] Suites: completed 5, aborted 0
+[info] Tests: succeeded 25, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 15 s, completed 2026年10月29日 下午9:34:34

@@ -739,6 +739,7 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
       access.close()
 
       Await.result(done, 2.seconds) shouldBe Done
+      worker.join(2000L)
       worker.isAlive shouldBe false
       engine.closeCalls.get() shouldBe 1
     }

@@ -9,6 +9,7 @@ import org.apache.pekko.stream.scaladsl.{Source, Sink, Flow}
 import org.apache.pekko.{Done, NotUsed}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import cn.xuyinyin.magic.tags.Benchmark
 import org.scalatest.BeforeAndAfterAll
 import spray.json._
 
@@ -43,7 +44,7 @@ class MySQLPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndAfter
   val ONE_MILLION = 1000000
   val ONE_HUNDRED_THOUSAND = 100000
 
-  "MockSource" should "生成100万条数据并测试吞吐量" in {
+  "MockSource" should "生成100万条数据并测试吞吐量" taggedAs Benchmark in {
     println("\n" + "="*70)
     println("性能测试 1: Mock Source - 生成100万条数据")
     println("="*70)
@@ -92,7 +93,7 @@ class MySQLPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndAfter
     throughput should be > 50000.0 // 至少5万条/秒
   }
 
-  "MockSink" should "处理100万条数据并测试写入性能" in {
+  "MockSink" should "处理100万条数据并测试写入性能" taggedAs Benchmark in {
     println("\n" + "="*70)
     println("性能测试 2: Mock Sink - 处理100万条数据")
     println("="*70)
@@ -150,7 +151,7 @@ class MySQLPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndAfter
     throughput should be > 50000.0 // 至少5万条/秒
   }
 
-  "端到端流式处理" should "处理100万条数据（Source → Transform → Sink）" in {
+  "端到端流式处理" should "处理100万条数据（Source → Transform → Sink）" taggedAs Benchmark in {
     println("\n" + "="*70)
     println("性能测试 3: 端到端流式处理 - 100万条数据")
     println("="*70)
@@ -271,7 +272,7 @@ class MySQLPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndAfter
     result shouldBe Done
   }
 
-  "性能对比总结" should "生成完整性能报告" in {
+  "性能对比总结" should "生成完整性能报告" taggedAs Benchmark in {
     println("\n" + "="*70)
     println("🎯 PekkoSync MySQL批量同步性能报告")
     println("="*70)

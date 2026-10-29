@@ -15,9 +15,16 @@ object BootstrapJournal {
   final case class Read(reply:ActorRef[BootstrapProgress]) extends Command
   final case class Write(expected:Long,value:BootstrapProgress,reply:ActorRef[Result]) extends Command
   final case class Cancel(reply:ActorRef[BootstrapProgress]) extends Command
+  private[workflow] final case class ResumePendingB(expected:Long,executionId:String,definition:String,permit:String,reply:ActorRef[String]) extends Command
+  private final case class ResumeChecked(expected:Long,executionId:String,definition:String,accepted:Option[Boolean],reply:ActorRef[String]) extends Command
   final case class Result(accepted:Boolean,state:BootstrapProgress)
   final case class Advanced(state:BootstrapProgress) extends CborSerializable
-  def apply(id:String):Behavior[Command]=Behaviors.setup { _=>
+  def apply(id:String,validatePendingB:(String,BootstrapProgress)=>Future[Boolean]=(_,_)=>Future.successful(false)):Behavior[Command]=Behaviors.setup { ctx=>
+    def eligible(s:BootstrapProgress,expected:Long,execution:String,definition:String):Boolean=
+      s.revision==expected && s.phase=="PAUSED" && s.failure.contains("local_release_unconfirmed") &&
+        execution.nonEmpty && s.executionId==execution && definition.nonEmpty && s.definition==definition && !s.cancelRequested &&
+        !s.planned && s.upper.isEmpty && s.nextLower.isEmpty && s.index==0 && s.attempt==0 && s.window.isEmpty &&
+        s.manifest.isEmpty && s.appliedPage==0 && s.fence.isEmpty && s.deltaAfter==0 && s.batchSequence==0 && s.completionRoot.isEmpty
     EventSourcedBehavior[Command,Advanced,BootstrapProgress](PersistenceId.ofUniqueId("bootstrap-v1-"+id),BootstrapProgress(),
       (s,c)=>c match {
         case Read(r)=>Effect.reply(r)(s)
@@ -29,6 +36,17 @@ object BootstrapJournal {
         case Cancel(r)=>
           if(s.cancelRequested || s.phase=="CANCELED" || s.phase=="PAUSED")Effect.reply(r)(s)
           else Effect.persist(Advanced(s.copy(revision=s.revision+1,phase="CANCELING",cancelRequested=true))).thenReply(r)(identity)
+        case ResumePendingB(expected,execution,definition,permit,r)=>
+          if(!eligible(s,expected,execution,definition) || !permit.matches("[A-Za-z0-9_-]{1,128}"))Effect.reply(r)("REJECTED")
+          else {
+            val checked=try validatePendingB(permit,s) catch {case scala.util.control.NonFatal(e)=>Future.failed(e)}
+            ctx.pipeToSelf(checked)(result=>ResumeChecked(expected,execution,definition,result.toOption,r))
+            Effect.none
+          }
+        case ResumeChecked(expected,execution,definition,accepted,r)=>
+          if(accepted.isEmpty)Effect.reply(r)("UNKNOWN")
+          else if(!accepted.contains(true) || !eligible(s,expected,execution,definition))Effect.reply(r)("REJECTED")
+          else Effect.persist(Advanced(s.copy(revision=s.revision+1,phase="QUEUED",failure=None))).thenReply(r)(_=>"ACCEPTED")
       },(_,e)=>e.state)
   }
 }
@@ -37,6 +55,8 @@ final class BootstrapJournalAccess(ref:ActorRef[BootstrapJournal.Command])(impli
   private implicit val timeout:Timeout=Timeout(10.seconds)
   def read():Future[BootstrapProgress]=ref.ask(BootstrapJournal.Read)
   def cancel():Future[BootstrapProgress]=ref.ask(BootstrapJournal.Cancel)
+  private[workflow] def resumePendingB(expected:Long,executionId:String,definition:String,permit:String):Future[String]=
+    ref.ask(r=>BootstrapJournal.ResumePendingB(expected,executionId,definition,permit,r))
   def update(f:BootstrapProgress=>BootstrapProgress):Future[BootstrapProgress]={
     def loop(left:Int):Future[BootstrapProgress]=read().flatMap {s=>
       val proposed=f(s)

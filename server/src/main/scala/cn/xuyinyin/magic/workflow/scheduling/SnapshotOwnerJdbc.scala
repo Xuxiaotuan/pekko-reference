@@ -29,6 +29,16 @@ object SnapshotOwnerJdbc {
     config.setJdbcUrl(taggedUrl(config.getJdbcUrl,ctx.identity,role))
     config.setDriverClassName(classOf[SnapshotOwnerJdbcDriver].getName)
   }
+  /** Register a direct JDBC connection before it can issue application SQL. */
+  def open(url:String,user:String,password:String,role:String,managed:Boolean=false):Connection={
+    if(!managed)java.sql.DriverManager.getConnection(url,user,password)
+    else {
+      val ctx=context.getOrElse(throw new IllegalStateException("managed owner bootstrap is missing"))
+      require(ctx.routes.contains(endpoint(url)),"database endpoint is not in the fixed managed manifest")
+      val props=new Properties();props.setProperty("user",user);props.setProperty("password",password)
+      new SnapshotOwnerJdbcDriver().connect(taggedUrl(url,ctx.identity,role),props)
+    }
+  }
   def databaseUser(c:Connection):String={
     val q=c.createStatement();q.setQueryTimeout(5)
     try {val r=q.executeQuery("SELECT USER()");try {require(r.next());val name=r.getString(1);val split=name.lastIndexOf('@');if(split<0)name else name.substring(0,split)}finally r.close()}finally q.close()

@@ -163,7 +163,7 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
   }
   private def cancelStep():Unit={
     val s=logStore.subscription(id)
-    s.foreach {sub=>if(sub.status=="B_PENDING")logStore.cancelPending(id)
+    s.foreach {sub=>if(sub.status=="B_PENDING")capture.cancelPending(id)
       else if(sub.status=="CAPTURE_READY"){capture.unsubscribe(id);poll("K"){logStore.subscription(id).exists(_.k.nonEmpty)}}}
     val finalSub=logStore.subscription(id)
     if(target.activation.nonEmpty && finalSub.exists(_.k.nonEmpty))while(replay(tail=true)){}
@@ -248,7 +248,7 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
     logStore.subscription(id) match {
       case Some(sub) if sub.status=="B_PENDING"=>
         // Bind can win after the read. A known effective route must progress through K.
-        try logStore.cancelPending(id) catch {
+        try capture.cancelPending(id) catch {
           case e:IllegalArgumentException if logStore.subscription(id).exists(_.status=="CAPTURE_READY")=>return true
         }
       case Some(sub) if sub.status=="CAPTURE_READY"=>

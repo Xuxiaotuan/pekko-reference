@@ -13,9 +13,11 @@ final case class CdcKernelOutcome(progress:BootstrapProgress,releaseConfirmed:Bo
   validationComplete:Boolean,nextDelayMillis:Long,initializationEvidence:Option[String])
 private[cdc] final class CdcKernelDeferred extends IllegalStateException("bounded validation cache occupied")
 trait CdcPlatformKernel {
+  def prepareManagedManifest():String=throw new IllegalStateException("managed resource manifest unavailable")
   def start():Unit
   def captures:Vector[CdcCaptureView]
   def run(task:CdcTaskRequest,id:String,cancel:Boolean,continuation:Option[BootstrapProgress],stop:()=>Boolean,workPool:String):CdcKernelOutcome
+  def requestStop():Unit=()
   def closeAndVerify():Boolean
   /** None permits a cold activation; Some restricts admission to the bounded pinned validation set. */
   def admissibleTasks(pool:String):Option[Set[String]]=None
@@ -24,16 +26,24 @@ trait CdcPlatformKernel {
 
 /** One coordinator, two independent work budgets, no Future or Actor allocated per cold index row. */
 final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,val limits:CdcPlatformLimits,
-  polling:Boolean=true,pollIntervalMillis:Long=100L) extends CdcTaskService {
+  polling:Boolean=true,pollIntervalMillis:Long=100L,private[cdc] val managedOwner:Option[CdcManagedOwner]=None,
+  private[cdc] val recoverManaged:()=>Unit=()=>(),private[cdc] val guardianCheck:()=>Unit=()=>()) extends CdcTaskService {
   val runtimeAttemptId:String=UUID.randomUUID().toString
   private def threads(label:String):ThreadFactory=(r:Runnable)=>{val t=new Thread(r,"cdc-platform-"+label+"-"+runtimeAttemptId.take(8));t.setDaemon(true);t}
   private val controls=Executors.newFixedThreadPool(2,threads("control"))
   private val workers=Executors.newFixedThreadPool(limits.snapshotSteps+limits.tailSteps,threads("step"))
   private val clock=Executors.newSingleThreadScheduledExecutor(threads("clock"))
+  private val guardianClock=if(managedOwner.nonEmpty)Some(Executors.newSingleThreadScheduledExecutor(threads("guardian")))else None
   private val controlEc=ExecutionContext.fromExecutorService(controls)
   private val workerEc=ExecutionContext.fromExecutorService(workers)
   private val active=new AtomicInteger();private val pending=new AtomicInteger();private val ticking=new AtomicBoolean()
   private val stopping=new AtomicBoolean();private val stopped=new AtomicBoolean();private val closingCheck=new AtomicBoolean()
+  private val markingStartupFailure=new AtomicBoolean()
+  private val startupFailedFlag=new AtomicBoolean()
+  private val guardianLost=new AtomicBoolean()
+  @volatile private var startupFailurePending=false
+  @volatile private var recoveryPending=false
+  @volatile private var nextRecoveryNanos=0L
   @volatile private var ownerGranted=false
   @volatile private var ownerState="INITIALIZING"
   @volatile private var reason=Option.empty[String]
@@ -44,15 +54,59 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
   private val initialized=Promise[Unit]()
   private val stopRequested=Promise[Boolean]()
   private def now=System.currentTimeMillis()
+  private def startOwner():Unit={
+    var exhausted=false
+    val recoveryProven=if(managedOwner.nonEmpty)try {guardianCheck();recoverManaged();guardianCheck();true} catch {
+      case e:CdcPlatformException if e.code=="AUTOMATIC_RECOVERY_EXHAUSTED"=>exhausted=true;false
+      case NonFatal(e)=>org.slf4j.LoggerFactory.getLogger(getClass).warn("CDC managed recovery remains paused ({})",e.getClass.getName);false
+    }else true
+    if(!recoveryProven){recoveryPending= !exhausted;nextRecoveryNanos=System.nanoTime()+1000000000L;ownerState="UNKNOWN";reason=Some(if(exhausted)"AUTOMATIC_RECOVERY_EXHAUSTED"else"OWNER_RELEASE_UNPROVEN")}
+    else if(!stopping.get() && store.beginOwner(runtimeAttemptId,now,managedOwner)){
+      recoveryPending=false
+      ownerGranted=true
+      if(!stopping.get()){
+        if(managedOwner.nonEmpty){store.recordManagedManifest(runtimeAttemptId,kernel.prepareManagedManifest(),now);guardianCheck()}
+        if(!stopping.get() && !guardianLost.get()){
+          kernel.start()
+          if(!stopping.get() && !guardianLost.get())ownerState="ACTIVE"
+        }
+      }
+    }else {recoveryPending=managedOwner.nonEmpty && !stopping.get();nextRecoveryNanos=System.nanoTime()+1000000000L;ownerState="UNKNOWN";reason=Some("OWNER_RELEASE_UNPROVEN")}
+  }
+  private def markStartupFailure():Unit=if(startupFailurePending && markingStartupFailure.compareAndSet(false,true))try {
+    store.ownerAttempt match {
+      case Some((attempt,status)) if attempt==runtimeAttemptId && Set("ACTIVE","UNKNOWN")(status)=>
+        store.endOwner(runtimeAttemptId,confirmed=false,now)
+        if(store.ownerAttempt.contains(runtimeAttemptId->"UNKNOWN"))startupFailurePending=false
+      case _=>startupFailurePending=false
+    }
+  }catch{case NonFatal(_)=>()}finally markingStartupFailure.set(false)
+  private def startupFailed(e:Throwable):Unit={
+    startupFailedFlag.set(true)
+    recoveryPending=false;startupFailurePending=managedOwner.nonEmpty
+    ownerState=if(startupFailurePending)"UNKNOWN"else"FAILED";reason=Some(if(startupFailurePending)"RELEASE_UNKNOWN"else"STORAGE_UNAVAILABLE")
+    initialized.tryFailure(new CdcPlatformException("STORAGE_UNAVAILABLE"))
+    // A partially started Reader must stop before any potentially blocking database read.
+    stopRuntime()
+    markStartupFailure()
+  }
+  private val schedule:Option[ScheduledFuture[_]]=if(polling)Some(clock.scheduleWithFixedDelay(new Runnable {def run():Unit={pollNow();()}},pollIntervalMillis,pollIntervalMillis,TimeUnit.MILLISECONDS))else None
+  // Safety checks are independent of scheduling and of both control threads, even with polling disabled.
+  guardianClock.foreach(_.scheduleWithFixedDelay(new Runnable {def run():Unit={
+    if(!stopping.get())try guardianCheck() catch {case NonFatal(_)=>
+      if(guardianLost.compareAndSet(false,true)){
+        startupFailedFlag.set(true);startupFailurePending=true;recoveryPending=false
+        ownerState="UNKNOWN";reason=Some("GUARDIAN_UNAVAILABLE")
+        stopRuntime()
+      }
+    }
+  }},100L,1000L,TimeUnit.MILLISECONDS))
+  // Start only after stopRuntime's scheduled handles have been initialized.
   Future {
     store.initialize()
-    if(store.beginOwner(runtimeAttemptId,now)){
-      ownerGranted=true
-      if(!stopping.get()){kernel.start();ownerState="ACTIVE"}
-    }else {ownerState="UNKNOWN";reason=Some("OWNER_RELEASE_UNPROVEN")}
+    startOwner()
     initialized.trySuccess(())
-  }(controlEc).failed.foreach {e=>ownerState="FAILED";reason=Some("STORAGE_UNAVAILABLE");initialized.tryFailure(new CdcPlatformException("STORAGE_UNAVAILABLE"))}(ExecutionContext.parasitic)
-  private val schedule:Option[ScheduledFuture[_]]=if(polling)Some(clock.scheduleWithFixedDelay(new Runnable {def run():Unit={pollNow();()}},pollIntervalMillis,pollIntervalMillis,TimeUnit.MILLISECONDS))else None
+  }(controlEc).failed.foreach(startupFailed)(ExecutionContext.parasitic)
   def status:CdcPlatformStatus=CdcPlatformStatus(true,ownerState,reason,active.get(),limits.snapshotSteps+limits.tailSteps)
   private def io[A](f: =>A):Future[A]={
     if(stopped.get())return Future.failed(new CdcPlatformException("CDC_PLATFORM_STOPPING"))
@@ -87,7 +141,11 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
     }
   }
   def pollNow():Future[Unit]={
-    if(stopping.get() || ownerState!="ACTIVE" || !ticking.compareAndSet(false,true))Future.successful(())
+    if(startupFailurePending && !stopping.get())Future {markStartupFailure()}(controlEc)
+    else if(recoveryPending && !stopping.get() && System.nanoTime()>=nextRecoveryNanos && ticking.compareAndSet(false,true)){
+      Future {startOwner()}(controlEc).transform {r=>ticking.set(false);r.failed.foreach(startupFailed);r}(ExecutionContext.parasitic)
+    }
+    else if(stopping.get() || ownerState!="ACTIVE" || !ticking.compareAndSet(false,true))Future.successful(())
     else {
       val workEntered=new AtomicBoolean()
       io {
@@ -105,11 +163,12 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
             case None=>more=false
             case Some(g)=>left-=1;active.incrementAndGet()
               Future {
+                if(stopping.get() || guardianLost.get())throw new CdcKernelDeferred
                 val current=store.getRecord(g.task.view.taskId).get
                 val out=kernel.run(current.definition,current.view.taskId,current.view.desiredState=="CANCELED",store.continuation(g),()=>stopping.get(),g.pool)
                 if(out.releaseConfirmed)store.finish(g,out.progress,out.initializationEvidence,"ADMISSION_READY",out.didWork,out.validationComplete,
                   if(out.progress.phase=="STREAMING")limits.tailDelayMillis else math.max(limits.snapshotDelayMillis,out.nextDelayMillis),now)
-                else store.finishUnknown(g,ExecutionFailure.ReleaseUnknown,now)
+                else {store.finishUnknown(g,ExecutionFailure.ReleaseUnknown,now);if(managedOwner.nonEmpty){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN")}}
               }(workerEc).onComplete {result=>
                 result match {
                   case Failure(_:CdcKernelDeferred)=>
@@ -118,7 +177,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
                     val failure=ExecutionFailure.from(e,"cdc-step")
                     val code=failure.code
                     // A failed disposition is not permission to drop a persistent grant.
-                    try {if(failure.releaseConfirmed)store.finishFailureReleased(g,code,now)else store.finishUnknown(g,code,now)}catch {case NonFatal(_)=>ownerState="UNKNOWN";reason=Some("STORAGE_UNAVAILABLE")}
+                    try {if(failure.releaseConfirmed)store.finishFailureReleased(g,code,now)else {store.finishUnknown(g,code,now);if(managedOwner.nonEmpty){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN")}}}catch {case NonFatal(_)=>ownerState="UNKNOWN";reason=Some("STORAGE_UNAVAILABLE")}
                   case _=>()
                 }
                 active.decrementAndGet()
@@ -142,7 +201,9 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
     */
   def stopRuntime():Future[Boolean]={
     if(stopping.compareAndSet(false,true)){
-      schedule.foreach(_.cancel(false));ownerState="STOPPING"
+      guardianClock.foreach(_.shutdown());schedule.foreach(_.cancel(false))
+      if(guardianLost.get()){ownerState="UNKNOWN";reason=Some("GUARDIAN_UNAVAILABLE")}else ownerState="STOPPING"
+      try kernel.requestStop() catch {case NonFatal(_)=>startupFailedFlag.set(true)}
       clock.schedule(new Runnable {def run():Unit={
         if(!stopped.get()){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN");stopRequested.trySuccess(false)}
       }},10L,TimeUnit.SECONDS)
@@ -150,7 +211,9 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
         if(initialized.isCompleted && active.get()==0 && !ticking.get() && !stopped.get() && closingCheck.compareAndSet(false,true)){
           Future {
             val clean=kernel.closeAndVerify()
-            val persisted=if(ownerGranted)store.endOwner(runtimeAttemptId,clean,now)else clean
+            val persisted=if(ownerGranted)store.endOwner(runtimeAttemptId,clean && !startupFailedFlag.get(),now)
+              else if(startupFailedFlag.get()){markStartupFailure();false} // beginOwner may have committed without its reply
+              else clean
             if(persisted){
               stopped.set(true);ownerState="STOPPED";reason=None;stopRequested.trySuccess(true)
               clock.shutdown();workers.shutdown();controls.shutdown()

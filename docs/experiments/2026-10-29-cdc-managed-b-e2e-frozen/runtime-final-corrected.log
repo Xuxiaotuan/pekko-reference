@@ -1,0 +1,76 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] Passed: Total 0, Failed 0, Errors 0, Passed 0
+[info] No tests to run for Test / testOnly
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcPlatformRuntime.scala:9:28: Unused import
+[warn] import scala.util.{Failure,Success}
+[warn]                            ^
+[warn] one warning found
+[info] done compiling
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[info] done compiling
+22:28:11,058 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+22:28:11,058 |-INFO in ch.qos.logback.classic.util.ContextInitializer@34354c8a - No custom configurators were discovered as a service.
+22:28:11,058 |-INFO in ch.qos.logback.classic.util.ContextInitializer@34354c8a - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:28:11,059 |-INFO in ch.qos.logback.classic.util.ContextInitializer@34354c8a - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:28:11,059 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+22:28:11,059 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+22:28:11,060 |-INFO in ch.qos.logback.classic.util.ContextInitializer@34354c8a - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+22:28:11,060 |-INFO in ch.qos.logback.classic.util.ContextInitializer@34354c8a - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:28:11,061 |-INFO in ch.qos.logback.classic.util.ContextInitializer@34354c8a - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:28:11,061 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+22:28:11,061 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+22:28:11,096 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+22:28:11,096 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:28:11,099 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+22:28:11,110 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+22:28:11,110 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:28:11,110 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+22:28:11,110 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+22:28:11,111 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+22:28:11,111 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+22:28:11,111 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+22:28:11,111 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+22:28:11,112 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+22:28:11,112 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+22:28:11,112 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+22:28:11,112 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+22:28:11,112 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@1a307b97 - End of configuration.
+22:28:11,113 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@3c98e3f6 - Registering current configuration as safe fallback point
+22:28:11,113 |-INFO in ch.qos.logback.classic.util.ContextInitializer@34354c8a - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 52 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+22:28:11.228 [31mWARN [0;39m [36m[cdc-platform-control-6aa399c2][0;39m [1;35m[c.x.m.w.cdc.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalStateException)
+[info] CdcPlatformRuntimeSpec:
+[info] bounded CDC runtime
+[info] - should retry recovery after a transient proof lookup failure without activating early
+[info] - should request stop after partial reader startup before a blocked owner-state write
+[info] - should never report a clean stop when an owner commit reply and its readback are lost
+[info] - should pause and retain the owner when guardian attestation is lost
+[info] - should signal reader stop on guardian loss even when both control threads are blocked
+[info] - should never reactivate when guardian is lost during reader startup
+[info] - should bind a unique durable owner attempt to its managed worker identity
+[info] - should not start the reader when its managed resource manifest cannot be proven *** FAILED ***
+[info]   "[ACTIVE]" was not equal to "[UNKNOWN]" (CdcPlatformRuntimeSpec.scala:232)
+[info] - should let idle streaming tasks yield while another table initializes
+[info] - should bound a blocked maintenance close without releasing its durable owner
+[info] Run completed in 12 seconds, 849 milliseconds.
+[info] Total number of tests run: 10
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 9, failed 1, canceled 0, ignored 0, pending 0
+[info] *** 1 TEST FAILED ***
+[error] Failed tests:
+[error] 	cn.xuyinyin.magic.workflow.cdc.CdcPlatformRuntimeSpec
+[error] (pekko-server / Test / testOnly) sbt.TestsFailedException: Tests unsuccessful
+[error] Total time: 18 s, completed 2026年10月29日 下午10:28:23

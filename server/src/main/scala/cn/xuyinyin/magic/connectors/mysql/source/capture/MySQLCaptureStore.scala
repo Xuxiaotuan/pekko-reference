@@ -7,6 +7,63 @@ import java.util.concurrent.{Semaphore, TimeUnit}
 import java.util.concurrent.atomic.AtomicBoolean
 import spray.json._
 
+/** Traverses the actual D ACK's immutable parent chain, with a bounded recovery budget. */
+private[capture] object CaptureAckProof {
+  final case class Result(anchorInChain:Boolean,barrierReferenced:Boolean,anchorOffsetMatches:Boolean,referenced:Set[Long])
+  def inspect(head:Long,anchor:Long,barrier:Long,expectedOffset:String,read:Long=>Map[String,String]):Result={
+    val deadline=System.nanoTime()+15000000000L
+    var next=Option(head);var count=0;var referenceCount=0;var foundAnchor=false;var foundBarrier=false;var sameOffset=false
+    val referenced=scala.collection.mutable.Set.empty[Long]
+    while(next.nonEmpty){
+      require(count<4096 && System.nanoTime()<deadline,"ACK proof budget exceeded")
+      val seq=next.get;val current=read(seq);count+=1
+      require(current("kind")=="ACK","ACK parent is not an ACK")
+      val payload=current("payload").parseJson.asJsObject.fields
+      val offset=MySQLCdcGroup.canonical(payload("offset"))
+      require(current("table_name")==MySQLCdcGroup.hash(offset),"ACK offset binding conflict")
+      if(seq==head)require(offset==expectedOffset,"actual D ACK offset conflict")
+      if(seq==anchor){foundAnchor=true;sameOffset=offset==expectedOffset}
+      def reference(v:JsValue):Long={
+        require(System.nanoTime()<deadline,"ACK proof budget exceeded")
+        val f=v.asJsObject.fields;val n=f("sequence").asInstanceOf[JsNumber].value.toLongExact
+        require(n<seq,"capture proof cycle")
+        val target=read(n);require(target("digest")==f("digest").asInstanceOf[JsString].value,"capture proof digest conflict")
+        n
+      }
+      payload("references").asInstanceOf[JsArray].elements.foreach {value=>
+        referenceCount+=1;require(referenceCount<=65536,"ACK reference proof budget exceeded")
+        val n=reference(value);referenced+=n
+        if(n==barrier){require(read(n)("kind")=="BARRIER","B reference is not a barrier");foundBarrier=true}
+      }
+      next=if(payload("parent")==JsNull)None else Some(reference(payload("parent")))
+    }
+    Result(foundAnchor,foundBarrier,sameOffset,referenced.toSet)
+  }
+}
+
+/** Stable, bounded wake identities; each slot is one independently observable INSERT. */
+object CaptureWake {
+  val MaxAttempts=32
+  def nextAvailable(exists:Int=>Boolean):Option[Int]=(0 until MaxAttempts).find(n=> !exists(n))
+  def table(capture:String):String="wake:"+capture
+  def generation(boot:String,slot:Int):String={
+    require(boot.matches("[A-Za-z0-9-]{1,120}") && slot>=0 && slot<MaxAttempts)
+    boot+"."+slot
+  }
+  def operation(capture:String,boot:String,slot:Int):String=MySQLCdcGroup.hash(capture+"|wake|"+generation(boot,slot))
+  def decode(operation:String,table:String,generation:String):Option[(String,String)]={
+    val parts=generation.split("\\.",-1)
+    val capture=table.stripPrefix("wake:")
+    if(!table.startsWith("wake:") || !capture.matches("[A-Za-z0-9_-]{1,64}") || parts.length!=2 ||
+      !parts(0).matches("[A-Za-z0-9-]{1,120}") || !parts(1).matches("0|[1-9][0-9]?") ||
+      parts(1).toInt>=MaxAttempts || operation!=operationId(capture,generation)) None
+    else Some(capture->parts(0))
+  }
+  private def operationId(capture:String,generation:String):String=MySQLCdcGroup.hash(capture+"|wake|"+generation)
+}
+
+final case class BoundBProof(mode:String,referencedSequences:Set[Long])
+
 /** One source writer; routing changes, immutable records and their evidence share transactions.
   * No automatic truncation or owner takeover. SDK Offset tables remain SDK-owned.
   */
@@ -152,18 +209,36 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
   private def find(c:Connection,id:String):Option[CaptureSubscription]=rows(c,"SELECT * FROM pekko_capture_subscriptions WHERE capture_id=? AND request_id=?",captureId,id).headOption.map(checked(c,_))
   def subscription(id:String):Option[CaptureSubscription]=connection(find(_,id))
   def hasActive(table:String):Boolean=connection {c=>rows(c,"SELECT request_id FROM pekko_capture_subscriptions WHERE capture_id=? AND table_name=? AND status IN ('B_PENDING','CAPTURE_READY') LIMIT 1",captureId,table).nonEmpty}
-  def cancelPending(id:String):Unit=tx {c=>
+  private[capture] def cancelPending(id:String):Unit=tx {c=>
     val s=find(c,id).getOrElse(throw new IllegalArgumentException("unknown subscription"))
     require(s.status=="B_PENDING" || s.status=="CANCELED","capture already effective; K required")
     appendRaw(c,"cancel:"+id,"CANCEL",s.table,id,s.schemaId,id)
     update(c,"UPDATE pekko_capture_subscriptions SET status='CANCELED' WHERE capture_id=? AND request_id=?",captureId,id)
   }
   def markerId(id:String,stop:Boolean):String=MySQLCdcGroup.hash(captureId+"|"+(if(stop)"K" else "B")+"|"+id)
+  def wakeId(ownerBoot:String):String=MySQLCdcGroup.hash(captureId+"|wake|"+ownerBoot)
+  private def wakeOwner(c:Connection,operation:String,table:String,generation:String):Option[String]={
+    val named=CaptureWake.decode(operation,table,generation)
+    val legacy=if(table=="pekko_capture_control" && generation.matches("[A-Za-z0-9-]{1,128}")){
+      val captures=rows(c,"SELECT capture_id FROM pekko_capture_readers WHERE lineage=? LIMIT 33",lineage)
+      require(captures.size<=32,"wake capture inventory exceeds bound")
+      captures.find(r=>operation==MySQLCdcGroup.hash(r("capture_id")+"|wake|"+generation)).map(r=>r("capture_id")->generation)
+    }else None
+    named.orElse(legacy).filter {case(capture,_)=>rows(c,"SELECT 1 FROM pekko_capture_readers WHERE capture_id=? AND lineage=? LIMIT 1",capture,lineage).nonEmpty}.map(_._2)
+  }
+  def validWake(operation:String,table:String,generation:String):Boolean=CaptureWake.decode(operation,table,generation).nonEmpty || connection(c=>wakeOwner(c,operation,table,generation).nonEmpty)
   def markerIntent(operationId:String,table:String,generation:String,stop:Boolean):Option[CaptureSubscription]=connection {c=>
     rows(c,"SELECT * FROM pekko_capture_subscriptions WHERE capture_id=? AND table_name=? AND generation=?",captureId,table,generation)
       .map(checked(c,_)).find(s=>markerId(s.requestId,stop)==operationId)
   }
-  def register(id:String,table:String,generation:String,schemaId:String):CaptureSubscription=tx {c=>
+  def register(id:String,table:String,generation:String,schemaId:String):CaptureSubscription=
+    registerInternal(id,table,generation,schemaId,None)
+  /** Record the verified SDK offset before any source marker write can be attempted. */
+  def registerAnchored(id:String,table:String,generation:String,schemaId:String,offset:String):CaptureSubscription={
+    val ack=verifiedOffsetSequence(offset)
+    registerInternal(id,table,generation,schemaId,Some(offsetKey(offset)->ack))
+  }
+  private def registerInternal(id:String,table:String,generation:String,schemaId:String,anchor:Option[(String,Long)]):CaptureSubscription=tx {c=>
     require(id.matches("[A-Za-z0-9_-]{1,128}") && table.matches("[A-Za-z_][A-Za-z0-9_]{0,127}") && generation.matches("[A-Za-z0-9_-]{1,128}"))
     find(c,id) match {
       case Some(s)=>require(s.table==table && s.generation==generation && s.schemaId==schemaId,"subscription request conflict");s
@@ -172,6 +247,13 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
         require(rows(c,"SELECT request_id FROM pekko_capture_subscriptions WHERE capture_id=? AND table_name=? AND status IN ('B_PENDING','CAPTURE_READY')",captureId,table).isEmpty,"table already subscribed")
         require(rows(c,"SELECT schema_id FROM pekko_capture_schemas WHERE capture_id=? AND table_name=?",captureId,table).headOption.exists(_("schema_id")==schemaId),"schema not ready")
         update(c,"INSERT INTO pekko_capture_subscriptions(capture_id,request_id,table_name,generation,status,schema_id) VALUES(?,?,?,?,'B_PENDING',?)",captureId,id,table,generation,schemaId)
+        anchor.foreach {case(offset,sequence)=>
+          val ack=frame(c,sequence);require(ack("kind")=="ACK" && ack("table_name")==MySQLCdcGroup.hash(offset),"anchor ACK changed")
+          verifyChain(c,sequence)
+          val payload=MySQLCdcGroup.canonical(JsObject("version"->JsNumber(1),"requestId"->JsString(id),
+            "generation"->JsString(generation),"offset"->offset.parseJson,"ack"->JsNumber(sequence),"digest"->JsString(ack("digest"))))
+          appendRaw(c,"B_INTENT:"+id,"B_INTENT",table,id,schemaId,payload)
+        }
         find(c,id).get
     }
   }
@@ -232,6 +314,95 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
     verifyChain(c,proof("seq").toLong);proof("seq").toLong
   }
   def lastAckSequence:Long=connection(c=>rows(c,"SELECT COALESCE(MAX(seq),0) AS n FROM pekko_capture_log WHERE capture_id=? AND kind='ACK'",captureId).head("n").toLong)
+  /** Conservative proof: only the same completed, covered D may replay a newly anchored intent. */
+  def recoverablePendingAt(offset:String):Vector[String]={
+    val ack=verifiedOffsetSequence(offset);val canonical=offsetKey(offset)
+    connection {c=>
+      if(rows(c,"SELECT 1 FROM pekko_capture_fences WHERE capture_id=? AND seq IS NULL LIMIT 1",captureId).nonEmpty)Vector.empty
+      else {
+        val pending=rows(c,"SELECT * FROM pekko_capture_subscriptions WHERE capture_id=? AND status='B_PENDING' ORDER BY request_id",captureId).map(checked(c,_))
+        val valid=pending.forall {s=>
+          val record=rows(c,"SELECT seq FROM pekko_capture_log WHERE capture_id=? AND source_key=?",captureId,MySQLCdcGroup.hash("B_INTENT:"+s.requestId)).headOption
+          record.exists {r=>
+            val f=frame(c,r("seq").toLong);val p=f("payload").parseJson.asJsObject.fields
+            val anchored=p("ack").asInstanceOf[JsNumber].value.toLongExact;val a=frame(c,anchored)
+            r("seq").toLong>anchored && a("kind")=="ACK" && a("table_name")==MySQLCdcGroup.hash(canonical) && ackAncestor(c,ack,anchored) &&
+              rows(c,"SELECT 1 FROM pekko_capture_log WHERE capture_id=? AND source_key=?",captureId,MySQLCdcGroup.hash("B:"+s.requestId)).isEmpty &&
+              f("kind")=="B_INTENT" && f("table_name")==s.table && f("subscription_id")==s.requestId && f("schema_id")==s.schemaId &&
+              p.get("version").contains(JsNumber(1)) && p.get("requestId").contains(JsString(s.requestId)) &&
+              p.get("generation").contains(JsString(s.generation)) && p.get("offset").contains(canonical.parseJson) &&
+              p.get("digest").contains(JsString(a("digest")))
+          }
+        }
+        if(valid)pending.map(_.requestId)else Vector.empty
+      }
+    }
+  }
+  /** The pending-B variant also returns the D ACK references for reverse control proof. */
+  def recoverablePendingProofAt(offset:String,id:String):Option[BoundBProof]=connection {c=>
+    val canonical=offsetKey(offset)
+    if(rows(c,"SELECT 1 FROM pekko_capture_fences WHERE capture_id=? AND seq IS NULL LIMIT 1",captureId).nonEmpty ||
+      rows(c,"SELECT 1 FROM pekko_capture_subscriptions WHERE capture_id=? AND status='B_PENDING' AND request_id<>? LIMIT 1",captureId,id).nonEmpty)None
+    else find(c,id).filter(_.status=="B_PENDING").flatMap {s=>
+      val sealedSchema=schemaVersion(c,s.table,s.schemaId)
+      require(rows(c,"SELECT definition FROM pekko_capture_schemas WHERE capture_id=? AND table_name=? AND schema_id=?",captureId,s.table,s.schemaId)
+        .headOption.exists(_("definition")==sealedSchema.definition),"pending B schema registry conflict")
+      val intent=rows(c,"SELECT seq FROM pekko_capture_log WHERE capture_id=? AND source_key=?",captureId,MySQLCdcGroup.hash("B_INTENT:"+id)).headOption
+      val latest=rows(c,"SELECT seq FROM pekko_capture_log WHERE capture_id=? AND kind='ACK' AND table_name=? ORDER BY seq DESC LIMIT 1",captureId,MySQLCdcGroup.hash(canonical)).headOption
+      if(rows(c,"SELECT 1 FROM pekko_capture_log WHERE capture_id=? AND source_key=?",captureId,MySQLCdcGroup.hash("B:"+id)).nonEmpty)None
+      else for(i<-intent;h<-latest;result<-{
+        val sequence=i("seq").toLong;val f=frame(c,sequence);val p=f("payload").parseJson.asJsObject.fields
+        val anchor=p("ack").asInstanceOf[JsNumber].value.toLongExact;val original=frame(c,anchor)
+        require(sequence>anchor && f("kind")=="B_INTENT" && f("table_name")==s.table && f("subscription_id")==id && f("schema_id")==s.schemaId &&
+          p.get("version").contains(JsNumber(1)) && p.get("requestId").contains(JsString(id)) && p.get("generation").contains(JsString(s.generation)) &&
+          p.get("offset").contains(canonical.parseJson) && p.get("digest").contains(JsString(original("digest"))) &&
+          original("kind")=="ACK" && original("table_name")==MySQLCdcGroup.hash(canonical),"pending B intent proof conflict")
+        val proof=CaptureAckProof.inspect(h("seq").toLong,anchor,0L,canonical,n=>frame(c,n))
+        if(proof.anchorInChain && proof.anchorOffsetMatches)Some(BoundBProof("PENDING",proof.referenced))else None
+      })yield result
+    }
+  }
+  /** B already bound in L: distinguish a referenced barrier from safe replay at the original D. */
+  def recoverableBoundAt(offset:String,id:String):Option[BoundBProof]=connection {c=>
+    val canonical=offsetKey(offset)
+    if(rows(c,"SELECT 1 FROM pekko_capture_fences WHERE capture_id=? AND seq IS NULL LIMIT 1",captureId).nonEmpty ||
+      rows(c,"SELECT 1 FROM pekko_capture_subscriptions WHERE capture_id=? AND status='B_PENDING' LIMIT 1",captureId).nonEmpty)None
+    else find(c,id).filter(s=>s.status=="CAPTURE_READY" && s.b.nonEmpty && s.k.isEmpty && s.bSequence.nonEmpty).flatMap {s=>
+      val sealedSchema=schemaVersion(c,s.table,s.schemaId)
+      require(rows(c,"SELECT definition FROM pekko_capture_schemas WHERE capture_id=? AND table_name=? AND schema_id=?",captureId,s.table,s.schemaId)
+        .headOption.exists(_("definition")==sealedSchema.definition),"bound B schema registry conflict")
+      val intent=rows(c,"SELECT seq FROM pekko_capture_log WHERE capture_id=? AND source_key=?",captureId,MySQLCdcGroup.hash("B_INTENT:"+id)).headOption
+      val latest=rows(c,"SELECT seq FROM pekko_capture_log WHERE capture_id=? AND kind='ACK' AND table_name=? ORDER BY seq DESC LIMIT 1",captureId,MySQLCdcGroup.hash(canonical)).headOption
+      for(i<-intent;h<-latest;result<-{
+        val sequence=i("seq").toLong;val f=frame(c,sequence);val p=f("payload").parseJson.asJsObject.fields
+        val anchor=p("ack").asInstanceOf[JsNumber].value.toLongExact;val original=frame(c,anchor)
+        val originalOffset=MySQLCdcGroup.canonical(original("payload").parseJson.asJsObject.fields("offset"))
+        require(sequence>anchor && s.bSequence.get>sequence && f("kind")=="B_INTENT" && f("table_name")==s.table &&
+          f("subscription_id")==id && f("schema_id")==s.schemaId && p.get("version").contains(JsNumber(1)) &&
+          p.get("requestId").contains(JsString(id)) && p.get("generation").contains(JsString(s.generation)) &&
+          p.get("offset").contains(originalOffset.parseJson) && p.get("digest").contains(JsString(original("digest"))) &&
+          original("kind")=="ACK" && original("table_name")==MySQLCdcGroup.hash(originalOffset),"bound B intent proof conflict")
+        val proof=CaptureAckProof.inspect(h("seq").toLong,anchor,s.bSequence.get,canonical,n=>frame(c,n))
+        if(!proof.anchorInChain)None
+        else if(proof.barrierReferenced)Some(BoundBProof("COVERED",proof.referenced))
+        else if(proof.anchorOffsetMatches && originalOffset==canonical)Some(BoundBProof("REPLAY",proof.referenced))
+        else None
+      })yield result
+    }
+  }
+  /** verifiedOffsetSequence already checked the full chain and referenced digests. */
+  private def ackAncestor(c:Connection,latest:Long,ancestor:Long):Boolean={
+    var next=Option(latest)
+    while(next.nonEmpty && next.get>=ancestor){
+      if(next.contains(ancestor))return true
+      val fields=frame(c,next.get)("payload").parseJson.asJsObject.fields
+      next=fields("parent") match {
+        case JsNull=>None
+        case value=>Some(value.asJsObject.fields("sequence").asInstanceOf[JsNumber].value.toLongExact)
+      }
+    }
+    false
+  }
   def recoveryInventory:(Boolean,Boolean,Boolean,Boolean)=connection {c=>
     def any(sql:String)=rows(c,sql,captureId).nonEmpty
     val head=rows(c,"SELECT next_seq,used_bytes,frontier FROM pekko_capture_readers WHERE capture_id=?",captureId).head
@@ -264,6 +435,32 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
     rows(c,sql,captureId,captureId,captureId,after,limit).map {r=>
       val action=r("action");val operation=if(action=="SUBSCRIBE" || action=="STOP")markerId(r("identity_key"),action=="STOP")else fenceOperation(r("identity_key"))
       (r("cursor_key"),operation,action,r("table_name"),r("generation"))
+    }
+  }
+  /** Reverse-check a bounded page of source control rows against retained bindings. */
+  def controlsBound(controls:Vector[(String,String,String,String)],id:String,proof:BoundBProof,deadlineNanos:Long=Long.MaxValue):Boolean=connection {c=>
+    require(controls.size<=128,"control proof page too large")
+    controls.forall {case(operation,action,table,generation)=>
+      require(System.nanoTime()<deadlineNanos,"source control proof deadline exceeded")
+      if(action=="SUBSCRIBE" || action=="STOP"){
+        val rowsForGeneration=rows(c,"SELECT * FROM pekko_capture_subscriptions WHERE capture_id=? AND table_name=? AND generation=? LIMIT 129",captureId,table,generation)
+        require(rowsForGeneration.size<=128,"control proof generation too large")
+        rowsForGeneration.map(checked(c,_)).find(s=>markerId(s.requestId,action=="STOP")==operation).exists {s=>
+          val seq=if(action=="STOP" && s.k.nonEmpty)rows(c,"SELECT seq FROM pekko_capture_log WHERE capture_id=? AND source_key=?",captureId,MySQLCdcGroup.hash("K:"+s.requestId)).headOption.map(_("seq").toLong)
+            else if(action=="STOP")None
+            else s.bSequence
+          (action=="SUBSCRIBE" && s.requestId==id && s.status=="B_PENDING" && proof.mode=="PENDING") ||
+            seq.exists(n=>proof.referencedSequences(n) || (action=="SUBSCRIBE" && s.requestId==id && proof.mode=="REPLAY"))
+        }
+      }else if(Set("LOW","HIGH","F")(action)){
+        rows(c,"SELECT fence_id FROM pekko_capture_fences WHERE capture_id=? AND operation_id=?",captureId,operation).headOption.exists {r=>
+          val f=fenceOn(c,r("fence_id")).get;val sub=find(c,f.subscriptionId).get
+          f.action==action && f.sequence.exists(proof.referencedSequences) && sub.table==table && sub.generation==generation
+        }
+      }else if(action=="WAKE"){
+        wakeOwner(c,operation,table,generation).exists(boot=>
+          rows(c,"SELECT 1 FROM pekko_cdc_managed_owner_v1 WHERE boot_id=? LIMIT 1",boot).nonEmpty)
+      }else false
     }
   }
   private def verifyChain(c:Connection,head:Long):Unit={

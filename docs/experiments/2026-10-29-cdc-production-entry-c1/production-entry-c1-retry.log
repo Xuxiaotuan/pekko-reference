@@ -1,0 +1,83 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] Defining pekko-server / Test / testOptions
+[info] The new value will be used by pekko-server / Test / test / testOptions, pekko-server / Test / testOnly / testOptions, pekko-server / Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Passed: Total 0, Failed 0, Errors 0, Passed 0
+[info] No tests to run for Test / testOnly
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/CdcProductionEntryUnknownBSpec.scala:173:33: local var hiddenSocket in value $anonfun is never updated: consider using immutable val
+[warn]         var succeeded=false;var hiddenSocket:Option[Path]=None
+[warn]                                 ^
+[warn] one warning found
+[info] done compiling
+22:41:19,242 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+22:41:19,242 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7e1079b2 - No custom configurators were discovered as a service.
+22:41:19,242 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7e1079b2 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:41:19,243 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7e1079b2 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:41:19,243 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+22:41:19,243 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+22:41:19,244 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7e1079b2 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+22:41:19,244 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7e1079b2 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:41:19,244 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7e1079b2 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:41:19,244 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+22:41:19,245 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+22:41:19,273 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+22:41:19,273 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:41:19,275 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+22:41:19,284 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+22:41:19,284 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:41:19,284 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+22:41:19,284 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+22:41:19,285 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+22:41:19,285 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+22:41:19,285 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+22:41:19,286 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+22:41:19,286 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+22:41:19,286 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+22:41:19,286 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+22:41:19,286 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+22:41:19,286 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@39bc7321 - End of configuration.
+22:41:19,286 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@5986391 - Registering current configuration as safe fallback point
+22:41:19,286 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7e1079b2 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 42 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+22:41:19.700 [34mINFO [0;39m [36m[pool-8-thread-1-ScalaTest-running-CdcProductionEntryUnknownBSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+22:41:19.713 [34mINFO [0;39m [36m[pool-8-thread-1-ScalaTest-running-CdcProductionEntryUnknownBSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+22:43:21.408 [34mINFO [0;39m [36m[pool-8-thread-1-ScalaTest-running-CdcProductionEntryUnknownBSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown initiated...
+22:43:21.409 [34mINFO [0;39m [36m[pool-8-thread-1-ScalaTest-running-CdcProductionEntryUnknownBSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown completed.
+[info] CdcProductionEntryUnknownBSpec:
+[info] managed unknown B recovery
+[info] - should preserve isolation and complete field reconciliation for C1 *** FAILED ***
+[info]   java.lang.IllegalArgumentException: requirement failed: condition timed out: shared capture admission ready
+[info]   at scala.Predef$.require(Predef.scala:337)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcJournalWindowSupport$.awaitCondition(RealMySQLCdcJournalWindowSpec.scala:289)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcProductionEntryUnknownBSpec.$anonfun$new$3(CdcProductionEntryUnknownBSpec.scala:185)
+[info]   at org.scalatest.OutcomeOf.outcomeOf(OutcomeOf.scala:85)
+[info]   at org.scalatest.OutcomeOf.outcomeOf$(OutcomeOf.scala:83)
+[info]   at org.scalatest.OutcomeOf$.outcomeOf(OutcomeOf.scala:104)
+[info]   at org.scalatest.Transformer.apply(Transformer.scala:22)
+[info]   at org.scalatest.Transformer.apply(Transformer.scala:20)
+[info]   at org.scalatest.wordspec.AnyWordSpecLike$$anon$3.apply(AnyWordSpecLike.scala:1240)
+[info]   at org.scalatest.TestSuite.withFixture(TestSuite.scala:196)
+[info]   ...
+[info] Run completed in 2 minutes, 2 seconds.
+[info] Total number of tests run: 1
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 0, failed 1, canceled 0, ignored 0, pending 0
+[info] *** 1 TEST FAILED ***
+[error] Failed tests:
+[error] 	cn.xuyinyin.magic.workflow.integration.CdcProductionEntryUnknownBSpec
+[error] (pekko-server / Test / testOnly) sbt.TestsFailedException: Tests unsuccessful
+[error] Total time: 126 s (02:06), completed 2026年10月29日 下午10:43:21

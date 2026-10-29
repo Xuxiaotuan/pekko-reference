@@ -24,6 +24,8 @@ trait DebeziumBatchConsumer {
 
 trait DebeziumEngineAccess extends AutoCloseable {
   def start(consumer: DebeziumBatchConsumer): Future[Done]
+  /** Managed callers run this on their bounded close worker and track termination separately. */
+  def closeManaged():Unit=close()
   /** Unknown by default for external adapters; completion alone is not termination. */
   def localTerminationConfirmed:Boolean=false
 }
@@ -132,13 +134,14 @@ private[source] object RealDebeziumEngineAccess {
     }
   }
 
-  def defaultEngineBuilder(properties: Properties): EngineBuilder = (consumer, completion) =>
-    DebeziumEngine
+  def defaultEngineBuilder(properties: Properties, lifecycle: DebeziumEngine.ConnectorCallback = null): EngineBuilder = (consumer, completion) => {
+    val builder=DebeziumEngine
       .create[SourceRecord, Connect](ChangeEventFormat.of[Connect](classOf[Connect]))
       .using(properties)
       .using(completion)
-      .notifying(consumer)
-      .build()
+    if(lifecycle!=null)builder.using(lifecycle)
+    builder.notifying(consumer).build()
+  }
 
   def threadFactory(): ThreadFactory = (runnable: Runnable) => {
     val thread = new Thread(
@@ -176,7 +179,7 @@ final class RealDebeziumEngineAccess private[source] (
   import RealDebeziumEngineAccess._
 
   def this(properties: Properties) =
-    this(properties, RealDebeziumEngineAccess.defaultEngineBuilder(properties))
+    this(properties, null)
 
   private val started = new AtomicBoolean(false)
   private val closed = new AtomicBoolean(false)
@@ -185,6 +188,7 @@ final class RealDebeziumEngineAccess private[source] (
   private val logBoundary = new AtomicReference[LogBoundary](NoLogBoundary)
   private val closeError = new AtomicReference[IllegalStateException]()
   private val runnerFinished = new CountDownLatch(1)
+  private val pollingStarted = new CountDownLatch(1)
   private val callbacksInFlight = new AtomicInteger()
   private val completion = Promise[Done]()
   private val executor = Executors.newSingleThreadExecutor(threadFactory())
@@ -227,10 +231,14 @@ final class RealDebeziumEngineAccess private[source] (
         else completion.tryFailure(safeFailure(error))
       }
     }
+    val lifecycle = new DebeziumEngine.ConnectorCallback {
+      override def pollingStarted():Unit=RealDebeziumEngineAccess.this.pollingStarted.countDown()
+    }
 
     try {
       logBoundary.set(installLogBoundary(properties))
-      val created = buildEngine(changeConsumer, callback)
+      val created = if(buildEngine==null)defaultEngineBuilder(properties,lifecycle)(changeConsumer,callback)
+        else buildEngine(changeConsumer, callback)
       if (created == null) throw new IllegalStateException("Debezium engine builder returned null")
       engine.set(created)
       executor.execute(() => {
@@ -258,15 +266,28 @@ final class RealDebeziumEngineAccess private[source] (
     completion.future
   }
 
-  override def close(): Unit = {
+  override def close(): Unit = closeInternal(waitForStartingTasks=false)
+
+  override def closeManaged():Unit = closeInternal(waitForStartingTasks=true)
+
+  private def closeInternal(waitForStartingTasks:Boolean): Unit = {
     if (closed.compareAndSet(false, true)) {
       val engineAlreadyCompleted = completion.isCompleted
       closeRequested.set(true)
+      if (!started.get()) runnerFinished.countDown()
       val current = engine.get()
       var failure: IllegalStateException = null
       try {
         if (current != null && !engineAlreadyCompleted && runnerFinished.getCount != 0L) {
-          closeEngineWithRetry(current)
+          // Debezium 3.6.1 close can race initialization before task startup.
+          // Managed callers keep their bounded worker and report UNKNOWN while
+          // the SDK has not reached polling or finished its runner.
+          if(waitForStartingTasks && buildEngine==null) {
+            while(pollingStarted.getCount!=0L && runnerFinished.getCount!=0L)
+              pollingStarted.await(CloseRetryMillis,TimeUnit.MILLISECONDS)
+          }
+          if(runnerFinished.getCount!=0L)
+          closeEngineWithRetry(current,waitForStartingTasks)
         }
       } catch {
         case NonFatal(error) =>
@@ -306,7 +327,7 @@ final class RealDebeziumEngineAccess private[source] (
   override def localTerminationConfirmed:Boolean=
     runnerFinished.getCount==0L && executor.isTerminated && callbacksInFlight.get()==0
 
-  private def closeEngineWithRetry(current: Engine): Unit = {
+  private def closeEngineWithRetry(current: Engine,waitForStartingTasks:Boolean): Unit = {
     val deadline = System.nanoTime() + CloseTimeoutNanos
     var retry = true
     while (retry) {
@@ -314,7 +335,8 @@ final class RealDebeziumEngineAccess private[source] (
         current.close()
         retry = false
       } catch {
-        case NonFatal(error) if isStartingTasksFailure(error) && System.nanoTime() < deadline =>
+        case NonFatal(error) if isStartingTasksFailure(error) && runnerFinished.getCount!=0L &&
+          (waitForStartingTasks || System.nanoTime() < deadline) =>
           try Thread.sleep(CloseRetryMillis)
           catch {
             case interrupted: InterruptedException =>

@@ -12,6 +12,23 @@ final class SnapshotGuardianService(controlStore:SnapshotSupervisorStore,isolati
   private val receipts=scala.collection.mutable.Map.empty[(String,String),String]
   isolation.bindRegistry(controlStore.store.ownership.get)
   private def find(t:SnapshotWorkerLaunch)=isolation.managed.find(c=>t.identity.contains(c.identity))
+  /** Read-only worker challenge: independent of supervisor epoch and sequence. */
+  def attest(args:JsObject):JsObject=synchronized {
+    require(args.fields.keySet==Set("nonce","identity","profile"),"invalid worker attestation request")
+    val nonce=text(args,"nonce");require(nonce.matches("[A-Za-z0-9_-]{43}"),"invalid worker nonce")
+    val identity=args.fields("identity").convertTo[SnapshotOwnerIdentity]
+    val profile=text(args,"profile");require(profile.nonEmpty && profile.length<=128,"invalid worker profile")
+    val ticket=controlStore.launch(identity.bootId).getOrElse(throw new IllegalStateException("worker ticket missing"))
+    require(ticket.phase=="launched" && ticket.operation.isEmpty && ticket.identity.contains(identity) && ticket.profileHash==profile,
+      "worker launch ticket is not active")
+    require(controlStore.store.ownership.get.owner(identity.bootId).exists(o=>o.identity==identity && o.phase=="active"),"worker owner is not active")
+    val child=find(ticket).getOrElse(throw new IllegalStateException("original worker process capability unavailable"))
+    require(child.identity==identity && child.process.pid()==identity.pid && child.process.isAlive &&
+      child.process.info().startInstant().isPresent && child.process.info().startInstant().get().toString==identity.startIdentity,
+      "original worker process is not alive")
+    JsObject("nonce"->JsString(nonce),"identity"->identity.toJson,"profile"->JsString(profile),
+      "provider"->JsString("managed-child-jvm"),"alive"->JsBoolean(true))
+  }
   def handle(control:SupervisorControl,method:String,args:JsObject):JsObject=synchronized {
     controlStore.fenced(control){()}
     method match {

@@ -1,0 +1,569 @@
+22:38:56,077 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+22:38:56,078 |-INFO in ch.qos.logback.classic.util.ContextInitializer@b978d10 - No custom configurators were discovered as a service.
+22:38:56,078 |-INFO in ch.qos.logback.classic.util.ContextInitializer@b978d10 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:38:56,078 |-INFO in ch.qos.logback.classic.util.ContextInitializer@b978d10 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:38:56,081 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+22:38:56,081 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+22:38:56,085 |-INFO in ch.qos.logback.classic.util.ContextInitializer@b978d10 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 3 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+22:38:56,085 |-INFO in ch.qos.logback.classic.util.ContextInitializer@b978d10 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:38:56,086 |-INFO in ch.qos.logback.classic.util.ContextInitializer@b978d10 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:38:56,086 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+22:38:56,088 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+22:38:56,127 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+22:38:56,127 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:38:56,129 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+22:38:56,137 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+22:38:56,137 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:38:56,137 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+22:38:56,137 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+22:38:56,138 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+22:38:56,138 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+22:38:56,139 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+22:38:56,140 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+22:38:56,140 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+22:38:56,140 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+22:38:56,141 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+22:38:56,141 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+22:38:56,141 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@5b7a8434 - End of configuration.
+22:38:56,141 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@5c45d770 - Registering current configuration as safe fallback point
+22:38:56,141 |-INFO in ch.qos.logback.classic.util.ContextInitializer@b978d10 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 55 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+22:38:56.149 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+22:38:56.236 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+22:38:57,181 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+22:38:57,182 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - No custom configurators were discovered as a service.
+22:38:57,182 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:38:57,182 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:38:57,185 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+22:38:57,185 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+22:38:57,190 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 3 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+22:38:57,190 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:38:57,190 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:38:57,190 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+22:38:57,192 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+22:38:57,239 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+22:38:57,239 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:38:57,242 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+22:38:57,251 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+22:38:57,251 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:38:57,252 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+22:38:57,252 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+22:38:57,252 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+22:38:57,252 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+22:38:57,254 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+22:38:57,254 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+22:38:57,255 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+22:38:57,255 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+22:38:57,255 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+22:38:57,255 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+22:38:57,255 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@3a93b025 - End of configuration.
+22:38:57,255 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@35cabb2a - Registering current configuration as safe fallback point
+22:38:57,255 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 65 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+22:38:57.286 [34mINFO [0;39m [36m[main][0;39m [1;35m[cn.xuyinyin.magic.PekkoServer$][0;39m - Starting PekkoServer
+22:38:57.287 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.i.config.PekkoConfig$][0;39m - Loading Pekko-reference config...
+22:38:57.406 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.i.config.PekkoConfig$][0;39m - Pekko cluster node roles: coordinator, api-gateway, worker, worker-pump
+22:38:57.407 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.i.config.PekkoConfig$][0;39m - Loading Pekko-reference config done.
+22:38:57.408 [34mINFO [0;39m [36m[main][0;39m [1;35m[cn.xuyinyin.magic.PekkoServer$][0;39m - 
+
+██████╗ ███████╗██╗  ██╗██╗  ██╗ ██████╗     ███████╗███████╗██████╗ ██╗   ██╗███████╗██████╗
+██╔══██╗██╔════╝██║ ██╔╝██║ ██╔╝██╔═══██╗    ██╔════╝██╔════╝██╔══██╗██║   ██║██╔════╝██╔══██╗
+██████╔╝█████╗  █████╔╝ █████╔╝ ██║   ██║    ███████╗█████╗  ██████╔╝██║   ██║█████╗  ██████╔╝
+██╔═══╝ ██╔══╝  ██╔═██╗ ██╔═██╗ ██║   ██║    ╚════██║██╔══╝  ██╔══██╗╚██╗ ██╔╝██╔══╝  ██╔══██╗
+██║     ███████╗██║  ██╗██║  ██╗╚██████╔╝    ███████║███████╗██║  ██║ ╚████╔╝ ███████╗██║  ██║
+╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝     ╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝
+                  Pekko Server 0.1
+
+
+
+22:38:57.409 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.i.config.ConfigValidator$][0;39m - Configuration validation passed
+22:38:57.418 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+22:38:57.505 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+22:38:57.530 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown initiated...
+22:38:57.531 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown completed.
+22:38:57.533 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Starting...
+22:38:57.539 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Start completed.
+22:38:57.746 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+22:38:57.875 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://pekko-cluster-system-test@127.0.0.1:49955] with UID [8920664090022229956]
+22:38:57.882 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Starting up, Pekko version [1.1.3] ...
+22:38:57.932 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Registered cluster JMX MBean [pekko:type=Cluster]
+22:38:57.932 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Started up successfully
+22:38:57.940 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - No downing-provider-class configured, manual cluster downing required, see https://pekko.apache.org/docs/pekko/current/typed/cluster.html#downing
+22:38:57.955 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] is JOINING itself (with roles [coordinator, snapshot-owner-d20debd7-2c19-4dfc-ab93-220545d73947, worker-pump, api-gateway, dc-default, worker], version [0.0.0]) and forming new cluster
+22:38:57.955 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - is the new leader among reachable nodes (more leaders may exist)
+22:38:57.966 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Leader is moving node [pekko://pekko-cluster-system-test@127.0.0.1:49955] to [Up]
+22:38:58.188 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.bootstrap.PekkoClusterService$][0;39m - Pekko cluster system started with roles: coordinator, snapshot-owner-d20debd7-2c19-4dfc-ab93-220545d73947, worker-pump, api-gateway, dc-default, worker
+22:38:58.189 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.bootstrap.PekkoClusterService$][0;39m - ActorSystem initialized; HTTP binding result is reported separately
+22:38:58.197 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Starting...
+22:38:58.202 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Start completed.
+22:38:58.207 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown initiated...
+22:38:58.218 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown completed.
+22:38:58.234 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[c.x.magic.bootstrap.PekkoGuardian$][0;39m - Pekko System Guardian Launching, roles: coordinator,snapshot-owner-d20debd7-2c19-4dfc-ab93-220545d73947,worker-pump,api-gateway,dc-default,worker
+22:38:58.236 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.i.cluster.ClusterListener$][0;39m - ClusterListener starting up
+22:38:58.237 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-14][0;39m [1;35m[c.x.m.i.c.ClusterEventListener$][0;39m - ClusterEventListener started, monitoring cluster events
+22:38:58.238 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.i.cluster.HealthChecker$][0;39m - HealthChecker starting up
+22:38:58.238 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-15][0;39m [1;35m[c.x.m.i.cluster.ClusterListener$][0;39m - 🚀 Member is Up: UniqueAddress(pekko://pekko-cluster-system-test@127.0.0.1:49955,8920664090022229956) [Role: coordinator] [Address: pekko://pekko-cluster-system-test@127.0.0.1:49955]
+22:38:58.238 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-15][0;39m [1;35m[c.x.m.i.cluster.ClusterListener$][0;39m - 📋 New COORDINATOR joined - available for task coordination
+22:38:58.238 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-14][0;39m [1;35m[c.x.m.i.c.ClusterEventListener$][0;39m - Member is Up: pekko://pekko-cluster-system-test@127.0.0.1:49955
+22:38:58.238 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-15][0;39m [1;35m[c.x.m.i.cluster.ClusterListener$][0;39m - 👑 This node is now the cluster leader
+CLUSTER_EVENT: {"event_type":"member_event","member_address":"pekko://pekko-cluster-system-test@127.0.0.1:49955","roles":["coordinator","worker","worker-pump","api-gateway","dc-default","snapshot-owner-d20debd7-2c19-4dfc-ab93-220545d73947"],"severity":"INFO","status":"up","timestamp":"2026-10-29T14:38:58.238902Z"}
+22:38:58.240 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.i.cluster.HealthChecker$][0;39m - Started periodic health check every 30000ms
+22:38:58.240 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-14][0;39m [1;35m[c.x.m.i.c.ClusterEventListener$][0;39m - Leader changed: none -> pekko://pekko-cluster-system-test@127.0.0.1:49955
+CLUSTER_EVENT: {"event_type":"leader_changed","new_leader":"pekko://pekko-cluster-system-test@127.0.0.1:49955","old_leader":null,"severity":"INFO","timestamp":"2026-10-29T14:38:58.240269Z"}
+22:38:58.362 [1;31mERROR[0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.actor.LocalActorRefProvider][0;39m - guardian failed, shutting down system
+com.typesafe.config.ConfigException$Missing: /var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/mb-14777601688663877431/worker.conf: 1: No configuration setting found for key 'instance-aliases'
+	at com.typesafe.config.impl.SimpleConfig.findKeyOrNull(SimpleConfig.java:157)
+	at com.typesafe.config.impl.SimpleConfig.findOrNull(SimpleConfig.java:175)
+	at com.typesafe.config.impl.SimpleConfig.find(SimpleConfig.java:189)
+	at com.typesafe.config.impl.SimpleConfig.find(SimpleConfig.java:194)
+	at com.typesafe.config.impl.SimpleConfig.getList(SimpleConfig.java:263)
+	at com.typesafe.config.impl.SimpleConfig.getHomogeneousWrappedList(SimpleConfig.java:477)
+	at com.typesafe.config.impl.SimpleConfig.getObjectList(SimpleConfig.java:495)
+	at com.typesafe.config.impl.SimpleConfig.getConfigList(SimpleConfig.java:500)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension.<init>(TableSchedulingRuntime.scala:205)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension$.createExtension(TableSchedulingRuntime.scala:227)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension$.createExtension(TableSchedulingRuntime.scala:226)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.$anonfun$createExtensionInstance$1(ExtensionsImpl.scala:101)
+	at scala.Option.getOrElse(Option.scala:201)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.createExtensionInstance(ExtensionsImpl.scala:101)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.registerExtension(ExtensionsImpl.scala:87)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.registerExtension$(ExtensionsImpl.scala:85)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorSystemAdapter.registerExtension(ActorSystemAdapter.scala:54)
+	at org.apache.pekko.actor.typed.ExtensionId.apply(Extensions.scala:128)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.tableScheduling(WorkflowExecutionEngine.scala:52)
+	at cn.xuyinyin.magic.infrastructure.cluster.sharding.WorkflowSharding$.init(WorkflowSharding.scala:60)
+	at cn.xuyinyin.magic.bootstrap.PekkoGuardian$.$anonfun$apply$1(PekkoGuardian.scala:51)
+	at org.apache.pekko.actor.typed.internal.BehaviorImpl$DeferredBehavior$$anon$1.apply(BehaviorImpl.scala:130)
+	at org.apache.pekko.actor.typed.Behavior$.start(Behavior.scala:202)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl$$anon$1.start(InterceptorImpl.scala:60)
+	at org.apache.pekko.actor.typed.BehaviorInterceptor.aroundStart(BehaviorInterceptor.scala:65)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl.preStart(InterceptorImpl.scala:83)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl$.$anonfun$apply$1(InterceptorImpl.scala:40)
+	at org.apache.pekko.actor.typed.internal.BehaviorImpl$DeferredBehavior$$anon$1.apply(BehaviorImpl.scala:130)
+	at org.apache.pekko.actor.typed.Behavior$.start(Behavior.scala:202)
+	at org.apache.pekko.actor.typed.Behavior$.interpret(Behavior.scala:312)
+	at org.apache.pekko.actor.typed.Behavior$.interpretMessage(Behavior.scala:265)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorAdapter.handleMessage(ActorAdapter.scala:141)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorAdapter.aroundReceive(ActorAdapter.scala:117)
+	at org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)
+	at org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)
+	at org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:272)
+	at org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:233)
+	at org.apache.pekko.dispatch.Mailbox.exec(Mailbox.scala:245)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+22:38:58.363 [1;31mERROR[0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.pekko.actor.OneForOneStrategy][0;39m - /var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/mb-14777601688663877431/worker.conf: 1: No configuration setting found for key 'instance-aliases'
+com.typesafe.config.ConfigException$Missing: /var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/mb-14777601688663877431/worker.conf: 1: No configuration setting found for key 'instance-aliases'
+	at com.typesafe.config.impl.SimpleConfig.findKeyOrNull(SimpleConfig.java:157)
+	at com.typesafe.config.impl.SimpleConfig.findOrNull(SimpleConfig.java:175)
+	at com.typesafe.config.impl.SimpleConfig.find(SimpleConfig.java:189)
+	at com.typesafe.config.impl.SimpleConfig.find(SimpleConfig.java:194)
+	at com.typesafe.config.impl.SimpleConfig.getList(SimpleConfig.java:263)
+	at com.typesafe.config.impl.SimpleConfig.getHomogeneousWrappedList(SimpleConfig.java:477)
+	at com.typesafe.config.impl.SimpleConfig.getObjectList(SimpleConfig.java:495)
+	at com.typesafe.config.impl.SimpleConfig.getConfigList(SimpleConfig.java:500)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension.<init>(TableSchedulingRuntime.scala:205)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension$.createExtension(TableSchedulingRuntime.scala:227)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension$.createExtension(TableSchedulingRuntime.scala:226)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.$anonfun$createExtensionInstance$1(ExtensionsImpl.scala:101)
+	at scala.Option.getOrElse(Option.scala:201)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.createExtensionInstance(ExtensionsImpl.scala:101)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.registerExtension(ExtensionsImpl.scala:87)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.registerExtension$(ExtensionsImpl.scala:85)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorSystemAdapter.registerExtension(ActorSystemAdapter.scala:54)
+	at org.apache.pekko.actor.typed.ExtensionId.apply(Extensions.scala:128)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.tableScheduling(WorkflowExecutionEngine.scala:52)
+	at cn.xuyinyin.magic.infrastructure.cluster.sharding.WorkflowSharding$.init(WorkflowSharding.scala:60)
+	at cn.xuyinyin.magic.bootstrap.PekkoGuardian$.$anonfun$apply$1(PekkoGuardian.scala:51)
+	at org.apache.pekko.actor.typed.internal.BehaviorImpl$DeferredBehavior$$anon$1.apply(BehaviorImpl.scala:130)
+	at org.apache.pekko.actor.typed.Behavior$.start(Behavior.scala:202)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl$$anon$1.start(InterceptorImpl.scala:60)
+	at org.apache.pekko.actor.typed.BehaviorInterceptor.aroundStart(BehaviorInterceptor.scala:65)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl.preStart(InterceptorImpl.scala:83)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl$.$anonfun$apply$1(InterceptorImpl.scala:40)
+	at org.apache.pekko.actor.typed.internal.BehaviorImpl$DeferredBehavior$$anon$1.apply(BehaviorImpl.scala:130)
+	at org.apache.pekko.actor.typed.Behavior$.start(Behavior.scala:202)
+	at org.apache.pekko.actor.typed.Behavior$.interpret(Behavior.scala:312)
+	at org.apache.pekko.actor.typed.Behavior$.interpretMessage(Behavior.scala:265)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorAdapter.handleMessage(ActorAdapter.scala:141)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorAdapter.aroundReceive(ActorAdapter.scala:117)
+	at org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)
+	at org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)
+	at org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:272)
+	at org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:233)
+	at org.apache.pekko.dispatch.Mailbox.exec(Mailbox.scala:245)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+22:38:58.372 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-15][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [cn.xuyinyin.magic.bootstrap.PekkoGuardian$GetHealthChecker] to Actor[pekko://pekko-cluster-system-test/user] was not delivered. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. If this is not an expected behavior then Actor[pekko://pekko-cluster-system-test/user] may have terminated unexpectedly. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+22:38:58.374 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+22:38:58.374 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+22:38:58.390 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+[INFO] [10/29/2026 22:38:58.394] [pekko-cluster-system-test-pekko.actor.internal-dispatcher-2] [Cluster(pekko://pekko-cluster-system-test)] Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Shutting down...
+[INFO] [10/29/2026 22:38:58.396] [pekko-cluster-system-test-pekko.actor.internal-dispatcher-2] [Cluster(pekko://pekko-cluster-system-test)] Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Successfully shut down
+[INFO] [10/29/2026 22:38:58.396] [pekko-cluster-system-test-pekko.actor.internal-dispatcher-2] [CoordinatedShutdown(pekko://pekko-cluster-system-test)] Running CoordinatedShutdown with reason [ClusterDowningReason]
+[WARN] [10/29/2026 22:38:58.401] [pekko-cluster-system-test-pekko.actor.internal-dispatcher-2] [CoordinatedShutdown(pekko://pekko-cluster-system-test)] Task [close-managed-snapshot-control] in phase [before-actor-system-terminate] threw an exception before its future could be constructed: Dispatcher [pekko.workflow.table-scheduling.jdbc-dispatcher] not configured
+22:38:58.403 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-15][0;39m [1;35m[c.x.m.bootstrap.PekkoClusterService$][0;39m - Pekko server terminated
+22:38:59,660 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+22:38:59,661 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - No custom configurators were discovered as a service.
+22:38:59,661 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:38:59,662 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:38:59,665 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+22:38:59,666 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+22:38:59,672 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 6 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+22:38:59,672 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:38:59,673 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:38:59,673 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+22:38:59,675 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+22:38:59,725 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+22:38:59,725 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:38:59,729 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+22:38:59,741 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+22:38:59,741 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:38:59,742 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+22:38:59,742 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+22:38:59,742 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+22:38:59,742 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+22:38:59,744 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+22:38:59,744 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+22:38:59,745 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+22:38:59,745 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+22:38:59,745 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+22:38:59,745 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+22:38:59,745 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@3a93b025 - End of configuration.
+22:38:59,746 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@35cabb2a - Registering current configuration as safe fallback point
+22:38:59,746 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 73 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+22:38:59.773 [34mINFO [0;39m [36m[main][0;39m [1;35m[cn.xuyinyin.magic.PekkoServer$][0;39m - Starting PekkoServer
+22:38:59.778 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.i.config.PekkoConfig$][0;39m - Loading Pekko-reference config...
+22:38:59.931 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.i.config.PekkoConfig$][0;39m - Pekko cluster node roles: coordinator, api-gateway, worker, worker-pump
+22:38:59.933 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.i.config.PekkoConfig$][0;39m - Loading Pekko-reference config done.
+22:38:59.934 [34mINFO [0;39m [36m[main][0;39m [1;35m[cn.xuyinyin.magic.PekkoServer$][0;39m - 
+
+██████╗ ███████╗██╗  ██╗██╗  ██╗ ██████╗     ███████╗███████╗██████╗ ██╗   ██╗███████╗██████╗
+██╔══██╗██╔════╝██║ ██╔╝██║ ██╔╝██╔═══██╗    ██╔════╝██╔════╝██╔══██╗██║   ██║██╔════╝██╔══██╗
+██████╔╝█████╗  █████╔╝ █████╔╝ ██║   ██║    ███████╗█████╗  ██████╔╝██║   ██║█████╗  ██████╔╝
+██╔═══╝ ██╔══╝  ██╔═██╗ ██╔═██╗ ██║   ██║    ╚════██║██╔══╝  ██╔══██╗╚██╗ ██╔╝██╔══╝  ██╔══██╗
+██║     ███████╗██║  ██╗██║  ██╗╚██████╔╝    ███████║███████╗██║  ██║ ╚████╔╝ ███████╗██║  ██║
+╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝     ╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝
+                  Pekko Server 0.1
+
+
+
+22:38:59.936 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.i.config.ConfigValidator$][0;39m - Configuration validation passed
+22:38:59.952 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+22:39:00.062 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+22:39:00.092 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown initiated...
+22:39:00.093 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown completed.
+22:39:00.094 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Starting...
+22:39:00.100 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Start completed.
+22:39:00.291 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+22:39:00.426 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://pekko-cluster-system-test@127.0.0.1:49955] with UID [6736268829637122929]
+22:39:00.434 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Starting up, Pekko version [1.1.3] ...
+22:39:00.478 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Registered cluster JMX MBean [pekko:type=Cluster]
+22:39:00.478 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Started up successfully
+22:39:00.485 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - No downing-provider-class configured, manual cluster downing required, see https://pekko.apache.org/docs/pekko/current/typed/cluster.html#downing
+22:39:00.494 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] is JOINING itself (with roles [coordinator, snapshot-owner-499a78fe-7441-4041-b17a-a1ac3ac0c7cd, worker-pump, api-gateway, dc-default, worker], version [0.0.0]) and forming new cluster
+22:39:00.495 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - is the new leader among reachable nodes (more leaders may exist)
+22:39:00.501 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Leader is moving node [pekko://pekko-cluster-system-test@127.0.0.1:49955] to [Up]
+22:39:00.703 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.bootstrap.PekkoClusterService$][0;39m - Pekko cluster system started with roles: coordinator, snapshot-owner-499a78fe-7441-4041-b17a-a1ac3ac0c7cd, worker-pump, api-gateway, dc-default, worker
+22:39:00.705 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.bootstrap.PekkoClusterService$][0;39m - ActorSystem initialized; HTTP binding result is reported separately
+22:39:00.713 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Starting...
+22:39:00.718 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Start completed.
+22:39:00.723 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown initiated...
+22:39:00.734 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown completed.
+22:39:00.741 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[c.x.magic.bootstrap.PekkoGuardian$][0;39m - Pekko System Guardian Launching, roles: coordinator,snapshot-owner-499a78fe-7441-4041-b17a-a1ac3ac0c7cd,worker-pump,api-gateway,dc-default,worker
+22:39:00.742 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[c.x.m.i.cluster.ClusterListener$][0;39m - ClusterListener starting up
+22:39:00.743 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-14][0;39m [1;35m[c.x.m.i.c.ClusterEventListener$][0;39m - ClusterEventListener started, monitoring cluster events
+22:39:00.744 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[c.x.m.i.cluster.HealthChecker$][0;39m - HealthChecker starting up
+22:39:00.745 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-15][0;39m [1;35m[c.x.m.i.cluster.ClusterListener$][0;39m - 🚀 Member is Up: UniqueAddress(pekko://pekko-cluster-system-test@127.0.0.1:49955,6736268829637122929) [Role: coordinator] [Address: pekko://pekko-cluster-system-test@127.0.0.1:49955]
+22:39:00.745 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-15][0;39m [1;35m[c.x.m.i.cluster.ClusterListener$][0;39m - 📋 New COORDINATOR joined - available for task coordination
+22:39:00.745 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-15][0;39m [1;35m[c.x.m.i.c.ClusterEventListener$][0;39m - Member is Up: pekko://pekko-cluster-system-test@127.0.0.1:49955
+22:39:00.746 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[c.x.m.i.cluster.HealthChecker$][0;39m - Started periodic health check every 30000ms
+CLUSTER_EVENT: {"event_type":"member_event","member_address":"pekko://pekko-cluster-system-test@127.0.0.1:49955","roles":["snapshot-owner-499a78fe-7441-4041-b17a-a1ac3ac0c7cd","coordinator","worker","worker-pump","api-gateway","dc-default"],"severity":"INFO","status":"up","timestamp":"2026-10-29T14:39:00.746460Z"}
+22:39:00.748 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-15][0;39m [1;35m[c.x.m.i.cluster.ClusterListener$][0;39m - 👑 This node is now the cluster leader
+22:39:00.748 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[c.x.m.i.c.ClusterEventListener$][0;39m - Leader changed: none -> pekko://pekko-cluster-system-test@127.0.0.1:49955
+CLUSTER_EVENT: {"event_type":"leader_changed","new_leader":"pekko://pekko-cluster-system-test@127.0.0.1:49955","old_leader":null,"severity":"INFO","timestamp":"2026-10-29T14:39:00.748907Z"}
+22:39:00.844 [1;31mERROR[0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.p.actor.LocalActorRefProvider][0;39m - guardian failed, shutting down system
+com.typesafe.config.ConfigException$Missing: /var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/mb-14777601688663877431/worker.conf: 1: No configuration setting found for key 'instance-aliases'
+	at com.typesafe.config.impl.SimpleConfig.findKeyOrNull(SimpleConfig.java:157)
+	at com.typesafe.config.impl.SimpleConfig.findOrNull(SimpleConfig.java:175)
+	at com.typesafe.config.impl.SimpleConfig.find(SimpleConfig.java:189)
+	at com.typesafe.config.impl.SimpleConfig.find(SimpleConfig.java:194)
+	at com.typesafe.config.impl.SimpleConfig.getList(SimpleConfig.java:263)
+	at com.typesafe.config.impl.SimpleConfig.getHomogeneousWrappedList(SimpleConfig.java:477)
+	at com.typesafe.config.impl.SimpleConfig.getObjectList(SimpleConfig.java:495)
+	at com.typesafe.config.impl.SimpleConfig.getConfigList(SimpleConfig.java:500)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension.<init>(TableSchedulingRuntime.scala:205)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension$.createExtension(TableSchedulingRuntime.scala:227)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension$.createExtension(TableSchedulingRuntime.scala:226)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.$anonfun$createExtensionInstance$1(ExtensionsImpl.scala:101)
+	at scala.Option.getOrElse(Option.scala:201)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.createExtensionInstance(ExtensionsImpl.scala:101)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.registerExtension(ExtensionsImpl.scala:87)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.registerExtension$(ExtensionsImpl.scala:85)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorSystemAdapter.registerExtension(ActorSystemAdapter.scala:54)
+	at org.apache.pekko.actor.typed.ExtensionId.apply(Extensions.scala:128)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.tableScheduling(WorkflowExecutionEngine.scala:52)
+	at cn.xuyinyin.magic.infrastructure.cluster.sharding.WorkflowSharding$.init(WorkflowSharding.scala:60)
+	at cn.xuyinyin.magic.bootstrap.PekkoGuardian$.$anonfun$apply$1(PekkoGuardian.scala:51)
+	at org.apache.pekko.actor.typed.internal.BehaviorImpl$DeferredBehavior$$anon$1.apply(BehaviorImpl.scala:130)
+	at org.apache.pekko.actor.typed.Behavior$.start(Behavior.scala:202)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl$$anon$1.start(InterceptorImpl.scala:60)
+	at org.apache.pekko.actor.typed.BehaviorInterceptor.aroundStart(BehaviorInterceptor.scala:65)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl.preStart(InterceptorImpl.scala:83)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl$.$anonfun$apply$1(InterceptorImpl.scala:40)
+	at org.apache.pekko.actor.typed.internal.BehaviorImpl$DeferredBehavior$$anon$1.apply(BehaviorImpl.scala:130)
+	at org.apache.pekko.actor.typed.Behavior$.start(Behavior.scala:202)
+	at org.apache.pekko.actor.typed.Behavior$.interpret(Behavior.scala:312)
+	at org.apache.pekko.actor.typed.Behavior$.interpretMessage(Behavior.scala:265)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorAdapter.handleMessage(ActorAdapter.scala:141)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorAdapter.aroundReceive(ActorAdapter.scala:117)
+	at org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)
+	at org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)
+	at org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:272)
+	at org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:233)
+	at org.apache.pekko.dispatch.Mailbox.exec(Mailbox.scala:245)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+22:39:00.844 [1;31mERROR[0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.pekko.actor.OneForOneStrategy][0;39m - /var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/mb-14777601688663877431/worker.conf: 1: No configuration setting found for key 'instance-aliases'
+com.typesafe.config.ConfigException$Missing: /var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/mb-14777601688663877431/worker.conf: 1: No configuration setting found for key 'instance-aliases'
+	at com.typesafe.config.impl.SimpleConfig.findKeyOrNull(SimpleConfig.java:157)
+	at com.typesafe.config.impl.SimpleConfig.findOrNull(SimpleConfig.java:175)
+	at com.typesafe.config.impl.SimpleConfig.find(SimpleConfig.java:189)
+	at com.typesafe.config.impl.SimpleConfig.find(SimpleConfig.java:194)
+	at com.typesafe.config.impl.SimpleConfig.getList(SimpleConfig.java:263)
+	at com.typesafe.config.impl.SimpleConfig.getHomogeneousWrappedList(SimpleConfig.java:477)
+	at com.typesafe.config.impl.SimpleConfig.getObjectList(SimpleConfig.java:495)
+	at com.typesafe.config.impl.SimpleConfig.getConfigList(SimpleConfig.java:500)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension.<init>(TableSchedulingRuntime.scala:205)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension$.createExtension(TableSchedulingRuntime.scala:227)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension$.createExtension(TableSchedulingRuntime.scala:226)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.$anonfun$createExtensionInstance$1(ExtensionsImpl.scala:101)
+	at scala.Option.getOrElse(Option.scala:201)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.createExtensionInstance(ExtensionsImpl.scala:101)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.registerExtension(ExtensionsImpl.scala:87)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.registerExtension$(ExtensionsImpl.scala:85)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorSystemAdapter.registerExtension(ActorSystemAdapter.scala:54)
+	at org.apache.pekko.actor.typed.ExtensionId.apply(Extensions.scala:128)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.tableScheduling(WorkflowExecutionEngine.scala:52)
+	at cn.xuyinyin.magic.infrastructure.cluster.sharding.WorkflowSharding$.init(WorkflowSharding.scala:60)
+	at cn.xuyinyin.magic.bootstrap.PekkoGuardian$.$anonfun$apply$1(PekkoGuardian.scala:51)
+	at org.apache.pekko.actor.typed.internal.BehaviorImpl$DeferredBehavior$$anon$1.apply(BehaviorImpl.scala:130)
+	at org.apache.pekko.actor.typed.Behavior$.start(Behavior.scala:202)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl$$anon$1.start(InterceptorImpl.scala:60)
+	at org.apache.pekko.actor.typed.BehaviorInterceptor.aroundStart(BehaviorInterceptor.scala:65)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl.preStart(InterceptorImpl.scala:83)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl$.$anonfun$apply$1(InterceptorImpl.scala:40)
+	at org.apache.pekko.actor.typed.internal.BehaviorImpl$DeferredBehavior$$anon$1.apply(BehaviorImpl.scala:130)
+	at org.apache.pekko.actor.typed.Behavior$.start(Behavior.scala:202)
+	at org.apache.pekko.actor.typed.Behavior$.interpret(Behavior.scala:312)
+	at org.apache.pekko.actor.typed.Behavior$.interpretMessage(Behavior.scala:265)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorAdapter.handleMessage(ActorAdapter.scala:141)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorAdapter.aroundReceive(ActorAdapter.scala:117)
+	at org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)
+	at org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)
+	at org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:272)
+	at org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:233)
+	at org.apache.pekko.dispatch.Mailbox.exec(Mailbox.scala:245)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+22:39:00.848 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+22:39:00.849 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [cn.xuyinyin.magic.bootstrap.PekkoGuardian$GetHealthChecker] to Actor[pekko://pekko-cluster-system-test/user] was not delivered. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. If this is not an expected behavior then Actor[pekko://pekko-cluster-system-test/user] may have terminated unexpectedly. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+22:39:00.849 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+22:39:00.858 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+[INFO] [10/29/2026 22:39:00.860] [pekko-cluster-system-test-pekko.actor.internal-dispatcher-3] [Cluster(pekko://pekko-cluster-system-test)] Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Shutting down...
+[INFO] [10/29/2026 22:39:00.861] [pekko-cluster-system-test-pekko.actor.internal-dispatcher-3] [Cluster(pekko://pekko-cluster-system-test)] Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Successfully shut down
+[INFO] [10/29/2026 22:39:00.862] [pekko-cluster-system-test-pekko.actor.internal-dispatcher-3] [CoordinatedShutdown(pekko://pekko-cluster-system-test)] Running CoordinatedShutdown with reason [ClusterDowningReason]
+22:39:00.864 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[c.x.m.bootstrap.PekkoClusterService$][0;39m - Pekko server terminated
+[WARN] [10/29/2026 22:39:00.866] [pekko-cluster-system-test-pekko.actor.internal-dispatcher-2] [CoordinatedShutdown(pekko://pekko-cluster-system-test)] Task [close-managed-snapshot-control] in phase [before-actor-system-terminate] threw an exception before its future could be constructed: Dispatcher [pekko.workflow.table-scheduling.jdbc-dispatcher] not configured
+22:39:01,893 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+22:39:01,894 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - No custom configurators were discovered as a service.
+22:39:01,894 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:39:01,894 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:39:01,897 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+22:39:01,898 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+22:39:01,903 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 4 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+22:39:01,903 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:39:01,903 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:39:01,904 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+22:39:01,906 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+22:39:01,948 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+22:39:01,948 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:39:01,951 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+22:39:01,961 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+22:39:01,961 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:39:01,961 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+22:39:01,961 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+22:39:01,962 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+22:39:01,962 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+22:39:01,963 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+22:39:01,963 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+22:39:01,964 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+22:39:01,964 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+22:39:01,964 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+22:39:01,964 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+22:39:01,964 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@3a93b025 - End of configuration.
+22:39:01,964 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@35cabb2a - Registering current configuration as safe fallback point
+22:39:01,965 |-INFO in ch.qos.logback.classic.util.ContextInitializer@79e2c065 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 62 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+22:39:01.988 [34mINFO [0;39m [36m[main][0;39m [1;35m[cn.xuyinyin.magic.PekkoServer$][0;39m - Starting PekkoServer
+22:39:01.990 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.i.config.PekkoConfig$][0;39m - Loading Pekko-reference config...
+22:39:02.093 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.i.config.PekkoConfig$][0;39m - Pekko cluster node roles: coordinator, api-gateway, worker, worker-pump
+22:39:02.093 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.i.config.PekkoConfig$][0;39m - Loading Pekko-reference config done.
+22:39:02.094 [34mINFO [0;39m [36m[main][0;39m [1;35m[cn.xuyinyin.magic.PekkoServer$][0;39m - 
+
+██████╗ ███████╗██╗  ██╗██╗  ██╗ ██████╗     ███████╗███████╗██████╗ ██╗   ██╗███████╗██████╗
+██╔══██╗██╔════╝██║ ██╔╝██║ ██╔╝██╔═══██╗    ██╔════╝██╔════╝██╔══██╗██║   ██║██╔════╝██╔══██╗
+██████╔╝█████╗  █████╔╝ █████╔╝ ██║   ██║    ███████╗█████╗  ██████╔╝██║   ██║█████╗  ██████╔╝
+██╔═══╝ ██╔══╝  ██╔═██╗ ██╔═██╗ ██║   ██║    ╚════██║██╔══╝  ██╔══██╗╚██╗ ██╔╝██╔══╝  ██╔══██╗
+██║     ███████╗██║  ██╗██║  ██╗╚██████╔╝    ███████║███████╗██║  ██║ ╚████╔╝ ███████╗██║  ██║
+╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝     ╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝
+                  Pekko Server 0.1
+
+
+
+22:39:02.096 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.i.config.ConfigValidator$][0;39m - Configuration validation passed
+22:39:02.107 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+22:39:02.200 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+22:39:02.227 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown initiated...
+22:39:02.228 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown completed.
+22:39:02.229 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Starting...
+22:39:02.234 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Start completed.
+22:39:02.429 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+22:39:02.576 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://pekko-cluster-system-test@127.0.0.1:49955] with UID [6521183063932049269]
+22:39:02.582 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Starting up, Pekko version [1.1.3] ...
+22:39:02.637 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Registered cluster JMX MBean [pekko:type=Cluster]
+22:39:02.637 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Started up successfully
+22:39:02.645 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - No downing-provider-class configured, manual cluster downing required, see https://pekko.apache.org/docs/pekko/current/typed/cluster.html#downing
+22:39:02.660 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] is JOINING itself (with roles [coordinator, worker-pump, api-gateway, dc-default, snapshot-owner-acfc9a5e-5367-48cf-85df-f67f250b463c, worker], version [0.0.0]) and forming new cluster
+22:39:02.661 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - is the new leader among reachable nodes (more leaders may exist)
+22:39:02.664 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Leader is moving node [pekko://pekko-cluster-system-test@127.0.0.1:49955] to [Up]
+22:39:02.869 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.bootstrap.PekkoClusterService$][0;39m - Pekko cluster system started with roles: coordinator, worker-pump, api-gateway, dc-default, snapshot-owner-acfc9a5e-5367-48cf-85df-f67f250b463c, worker
+22:39:02.872 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.bootstrap.PekkoClusterService$][0;39m - ActorSystem initialized; HTTP binding result is reported separately
+22:39:02.886 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Starting...
+22:39:02.892 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Start completed.
+22:39:02.898 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown initiated...
+22:39:02.909 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown completed.
+22:39:02.917 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[c.x.magic.bootstrap.PekkoGuardian$][0;39m - Pekko System Guardian Launching, roles: coordinator,worker-pump,api-gateway,dc-default,snapshot-owner-acfc9a5e-5367-48cf-85df-f67f250b463c,worker
+22:39:02.919 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[c.x.m.i.cluster.ClusterListener$][0;39m - ClusterListener starting up
+22:39:02.919 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-14][0;39m [1;35m[c.x.m.i.c.ClusterEventListener$][0;39m - ClusterEventListener started, monitoring cluster events
+22:39:02.920 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-15][0;39m [1;35m[c.x.m.i.cluster.HealthChecker$][0;39m - HealthChecker starting up
+22:39:02.922 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-14][0;39m [1;35m[c.x.m.i.c.ClusterEventListener$][0;39m - Member is Up: pekko://pekko-cluster-system-test@127.0.0.1:49955
+22:39:02.922 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[c.x.m.i.cluster.ClusterListener$][0;39m - 🚀 Member is Up: UniqueAddress(pekko://pekko-cluster-system-test@127.0.0.1:49955,6521183063932049269) [Role: coordinator] [Address: pekko://pekko-cluster-system-test@127.0.0.1:49955]
+22:39:02.923 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[c.x.m.i.cluster.ClusterListener$][0;39m - 📋 New COORDINATOR joined - available for task coordination
+CLUSTER_EVENT: {"event_type":"member_event","member_address":"pekko://pekko-cluster-system-test@127.0.0.1:49955","roles":["coordinator","worker","worker-pump","api-gateway","dc-default","snapshot-owner-acfc9a5e-5367-48cf-85df-f67f250b463c"],"severity":"INFO","status":"up","timestamp":"2026-10-29T14:39:02.923252Z"}
+22:39:02.923 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[c.x.m.i.cluster.ClusterListener$][0;39m - 👑 This node is now the cluster leader
+22:39:02.923 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-15][0;39m [1;35m[c.x.m.i.cluster.HealthChecker$][0;39m - Started periodic health check every 30000ms
+CLUSTER_EVENT: {"event_type":"leader_changed","new_leader":"pekko://pekko-cluster-system-test@127.0.0.1:49955","old_leader":null,"severity":"INFO","timestamp":"2026-10-29T14:39:02.923934Z"}
+22:39:02.923 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-14][0;39m [1;35m[c.x.m.i.c.ClusterEventListener$][0;39m - Leader changed: none -> pekko://pekko-cluster-system-test@127.0.0.1:49955
+22:39:03.015 [1;31mERROR[0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-16][0;39m [1;35m[o.a.p.actor.LocalActorRefProvider][0;39m - guardian failed, shutting down system
+com.typesafe.config.ConfigException$Missing: /var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/mb-14777601688663877431/worker.conf: 1: No configuration setting found for key 'instance-aliases'
+	at com.typesafe.config.impl.SimpleConfig.findKeyOrNull(SimpleConfig.java:157)
+	at com.typesafe.config.impl.SimpleConfig.findOrNull(SimpleConfig.java:175)
+	at com.typesafe.config.impl.SimpleConfig.find(SimpleConfig.java:189)
+	at com.typesafe.config.impl.SimpleConfig.find(SimpleConfig.java:194)
+	at com.typesafe.config.impl.SimpleConfig.getList(SimpleConfig.java:263)
+	at com.typesafe.config.impl.SimpleConfig.getHomogeneousWrappedList(SimpleConfig.java:477)
+	at com.typesafe.config.impl.SimpleConfig.getObjectList(SimpleConfig.java:495)
+	at com.typesafe.config.impl.SimpleConfig.getConfigList(SimpleConfig.java:500)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension.<init>(TableSchedulingRuntime.scala:205)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension$.createExtension(TableSchedulingRuntime.scala:227)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension$.createExtension(TableSchedulingRuntime.scala:226)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.$anonfun$createExtensionInstance$1(ExtensionsImpl.scala:101)
+	at scala.Option.getOrElse(Option.scala:201)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.createExtensionInstance(ExtensionsImpl.scala:101)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.registerExtension(ExtensionsImpl.scala:87)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.registerExtension$(ExtensionsImpl.scala:85)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorSystemAdapter.registerExtension(ActorSystemAdapter.scala:54)
+	at org.apache.pekko.actor.typed.ExtensionId.apply(Extensions.scala:128)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.tableScheduling(WorkflowExecutionEngine.scala:52)
+	at cn.xuyinyin.magic.infrastructure.cluster.sharding.WorkflowSharding$.init(WorkflowSharding.scala:60)
+	at cn.xuyinyin.magic.bootstrap.PekkoGuardian$.$anonfun$apply$1(PekkoGuardian.scala:51)
+	at org.apache.pekko.actor.typed.internal.BehaviorImpl$DeferredBehavior$$anon$1.apply(BehaviorImpl.scala:130)
+	at org.apache.pekko.actor.typed.Behavior$.start(Behavior.scala:202)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl$$anon$1.start(InterceptorImpl.scala:60)
+	at org.apache.pekko.actor.typed.BehaviorInterceptor.aroundStart(BehaviorInterceptor.scala:65)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl.preStart(InterceptorImpl.scala:83)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl$.$anonfun$apply$1(InterceptorImpl.scala:40)
+	at org.apache.pekko.actor.typed.internal.BehaviorImpl$DeferredBehavior$$anon$1.apply(BehaviorImpl.scala:130)
+	at org.apache.pekko.actor.typed.Behavior$.start(Behavior.scala:202)
+	at org.apache.pekko.actor.typed.Behavior$.interpret(Behavior.scala:312)
+	at org.apache.pekko.actor.typed.Behavior$.interpretMessage(Behavior.scala:265)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorAdapter.handleMessage(ActorAdapter.scala:141)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorAdapter.aroundReceive(ActorAdapter.scala:117)
+	at org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)
+	at org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)
+	at org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:272)
+	at org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:233)
+	at org.apache.pekko.dispatch.Mailbox.exec(Mailbox.scala:245)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+22:39:03.016 [1;31mERROR[0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-16][0;39m [1;35m[o.a.pekko.actor.OneForOneStrategy][0;39m - /var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/mb-14777601688663877431/worker.conf: 1: No configuration setting found for key 'instance-aliases'
+com.typesafe.config.ConfigException$Missing: /var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/mb-14777601688663877431/worker.conf: 1: No configuration setting found for key 'instance-aliases'
+	at com.typesafe.config.impl.SimpleConfig.findKeyOrNull(SimpleConfig.java:157)
+	at com.typesafe.config.impl.SimpleConfig.findOrNull(SimpleConfig.java:175)
+	at com.typesafe.config.impl.SimpleConfig.find(SimpleConfig.java:189)
+	at com.typesafe.config.impl.SimpleConfig.find(SimpleConfig.java:194)
+	at com.typesafe.config.impl.SimpleConfig.getList(SimpleConfig.java:263)
+	at com.typesafe.config.impl.SimpleConfig.getHomogeneousWrappedList(SimpleConfig.java:477)
+	at com.typesafe.config.impl.SimpleConfig.getObjectList(SimpleConfig.java:495)
+	at com.typesafe.config.impl.SimpleConfig.getConfigList(SimpleConfig.java:500)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension.<init>(TableSchedulingRuntime.scala:205)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension$.createExtension(TableSchedulingRuntime.scala:227)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingExtension$.createExtension(TableSchedulingRuntime.scala:226)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.$anonfun$createExtensionInstance$1(ExtensionsImpl.scala:101)
+	at scala.Option.getOrElse(Option.scala:201)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.createExtensionInstance(ExtensionsImpl.scala:101)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.registerExtension(ExtensionsImpl.scala:87)
+	at org.apache.pekko.actor.typed.internal.ExtensionsImpl.registerExtension$(ExtensionsImpl.scala:85)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorSystemAdapter.registerExtension(ActorSystemAdapter.scala:54)
+	at org.apache.pekko.actor.typed.ExtensionId.apply(Extensions.scala:128)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.tableScheduling(WorkflowExecutionEngine.scala:52)
+	at cn.xuyinyin.magic.infrastructure.cluster.sharding.WorkflowSharding$.init(WorkflowSharding.scala:60)
+	at cn.xuyinyin.magic.bootstrap.PekkoGuardian$.$anonfun$apply$1(PekkoGuardian.scala:51)
+	at org.apache.pekko.actor.typed.internal.BehaviorImpl$DeferredBehavior$$anon$1.apply(BehaviorImpl.scala:130)
+	at org.apache.pekko.actor.typed.Behavior$.start(Behavior.scala:202)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl$$anon$1.start(InterceptorImpl.scala:60)
+	at org.apache.pekko.actor.typed.BehaviorInterceptor.aroundStart(BehaviorInterceptor.scala:65)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl.preStart(InterceptorImpl.scala:83)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl$.$anonfun$apply$1(InterceptorImpl.scala:40)
+	at org.apache.pekko.actor.typed.internal.BehaviorImpl$DeferredBehavior$$anon$1.apply(BehaviorImpl.scala:130)
+	at org.apache.pekko.actor.typed.Behavior$.start(Behavior.scala:202)
+	at org.apache.pekko.actor.typed.Behavior$.interpret(Behavior.scala:312)
+	at org.apache.pekko.actor.typed.Behavior$.interpretMessage(Behavior.scala:265)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorAdapter.handleMessage(ActorAdapter.scala:141)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorAdapter.aroundReceive(ActorAdapter.scala:117)
+	at org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)
+	at org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)
+	at org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:272)
+	at org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:233)
+	at org.apache.pekko.dispatch.Mailbox.exec(Mailbox.scala:245)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+22:39:03.019 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-16][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+22:39:03.020 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-16][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+22:39:03.020 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-16][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [cn.xuyinyin.magic.bootstrap.PekkoGuardian$GetHealthChecker] to Actor[pekko://pekko-cluster-system-test/user] was not delivered. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. If this is not an expected behavior then Actor[pekko://pekko-cluster-system-test/user] may have terminated unexpectedly. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+22:39:03.030 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-15][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+[INFO] [10/29/2026 22:39:03.032] [pekko-cluster-system-test-pekko.actor.internal-dispatcher-12] [Cluster(pekko://pekko-cluster-system-test)] Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Shutting down...
+[INFO] [10/29/2026 22:39:03.034] [pekko-cluster-system-test-pekko.actor.internal-dispatcher-12] [Cluster(pekko://pekko-cluster-system-test)] Cluster Node [pekko://pekko-cluster-system-test@127.0.0.1:49955] - Successfully shut down
+[INFO] [10/29/2026 22:39:03.034] [pekko-cluster-system-test-pekko.actor.internal-dispatcher-12] [CoordinatedShutdown(pekko://pekko-cluster-system-test)] Running CoordinatedShutdown with reason [ClusterDowningReason]
+[WARN] [10/29/2026 22:39:03.037] [pekko-cluster-system-test-pekko.actor.internal-dispatcher-7] [CoordinatedShutdown(pekko://pekko-cluster-system-test)] Task [close-managed-snapshot-control] in phase [before-actor-system-terminate] threw an exception before its future could be constructed: Dispatcher [pekko.workflow.table-scheduling.jdbc-dispatcher] not configured
+22:39:03.046 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-15][0;39m [1;35m[c.x.m.bootstrap.PekkoClusterService$][0;39m - Pekko server terminated

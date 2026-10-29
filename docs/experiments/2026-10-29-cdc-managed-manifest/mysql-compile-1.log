@@ -1,0 +1,36 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[error] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/ManagedCdcConnectionSpec.scala:61:114: type mismatch;
+[error]  found   : org.apache.pekko.actor.typed.Behavior[Nothing]
+[error]  required: org.apache.pekko.actor.typed.Behavior[T]
+[error] Note: Nothing <: T, but class Behavior is invariant in type T.
+[error] You may wish to define T as +T instead. (SLS 4.5)
+[error]         val system=org.apache.pekko.actor.typed.ActorSystem(org.apache.pekko.actor.typed.scaladsl.Behaviors.empty[Nothing],"cdc-manifest-"+UUID.randomUUID().toString.take(8),actorConfig)
+[error]                                                                                                                  ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/ManagedCdcConnectionSpec.scala:72:33: multiarg infix syntax looks like a tuple and will be deprecated
+[warn]         accounts should contain allOf (JsString(user),JsString("cdc_sdk"),JsString("cdc_src"))
+[warn]                                 ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/ManagedCdcConnectionSpec.scala:10:17: Unused import
+[warn] import java.sql.DriverManager
+[warn]                 ^
+[warn] two warnings found
+[error] one error found
+[error] (Test / compileIncremental) Compilation failed
+[error] Total time: 2 s, completed 2026年10月29日 下午9:31:25

@@ -94,7 +94,7 @@ Flink 的价值包括现有的 Source 分配、Reader 状态、Checkpoint 及运
 
 共享还扩大了故障域。假设 a 目标暂停十分钟，b 仍有写入。L 可以让 b 独立提交，但 a 恢复所需的历史不能被删掉。隔离的代价是积压字节、保留时长和后续追赶；L 达到上限时，整个捕获域可能承压。若 Reader、Schema 或 history 异常，表级 Actor 也不能独立修复采集连续性。
 
-当前没有完成长期 GC、新共享链路的多 owner 自动接管或 guardian 恢复。旧静态快照的隔离实验不覆盖这些新资源。SQL owner 与 UNKNOWN grant 的保留，是防止未经证明的替代执行；它可以选择停住业务，不能因此称作已经实现自动 HA。
+当前没有完成长期 GC；新共享链路已有受管恢复候选，但尚未完成同版本故障矩阵。旧静态快照的隔离实验不覆盖这些新资源。SQL owner 与 UNKNOWN grant 的保留，是防止未经证明的替代执行；它可以选择停住业务，不能因此称作已经实现自动 HA。
 
 ## 7. 高可用的成本，首先是区分“未知”与“失败”
 
@@ -129,6 +129,38 @@ Flink 的成熟协调机制可以减少一部分自建工作，但它与具体 M
 本轮在真实 MySQL、Actor Journal 和 Sink 中补充了 ACK/D 故障、并发订阅和旧记录恢复的逐字段对账；它们支持指定窗口的行为，不证明所有恢复窗口均收敛。A14 未知 COMMIT 取消失败，B05 真正的 MySQL task 启动与关闭竞争在两个样本中均未能在观察期确认释放，B06 在源事务未决时已释放 capture owner 锁；A05 的自动继续仍缺可靠证明。这些未解决项是自建 CDC 平台需要承担的工程工作，不能因 Actor 的资源模型而省略。
 
 这些实验没有在相同负载下运行 Flink，也没有验证 70 万张真实表。具体切点和失败材料见[补测报告](../../experiments/2026-10-28-ab-matrix/README.md)。
+
+## 后续补测与边界
+
+这些失败样本有了针对性的后续修复和实验，详见报告；安全暂停、局部资源释放和固定场景对账仍不是完整 CDC 高可用保证。该历史实验版本尚未完成 DDL、GC、自动接管、长时间 churn、70 万真实源表及同负载 Flink 对比。 详见[后续实验](../../experiments/2026-10-28-cdc-followup/README.md)。上文的失败是当时版本的历史结果，原始材料保留。
+
+## 2026-10-29 补充验证
+
+后续实验验证了一个回调异常后重建 Reader/Actor 的恢复样本，也修复了特定启动关闭竞态；该历史实验版本的未知 B 自动恢复与长期资源占用仍未解决或验证，结果不能扩展为平台全故障自动恢复保证。 [实验材料与范围](../../experiments/2026-10-29-p0-followup/README.md)。
+
+## 2026-10-29 写前锚点实验
+
+写前锚点实验版本增加了锚点及局部证据，但当时未知 B 的任务级自动恢复尚未完成；不能据此宣称已具备 Flink CDC 的故障恢复能力。 详见[本轮证据](../../experiments/2026-10-29-unknown-b/README.md)。
+
+## 事务释放与隔离探针
+
+真实事务释放与旧 JVM 迟到重连的探针进一步说明，自建调度需要独立证明旧执行者隔离；该探针样本本身不能证明未知 B 已实现自动恢复。 [实验与边界](../../experiments/2026-10-29-b-release-proof/README.md)。
+
+## 恢复能力比较仍受证据限制
+
+未知 B 的受管恢复候选已经把进程隔离、数据库排空、D/L 证明、持久许可与 Journal 状态衔接起来，这是源码层面的进展。单个[旧候选真实迟提交样本](../../experiments/2026-10-29-cdc-managed-b-e2e-wake-candidate/README.md)恢复到 STREAMING，64 行、384 字段相等；[组件样本](../../experiments/2026-10-29-cdc-b-proof-component/README.md)验证不同许可与证明分支，但使用合成 ACK 与 guardian 数据。更早需要人工唤醒的[失败样本](../../experiments/2026-10-29-cdc-managed-b-e2e-old-candidate/README.md)仍保留。
+
+当前候选基于提交 `62ec856f20a81f3da8d56caf290754f8361ac732` 之后的未提交工作区；不同实验的精确源码摘要以各自证据目录为准，不能把旧样本归给后续修改。 六项固定窗口已在同一候选版运行，但除单个 C1 样本外的生产入口窗口、多任务 TAIL 重放、长期运行、70 万真实表以及与 Flink 同负载性能比较仍未验证，不能根据这些样本声称两者具有等价的高可用或吞吐。
+
+## 新增固定窗口证据
+
+[六项固定窗口的完整证据](../../experiments/2026-10-29-cdc-managed-b-e2e-frozen/README.md)使用同一候选源码、独立 guardian JVM、真实 MySQL、Actor Journal 与 MySQL Sink；这六项的协调器运行在测试 JVM、worker 显式接线；另有一个 [生产入口 C1 样本](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)，实际经过独立 `SnapshotGuardianMain`、`SnapshotSupervisorMain` 和 `PekkoServer` 内的 `CdcPlatformExtension`。
+
+四项提交/回滚窗口恢复到 STREAMING，各自 64 行、384 字段相等；guardian 失联与不可达两项则安全暂停、没有完成目标初始化。收敛样本的后继 worker 在清理时被强制停止，CDC owner 仍 ACTIVE。该结果说明受管候选在这些指定窗口中具备数据恢复或安全暂停证据，但不构成 Flink 与 Pekko 的高可用能力等价，也不是同负载性能比较。
+
+生产入口的独立 C1 样本在真实 MySQL、Journal 和 Sink 上恢复至 STREAMING，源与目标各 64 行、384 字段相等。前两次运行分别在故障注入前因测试配置缺项和明文代理不兼容而失败，原始材料保留；本样本没有生产 raw ACK 顺序证据，强制清理后 CDC owner 仍为 ACTIVE，不证明正常停机。其余故障窗口仍仅有测试入口证据。 [生产入口 C1 证据](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)。
+
+对目标场景还有一项具体限制：未知 B 恢复反查源控制表最多 4096 行，超限安全暂停，而当前没有控制行 GC。长期新增、取消表会累积控制行，这一上限会影响 70 万表场景的恢复可用性；不能用现有实验宣称该规模已经验证。 [组件实验与限制](../../experiments/2026-10-29-cdc-b-proof-component/README.md)。
 
 ## 技术附录与证据入口
 

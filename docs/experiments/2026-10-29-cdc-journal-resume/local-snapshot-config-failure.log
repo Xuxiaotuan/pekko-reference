@@ -1,0 +1,210 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[info] done compiling
+[info] compiling 2 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcBootstrapKernel.scala:3:73: Unused import
+[warn] import cn.xuyinyin.magic.connectors.mysql.source.{DebeziumEngineFactory,MySQLCdcStateConfig}
+[warn]                                                                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcBootstrapKernel.scala:11:57: Unused import
+[warn] import org.apache.pekko.actor.typed.scaladsl.{Behaviors,adapter}
+[warn]                                                         ^
+[warn] two warnings found
+[info] done compiling
+[info] compiling 4 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/BootstrapMatrixWorker.scala:25:43: match may not be exhaustive.
+[warn]     val Array(schema,captureId,batchSize)=args;validateSchema(schema)
+[warn]                                           ^
+[warn] one warning found
+[info] done compiling
+21:37:15,866 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+21:37:15,866 |-INFO in ch.qos.logback.classic.util.ContextInitializer@168ac4e6 - No custom configurators were discovered as a service.
+21:37:15,866 |-INFO in ch.qos.logback.classic.util.ContextInitializer@168ac4e6 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+21:37:15,867 |-INFO in ch.qos.logback.classic.util.ContextInitializer@168ac4e6 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+21:37:15,867 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+21:37:15,867 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+21:37:15,868 |-INFO in ch.qos.logback.classic.util.ContextInitializer@168ac4e6 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+21:37:15,868 |-INFO in ch.qos.logback.classic.util.ContextInitializer@168ac4e6 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+21:37:15,868 |-INFO in ch.qos.logback.classic.util.ContextInitializer@168ac4e6 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+21:37:15,868 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+21:37:15,868 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+21:37:15,894 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+21:37:15,894 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+21:37:15,897 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+21:37:15,905 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+21:37:15,905 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+21:37:15,905 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+21:37:15,905 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+21:37:15,906 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+21:37:15,906 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+21:37:15,907 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+21:37:15,907 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+21:37:15,908 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+21:37:15,908 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+21:37:15,908 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+21:37:15,908 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+21:37:15,908 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@7c5cdfe7 - End of configuration.
+21:37:15,908 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@21198ab2 - Registering current configuration as safe fallback point
+21:37:15,908 |-INFO in ch.qos.logback.classic.util.ContextInitializer@168ac4e6 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 40 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+SLF4J(W): A number (1) of logging calls during the initialization phase have been intercepted and are
+SLF4J(W): now being replayed. These are subject to the filtering rules of the underlying logging system.
+SLF4J(W): See also https://www.slf4j.org/codes.html#replay
+21:37:15.911 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+21:37:16.006 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://bootstrap-b-resume-test@127.0.0.1:62098] with UID [-3297095959207260929]
+21:37:16.012 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-b-resume-test@127.0.0.1:62098] - Starting up, Pekko version [1.1.3] ...
+21:37:16.052 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-b-resume-test@127.0.0.1:62098] - Registered cluster JMX MBean [pekko:type=Cluster]
+21:37:16.052 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-b-resume-test@127.0.0.1:62098] - Started up successfully
+21:37:16.065 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-b-resume-test@127.0.0.1:62098] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+21:37:16.067 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://bootstrap-b-resume-test@127.0.0.1:62098#-3297095959207260929], selfDc [default].
+21:37:16.394 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.persistence.dispatchers.default-plugin-dispatcher-14][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Starting...
+21:37:16.411 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.persistence.dispatchers.default-plugin-dispatcher-14][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Start completed.
+21:37:16.590 [1;31mERROR[0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[c.x.m.w.bootstrap.BootstrapJournal$][0;39m - Supervisor StopSupervisor saw failure: Exception during recovery from snapshot. PersistenceId [bootstrap-v1-resume-unit-2164413706316875]. Table "snapshot" not found (this database is empty); SQL statement:
+select "persistence_id", "sequence_number", "created", "snapshot_ser_id", "snapshot_ser_manifest", "snapshot_payload", "meta_ser_id", "meta_ser_manifest", "meta_payload" from "snapshot" where "persistence_id" = ? order by "sequence_number" desc limit 1 [42104-232]
+org.apache.pekko.persistence.typed.internal.JournalFailureException: Exception during recovery from snapshot. PersistenceId [bootstrap-v1-resume-unit-2164413706316875]. Table "snapshot" not found (this database is empty); SQL statement:
+select "persistence_id", "sequence_number", "created", "snapshot_ser_id", "snapshot_ser_manifest", "snapshot_payload", "meta_ser_id", "meta_ser_manifest", "meta_payload" from "snapshot" where "persistence_id" = ? order by "sequence_number" desc limit 1 [42104-232]
+	at org.apache.pekko.persistence.typed.internal.ReplayingSnapshot.onRecoveryFailure(ReplayingSnapshot.scala:118)
+	at org.apache.pekko.persistence.typed.internal.ReplayingSnapshot.onSnapshotterResponse(ReplayingSnapshot.scala:202)
+	at org.apache.pekko.persistence.typed.internal.ReplayingSnapshot.$anonfun$createBehavior$1(ReplayingSnapshot.scala:71)
+	at org.apache.pekko.actor.typed.internal.BehaviorImpl$ReceiveMessageBehavior.receive(BehaviorImpl.scala:163)
+	at org.apache.pekko.actor.typed.Behavior$.interpret(Behavior.scala:311)
+	at org.apache.pekko.actor.typed.Behavior$.interpretMessage(Behavior.scala:265)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl$$anon$2.apply(InterceptorImpl.scala:67)
+	at org.apache.pekko.persistence.typed.internal.EventSourcedBehaviorImpl$$anon$1.aroundReceive(EventSourcedBehaviorImpl.scala:226)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl.receive(InterceptorImpl.scala:95)
+	at org.apache.pekko.actor.typed.Behavior$.interpret(Behavior.scala:311)
+	at org.apache.pekko.actor.typed.Behavior$.interpretMessage(Behavior.scala:265)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl$$anon$2.apply(InterceptorImpl.scala:67)
+	at org.apache.pekko.actor.typed.internal.SimpleSupervisor.aroundReceive(Supervision.scala:141)
+	at org.apache.pekko.actor.typed.internal.InterceptorImpl.receive(InterceptorImpl.scala:95)
+	at org.apache.pekko.actor.typed.Behavior$.interpret(Behavior.scala:311)
+	at org.apache.pekko.actor.typed.Behavior$.interpretMessage(Behavior.scala:265)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorAdapter.handleMessage(ActorAdapter.scala:141)
+	at org.apache.pekko.actor.typed.internal.adapter.ActorAdapter.aroundReceive(ActorAdapter.scala:117)
+	at org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)
+	at org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)
+	at org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:272)
+	at org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:233)
+	at org.apache.pekko.dispatch.Mailbox.exec(Mailbox.scala:245)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+Caused by: org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "snapshot" not found (this database is empty); SQL statement:
+select "persistence_id", "sequence_number", "created", "snapshot_ser_id", "snapshot_ser_manifest", "snapshot_payload", "meta_ser_id", "meta_ser_manifest", "meta_payload" from "snapshot" where "persistence_id" = ? order by "sequence_number" desc limit 1 [42104-232]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:514)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	at org.h2.message.DbException.get(DbException.java:223)
+	at org.h2.message.DbException.get(DbException.java:199)
+	at org.h2.command.Parser.getTableOrViewNotFoundDbException(Parser.java:7932)
+	at org.h2.command.Parser.getTableOrViewNotFoundDbException(Parser.java:7916)
+	at org.h2.command.Parser.readTableOrView(Parser.java:7895)
+	at org.h2.command.Parser.readTablePrimary(Parser.java:1769)
+	at org.h2.command.Parser.readTableReference(Parser.java:2249)
+	at org.h2.command.Parser.parseSelectFromPart(Parser.java:2702)
+	at org.h2.command.Parser.parseSelect(Parser.java:2810)
+	at org.h2.command.Parser.parseQueryPrimary(Parser.java:2692)
+	at org.h2.command.Parser.parseQueryTerm(Parser.java:2547)
+	at org.h2.command.Parser.parseQueryExpressionBody(Parser.java:2526)
+	at org.h2.command.Parser.parseQueryExpressionBodyAndEndOfQuery(Parser.java:2519)
+	at org.h2.command.Parser.parseQueryExpression(Parser.java:2512)
+	at org.h2.command.Parser.parseQuery(Parser.java:2479)
+	at org.h2.command.Parser.parsePrepared(Parser.java:610)
+	at org.h2.command.Parser.parse(Parser.java:581)
+	at org.h2.command.Parser.parse(Parser.java:556)
+	at org.h2.command.Parser.prepareCommand(Parser.java:484)
+	at org.h2.engine.SessionLocal.prepareLocal(SessionLocal.java:645)
+	at org.h2.engine.SessionLocal.prepareCommand(SessionLocal.java:561)
+	at org.h2.jdbc.JdbcConnection.prepareCommand(JdbcConnection.java:1164)
+	at org.h2.jdbc.JdbcPreparedStatement.<init>(JdbcPreparedStatement.java:93)
+	at org.h2.jdbc.JdbcConnection.prepareStatement(JdbcConnection.java:315)
+	at com.zaxxer.hikari.pool.ProxyConnection.prepareStatement(ProxyConnection.java:327)
+	at com.zaxxer.hikari.pool.HikariProxyConnection.prepareStatement(HikariProxyConnection.java)
+	at slick.jdbc.JdbcBackend$JdbcSessionDef.prepareStatement(JdbcBackend.scala:397)
+	at slick.jdbc.JdbcBackend$JdbcSessionDef.prepareStatement$(JdbcBackend.scala:386)
+	at slick.jdbc.JdbcBackend$BaseSession.prepareStatement(JdbcBackend.scala:512)
+	at slick.jdbc.StatementInvoker.results(StatementInvoker.scala:38)
+	at slick.jdbc.StatementInvoker.iteratorTo(StatementInvoker.scala:26)
+	at slick.jdbc.StreamingInvokerAction.run(StreamingInvokerAction.scala:24)
+	at slick.jdbc.StreamingInvokerAction.run$(StreamingInvokerAction.scala:22)
+	at slick.jdbc.JdbcActionComponent$JdbcQueryActionExtensionMethodsImpl$$anon$2.run(JdbcActionComponent.scala:220)
+	at slick.jdbc.JdbcActionComponent$JdbcQueryActionExtensionMethodsImpl$$anon$2.run(JdbcActionComponent.scala:220)
+	at slick.basic.BasicBackend$BasicDatabaseDef.liftedTree1$1(BasicBackend.scala:323)
+	at slick.basic.BasicBackend$BasicDatabaseDef.$anonfun$runSynchronousDatabaseAction$2(BasicBackend.scala:323)
+	at slick.basic.BasicBackend$BasicDatabaseDef.$anonfun$runSynchronousDatabaseAction$2$adapted(BasicBackend.scala:318)
+	at slick.util.AsyncExecutor$$anon$1$$anon$2.runAndCleanUp(AsyncExecutor.scala:187)
+	at slick.util.AsyncExecutor$$anon$1$$anon$2.run(AsyncExecutor.scala:198)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+21:37:26.340 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+21:37:26.356 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-b-resume-test@127.0.0.1:62098] - Exiting completed
+21:37:26.357 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-b-resume-test@127.0.0.1:62098] - Shutting down...
+21:37:26.358 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-b-resume-test@127.0.0.1:62098] - Successfully shut down
+21:37:26.362 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://bootstrap-b-resume-test/system/cluster/core/daemon#-2116016164] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+21:37:26.367 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+21:37:26.368 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+21:37:26.377 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+21:37:26.380 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown initiated...
+21:37:26.381 [34mINFO [0;39m [36m[bootstrap-b-resume-test-pekko.actor.default-dispatcher-5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown completed.
+21:37:26.406 [34mINFO [0;39m [36m[bootstrap-journal-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+21:37:26.412 [34mINFO [0;39m [36m[bootstrap-journal-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://bootstrap-journal-test@127.0.0.1:62130] with UID [-1916334523002858931]
+21:37:26.413 [34mINFO [0;39m [36m[bootstrap-journal-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-journal-test@127.0.0.1:62130] - Starting up, Pekko version [1.1.3] ...
+21:37:26.414 [34mINFO [0;39m [36m[bootstrap-journal-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-journal-test@127.0.0.1:62130] - Registered cluster JMX MBean [pekko:type=Cluster]
+21:37:26.414 [34mINFO [0;39m [36m[bootstrap-journal-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-journal-test@127.0.0.1:62130] - Started up successfully
+21:37:26.415 [34mINFO [0;39m [36m[bootstrap-journal-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-journal-test@127.0.0.1:62130] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+21:37:26.416 [34mINFO [0;39m [36m[bootstrap-journal-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://bootstrap-journal-test@127.0.0.1:62130#-1916334523002858931], selfDc [default].
+21:37:26.491 [34mINFO [0;39m [36m[bootstrap-journal-test-pekko.actor.default-dispatcher-19][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+21:37:26.491 [34mINFO [0;39m [36m[bootstrap-journal-test-pekko.actor.default-dispatcher-19][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://bootstrap-journal-test/system/cluster/core/daemon#626997099] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+21:37:26.492 [34mINFO [0;39m [36m[bootstrap-journal-test-pekko.actor.default-dispatcher-19][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-journal-test@127.0.0.1:62130] - Exiting completed
+21:37:26.492 [34mINFO [0;39m [36m[bootstrap-journal-test-pekko.actor.default-dispatcher-19][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-journal-test@127.0.0.1:62130] - Shutting down...
+21:37:26.492 [34mINFO [0;39m [36m[bootstrap-journal-test-pekko.actor.default-dispatcher-19][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-journal-test@127.0.0.1:62130] - Successfully shut down
+21:37:26.494 [34mINFO [0;39m [36m[bootstrap-journal-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+21:37:26.494 [34mINFO [0;39m [36m[bootstrap-journal-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+21:37:26.495 [34mINFO [0;39m [36m[bootstrap-journal-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+[info] BootstrapJournalSpec:
+[info] bootstrap Journal
+[info] - should resume only a matching, uninitialized unknown-B state *** FAILED ***
+[info]   java.util.concurrent.TimeoutException: Future timed out after [10 seconds]
+[info]   at scala.concurrent.impl.Promise$DefaultPromise.tryAwait0(Promise.scala:248)
+[info]   at scala.concurrent.impl.Promise$DefaultPromise.result(Promise.scala:261)
+[info]   at scala.concurrent.Await$.$anonfun$result$1(package.scala:201)
+[info]   at scala.concurrent.BlockContext$DefaultBlockContext$.blockOn(BlockContext.scala:62)
+[info]   at scala.concurrent.Await$.result(package.scala:124)
+[info]   at cn.xuyinyin.magic.workflow.bootstrap.BootstrapJournalSpec.$anonfun$new$2(BootstrapJournalSpec.scala:16)
+[info]   at org.scalatest.OutcomeOf.outcomeOf(OutcomeOf.scala:85)
+[info]   at org.scalatest.OutcomeOf.outcomeOf$(OutcomeOf.scala:83)
+[info]   at org.scalatest.OutcomeOf$.outcomeOf(OutcomeOf.scala:104)
+[info]   at org.scalatest.Transformer.apply(Transformer.scala:22)
+[info]   ...
+[info] - should reject illegal activation without spending recovery budget and keep cancellation sticky
+[info] CdcManagedIsolationSpec:
+[info] CDC managed isolation proof
+[info] - should bind the retired worker, signed guardian proof and all registered accounts
+[info] CdcPlatformRuntimeSpec:
+[info] bounded CDC runtime
+[info] - should bind a unique durable owner attempt to its managed worker identity
+[info] - should not start the reader when its managed resource manifest cannot be proven
+[info] - should let idle streaming tasks yield while another table initializes
+[info] - should bound a blocked maintenance close without releasing its durable owner
+[info] Run completed in 21 seconds, 880 milliseconds.
+[info] Total number of tests run: 7
+[info] Suites: completed 3, aborted 0
+[info] Tests: succeeded 6, failed 1, canceled 0, ignored 0, pending 0
+[info] *** 1 TEST FAILED ***
+[error] Failed tests:
+[error] 	cn.xuyinyin.magic.workflow.bootstrap.BootstrapJournalSpec
+[error] (pekko-server / Test / testOnly) sbt.TestsFailedException: Tests unsuccessful
+[error] Total time: 27 s, completed 2026年10月29日 下午9:37:37

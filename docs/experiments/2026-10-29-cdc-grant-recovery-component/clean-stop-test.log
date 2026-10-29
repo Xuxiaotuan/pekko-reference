@@ -1,0 +1,62 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+22:03:45,696 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+22:03:45,697 |-INFO in ch.qos.logback.classic.util.ContextInitializer@5c978953 - No custom configurators were discovered as a service.
+22:03:45,697 |-INFO in ch.qos.logback.classic.util.ContextInitializer@5c978953 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:03:45,699 |-INFO in ch.qos.logback.classic.util.ContextInitializer@5c978953 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:03:45,699 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+22:03:45,699 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+22:03:45,701 |-INFO in ch.qos.logback.classic.util.ContextInitializer@5c978953 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+22:03:45,701 |-INFO in ch.qos.logback.classic.util.ContextInitializer@5c978953 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:03:45,701 |-INFO in ch.qos.logback.classic.util.ContextInitializer@5c978953 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:03:45,701 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+22:03:45,701 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+22:03:45,754 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+22:03:45,754 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:03:45,765 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+22:03:45,779 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+22:03:45,779 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:03:45,779 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+22:03:45,779 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+22:03:45,781 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+22:03:45,781 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+22:03:45,782 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+22:03:45,783 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+22:03:45,784 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+22:03:45,784 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+22:03:45,784 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+22:03:45,784 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+22:03:45,784 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@ffe6b37 - End of configuration.
+22:03:45,784 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@1b0196de - Registering current configuration as safe fallback point
+22:03:45,784 |-INFO in ch.qos.logback.classic.util.ContextInitializer@5c978953 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 83 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+22:03:45.987 [34mINFO [0;39m [36m[pool-8-thread-9-ScalaTest-running-CdcGrantRecoveryMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+22:03:46.008 [34mINFO [0;39m [36m[pool-8-thread-9-ScalaTest-running-CdcGrantRecoveryMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@7bd8b270
+22:03:46.010 [34mINFO [0;39m [36m[pool-8-thread-9-ScalaTest-running-CdcGrantRecoveryMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+22:03:47.400 [34mINFO [0;39m [36m[pool-8-thread-9-ScalaTest-running-CdcGrantRecoveryMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown initiated...
+22:03:47.401 [34mINFO [0;39m [36m[pool-8-thread-9-ScalaTest-running-CdcGrantRecoveryMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown completed.
+[info] CdcGrantRecoveryMySqlSpec:
+[info] B recovery grants
+[info] - should atomically retain evidence, survive a lost commit reply and bind the permit to its successor
+[info] Run completed in 2 seconds, 95 milliseconds.
+[info] Total number of tests run: 1
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 1, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 4 s, completed 2026年10月29日 下午10:03:47

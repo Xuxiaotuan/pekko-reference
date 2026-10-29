@@ -7,7 +7,8 @@ import scala.util.control.NonFatal
 /** Bounded synchronous control tick. External RPC/observations never execute inside SQL transactions. */
 final class SnapshotSupervisorRuntime(val metadata:SnapshotSupervisorStore,val control:SupervisorControl,
   client:SnapshotGuardianWire.Client,observe:(String,(String,String,Long))=>SnapshotDatabaseObservation,
-  profileHash:String,minObservationIntervalMillis:Long=250,event:(String,String)=>Unit=(_,_)=>()) {
+  profileHash:String,minObservationIntervalMillis:Long=250,event:(String,String)=>Unit=(_,_)=>(),needsIsolation:String=>Boolean=_=>false,
+  wake:(String,(String,String,Long))=>Unit=(_,_)=>()) {
   import SnapshotGuardianWire._
   require(minObservationIntervalMillis>0)
   private val ha=metadata.store.ownership.get
@@ -27,6 +28,7 @@ final class SnapshotSupervisorRuntime(val metadata:SnapshotSupervisorStore,val c
       val status=inventory.fields.get(boot).map(_.asJsObject.fields("status"))
       require(status.nonEmpty,"current worker inventory missing")
       if(status.contains(JsString("EXITED")))own=None
+      else if(status.contains(JsString("ALIVE")) && needsIsolation(boot)){own=None;event("CDC_OWNER_ISOLATION_REQUESTED",boot)}
       else ha.owner(boot).filter(_.phase=="active").foreach { _=>
         ha.instances(boot).foreach { instance=>
           val observation=observe(boot,instance)
@@ -58,6 +60,7 @@ final class SnapshotSupervisorRuntime(val metadata:SnapshotSupervisorStore,val c
         confirmControl()
         ha.owner(t.bootId).foreach { owner=>
           if(Set("fenced","drain_wait").contains(owner.phase))ha.instances(t.bootId).foreach { instance=>
+            wake(t.bootId,instance)
             val observation=observe(t.bootId,instance)
             metadata.fenced(control){ha.recordObservation(t.bootId,observation,minObservationIntervalMillis)}
             event("DATABASE_OBSERVED",t.bootId)
