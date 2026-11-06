@@ -1,0 +1,37 @@
+{
+  "method": "Per worker, compare returned callback IDs with the zero-based prefix of observed RAW_CALLBACK and RAW_ACK_BEGIN IDs.",
+  "samples": [
+    {
+      "sample": "C1-7bc6494fa216",
+      "event_file": "0d7a6d0e-bda8-4d3c-a955-5c1d428d121b-events.jsonl",
+      "callbacks": 3,
+      "ack_begin": 3,
+      "ack_returned": 3,
+      "returned_prefix_consistent": true
+    },
+    {
+      "sample": "C1-7bc6494fa216",
+      "event_file": "b5b38196-24f2-461c-9c71-218f3b773761-events.jsonl",
+      "callbacks": 6,
+      "ack_begin": 6,
+      "ack_returned": 6,
+      "returned_prefix_consistent": true
+    },
+    {
+      "sample": "LATE_COMMIT-02e01fa17307",
+      "event_file": "41e682db-67be-48ab-ba76-9f4313c922a0-events.jsonl",
+      "callbacks": 6,
+      "ack_begin": 6,
+      "ack_returned": 6,
+      "returned_prefix_consistent": true
+    },
+    {
+      "sample": "LATE_COMMIT-02e01fa17307",
+      "event_file": "86ff692d-c9ec-4884-934c-8fbcc2d55214-events.jsonl",
+      "callbacks": 2,
+      "ack_begin": 2,
+      "ack_returned": 2,
+      "returned_prefix_consistent": true
+    }
+  ]
+}

@@ -1,0 +1,181 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] Defining pekko-server / Test / testOptions
+[info] The new value will be used by pekko-server / Test / test / testOptions, pekko-server / Test / testOnly / testOptions, pekko-server / Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+22:08:19,365 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+22:08:19,367 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7367cf8 - No custom configurators were discovered as a service.
+22:08:19,367 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7367cf8 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:08:19,367 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7367cf8 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:08:19,368 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+22:08:19,368 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+22:08:19,369 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7367cf8 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+22:08:19,369 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7367cf8 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:08:19,370 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7367cf8 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:08:19,370 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+22:08:19,370 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+22:08:19,436 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+22:08:19,436 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:08:19,440 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+22:08:19,468 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+22:08:19,468 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:08:19,469 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+22:08:19,469 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+22:08:19,470 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+22:08:19,470 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+22:08:19,473 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+22:08:19,474 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+22:08:19,475 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+22:08:19,476 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+22:08:19,476 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+22:08:19,476 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+22:08:19,476 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@6df9349d - End of configuration.
+22:08:19,476 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@28afc1b4 - Registering current configuration as safe fallback point
+22:08:19,476 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7367cf8 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 106 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+[info] BootstrapMatrixSpec:
+[info] online bootstrap with real MySQL, Actor Journal and Sink
+[info] - should preserve window, application and acknowledgement evidence for I01 *** FAILED ***
+[info]   com.mysql.cj.jdbc.exceptions.CommunicationsException: Communications link failure
+[info] 
+[info] The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+[info]   at com.mysql.cj.jdbc.exceptions.SQLError.createCommunicationsException(SQLError.java:165)
+[info]   at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:55)
+[info]   at com.mysql.cj.jdbc.ConnectionImpl.createNewIO(ConnectionImpl.java:837)
+[info]   at com.mysql.cj.jdbc.ConnectionImpl.<init>(ConnectionImpl.java:420)
+[info]   at com.mysql.cj.jdbc.ConnectionImpl.getInstance(ConnectionImpl.java:238)
+[info]   at com.mysql.cj.jdbc.NonRegisteringDriver.connect(NonRegisteringDriver.java:180)
+[info]   at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:681)
+[info]   at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:229)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcJournalWindowSupport$.withConnection(RealMySQLCdcJournalWindowSpec.scala:185)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcJournalWindowSupport$.initialize(RealMySQLCdcJournalWindowSpec.scala:206)
+[info]   ...
+[info]   Cause: com.mysql.cj.exceptions.CJCommunicationsException: Communications link failure
+[info] 
+[info] The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+[info]   at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+[info]   at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:77)
+[info]   at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+[info]   at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:500)
+[info]   at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:481)
+[info]   at com.mysql.cj.exceptions.ExceptionFactory.createException(ExceptionFactory.java:52)
+[info]   at com.mysql.cj.exceptions.ExceptionFactory.createException(ExceptionFactory.java:95)
+[info]   at com.mysql.cj.exceptions.ExceptionFactory.createException(ExceptionFactory.java:140)
+[info]   at com.mysql.cj.exceptions.ExceptionFactory.createCommunicationsException(ExceptionFactory.java:156)
+[info]   at com.mysql.cj.protocol.a.NativeSocketConnection.connect(NativeSocketConnection.java:79)
+[info]   ...
+[info]   Cause: java.net.ConnectException: Connection refused
+[info]   at java.base/sun.nio.ch.Net.connect0(Native Method)
+[info]   at java.base/sun.nio.ch.Net.connect(Net.java:579)
+[info]   at java.base/sun.nio.ch.Net.connect(Net.java:568)
+[info]   at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)
+[info]   at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
+[info]   at java.base/java.net.Socket.connect(Socket.java:633)
+[info]   at com.mysql.cj.protocol.StandardSocketFactory.connect(StandardSocketFactory.java:144)
+[info]   at com.mysql.cj.protocol.a.NativeSocketConnection.connect(NativeSocketConnection.java:53)
+[info]   at com.mysql.cj.NativeSession.connect(NativeSession.java:142)
+[info]   at com.mysql.cj.jdbc.ConnectionImpl.connectOneTryOnly(ConnectionImpl.java:961)
+[info]   ...
+[info] - should preserve window, application and acknowledgement evidence for I11 *** FAILED ***
+[info]   com.mysql.cj.jdbc.exceptions.CommunicationsException: Communications link failure
+[info] 
+[info] The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+[info]   at com.mysql.cj.jdbc.exceptions.SQLError.createCommunicationsException(SQLError.java:165)
+[info]   at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:55)
+[info]   at com.mysql.cj.jdbc.ConnectionImpl.createNewIO(ConnectionImpl.java:837)
+[info]   at com.mysql.cj.jdbc.ConnectionImpl.<init>(ConnectionImpl.java:420)
+[info]   at com.mysql.cj.jdbc.ConnectionImpl.getInstance(ConnectionImpl.java:238)
+[info]   at com.mysql.cj.jdbc.NonRegisteringDriver.connect(NonRegisteringDriver.java:180)
+[info]   at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:681)
+[info]   at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:229)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcJournalWindowSupport$.withConnection(RealMySQLCdcJournalWindowSpec.scala:185)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcJournalWindowSupport$.initialize(RealMySQLCdcJournalWindowSpec.scala:206)
+[info]   ...
+[info]   Cause: com.mysql.cj.exceptions.CJCommunicationsException: Communications link failure
+[info] 
+[info] The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+[info]   at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+[info]   at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:77)
+[info]   at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+[info]   at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:500)
+[info]   at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:481)
+[info]   at com.mysql.cj.exceptions.ExceptionFactory.createException(ExceptionFactory.java:52)
+[info]   at com.mysql.cj.exceptions.ExceptionFactory.createException(ExceptionFactory.java:95)
+[info]   at com.mysql.cj.exceptions.ExceptionFactory.createException(ExceptionFactory.java:140)
+[info]   at com.mysql.cj.exceptions.ExceptionFactory.createCommunicationsException(ExceptionFactory.java:156)
+[info]   at com.mysql.cj.protocol.a.NativeSocketConnection.connect(NativeSocketConnection.java:79)
+[info]   ...
+[info]   Cause: java.net.ConnectException: Connection refused
+[info]   at java.base/sun.nio.ch.Net.connect0(Native Method)
+[info]   at java.base/sun.nio.ch.Net.connect(Net.java:579)
+[info]   at java.base/sun.nio.ch.Net.connect(Net.java:568)
+[info]   at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)
+[info]   at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
+[info]   at java.base/java.net.Socket.connect(Socket.java:633)
+[info]   at com.mysql.cj.protocol.StandardSocketFactory.connect(StandardSocketFactory.java:144)
+[info]   at com.mysql.cj.protocol.a.NativeSocketConnection.connect(NativeSocketConnection.java:53)
+[info]   at com.mysql.cj.NativeSession.connect(NativeSession.java:142)
+[info]   at com.mysql.cj.jdbc.ConnectionImpl.connectOneTryOnly(ConnectionImpl.java:961)
+[info]   ...
+[info] - should preserve window, application and acknowledgement evidence for I16 *** FAILED ***
+[info]   com.mysql.cj.jdbc.exceptions.CommunicationsException: Communications link failure
+[info] 
+[info] The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+[info]   at com.mysql.cj.jdbc.exceptions.SQLError.createCommunicationsException(SQLError.java:165)
+[info]   at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:55)
+[info]   at com.mysql.cj.jdbc.ConnectionImpl.createNewIO(ConnectionImpl.java:837)
+[info]   at com.mysql.cj.jdbc.ConnectionImpl.<init>(ConnectionImpl.java:420)
+[info]   at com.mysql.cj.jdbc.ConnectionImpl.getInstance(ConnectionImpl.java:238)
+[info]   at com.mysql.cj.jdbc.NonRegisteringDriver.connect(NonRegisteringDriver.java:180)
+[info]   at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:681)
+[info]   at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:229)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcJournalWindowSupport$.withConnection(RealMySQLCdcJournalWindowSpec.scala:185)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcJournalWindowSupport$.initialize(RealMySQLCdcJournalWindowSpec.scala:206)
+[info]   ...
+[info]   Cause: com.mysql.cj.exceptions.CJCommunicationsException: Communications link failure
+[info] 
+[info] The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+[info]   at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+[info]   at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:77)
+[info]   at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+[info]   at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:500)
+[info]   at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:481)
+[info]   at com.mysql.cj.exceptions.ExceptionFactory.createException(ExceptionFactory.java:52)
+[info]   at com.mysql.cj.exceptions.ExceptionFactory.createException(ExceptionFactory.java:95)
+[info]   at com.mysql.cj.exceptions.ExceptionFactory.createException(ExceptionFactory.java:140)
+[info]   at com.mysql.cj.exceptions.ExceptionFactory.createCommunicationsException(ExceptionFactory.java:156)
+[info]   at com.mysql.cj.protocol.a.NativeSocketConnection.connect(NativeSocketConnection.java:79)
+[info]   ...
+[info]   Cause: java.net.ConnectException: Connection refused
+[info]   at java.base/sun.nio.ch.Net.connect0(Native Method)
+[info]   at java.base/sun.nio.ch.Net.connect(Net.java:579)
+[info]   at java.base/sun.nio.ch.Net.connect(Net.java:568)
+[info]   at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)
+[info]   at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
+[info]   at java.base/java.net.Socket.connect(Socket.java:633)
+[info]   at com.mysql.cj.protocol.StandardSocketFactory.connect(StandardSocketFactory.java:144)
+[info]   at com.mysql.cj.protocol.a.NativeSocketConnection.connect(NativeSocketConnection.java:53)
+[info]   at com.mysql.cj.NativeSession.connect(NativeSession.java:142)
+[info]   at com.mysql.cj.jdbc.ConnectionImpl.connectOneTryOnly(ConnectionImpl.java:961)
+[info]   ...
+[info] Run completed in 855 milliseconds.
+[info] Total number of tests run: 3
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 0, failed 3, canceled 0, ignored 0, pending 0
+[info] *** 3 TESTS FAILED ***
+[error] Failed tests:
+[error] 	cn.xuyinyin.magic.workflow.integration.BootstrapMatrixSpec
+[error] (pekko-server / Test / testOnly) sbt.TestsFailedException: Tests unsuccessful
+[error] Total time: 4 s, completed 2026年11月5日 下午10:08:19

@@ -1,5 +1,7 @@
 # 源码导航与职责边界
 
+共享 CDC 的现有数据流、初始化流程与 B、LOW/HIGH/F、L、T/J/D、ACK 边界见[常驻 CDC 主流程](cdc-main-flow.md)。
+
 本项目以 CDC 复制为主，保留必要的线性工作流和调度。生产代码在 `server/src/main`，前端在 `console/src`。不以重新划分 Maven/SBT 模块或改变持久化包名来整理目录。
 
 ## 从入口追到一次执行

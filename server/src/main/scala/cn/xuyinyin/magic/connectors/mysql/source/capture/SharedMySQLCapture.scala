@@ -256,93 +256,105 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       val p=Pending(nextCallback,MySQLCdcSourceNode.cursorValue(records.last),handle,records.size,bytes,mutable.Set(profileSequence))
       nextCallback+=1;pending.enqueue(p)
       observe("RAW_CALLBACK",JsObject("id"->JsNumber(p.id),"records"->JsNumber(records.size),"offset"->p.offset.parseJson))
-      records.foreach {r=>
-        require(r.sourcePartition().asScala.toMap==Map("server"->source.connectorId),"source partition changed")
-        val done=()=>{p.remaining-=1;require(p.remaining>=0,"duplicate record coverage")}
-        val v=r.value() match {case s:Struct=>Some(s);case null=>None;case _=>throw new IllegalArgumentException("unsupported source record")}
-        val name=Option(r.valueSchema()).flatMap(s=>Option(s.name())).getOrElse("")
-        if(v.isEmpty)done()
-        else if(name=="io.debezium.connector.mysql.SchemaChangeValue") {p.references++=rememberSchemas(v.get);done()}
-        else if(name=="io.debezium.connector.common.TransactionMetadataValue") {
-          val value=v.get
-          if(value.getString("status")=="END") markers.remove(value.getString("id")).foreach {m=>
-            require(value.getInt64("event_count")==1L,"control marker requires its own transaction")
-            val ordinary=m.action=="SUBSCRIBE" || m.action=="STOP"
-            val barrier=if(ordinary) {
-              val subscription=store.subscription(m.id).getOrElse(throw new IllegalArgumentException("marker without intent"))
-              require(subscription.table==m.table && subscription.generation==m.generation,"marker intent conflict")
-              store.bind(m.id,m.point,MySQLCdcSourceNode.cursorValue(r),m.action=="STOP")
-              assemblers.remove(m.table).foreach(_.close())
-              store.barrierSequence(m.id,m.action=="STOP")
-            }else Some(store.bindFence(m.id,m.point,MySQLCdcSourceNode.cursorValue(r)))
-            barrier.foreach(p.references.add)
-            m.done(barrier.getOrElse(0L))
-            val event=if(ordinary && barrier.isEmpty)"MARKER_IGNORED_CANCELED"
-              else if(ordinary){if(m.action=="STOP")"K_BOUND"else "B_BOUND"}else m.action+"_BOUND"
-            observe(event,JsObject("requestId"->JsString(m.id),"point"->m.point.json.parseJson))
-          }
-          done()
-        } else if(name=="io.debezium.connector.common.Heartbeat")done()
-        else {
-          val value=v.get;val src=value.getStruct("source")
-          require(src.getString("db")==source.database,"unexpected captured database")
-          val table=src.getString("table")
-          if(table=="pekko_capture_control") {
-            val e=MySQLCdcEnvelope.decode(r,source.connectorId).fold(x=>throw new IllegalArgumentException(x.message),_.get)
-            require(value.getString("op")=="c","control markers are immutable inserts")
-            val a=value.getStruct("after");val id=a.getString("operation_id")
-            val action=a.getString("action")
-            require(Set("SUBSCRIBE","STOP","LOW","HIGH","F","WAKE").contains(action),"unknown control action")
-            if(action=="WAKE"){
-              require(store.validWake(id,a.getString("table_name"),a.getString("generation")),"invalid wake marker")
-              done()
-            }else {
-            val intent=if(action=="SUBSCRIBE" || action=="STOP")store.markerIntent(id,a.getString("table_name"),a.getString("generation"),action=="STOP").map(s=>s.requestId)
-              else store.fenceIntent(id,a.getString("table_name"),a.getString("generation")).map {case(f,_)=>require(f.action==action,"bootstrap action changed");f.id}
-            intent match {
-              case None=>done()
-              case Some(intentId)=>
-                val transaction=value.getStruct("transaction").getString("id")
-                require(!markers.contains(transaction),"multiple markers in one transaction")
-                markers(transaction)=Marker(intentId,a.getString("table_name"),a.getString("generation"),action,CapturePoint.from(e),n=>{if(n>0)p.references+=n;done()})
-            }
-            }
-          } else if(value.getString("op")=="t") {
-            require(!store.hasActive(table),"TRUNCATE requires explicit reinitialization; capture paused")
-            done()
-          }
-          else {
-            val point=CapturePoint(src.getString("file"),src.getInt64("pos"),src.getInt32("row"))
-            if(store.route(table,point).isEmpty)done()
-            else {
-              // Debezium transaction metadata increments its per-collection counter between PK halves.
-              // It is delivery context, not part of the physical row-event restart identity.
-              val normalized=r.sourceOffset().asScala.filterNot {case(k,_)=>k.startsWith("transaction_data_collection_order_")}.toMap.asJava
-              val copy=new SourceRecord(r.sourcePartition(),normalized,r.topic(),r.kafkaPartition(),r.keySchema(),r.key(),r.valueSchema(),r.value(),r.timestamp(),r.headers())
-              val envelope=MySQLCdcEnvelope.decode(copy,source.connectorId).fold(x=>throw new IllegalArgumentException(x.message),_.get)
-              val groupId=MySQLCdcGroup.id(store.protocol,envelope)
-              val assembler=assemblers.getOrElseUpdate(table,new MySQLCdcGroupAssembler(
-                source.copy(table=table,groupProtocol=Some(store.protocol)),(groups,_,_)=>groups.foreach {g=>
-                  val group=MySQLCdcGroup.parse(g,store.protocol)
-                  groupCoverage(group.groupId)=store.append(group).getOrElse(throw new IllegalArgumentException("group lost its durable route"))
-                },_=>()))
-              assembler.accept(Vector(copy),new CdcBatchCommitHandle {def markProcessedAndFinished():Unit={p.references+=groupCoverage(groupId);done()}})
-              groupCoverage.remove(groupId)
-            }
-          }
-        }
-      }
-      while(pending.headOption.exists(_.remaining==0)) {
-        val ready=pending.head;assertOwner();val ack=store.coverSequence(ready.offset,ready.references.toVector)
-        observe("RAW_ACK_BEGIN",JsObject("id"->JsNumber(ready.id),"offset"->ready.offset.parseJson))
-        ready.handle.markProcessedAndFinished()
-        confirmedAckSequence=ack
-        pending.dequeue();observe("RAW_ACK_RETURNED",JsObject("id"->JsNumber(ready.id)))
-      }
+      records.foreach(r=>processCallbackRecord(r,p))
+      acknowledgeCoveredCallbacks()
     }catch {case e:Throwable=>
       val problem=if(!store.releaseConfirmed)releaseUnknown("capture-store",e)else e
       callbackFailed.set(true);error.compareAndSet(null,problem);throw problem
     }finally inside.set(false)
+  }
+  /** Decode and durably route one record; its callback remains pending until every record is covered. */
+  private def processCallbackRecord(r:SourceRecord,p:Pending):Unit={
+    require(r.sourcePartition().asScala.toMap==Map("server"->source.connectorId),"source partition changed")
+    val done=()=>{p.remaining-=1;require(p.remaining>=0,"duplicate record coverage")}
+    val v=r.value() match {case s:Struct=>Some(s);case null=>None;case _=>throw new IllegalArgumentException("unsupported source record")}
+    val name=Option(r.valueSchema()).flatMap(s=>Option(s.name())).getOrElse("")
+    if(v.isEmpty)done()
+    else if(name=="io.debezium.connector.mysql.SchemaChangeValue") {p.references++=rememberSchemas(v.get);done()}
+    else if(name=="io.debezium.connector.common.TransactionMetadataValue") processTransactionMetadata(r,p,v.get,done)
+    else if(name=="io.debezium.connector.common.Heartbeat")done()
+    else {
+      val value=v.get;val src=value.getStruct("source")
+      require(src.getString("db")==source.database,"unexpected captured database")
+      val table=src.getString("table")
+      if(table=="pekko_capture_control") processControlRecord(r,p,value,done)
+      else if(value.getString("op")=="t") {
+        require(!store.hasActive(table),"TRUNCATE requires explicit reinitialization; capture paused")
+        done()
+      } else processDataRecord(r,p,src,table,done)
+    }
+  }
+
+  private def processDataRecord(r:SourceRecord,p:Pending,src:Struct,table:String,done:()=>Unit):Unit={
+    val point=CapturePoint(src.getString("file"),src.getInt64("pos"),src.getInt32("row"))
+    if(store.route(table,point).isEmpty)done()
+    else {
+      // The per-collection counter is delivery context, not physical row-event identity.
+      val normalized=r.sourceOffset().asScala.filterNot {case(k,_)=>k.startsWith("transaction_data_collection_order_")}.toMap.asJava
+      val copy=new SourceRecord(r.sourcePartition(),normalized,r.topic(),r.kafkaPartition(),r.keySchema(),r.key(),r.valueSchema(),r.value(),r.timestamp(),r.headers())
+      val envelope=MySQLCdcEnvelope.decode(copy,source.connectorId).fold(x=>throw new IllegalArgumentException(x.message),_.get)
+      val groupId=MySQLCdcGroup.id(store.protocol,envelope)
+      val assembler=assemblers.getOrElseUpdate(table,new MySQLCdcGroupAssembler(
+        source.copy(table=table,groupProtocol=Some(store.protocol)),(groups,_,_)=>groups.foreach {g=>
+          val group=MySQLCdcGroup.parse(g,store.protocol)
+          groupCoverage(group.groupId)=store.append(group).getOrElse(throw new IllegalArgumentException("group lost its durable route"))
+        },_=>()))
+      assembler.accept(Vector(copy),new CdcBatchCommitHandle {def markProcessedAndFinished():Unit={p.references+=groupCoverage(groupId);done()}})
+      groupCoverage.remove(groupId)
+    }
+  }
+
+  private def processTransactionMetadata(r:SourceRecord,p:Pending,value:Struct,done:()=>Unit):Unit={
+    if(value.getString("status")=="END") markers.remove(value.getString("id")).foreach {m=>
+      require(value.getInt64("event_count")==1L,"control marker requires its own transaction")
+      val ordinary=m.action=="SUBSCRIBE" || m.action=="STOP"
+      val barrier=if(ordinary) {
+        val subscription=store.subscription(m.id).getOrElse(throw new IllegalArgumentException("marker without intent"))
+        require(subscription.table==m.table && subscription.generation==m.generation,"marker intent conflict")
+        store.bind(m.id,m.point,MySQLCdcSourceNode.cursorValue(r),m.action=="STOP")
+        assemblers.remove(m.table).foreach(_.close())
+        store.barrierSequence(m.id,m.action=="STOP")
+      }else Some(store.bindFence(m.id,m.point,MySQLCdcSourceNode.cursorValue(r)))
+      barrier.foreach(p.references.add)
+      m.done(barrier.getOrElse(0L))
+      val event=if(ordinary && barrier.isEmpty)"MARKER_IGNORED_CANCELED"
+        else if(ordinary){if(m.action=="STOP")"K_BOUND"else "B_BOUND"}else m.action+"_BOUND"
+      observe(event,JsObject("requestId"->JsString(m.id),"point"->m.point.json.parseJson))
+    }
+    done()
+  }
+
+  private def processControlRecord(r:SourceRecord,p:Pending,value:Struct,done:()=>Unit):Unit={
+    val e=MySQLCdcEnvelope.decode(r,source.connectorId).fold(x=>throw new IllegalArgumentException(x.message),_.get)
+    require(value.getString("op")=="c","control markers are immutable inserts")
+    val a=value.getStruct("after");val id=a.getString("operation_id")
+    val action=a.getString("action")
+    require(Set("SUBSCRIBE","STOP","LOW","HIGH","F","WAKE").contains(action),"unknown control action")
+    if(action=="WAKE"){
+      require(store.validWake(id,a.getString("table_name"),a.getString("generation")),"invalid wake marker")
+      done()
+    }else {
+      val intent=if(action=="SUBSCRIBE" || action=="STOP")store.markerIntent(id,a.getString("table_name"),a.getString("generation"),action=="STOP").map(s=>s.requestId)
+        else store.fenceIntent(id,a.getString("table_name"),a.getString("generation")).map {case(f,_)=>require(f.action==action,"bootstrap action changed");f.id}
+      intent match {
+        case None=>done()
+        case Some(intentId)=>
+          val transaction=value.getStruct("transaction").getString("id")
+          require(!markers.contains(transaction),"multiple markers in one transaction")
+          markers(transaction)=Marker(intentId,a.getString("table_name"),a.getString("generation"),action,CapturePoint.from(e),n=>{if(n>0)p.references+=n;done()})
+      }
+    }
+  }
+
+  /** L coverage precedes the raw commit handle, and only the completed callback prefix is acknowledged. */
+  private def acknowledgeCoveredCallbacks():Unit={
+    while(pending.headOption.exists(_.remaining==0)) {
+      val ready=pending.head;assertOwner();val ack=store.coverSequence(ready.offset,ready.references.toVector)
+      observe("RAW_ACK_BEGIN",JsObject("id"->JsNumber(ready.id),"offset"->ready.offset.parseJson))
+      ready.handle.markProcessedAndFinished()
+      confirmedAckSequence=ack
+      pending.dequeue();observe("RAW_ACK_RETURNED",JsObject("id"->JsNumber(ready.id)))
+    }
   }
   private def rememberSchemas(v:Struct):Vector[Long]={
     if(v.getString("databaseName")!=source.database)return Vector.empty
