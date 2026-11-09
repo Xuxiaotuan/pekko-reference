@@ -64,11 +64,15 @@ class SnapshotSplitExecutorSpec extends AnyWordSpec with Matchers {
           entered.trySuccess(Done); target.future
         }
       }
-      val n = Node("s", "source", "test-split", "s", Position(0, 0), JsObject("splitRows" -> JsNumber(1), "chunkSize" -> JsNumber(1)))
+      val n = Node("s", "source", "test-split", "s", Position(0, 0), JsObject("splitRows" -> JsNumber(1), "chunkSize" -> JsNumber(1), "username" -> JsString("runtime")))
+      val logicalSource = n.copy(config = JsObject(n.config.fields.updated("username", JsString("original"))))
+      val logicalSink = logicalSource.copy(id = "target")
       try {
         val running = new SnapshotSplitExecutor(source, sink, n, n.copy(id = "target"), "w", "e", 1, context,
-          () => Future.successful(Done), _ => (), _ => (), _ => (), ec, ec).run()
+          () => Future.successful(Done), _ => (), _ => (), _ => (), ec, ec,
+          logicalDefinition = Some((logicalSource, logicalSink))).run()
         Await.result(failed.future, 5.seconds)
+        lock.synchronized(saved.get.plan.fingerprint) shouldBe SnapshotSplitFingerprint.compute(1L, logicalSource, logicalSink)
         // Upstream failure is already observable, but the execution must retain the admitted T/J work.
         intercept[java.util.concurrent.TimeoutException](Await.ready(running, 500.millis))
         blocked.isCompleted shouldBe false

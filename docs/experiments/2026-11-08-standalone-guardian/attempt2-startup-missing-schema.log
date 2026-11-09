@@ -1,0 +1,50 @@
+18:13:44,669 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+18:13:44,670 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1722011b - No custom configurators were discovered as a service.
+18:13:44,670 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1722011b - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+18:13:44,670 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1722011b - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+18:13:44,673 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+18:13:44,673 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+18:13:44,676 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1722011b - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 3 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+18:13:44,676 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1722011b - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+18:13:44,677 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1722011b - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+18:13:44,677 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+18:13:44,678 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [jar:file:/private/tmp/pekko-cdc-managed-worker-20261108b/lib/cn.xuyinyin.pekko-reference-0.1.jar!/logback.xml]
+18:13:44,680 |-INFO in ch.qos.logback.core.joran.spi.ConfigurationWatchList@57ad2aa7 - URL [jar:file:/private/tmp/pekko-cdc-managed-worker-20261108b/lib/cn.xuyinyin.pekko-reference-0.1.jar!/logback.xml] is not of type file
+18:13:44,729 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+18:13:44,729 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+18:13:44,732 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+18:13:44,744 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+18:13:44,744 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+18:13:44,745 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+18:13:44,745 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+18:13:44,745 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+18:13:44,745 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+18:13:44,746 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+18:13:44,747 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+18:13:44,748 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+18:13:44,748 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+18:13:44,748 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+18:13:44,748 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+18:13:44,748 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@5b3f61ff - End of configuration.
+18:13:44,748 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@3e2059ae - Registering current configuration as safe fallback point
+18:13:44,748 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1722011b - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 71 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+18:13:44.758 INFO  [main] [com.zaxxer.hikari.HikariDataSource] - HikariPool-1 - Starting...
+18:13:44.871 INFO  [main] [com.zaxxer.hikari.HikariDataSource] - HikariPool-1 - Start completed.
+18:13:44.913 INFO  [main] [com.zaxxer.hikari.HikariDataSource] - HikariPool-1 - Shutdown initiated...
+Exception in thread "main" 18:13:44.914 INFO  [main] [com.zaxxer.hikari.HikariDataSource] - HikariPool-1 - Shutdown completed.
+java.sql.SQLSyntaxErrorException: Table 'pekko_stop_18ebabc47f.pekko_table_admission_lock' doesn't exist
+	at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:112)
+	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:114)
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeInternal(ClientPreparedStatement.java:988)
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeQuery(ClientPreparedStatement.java:1056)
+	at com.zaxxer.hikari.pool.ProxyPreparedStatement.executeQuery(ProxyPreparedStatement.java:52)
+	at com.zaxxer.hikari.pool.HikariProxyPreparedStatement.executeQuery(HikariProxyPreparedStatement.java)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingStore.query(TableSchedulingStore.scala:53)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingStore.transactionOn(TableSchedulingStore.scala:34)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingStore.$anonfun$transaction$1(TableSchedulingStore.scala:24)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingStore.read(TableSchedulingStore.scala:19)
+	at cn.xuyinyin.magic.workflow.scheduling.TableSchedulingStore.transaction(TableSchedulingStore.scala:24)
+	at cn.xuyinyin.magic.workflow.scheduling.SnapshotSupervisorStore.enroll(SnapshotSupervisorStore.scala:23)
+	at cn.xuyinyin.magic.workflow.scheduling.SnapshotGuardianMain$.main(SnapshotSupervisorProcesses.scala:173)
+	at cn.xuyinyin.magic.workflow.scheduling.SnapshotGuardianMain.main(SnapshotSupervisorProcesses.scala)

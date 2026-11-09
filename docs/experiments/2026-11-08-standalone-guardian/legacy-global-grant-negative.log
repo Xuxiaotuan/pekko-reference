@@ -1,0 +1,72 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] Passed: Total 0, Failed 0, Errors 0, Passed 0
+[info] No tests to run for Test / testOnly
+[info] compiling 2 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[info] done compiling
+23:04:30,513 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+23:04:30,514 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6abd396e - No custom configurators were discovered as a service.
+23:04:30,514 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6abd396e - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+23:04:30,514 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6abd396e - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+23:04:30,515 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+23:04:30,515 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+23:04:30,516 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6abd396e - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+23:04:30,516 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6abd396e - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+23:04:30,516 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6abd396e - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+23:04:30,516 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+23:04:30,516 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+23:04:30,548 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+23:04:30,548 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+23:04:30,551 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+23:04:30,560 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+23:04:30,560 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+23:04:30,561 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+23:04:30,561 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+23:04:30,562 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+23:04:30,562 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+23:04:30,562 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+23:04:30,563 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+23:04:30,564 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+23:04:30,564 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+23:04:30,564 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+23:04:30,564 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+23:04:30,564 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@31c6b908 - End of configuration.
+23:04:30,565 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@7eacff16 - Registering current configuration as safe fallback point
+23:04:30,565 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6abd396e - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 49 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+[info] SnapshotGuardianSpec:
+[info] production launch configuration
+[info] - should allow ordinary JDBC connections without installing a managed owner
+[info] - should refuse managed launch properties when the worker HA bootstrap is disabled
+[info] - should select the independent CDC entry and allow its worker to disable workflow dispatch
+[info] - should append control attributes to both legal MySQL URL forms without changing the database
+[info] - should refuse a worker profile with another deployment or scheduling database
+[info] guardian signed evidence
+[info] - should reject legacy grants that could modify account or proxy authority *** FAILED ***
+[info]   true was not equal to false (SnapshotGuardianSpec.scala:52)
+[info] - should bind a signed worker challenge to its nonce, controller context and owner identity
+[info] - should count a foreign-tagged session that uses an exclusive CDC account
+[info] - should reject disabled or missing observer connection attributes
+[info] - should include a dedicated material account in the state endpoint's exclusive drain inventory
+[info] - should reject a modified response or another guardian public key
+[info] - should bind proof to the original worker and operation, not merely a provider string
+[info] Run completed in 444 milliseconds.
+[info] Total number of tests run: 12
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 11, failed 1, canceled 0, ignored 0, pending 0
+[info] *** 1 TEST FAILED ***
+[error] Failed tests:
+[error] 	cn.xuyinyin.magic.workflow.scheduling.SnapshotGuardianSpec
+[error] (pekko-server / Test / testOnly) sbt.TestsFailedException: Tests unsuccessful
+[error] Total time: 4 s, completed 2026年11月8日 下午11:04:30

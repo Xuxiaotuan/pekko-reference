@@ -3,6 +3,9 @@ package cn.xuyinyin.magic.workflow.execution
 import cn.xuyinyin.magic.testkit.STSpec
 import cn.xuyinyin.magic.workflow.checkpoint._
 import cn.xuyinyin.magic.workflow.snapshot._
+import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Node, Position}
+import spray.json._
+import cn.xuyinyin.magic.workflow.scheduling.{CredentialBinding,SnapshotOwnerJdbc}
 
 class SnapshotSplitStateSpec extends STSpec {
   private val plan = SnapshotSplitPlanState("p", "s", "fingerprint", Some("20"), 2, 4, 2, 1024)
@@ -12,6 +15,29 @@ class SnapshotSplitStateSpec extends STSpec {
     BatchId.sha256("e", "s", split, sequence), SourceCursor(SnapshotSplitState.CursorKind, cursor, "10"), 2, 2)
 
   "durable split progress" should {
+    "keep the persisted split fingerprint tied to the original definition" in {
+      val source = Node("source", "source", "mysql.snapshot", "source", Position(0, 0),
+        JsObject("database" -> JsString("db"), "username" -> JsString("old"), "passwordEnv" -> JsString("OLD_PASSWORD")))
+      val sink = Node("sink", "sink", "mysql.write", "sink", Position(0, 0),
+        JsObject("table" -> JsString("target"), "username" -> JsString("old"), "password" -> JsString("secret")))
+      val fingerprint = SnapshotSplitFingerprint.compute(1L, source, sink)
+      fingerprint shouldBe "fe969ca3d16bb98b0ea79dcce238ae18b061aaf53be60e9a408e56562c13b446"
+      val differentPassword = source.copy(config = JsObject(source.config.fields.updated("passwordEnv", JsString("NEW_PASSWORD"))))
+      SnapshotSplitFingerprint.compute(1L, differentPassword, sink) shouldBe fingerprint
+      val changedDefinition = source.copy(config = JsObject(source.config.fields.updated("username", JsString("new"))))
+      SnapshotSplitFingerprint.compute(1L, changedDefinition, sink) should not be fingerprint
+    }
+    "rebind only runtime credentials while retaining the persisted node" in {
+      val node=ExecutionNode("source","source","mysql.snapshot","source",JsObject(
+        "host"->JsString("127.0.0.1"),"port"->JsNumber(3306),"database"->JsString("db"),"username"->JsString("old"),"passwordEnv"->JsString("OLD")))
+      val binding=CredentialBinding("w","e","source","source","permit","owner","op","127.0.0.1:3306","db","old","new","NEW_PASSWORD","a"*64,"ACTIVE")
+      val rebound=SnapshotOwnerJdbc.rebindRuntimeNode(node,binding)
+      rebound.config.fields("username") shouldBe JsString("new")
+      rebound.config.fields("passwordEnv") shouldBe JsString("NEW_PASSWORD")
+      rebound.config.fields.contains("password") shouldBe false
+      node.config.fields("username") shouldBe JsString("old")
+      intercept[IllegalArgumentException](SnapshotOwnerJdbc.rebindRuntimeNode(node,binding.copy(endpoint="127.0.0.2:3306")))
+    }
     "keep independent checkpoints and reject an unknown or gapped split" in {
       val registered = update(SnapshotSplitState(plan), RegisterSnapshotSplit(first))
       val advanced = update(registered, CommitSnapshotPage(cp(first.id, 0, "2")))

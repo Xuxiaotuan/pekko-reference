@@ -1,0 +1,139 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 2 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapRunner.scala:441:53: return statement uses an exception to pass control to the caller of the enclosing named method run
+[warn]         if(s.phase=="CANCELED" || s.phase=="PAUSED")return
+[warn]                                                     ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapRunner.scala:444:34: return statement uses an exception to pass control to the caller of the enclosing named method run
+[warn]         if(state.phase=="PAUSED")return
+[warn]                                  ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapRunner.scala:462:21: return statement uses an exception to pass control to the caller of the enclosing named method run
+[warn]           if(stop())return
+[warn]                     ^
+[warn] three warnings found
+[info] done compiling
+[info] compiling 2 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[info] done compiling
+09:35:48,232 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+09:35:48,233 |-INFO in ch.qos.logback.classic.util.ContextInitializer@2849e356 - No custom configurators were discovered as a service.
+09:35:48,233 |-INFO in ch.qos.logback.classic.util.ContextInitializer@2849e356 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+09:35:48,234 |-INFO in ch.qos.logback.classic.util.ContextInitializer@2849e356 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+09:35:48,234 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+09:35:48,235 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+09:35:48,236 |-INFO in ch.qos.logback.classic.util.ContextInitializer@2849e356 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+09:35:48,236 |-INFO in ch.qos.logback.classic.util.ContextInitializer@2849e356 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+09:35:48,237 |-INFO in ch.qos.logback.classic.util.ContextInitializer@2849e356 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+09:35:48,237 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+09:35:48,237 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+09:35:48,299 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+09:35:48,300 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+09:35:48,309 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+09:35:48,335 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+09:35:48,335 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+09:35:48,335 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+09:35:48,335 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+09:35:48,338 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+09:35:48,338 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+09:35:48,339 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+09:35:48,340 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+09:35:48,341 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+09:35:48,342 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+09:35:48,342 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+09:35:48,342 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+09:35:48,342 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@6ec36c1e - End of configuration.
+09:35:48,342 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@b9a6b4d - Registering current configuration as safe fallback point
+09:35:48,343 |-INFO in ch.qos.logback.classic.util.ContextInitializer@2849e356 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 106 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+SLF4J(W): A number (1) of logging calls during the initialization phase have been intercepted and are
+SLF4J(W): now being replayed. These are subject to the filtering rules of the underlying logging system.
+SLF4J(W): See also https://www.slf4j.org/codes.html#replay
+09:35:48.348 [34mINFO [0;39m [36m[bootstrap-step-2854381475594125-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+09:35:48.666 [34mINFO [0;39m [36m[bootstrap-step-2854381475594125-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://bootstrap-step-2854381475594125@127.0.0.1:63784] with UID [-6499815593231204173]
+09:35:48.678 [34mINFO [0;39m [36m[bootstrap-step-2854381475594125-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854381475594125@127.0.0.1:63784] - Starting up, Pekko version [1.1.3] ...
+09:35:48.780 [34mINFO [0;39m [36m[bootstrap-step-2854381475594125-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854381475594125@127.0.0.1:63784] - Registered cluster JMX MBean [pekko:type=Cluster]
+09:35:48.780 [34mINFO [0;39m [36m[bootstrap-step-2854381475594125-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854381475594125@127.0.0.1:63784] - Started up successfully
+09:35:48.808 [34mINFO [0;39m [36m[bootstrap-step-2854381475594125-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854381475594125@127.0.0.1:63784] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+09:35:48.815 [34mINFO [0;39m [36m[bootstrap-step-2854381475594125-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://bootstrap-step-2854381475594125@127.0.0.1:63784#-6499815593231204173], selfDc [default].
+09:35:49.447 [34mINFO [0;39m [36m[bootstrap-step-2854381475594125-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+09:35:49.452 [34mINFO [0;39m [36m[bootstrap-step-2854381475594125-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854381475594125@127.0.0.1:63784] - Exiting completed
+09:35:49.452 [34mINFO [0;39m [36m[bootstrap-step-2854381475594125-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854381475594125@127.0.0.1:63784] - Shutting down...
+09:35:49.453 [34mINFO [0;39m [36m[bootstrap-step-2854381475594125-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854381475594125@127.0.0.1:63784] - Successfully shut down
+09:35:49.455 [34mINFO [0;39m [36m[bootstrap-step-2854381475594125-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://bootstrap-step-2854381475594125/system/cluster/core/daemon#160504547] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+09:35:49.464 [34mINFO [0;39m [36m[bootstrap-step-2854381475594125-pekko.actor.default-dispatcher-16][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+09:35:49.464 [34mINFO [0;39m [36m[bootstrap-step-2854381475594125-pekko.actor.default-dispatcher-16][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+09:35:49.481 [34mINFO [0;39m [36m[bootstrap-step-2854381475594125-pekko.actor.default-dispatcher-16][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+09:35:49.510 [34mINFO [0;39m [36m[bootstrap-step-2854383038254291-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+09:35:49.520 [34mINFO [0;39m [36m[bootstrap-step-2854383038254291-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://bootstrap-step-2854383038254291@127.0.0.1:63792] with UID [7351337618012534728]
+09:35:49.520 [34mINFO [0;39m [36m[bootstrap-step-2854383038254291-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383038254291@127.0.0.1:63792] - Starting up, Pekko version [1.1.3] ...
+09:35:49.522 [34mINFO [0;39m [36m[bootstrap-step-2854383038254291-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383038254291@127.0.0.1:63792] - Registered cluster JMX MBean [pekko:type=Cluster]
+09:35:49.522 [34mINFO [0;39m [36m[bootstrap-step-2854383038254291-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383038254291@127.0.0.1:63792] - Started up successfully
+09:35:49.524 [34mINFO [0;39m [36m[bootstrap-step-2854383038254291-pekko.actor.default-dispatcher-6][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383038254291@127.0.0.1:63792] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+09:35:49.524 [34mINFO [0;39m [36m[bootstrap-step-2854383038254291-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://bootstrap-step-2854383038254291@127.0.0.1:63792#7351337618012534728], selfDc [default].
+09:35:49.552 [34mINFO [0;39m [36m[bootstrap-step-2854383038254291-pekko.actor.default-dispatcher-15][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+09:35:49.553 [34mINFO [0;39m [36m[bootstrap-step-2854383038254291-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383038254291@127.0.0.1:63792] - Exiting completed
+09:35:49.553 [34mINFO [0;39m [36m[bootstrap-step-2854383038254291-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383038254291@127.0.0.1:63792] - Shutting down...
+09:35:49.553 [34mINFO [0;39m [36m[bootstrap-step-2854383038254291-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383038254291@127.0.0.1:63792] - Successfully shut down
+09:35:49.553 [34mINFO [0;39m [36m[bootstrap-step-2854383038254291-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://bootstrap-step-2854383038254291/system/cluster/core/daemon#225496096] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+09:35:49.554 [34mINFO [0;39m [36m[bootstrap-step-2854383038254291-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+09:35:49.555 [34mINFO [0;39m [36m[bootstrap-step-2854383038254291-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+09:35:49.556 [34mINFO [0;39m [36m[bootstrap-step-2854383038254291-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+09:35:49.579 [34mINFO [0;39m [36m[bootstrap-step-2854383104412500-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+09:35:49.589 [34mINFO [0;39m [36m[bootstrap-step-2854383104412500-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://bootstrap-step-2854383104412500@127.0.0.1:63793] with UID [2456768300495916043]
+09:35:49.589 [34mINFO [0;39m [36m[bootstrap-step-2854383104412500-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383104412500@127.0.0.1:63793] - Starting up, Pekko version [1.1.3] ...
+09:35:49.591 [34mINFO [0;39m [36m[bootstrap-step-2854383104412500-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383104412500@127.0.0.1:63793] - Registered cluster JMX MBean [pekko:type=Cluster]
+09:35:49.591 [34mINFO [0;39m [36m[bootstrap-step-2854383104412500-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383104412500@127.0.0.1:63793] - Started up successfully
+09:35:49.594 [34mINFO [0;39m [36m[bootstrap-step-2854383104412500-pekko.actor.default-dispatcher-13][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383104412500@127.0.0.1:63793] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+09:35:49.594 [34mINFO [0;39m [36m[bootstrap-step-2854383104412500-pekko.actor.default-dispatcher-13][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://bootstrap-step-2854383104412500@127.0.0.1:63793#2456768300495916043], selfDc [default].
+09:35:49.631 [34mINFO [0;39m [36m[bootstrap-step-2854383104412500-pekko.actor.default-dispatcher-18][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+09:35:49.632 [34mINFO [0;39m [36m[bootstrap-step-2854383104412500-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383104412500@127.0.0.1:63793] - Exiting completed
+09:35:49.632 [34mINFO [0;39m [36m[bootstrap-step-2854383104412500-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383104412500@127.0.0.1:63793] - Shutting down...
+09:35:49.632 [34mINFO [0;39m [36m[bootstrap-step-2854383104412500-pekko.actor.default-dispatcher-18][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://bootstrap-step-2854383104412500/system/cluster/core/daemon#325825544] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+09:35:49.632 [34mINFO [0;39m [36m[bootstrap-step-2854383104412500-pekko.actor.default-dispatcher-18][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383104412500@127.0.0.1:63793] - Successfully shut down
+09:35:49.633 [34mINFO [0;39m [36m[bootstrap-step-2854383104412500-pekko.actor.default-dispatcher-18][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+09:35:49.633 [34mINFO [0;39m [36m[bootstrap-step-2854383104412500-pekko.actor.default-dispatcher-18][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+09:35:49.634 [34mINFO [0;39m [36m[bootstrap-step-2854383104412500-pekko.actor.default-dispatcher-18][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+09:35:49.651 [34mINFO [0;39m [36m[bootstrap-step-2854383182315375-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+09:35:49.658 [34mINFO [0;39m [36m[bootstrap-step-2854383182315375-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://bootstrap-step-2854383182315375@127.0.0.1:63794] with UID [-1441161718119572353]
+09:35:49.659 [34mINFO [0;39m [36m[bootstrap-step-2854383182315375-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383182315375@127.0.0.1:63794] - Starting up, Pekko version [1.1.3] ...
+09:35:49.661 [34mINFO [0;39m [36m[bootstrap-step-2854383182315375-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383182315375@127.0.0.1:63794] - Registered cluster JMX MBean [pekko:type=Cluster]
+09:35:49.661 [34mINFO [0;39m [36m[bootstrap-step-2854383182315375-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383182315375@127.0.0.1:63794] - Started up successfully
+09:35:49.663 [34mINFO [0;39m [36m[bootstrap-step-2854383182315375-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383182315375@127.0.0.1:63794] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+09:35:49.663 [34mINFO [0;39m [36m[bootstrap-step-2854383182315375-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://bootstrap-step-2854383182315375@127.0.0.1:63794#-1441161718119572353], selfDc [default].
+09:35:49.690 [34mINFO [0;39m [36m[bootstrap-step-2854383182315375-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+09:35:49.691 [34mINFO [0;39m [36m[bootstrap-step-2854383182315375-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383182315375@127.0.0.1:63794] - Exiting completed
+09:35:49.691 [34mINFO [0;39m [36m[bootstrap-step-2854383182315375-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383182315375@127.0.0.1:63794] - Shutting down...
+09:35:49.691 [34mINFO [0;39m [36m[bootstrap-step-2854383182315375-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://bootstrap-step-2854383182315375/system/cluster/core/daemon#-2060933684] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+09:35:49.691 [34mINFO [0;39m [36m[bootstrap-step-2854383182315375-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2854383182315375@127.0.0.1:63794] - Successfully shut down
+09:35:49.692 [34mINFO [0;39m [36m[bootstrap-step-2854383182315375-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+09:35:49.693 [34mINFO [0;39m [36m[bootstrap-step-2854383182315375-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+09:35:49.694 [34mINFO [0;39m [36m[bootstrap-step-2854383182315375-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+[info] BootstrapStepAdmissionSpec:
+[info] an activation fence
+[info] - should bind the covered F marker to the subscription, generation, schema and B boundary
+[info] the actual bounded Runner admission
+[info] - should yield repeated not-ready attempts without opening JDBC or spending a recovery budget
+[info] - should treat maintenance stop as yield without requesting capture readiness or cancellation
+[info] - should return a durable paused state without claiming it can resume
+[info] - should leave RECOVERY_PENDING untouched without source or sink work
+[info] Run completed in 2 seconds, 219 milliseconds.
+[info] Total number of tests run: 5
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 5, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 17 s, completed 2026年11月8日 上午9:35:49

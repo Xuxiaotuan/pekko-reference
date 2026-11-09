@@ -6,7 +6,7 @@ import spray.json._
 import scala.collection.mutable
 
 object BootstrapPhases {
-  private val edges=Map("QUEUED"->Set("SCANNING"),"SCANNING"->Set("REPLAYING"),
+  private val edges=Map("RECOVERY_PENDING"->Set.empty[String],"QUEUED"->Set("SCANNING"),"SCANNING"->Set("REPLAYING"),
     "REPLAYING"->Set("ACTIVATING"),"ACTIVATING"->Set("STREAMING"),"STREAMING"->Set.empty[String],
     "CANCELING"->Set("CANCELED"),"CANCELED"->Set.empty[String],"PAUSED"->Set.empty[String])
   def allowed(from:String,to:String):Boolean=edges.contains(from) && (from==to ||
@@ -46,5 +46,7 @@ final case class BootstrapProgress(
   upper:Option[String]=None,planned:Boolean=false,nextLower:Option[String]=None,index:Long=0L,
   attempt:Int=0,window:Option[String]=None,manifest:Option[String]=None,appliedPage:Int=0,
   fence:Option[String]=None,deltaAfter:Long=0L,batchSequence:Long=0L,
-  completionRoot:String="",recoveryAttempts:Int=0,cancelRequested:Boolean=false,failure:Option[String]=None
+  completionRoot:String="",recoveryAttempts:Int=0,cancelRequested:Boolean=false,failure:Option[String]=None,
+  recoveryPermit:Option[String]=None,
+  recoveryReceiptDigest:Option[String]=None
 ) extends CborSerializable

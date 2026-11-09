@@ -13,8 +13,10 @@ object MySqlOwnerDrainObserver {
   }
   private[scheduling] def unattributed(row:Map[String,String],owner:String,users:Set[String],exclusive:Set[String]):Boolean=
     (users(row("user")) && row("owner")==null) || (exclusive(row("user")) && row("owner")!=owner)
+  private[scheduling] def hasObserverIdentity(size:String,attrs:Map[String,String]):Boolean=
+    scala.util.Try(size.toLong).toOption.exists(_>0) && attrs.get("pekko_owner").contains("observer")
 }
-final class MySqlOwnerDrainObserver(ownership:SnapshotOwnershipStore,open:String=>Connection,maxRows:Int=10000,
+final class MySqlOwnerDrainObserver(ownership:ManagedOwnerRegistry,open:String=>Connection,maxRows:Int=10000,
   exclusiveAccounts:Map[String,Set[String]]=Map.empty) {
   require(maxRows>0 && maxRows<=10000)
   def observe(owner:String,instance:(String,String,Long)):SnapshotDatabaseObservation={
@@ -33,6 +35,10 @@ final class MySqlOwnerDrainObserver(ownership:SnapshotOwnershipStore,open:String
         }finally q.close()
       }
       require(MySqlOwnerDrainObserver.hasProcessPrivilege(rows("SHOW GRANTS").flatMap(_.values).filter(_!=null)),"observer requires directly granted global PROCESS visibility")
+      val size=rows("SHOW VARIABLES LIKE 'performance_schema_session_connect_attrs_size'").headOption.flatMap(_.get("value")).getOrElse("0")
+      val attrs=rows(s"SELECT ATTR_NAME,ATTR_VALUE FROM performance_schema.session_connect_attrs WHERE PROCESSLIST_ID=$selfId")
+        .map(r=>r("attr_name")->r("attr_value")).toMap
+      require(MySqlOwnerDrainObserver.hasObserverIdentity(size,attrs),"observer connection attributes are not observable")
       val lost=rows("SHOW GLOBAL STATUS WHERE Variable_name IN ('Performance_schema_session_connect_attrs_lost','Performance_schema_thread_instances_lost')")
       require(lost.size==2 && lost.forall(_("value")=="0"),"database observation lost connection identity information")
       val sessions=rows(s"""SELECT p.ID AS id,p.USER AS user,p.COMMAND AS command,p.STATE AS state,p.INFO AS info,
@@ -42,24 +48,25 @@ final class MySqlOwnerDrainObserver(ownership:SnapshotOwnershipStore,open:String
         LEFT JOIN performance_schema.session_connect_attrs r ON p.ID=r.PROCESSLIST_ID AND r.ATTR_NAME='pekko_role'
         WHERE p.ID<>$selfId ORDER BY p.ID LIMIT ${maxRows+1}""")
       val transactions=rows(s"SELECT trx_id,trx_state,trx_mysql_thread_id,trx_query FROM information_schema.innodb_trx ORDER BY trx_mysql_thread_id LIMIT ${maxRows+1}")
+      def threadId(row:Map[String,String]):Option[Long]=Option(row.getOrElse("trx_mysql_thread_id",null)).flatMap(v=>scala.util.Try(v.toLong).toOption)
       val known=ownership.knownSessions(owner,instance._1).toSet
       val attributed=sessions.filter(_("owner")==owner)
       val ids=known++attributed.map(_("id").toLong)
       val oldSessions=sessions.filter(s=>ids(s("id").toLong))
-      val oldTransactions=transactions.filter(t=>ids(t("trx_mysql_thread_id").toLong))
+      val oldTransactions=transactions.filter(t=>threadId(t).exists(ids))
       val workerUsers=ownership.databaseUsers(owner,instance._1)
       require(workerUsers.nonEmpty,"worker database account inventory is incomplete")
       val unassigned=sessions.filter(s=>MySqlOwnerDrainObserver.unattributed(s,owner,workerUsers,exclusiveAccounts.getOrElse(instance._1,Set.empty)))
       val visible=sessions.map(_("id").toLong).toSet+selfId
-      val orphan=transactions.filter(t=> !visible(t("trx_mysql_thread_id").toLong) && !ids(t("trx_mysql_thread_id").toLong))
+      val orphan=transactions.filter(t=>threadId(t).forall(id => (!visible(id) && !ids(id))))
       def json(v:Vector[Map[String,String]])=JsArray(v.map(m=>JsObject(m.map{case(k,value)=>k->Option(value).map(JsString(_)).getOrElse(JsNull)})))
       val evidence=JsObject("owner"->JsString(owner),"instance"->JsString(instance._1),"observedAt"->JsNumber(at),
         "serverStarted"->JsNumber(started),"knownIds"->JsArray(ids.toVector.sorted.map(JsNumber(_))),
         "sessions"->json(oldSessions),"transactions"->json(oldTransactions),"unattributed"->json(unassigned),"unassignedTransactions"->json(orphan))
-      val used=sessions.map(_("id").toLong).toSet++transactions.map(_("trx_mysql_thread_id").toLong)
+      val used=sessions.map(_("id").toLong).toSet++transactions.flatMap(threadId)
       SnapshotDatabaseObservation(instance._1,true,oldSessions.size,oldTransactions.size,unassigned.size+orphan.size,evidence.compactPrint,at,(known--used).toVector)
     } catch {case NonFatal(e)=>SnapshotDatabaseObservation(instance._1,false,-1,-1,-1,
-      JsObject("owner"->JsString(owner),"instance"->JsString(instance._1),"errorClass"->JsString(e.getClass.getName)).compactPrint,at)
+      JsObject("owner"->JsString(owner),"instance"->JsString(instance._1),"errorClass"->JsString(e.getClass.getName),"errorMessage"->JsString(Option(e.getMessage).getOrElse(""))).compactPrint,at)
     } finally if(c!=null)try c.close() catch {case NonFatal(_)=>()}
   }
 }

@@ -1,0 +1,25 @@
+{
+  "scope": "second JVM before shutdown, MySQL PFS single JOIN",
+  "pfs_query_ok": true,
+  "rows": [
+    {
+      "connection_id": "2208",
+      "innodb_trx_id": "281505804850632",
+      "innodb_trx_state": "RUNNING",
+      "rows_modified": "0",
+      "pfs_thread_id": "2322",
+      "mysql_user": "stop_sdk_6fd713ceae",
+      "transaction_event_id": "6",
+      "transaction_state": "ACTIVE",
+      "statement_event_id": "13",
+      "nesting_event_id": "6",
+      "nesting_event_type": "TRANSACTION",
+      "statement_event_name": "statement/sql/select",
+      "statement_digest": "6575e0a56f36c8c9e258bcf454984e435a8f7a017a49ea24c13df2d8d17eb017",
+      "statement_kind": "schema-history-select"
+    }
+  ],
+  "after_shutdown": "first recorded sample no longer contained this SDK transaction",
+  "experiment_result": "incomplete: jcmd 10 second timeout stopped harness; application processes no longer present and dedicated MySQL state subsequently observed STOPPED",
+  "limits": "live join establishes SELECT nesting in active transaction before stop; it does not prove this transaction caused the prior 15-second shutdown timeout"
+}

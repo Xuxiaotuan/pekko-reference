@@ -36,6 +36,11 @@ trait CheckpointedNodeSource { self: NodeSource =>
   )(implicit blockingEc: ExecutionContext): BatchSourceSession =
     BatchSourceSession(createBatches(node, executionId, boundary, resumeFrom, onLog), () => Future.successful(Done))
 
+  def acknowledgeCommittedBatchWithReceipt(
+    node: WorkflowDSL.Node, batch: SourceBatch,
+    receipt: Option[cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor.PersistedCheckpoint], onLog: String => Unit
+  )(implicit blockingEc: ExecutionContext): Future[Done] = acknowledgeCommittedBatch(node, batch, onLog)
+
   def acknowledgeCommittedBatch(
     node: WorkflowDSL.Node,
     batch: SourceBatch,

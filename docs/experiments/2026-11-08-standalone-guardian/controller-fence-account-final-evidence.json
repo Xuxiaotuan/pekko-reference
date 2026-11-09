@@ -1,0 +1,13 @@
+{
+  "mysql": "9.5.0",
+  "source_sha256": {
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyAccountLockIntent.scala": "e87f2d752297b96ada362428ff5666ef1f448b72b59a179b3a516ff259599e8b",
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyMySqlAccountLock.scala": "3ca6502b1201c1e919dd8303860520eaecbb14f0c7cf188c2fed234b82f02ca7",
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/CutoverAccountMySqlSpec.scala": "95d8e39b35628be72c03fc7c331686f01607dbc94a5c9b5c477b27ba9a0a23e8",
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorStoreSpec.scala": "c3094868c5e2136edbf951e07caebcb6913475342b98a4c19282ab77956f5760",
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyIntentCrashProbe.scala": "f590d3b1f5af61e622dcb8ddeb986b824e841ba1fafca8db1a092779b12e8131"
+  },
+  "tests_passed": 35,
+  "observed": "real MySQL control transaction serializes supervisor epoch replacement; intent survives test JVM halt after account DDL; new epoch rechecks; old transaction can commit",
+  "limitations": "no guardian orchestration, durable cutover, admin privilege exclusivity enforcement, lock/quota migration or old workflow end-to-end test"
+}

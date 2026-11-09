@@ -34,7 +34,7 @@ final class BootstrapTarget(open:()=>Connection,val table:String,codec:Bootstrap
     transaction {c=>
       val inserted=update(c,"INSERT IGNORE INTO pekko_bootstrap_targets VALUES(?,?,?,?)",targetKey,id,table,codec.schemaId)==1
       val r=query(c,"SELECT * FROM pekko_bootstrap_targets WHERE target_key=? FOR UPDATE",targetKey).head
-      require(r("bootstrap_id")==id && r("schema_id")==codec.schemaId,"target already belongs to another initialization")
+      require(r("bootstrap_id")==id && r("table_name")==table && r("schema_id")==codec.schemaId,"target already belongs to another initialization")
       if(inserted)require(query(c,s"SELECT COUNT(*) AS n FROM `$table`").head("n")=="0","bootstrap requires an initially empty target")
     }
   }
@@ -42,8 +42,8 @@ final class BootstrapTarget(open:()=>Connection,val table:String,codec:Bootstrap
     "version"->JsNumber(1),"schema"->JsString(codec.schemaId),"table"->JsString(table),"window"->JsString(window),"page"->JsNumber(index),
     "manifest"->JsString(hash(manifest)),"rows"->JsArray(rows)))
   private def receipt(c:Connection,operation:String,proof:String)(effect: =>Unit):Boolean={
-    query(c,"SELECT bootstrap_id FROM pekko_bootstrap_targets WHERE target_key=? FOR UPDATE",targetKey).headOption match {
-      case Some(r)=>require(r("bootstrap_id")==id,"target claim lost")
+    query(c,"SELECT bootstrap_id,table_name,schema_id FROM pekko_bootstrap_targets WHERE target_key=? FOR UPDATE",targetKey).headOption match {
+      case Some(r)=>require(r("bootstrap_id")==id && r("table_name")==table && r("schema_id")==codec.schemaId,"target claim lost or identity changed")
       case None=>throw new IllegalArgumentException("target not claimed")
     }
     query(c,"SELECT payload,digest FROM pekko_bootstrap_receipts WHERE bootstrap_id=? AND operation_id=?",id,operation).headOption match {

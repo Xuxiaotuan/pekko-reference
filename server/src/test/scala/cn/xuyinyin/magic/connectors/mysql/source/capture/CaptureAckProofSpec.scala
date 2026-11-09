@@ -21,6 +21,20 @@ class CaptureAckProofSpec extends AnyWordSpec with Matchers {
     }
   }
   "B barrier ACK coverage" should {
+    "reject a chain beyond the proof budget instead of accepting a partial proof" in {
+      val offset=JsObject("file"->JsString("binlog.000001"),"pos"->JsNumber(100))
+      val canonical=MySQLCdcGroup.canonical(offset)
+      def frame(n:Long):Map[String,String]={
+        val parent=if(n==1)JsNull else JsObject("sequence"->JsNumber(n-1),"digest"->JsString(s"digest-${n-1}"))
+        Map("kind"->"ACK","digest"->s"digest-$n","table_name"->MySQLCdcGroup.hash(canonical),
+          "payload"->JsObject("offset"->offset,"parent"->parent,"references"->JsArray()).compactPrint)
+      }
+      val error=intercept[IllegalArgumentException] {
+        CaptureAckProof.inspect(4097L,1L,0L,canonical,frame)
+      }
+      error.getMessage should include ("ACK proof budget exceeded")
+    }
+
     "verify parent and reference digests and distinguish covered from replayable" in {
       val offset=JsObject("file"->JsString("binlog.000001"),"pos"->JsNumber(100))
       def ref(seq:Int,digest:String)=JsObject("sequence"->JsNumber(seq),"digest"->JsString(digest))

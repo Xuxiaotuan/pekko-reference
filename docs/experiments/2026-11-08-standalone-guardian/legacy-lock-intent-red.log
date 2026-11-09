@@ -1,0 +1,47 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] Passed: Total 0, Failed 0, Errors 0, Passed 0
+[info] No tests to run for Test / testOnly
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[error] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorStoreSpec.scala:27:16: not found: value LegacyAccountLockIntent
+[error]       val plan=LegacyAccountLockIntent.Plan("op1","uuid1",LegacyMySqlAccountLock.Account("old","127.0.0.1"),Set("control"))
+[error]                ^
+[error] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorStoreSpec.scala:28:23: not found: type LegacyAccountLockIntent
+[error]       val intents=new LegacyAccountLockIntent(metadata)
+[error]                       ^
+[error] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorStoreSpec.scala:32:11: not found: type LegacyAccountLockIntent
+[error]       new LegacyAccountLockIntent(metadata).prepare(replacement,plan).phase shouldBe "INTENT"
+[error]           ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorStoreSpec.scala:213:25: Unused import
+[warn]       import spray.json._
+[warn]                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorStoreSpec.scala:8:15: private method fixture in class SnapshotSupervisorStoreSpec is never used
+[warn]   private def fixture(f:TableSchedulingStore=>Unit):Unit={
+[warn]               ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorStoreSpec.scala:26:11: local val first in value $anonfun is never used
+[warn]       val first=metadata.claimController("first")
+[warn]           ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorStoreSpec.scala:166:28: local var observed in value $anonfun is never updated: consider using immutable val
+[warn]       var retire=false;var observed=1000L
+[warn]                            ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorStoreSpec.scala:256:42: local var rounds in value $anonfun is never updated: consider using immutable val
+[warn]         val b=h.claimController("b");var rounds=0;var wakeCalls=0
+[warn]                                          ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorStoreSpec.scala:256:55: local var wakeCalls in value $anonfun is never updated: consider using immutable val
+[warn]         val b=h.claimController("b");var rounds=0;var wakeCalls=0
+[warn]                                                       ^
+[warn] 6 warnings found
+[error] three errors found
+[error] (pekko-server / Test / compileIncremental) Compilation failed
+[error] Total time: 3 s, completed 2026年11月8日 下午10:38:35

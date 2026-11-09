@@ -14,7 +14,7 @@ final class ManagedJvmIsolation(deploymentId:String,maxWorkers:Int) {
   // A successful fork is never equivalent to NOT_STARTED, even if its identity lookup fails.
   private val unidentified=mutable.Map.empty[String,Process]
   @volatile private var usedBoot:String=>Boolean = _=>false
-  private[scheduling] def bindRegistry(ownership:SnapshotOwnershipStore):Unit={usedBoot=id=>ownership.owner(id).nonEmpty}
+  private[scheduling] def bindRegistry(ownership:ManagedOwnerRegistry):Unit={usedBoot=id=>ownership.owner(id).nonEmpty}
   private[scheduling] def retire(id:String):Unit=synchronized {children.remove(id);()}
   private[scheduling] def hasUnidentified(id:String):Boolean=synchronized(unidentified.contains(id))
   def launch(bootId:String,builder:ProcessBuilder):ManagedSnapshotChild=synchronized {
@@ -46,7 +46,7 @@ final class ManagedJvmIsolation(deploymentId:String,maxWorkers:Int) {
 }
 
 /** Called by the managed supervisor on a bounded timer. Restarting this coordinator preserves its SQL operation IDs. */
-final class SnapshotTakeoverCoordinator(ownership:SnapshotOwnershipStore,isolation:ManagedJvmIsolation,
+final class SnapshotTakeoverCoordinator(ownership:ManagedOwnerRegistry,isolation:ManagedJvmIsolation,
   observe:(String,(String,String,Long))=>SnapshotDatabaseObservation,minObservationIntervalMillis:Long=250) {
   require(minObservationIntervalMillis>0)
   isolation.bindRegistry(ownership)

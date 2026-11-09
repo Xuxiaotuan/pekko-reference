@@ -82,6 +82,12 @@ CDC Sink 在一次事务内复用语句并保留逐条事件顺序；列表查�
 
 新共享 Reader、LOW/HIGH 初始化、有界步骤与动态选表走独立的 `/api/v1/cdc-tasks`，默认 `pekko.workflow.cdc-platform.enabled=false`。显式启用、专用 SDK/控制账号、空目标表和 schema 前提见[配置指南](docs/guides/configuration.md#常驻-cdc-平台显式启用)，实际版本与验证边界见[平台报告](docs/experiments/2026-10-27-cdc-platform/README.md)。当前采用 SQL 冷控制索引和活动步骤的 Journal；旧静态快照接管不代表新链路已具备 HA，元数据规模也不代表 70 万真实表运行能力。
 
+### 独立 CDC 入口
+
+`sbt runCdcStandalone` 启动只包含 CDC 服务与 `/api/v1/cdc-*` 路由的独立进程，不初始化通用 Workflow、Cron 或前端。它使用已有的 Journal 和 CDC 配置；配置必须显式启用 `pekko.workflow.cdc-platform.enabled` 并设置 `pekko.cdc-standalone.http.port`。API 只允许绑定回环地址，默认 `127.0.0.1`，服务绑定成功不代表 Reader 就绪。常用入口为 `GET /api/v1/cdc-status`、`GET /api/v1/cdc-captures` 和 `/api/v1/cdc-tasks` 的新增、查询、取消操作；请求受理不代表初始化完成。
+
+例如，在受保护的配置文件中设置 CDC 连接信息、账号及上述参数后，可使用 `JAVA_TOOL_OPTIONS=-Dconfig.file=/绝对路径/cdc.conf sbt runCdcStandalone`。不要把数据库密码放在命令行或提交到仓库。此入口目前明确拒绝受管 HA 和 source-fence-v2 配置；单活隔离与旧进程资源释放仍需外部保证并验证。协调关闭会等待既有停止操作的实际结果，超时或释放无法确认时保留 `UNKNOWN`。不支持自动安全 GC 的环境仍需容量监控和明确暂停处置。本次基线、实验和限制见[独立入口验证记录](docs/experiments/2026-11-08-cdc-standalone-entry/README.md)。
+
 ## MySQL schema
 
 Journal/Snapshot 和完整组目标账本须由部署流程预建。以下命令初始化 Journal schema；显式 CDC 平台还会初始化自己的控制/L/Bootstrap 辅助表，SDK 会创建派生的 offset/history 表，权限和完整前提见[配置指南](docs/guides/configuration.md#持久化与目标表前提)。

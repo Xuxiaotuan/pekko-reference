@@ -43,7 +43,7 @@ private[cdc] final case class CdcTaskRecord(view:CdcTaskView,definition:CdcTaskR
   grantOwner:Option[String],dueAt:Long,continuation:Option[BootstrapProgress],workPool:String,schedulable:Boolean,wakeSequence:Long)
 private[cdc] final case class CdcTaskGrant(id:String,owner:String,pool:String,task:CdcTaskRecord)
 private[cdc] object CdcProgressJson extends DefaultJsonProtocol {
-  implicit val progressFormat:RootJsonFormat[BootstrapProgress]=jsonFormat19(BootstrapProgress.apply)
+  implicit val progressFormat:RootJsonFormat[BootstrapProgress]=jsonFormat21(BootstrapProgress.apply)
   def encode(progress:BootstrapProgress):String=progress.toJson.compactPrint
   def decode(value:String):BootstrapProgress=value.parseJson.convertTo[BootstrapProgress]
 }

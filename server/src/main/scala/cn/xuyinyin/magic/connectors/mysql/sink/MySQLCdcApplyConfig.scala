@@ -44,6 +44,13 @@ object MySQLCdcApplyConfig {
     fromFields(fields, requiredString(fields, "password"))
   }
 
+  /** CDC runtime entry uses the same validation as the legacy trusted Node adapter. */
+  private[magic] def trusted(host:String,port:Int,database:String,table:String,username:String,password:String):MySQLCdcApplyConfig = {
+    val fields=Map[String,JsValue]("host"->JsString(host),"port"->JsNumber(port),"database"->JsString(database),
+      "table"->JsString(table),"username"->JsString(username),"password"->JsString(password))
+    fromFields(fields,requiredString(fields,"password"))
+  }
+
   private def fromFields(fields: Map[String, JsValue], password: String): MySQLCdcApplyConfig =
     MySQLCdcApplyConfig(
       host = requiredString(fields, "host"),

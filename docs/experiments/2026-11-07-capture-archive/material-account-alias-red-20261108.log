@@ -1,0 +1,38 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 2 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[info] done compiling
+[info] CdcPlatformSettingsSpec:
+[info] CDC platform settings
+[info] - should stay disabled unless explicitly enabled
+[info] - should reject configuration that reuses the control account as the exclusive SDK account
+[info] - should reject two capture domains that reuse an exclusive source or state account
+[info] - should reject an empty SDK password and a half-specified observer identity
+[info] - should reject incomplete or reused material accounts instead of silently ignoring them
+[info] - should bind a configured material account to the existing state endpoint and redact it from settings *** FAILED ***
+[info]   Expected exception cn.xuyinyin.magic.workflow.cdc.CdcPlatformException to be thrown, but no exception was thrown (CdcPlatformSettingsSpec.scala:94)
+[info] Run completed in 178 milliseconds.
+[info] Total number of tests run: 6
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 5, failed 1, canceled 0, ignored 0, pending 0
+[info] *** 1 TEST FAILED ***
+[error] Failed tests:
+[error] 	cn.xuyinyin.magic.workflow.cdc.CdcPlatformSettingsSpec
+[error] (Test / testOnly) sbt.TestsFailedException: Tests unsuccessful
+[error] Total time: 4 s, completed 2026年11月8日 上午9:25:24

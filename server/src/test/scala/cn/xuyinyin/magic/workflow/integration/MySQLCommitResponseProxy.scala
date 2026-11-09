@@ -25,7 +25,7 @@ private[integration] final class MySQLCommitResponseProxy(host: String, upstream
   private val listener = new ServerSocket(0, 16, InetAddress.getLoopbackAddress)
   val port: Int = listener.getLocalPort
   def arm(mode: String, batch: JsObject): Unit = {
-    require(Set("C0", "C1", "C2", "LATE_COMMIT", "LATE_ROLLBACK").contains(mode))
+    require(Set("C0", "C1", "C2", "LATE_COMMIT", "LATE_ROLLBACK", "FENCE_C1").contains(mode))
     require(armed.compareAndSet(null, Armed(mode, batch)), "proxy already armed")
   }
   def dropHeldResponse(): Unit = held.countDown()
@@ -45,6 +45,7 @@ private[integration] final class MySQLCommitResponseProxy(host: String, upstream
     val authenticated = new AtomicBoolean(false)
     val intercepted = new AtomicReference[Armed]()
     val holding = new AtomicBoolean(false)
+    val fenceUpdate = new AtomicBoolean(false)
     val connectionId = new AtomicReference[JsValue](JsNull)
     def closePair(): Unit = { closeSocket(client); closeSocket(server); sockets.remove(client); sockets.remove(server) }
     def event(kind: String, a: Armed): Unit = observe(kind, JsObject(
@@ -59,7 +60,16 @@ private[integration] final class MySQLCommitResponseProxy(host: String, upstream
           require((capabilities & (0x800L | 0x20L | 0x04000000L)) == 0L, "test proxy rejects TLS/compression")
           first = false
         }
-        val a = if (authenticated.get() && isCommit(packet)) armed.getAndSet(null) else null
+        if(authenticated.get() && packet.length>5 && (packet(4)==3.toByte || packet(4)==22.toByte)) {
+          val sql=new String(packet,5,packet.length-5,UTF_8).toUpperCase(java.util.Locale.ROOT)
+          if(sql.contains("UPDATE PEKKO_CAPTURE_CONTROL_FENCE_V1 SET EPOCH=")){
+            fenceUpdate.set(true)
+            observe("FENCE_UPDATE_OBSERVED",JsObject("connectionId"->connectionId.get(),"command"->JsNumber(packet(4)&255)))
+          }
+        }
+        val armedNow=armed.get()
+        val matches=armedNow!=null && (armedNow.mode!="FENCE_C1" || fenceUpdate.get())
+        val a = if (authenticated.get() && isCommit(packet) && matches && armed.compareAndSet(armedNow,null)) armedNow else null
         if (a != null) {
           intercepted.set(a)
           if (a.mode == "C0") {

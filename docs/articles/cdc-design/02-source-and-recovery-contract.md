@@ -233,7 +233,7 @@ STREAMING 继续从 `deltaAfter` 读取 L，每步至多一批。无剩余组时
 
 有界执行反复结束连接，因此必须区分“这步已经干净结束”和“这份输入已经封存”。前者是资源事实，后者是恢复算法的内容事实。
 
-同 runtime 内，控制索引保存已确认释放的 grant 及完整 J progress。新 Runner 只有核对定义、execution、revision 和全部数据进度后，才把它认作正常续调，不额外消耗一次 Interrupted 恢复预算。Journal 的合法取消转换可以单调改变取消状态；任意迟到 checkpoint、定义或游标变化不能拿旧 clean progress 跳过校验。新 JVM 不复用旧 owner 的这份许可。
+同 runtime 内，控制索引保存已确认释放的 grant 及完整 J progress。新 Runner 只有核对定义、execution、revision 和全部数据进度后，才把它认作正常续调，不额外消耗一次 Interrupted 恢复预算。Journal 的合法取消转换可以单调改变取消状态；任意迟到 checkpoint、定义或游标变化不能拿旧 clean progress 跳过校验。上述是该历史版本的行为。2026-11-08 未提交候选增加清洁 owner lineage：只有旧 owner 释放已确认，后继 owner 才能取得跨进程 continuation 候选；Runner 首次使用时仍核对完整 Journal，STREAMING 还校验目标激活证明。未经确认的退出不继承，未封存 RR 仍按固定范围重读。五轮正常重启对账与异常退出安全暂停的[实验范围](../../experiments/2026-11-08-cdc-standalone-entry/README.md)分别记录；这不是异常后自动接管保证。
 
 即使 clean progress 完全匹配，旧 RR 也已经结束。例如第 0 页写入 RAW 后发生可重试错误，连接正常 rollback/close，J 仍指向未封存窗口。资源可以释放，但下次必须沿用旧 spec 的 `(lower, upper]`，换 attempt 整段重读。不能重新调用 `nextUpper` 移动边界，也不能把旧第 0 页与新 RR 的后续页拼成同一快照。
 
@@ -250,6 +250,8 @@ if (lostView) require(
 J 已接受 manifest hash 或目标页后，丢失 seal 已经是证据损坏，不能降格为普通 RAW 失败。此时暂停；如果 seal 存在而 J 还没记录其 hash，则继续校验原 seal，不生成新内容。这个 guard 同时约束连续 `run()` 与新步骤恢复路径。
 
 同 owner 重建、失去真实读视图、保留原范围与恢复预算的组合，必须由[本轮平台实验](../../experiments/2026-10-27-cdc-platform/README.md)单独验证。历史 I11 的进程故障实验不能替代新步骤 API 的缓存重建实验。
+
+本次候选将回放接口移至 CDC 命名空间，旧 Workflow sink 接口和 Runner 构造器保留；[编译与历史 Journal 样本](../../experiments/2026-11-08-cdc-standalone-entry/README.md)检验了这一边界。目标事务、组账本和 checkpoint 的含义没有因此改变。
 
 ## 9. 实现结论与验收边界
 
@@ -310,6 +312,24 @@ C0（COMMIT 未转发）、C1（COMMIT 已成功但回复丢失）、迟提交�
 生产入口的独立 C1 样本在真实 MySQL、Journal 和 Sink 上恢复至 STREAMING，源与目标各 64 行、384 字段相等。前两次运行分别在故障注入前因测试配置缺项和明文代理不兼容而失败，原始材料保留；本样本没有生产 raw ACK 顺序证据，强制清理后 CDC owner 仍为 ACTIVE，不证明正常停机。其余故障窗口仍仅有测试入口证据。 [生产入口 C1 证据](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)。
 
 `CdcManagedPendingB` 在证明未知 B 时最多反查 4096 条源控制表记录；超过上限即拒绝恢复并安全暂停。当前没有控制行 GC，长期新增、取消表可能积累历史记录；这是恢复可用性的明确上限，而不是已经验证的 70 万表支持能力。 [组件实验与限制](../../experiments/2026-10-29-cdc-b-proof-component/README.md)。
+
+## 独立入口的受管恢复
+
+受管模式先取得 guardian 隔离证明并确认数据库排空，才允许新的 worker 接续；连接属性不可见时观察结果不完整，不能作为排空证明。单表实时场景的两次真实故障和最终候选关闭调度开关后的数据追平见[实验记录](../../experiments/2026-11-08-standalone-guardian/README.md)。未知 B 与源端 fencing 没有因这一结果得到证明。
+
+新的 CDC 控制存储在旧 owner 已确认排空后，按旧规则释放遗留 Workflow 配额；旧任务重新进入原队列，不会自动转换成 CDC 任务。 [候选实现与验证范围](../../experiments/2026-11-08-standalone-guardian/README.md)。
+
+补充实验在真实 MySQL、Journal 与 Sink 中注入旧格式 `unknown` 配额并终止受管 worker：隔离排空后配额回到旧队列，CDC 新 worker 追平 2 行、6 字段。配额由实验注入，未证明真实旧 Workflow 作业及全部迁移窗口。[证据与边界](../../experiments/2026-11-08-standalone-guardian/README.md)。
+
+真实旧 Workflow 作业在目标已提交、Journal 尚未确认时被终止，CDC 控制存储完成旧配额释放；这不证明未知 B 或独立锁切换。 [真实作业证据](../../experiments/2026-11-08-standalone-guardian/README.md)。
+
+## 2026-11-09 持久化切换授权与运行时身份
+
+本轮把切换拆成两个提交点。旧 worker 只有在 guardian 隔离 receipt、旧账号排空和 owner `db_drained` 成立后，才会迁移旧配额并写入新的策略身份；新 worker 获得自己的 recovery permit 后，才把旧 Workflow 定义中的用户名映射为运行时账号。原始 Workflow/Split 指纹仍按旧定义计算，密码只从 `passwordEnv` 读取，不写入 Journal 或控制表。
+
+在真实 MySQL、Actor Journal 和 MySQL Sink 的 `KILL_T_BEFORE_J` 实验中，源表 10 行、目标表 10 行、6 个投影字段逐字段一致；第一批 T 在恢复后以 replay 方式再次确认。`KILL_J_AFTER_STORE`、`FENCE_COMMIT_REPLY_LOST`、`STARTUP_COMMIT_REPLY_LOST`、`B_RECOVERY_CRASH`、`DRAIN_COMMIT_REPLY_LOST`、`QUOTA_COMMIT_REPLY_LOST`、`REVOKE_COMMIT_REPLY_LOST`、`OBSERVER_DENIED` 和 `STALE_GRANT` 也完成了本轮固定窗口验证。完整材料见[持久化切换授权实验](../../experiments/2026-11-09-persistent-cutover-authorization/README.md)及各场景目录。
+
+这里的“通过”指本轮真实实验结果。代码层已经实现绑定表、策略切换、permit 顺序和运行时重绑定；切换授权器仍由受管 supervisor 的显式入口调用，尚未扩展到 DDL、多 owner、共享 CDC 或跨实例迁移。未执行的历史场景、旧失败证据和这些边界仍然保留。
 
 ## 技术附录与证据入口
 

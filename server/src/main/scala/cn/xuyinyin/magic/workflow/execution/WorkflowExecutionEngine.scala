@@ -73,7 +73,14 @@ class WorkflowExecutionEngine(
           grant.task.definition == tableScheduling.get.definition(workflow, runContext.workflowRevision), "snapshot grant definition changed")
         tableScheduling.get.bind(grant)
       }} catch { case NonFatal(e) => Future.failed(e) }
-      admitted.flatMap { allowed => control.continueIfActive().flatMap { _ =>
+      admitted.flatMap { allowed =>
+        val bindingReady=if(allowed) tableScheduling.fold(Future.successful(Done)){ runtime=>
+          runtime.permit(workflow.id).flatMap {
+            case Some(permit)=>Future { cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbc.activatePlannedBinding(workflow.id,runContext.executionId,permit);Done }(jdbcBlockingEc)
+            case None=>Future.successful(Done)
+          }(ec)
+        } else Future.successful(Done)
+        bindingReady.flatMap(_=>control.continueIfActive()).flatMap { _ =>
         if (!allowed) Future.successful(ExecutionResult("snapshot_deferred",false,"local admission capacity unavailable",None))
         else {
         val execution = try executeInternal(workflow, runContext.executionId, Some(runContext), Some(control), onLog)
@@ -204,12 +211,13 @@ class WorkflowExecutionEngine(
     val pipeline = plan.pipeline
     val source = plan.source
     val sink = plan.sink
-    val preparedSource = try prepareRuntimeNode(pipeline.source)
+    val definitionHash = cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitFingerprint.compute(runContext.workflowRevision,pipeline.source.connectorNode,pipeline.sink.connectorNode)
+    val preparedSource = try prepareRuntimeNode(pipeline.source,task.id,runContext.executionId,definitionHash)
     catch {
       case NonFatal(exception) =>
         return Future.successful(runtimeFailureResult(task, pipeline, pipeline.source, exception, startTime, onLog))
     }
-    val preparedSink = try prepareRuntimeNode(pipeline.sink)
+    val preparedSink = try prepareRuntimeNode(pipeline.sink,task.id,runContext.executionId,definitionHash)
     catch {
       case NonFatal(exception) =>
         return Future.successful(runtimeFailureResult(task, pipeline, pipeline.sink, exception, startTime, onLog))
@@ -233,7 +241,8 @@ class WorkflowExecutionEngine(
           preparedSource.connectorNode, preparedSink.connectorNode, task.id, runContext.executionId, runContext.workflowRevision,
           splitContext, () => control.continueIfActive(), control.installSession, control.removeSession,
           runtimeOnLog, jdbcBlockingEc, closeEc, () => control.isCancellationRequested,
-          error => { control.closeFailure.compareAndSet(null, error); () })
+          error => { control.closeFailure.compareAndSet(null, error); () },
+          logicalDefinition = Some((pipeline.source.connectorNode, pipeline.sink.connectorNode)))
           if (runContext.schedulingGrant.nonEmpty) executor.runWindow()
           else executor.run().map(cn.xuyinyin.magic.workflow.snapshot.SnapshotWindowCompleted)
         }
@@ -341,12 +350,17 @@ class WorkflowExecutionEngine(
       ))
       .flatMap { result =>
         val committed = checkpoint(result)
-        workflowFuture(runContext.checkpointCommitted(committed)).recoverWith {
+        workflowFuture {
+          runContext.checkpointWithReceipt match {
+            case Some(write) => write(committed)
+            case None => runContext.checkpointCommitted(committed).map(_ => None)
+          }
+        }.recoverWith {
           case explicit: CdcExecutionException => Future.failed(explicit)
           case NonFatal(e) => Future.failed(new CdcExecutionException(ExecutionFailure(ExecutionFailure.ProgressUnknown,"journal",Some(batch.batchId)),e))
         }
-          .flatMap(_ => nodeFuture(pipeline.source)(
-            source.acknowledgeCommittedBatch(preparedSource.connectorNode, batch, onLog)(jdbcBlockingEc).recoverWith {
+          .flatMap(receipt => nodeFuture(pipeline.source)(
+            source.acknowledgeCommittedBatchWithReceipt(preparedSource.connectorNode, batch, receipt, onLog)(jdbcBlockingEc).recoverWith {
               case explicit: CdcExecutionException => Future.failed(explicit)
               case NonFatal(e) => Future.failed(new CdcExecutionException(ExecutionFailure(ExecutionFailure.ProgressUnknown,"ack",Some(batch.batchId)),e))
             }
@@ -376,14 +390,16 @@ class WorkflowExecutionEngine(
   private def workflowFuture[A](operation: => Future[A]): Future[A] =
     try operation catch { case NonFatal(ex) => Future.failed(ex) }
 
-  private def prepareRuntimeNode(node: ExecutionNode): ExecutionNode =
+  private def prepareRuntimeNode(node: ExecutionNode,workflowId:String="",executionId:String="",definitionHash:String=""): ExecutionNode = {
+    val rebound=if(workflowId.nonEmpty)cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbc.rebindRuntimeNode(node,workflowId,executionId,definitionHash) else node
     if (
-      JdbcPasswordNodeTypes.contains(node.nodeType) &&
-      node.config.fields.contains("passwordEnv")
+      JdbcPasswordNodeTypes.contains(rebound.nodeType) &&
+      rebound.config.fields.contains("passwordEnv")
     ) {
-      val password = JdbcPasswordResolver.resolve(node.config.fields, getenv)
-      node.copy(config = JsObject((node.config.fields - "passwordEnv") + ("password" -> JsString(password))))
-    } else node
+      val password = JdbcPasswordResolver.resolve(rebound.config.fields, getenv)
+      rebound.copy(config = JsObject((rebound.config.fields - "passwordEnv") + ("password" -> JsString(password))))
+    } else rebound
+  }
 
   private def runtimePassword(node: ExecutionNode): Option[String] =
     node.config.fields.get("password").collect {

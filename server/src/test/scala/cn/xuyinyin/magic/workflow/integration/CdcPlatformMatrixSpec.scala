@@ -18,7 +18,7 @@ class CdcPlatformMatrixSpec extends AnyWordSpec with Matchers {
   import CdcJournalWindowSupport._
   private val client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()
   private val variants = Vector("P01-dynamic-seven", "P02-tail-capacity", "P03-queued-cancel",
-    "P04-initializing-cancel", "P05-streaming-cancel", "P06-controlled-restart", "P07-unknown-owner", "P07-live-owner", "P07-stale-ready", "P07-crash-held-l", "P08-api-projection")
+    "P04-initializing-cancel", "P05-streaming-cancel", "P06-controlled-restart", "P07-unknown-owner", "P07-live-owner", "P07-stale-ready", "P07-crash-held-l", "P08-api-projection", "P09-dynamic-bootstrap-cancel")
 
   "the resident CDC platform with real MySQL, Actor Journal and Sink" should {
     for (variant <- variants) {
@@ -105,6 +105,7 @@ class CdcPlatformMatrixSpec extends AnyWordSpec with Matchers {
         def equal(table: String) = comparison(table).fields("equal") == JsBoolean(true)
         val resultKind = variant.take(3) match {
           case "P01" | "P02" | "P06" => "CONVERGED"
+          case "P09" => "CANCELED_WITH_REMAINING_CONVERGED"
           case "P03" => "PREEXEC_CANCELED"
           case "P04" | "P05" => "CANCELED_WITH_K"
           case "P07" => if(Set("P07-live-owner","P07-stale-ready")(variant)) "OWNER_REJECTED_OTHER_CONTINUES" else "SAFE_PAUSED"
@@ -230,6 +231,26 @@ class CdcPlatformMatrixSpec extends AnyWordSpec with Matchers {
                 awaitCondition("original owner continues to Sink",180.seconds)(equal("a"))
               }
               }
+            case "P09" =>
+              val a=submit("a").fields("taskId").convertTo[String]
+              val b=submit("b").fields("taskId").convertTo[String]
+              ready(a);ready(b)
+              awaitCondition("first two tables equal",180.seconds)(equal("a") && equal("b"))
+              worker.send("ARM READ_OPEN");worker.awaitEvent("ARMED")
+              val c=submit("c").fields("taskId").convertTo[String]
+              worker.awaitEvent("CUTPOINT");save("third-read-open",worker)
+              mutate("c","during-third-read")
+              sql(source,"DELETE FROM c WHERE id=2")
+              sql(source,"INSERT INTO c SELECT 1000,label,amount,note,updated_at,revision FROM source_rows WHERE id=1")
+              mutate("a","existing-a-during-init");mutate("b","existing-b-during-init")
+              worker.send("RELEASE");worker.awaitEvent("GATE_RELEASED")
+              ready(c);awaitCondition("three tables converge after third initialization",180.seconds)(Vector("a","b","c").forall(equal))
+              save("third-caught-up",worker)
+              cancelTask(a);awaitCondition("first table cancellation drained",180.seconds)(phase(a)=="CANCELED")
+              val stopped=withConnection(state,schema)(query(_,"SELECT * FROM target_a ORDER BY id"))
+              mutate("a","after-cancel");mutate("b","b-after-cancel");mutate("c","c-after-cancel")
+              awaitCondition("other two tables continue",180.seconds)(equal("b") && equal("c"))
+              withConnection(state,schema)(query(_,"SELECT * FROM target_a ORDER BY id")) shouldBe stopped
             case "P08" =>
               val rows = names.map(t => submit(t)); val ids = rows.map(_.fields("taskId").convertTo[String]).sorted
               val repeated = submit("a"); repeated.fields("taskId") shouldBe rows.head.fields("taskId")

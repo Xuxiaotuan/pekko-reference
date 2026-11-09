@@ -15,6 +15,11 @@ import scala.util.control.NonFatal
 
 /** Local authenticated transport. No Java serialization and no credentials in response/audit frames. */
 object SnapshotGuardianWire {
+  final case class WorkerAttestationContext(attempt:String,manifestDigest:String,sourceUuid:String,database:String,
+    endpoint:String,controllerAccount:String,permitId:String,bindingDigest:String)
+  final class VerifiedWorkerAttestation private[SnapshotGuardianWire] (val signedEnvelope:String,val nonce:String,
+    val identity:SnapshotOwnerIdentity,val profile:String,val context:WorkerAttestationContext,val guardian:GuardianBinding)
+  implicit val workerContextFormat:RootJsonFormat[WorkerAttestationContext]=jsonFormat8(WorkerAttestationContext.apply)
   implicit val bindingFormat:RootJsonFormat[GuardianBinding]=jsonFormat4(GuardianBinding.apply)
   implicit val controlFormat:RootJsonFormat[SupervisorControl]=jsonFormat3(SupervisorControl.apply)
   implicit val identityFormat:RootJsonFormat[SnapshotOwnerIdentity]=jsonFormat4(SnapshotOwnerIdentity.apply)
@@ -36,6 +41,22 @@ object SnapshotGuardianWire {
     val r=v.fields("receipt").convertTo[SnapshotIsolationReceipt]
     require(r.identity==id && r.operationId==operation && r.provider=="managed-child-jvm" && r.details.parseJson.asJsObject.fields("alive")==JsBoolean(false),"original child exit proof mismatch")
     r
+  }
+  /** Signature proves what the guardian observed at challenge time; it is not a live lease. */
+  def verifyWorkerAttestation(raw:String,binding:GuardianBinding,id:SnapshotOwnerIdentity,profile:String,
+    context:WorkerAttestationContext,nonce:String):VerifiedWorkerAttestation={
+    require(nonce.matches("[A-Za-z0-9_-]{43}"),"invalid worker nonce")
+    val body=verified(raw.parseJson.asJsObject,binding.publicKey)
+    val request=JsObject("method"->JsString("ATTEST_WORKER"),"args"->JsObject("nonce"->JsString(nonce),
+      "identity"->id.toJson,"profile"->JsString(profile),"context"->context.toJson))
+    require(body.fields("request")==request && body.fields("guardian").convertTo[GuardianBinding]==binding &&
+      body.fields("ok")==JsBoolean(true),"worker attestation request or guardian mismatch")
+    val result=body.fields("result").asJsObject.fields
+    require(result.get("nonce").contains(JsString(nonce)) && result.get("identity").contains(id.toJson) &&
+      result.get("profile").contains(JsString(profile)) && result.get("context").contains(context.toJson) &&
+      result.get("provider").contains(JsString("managed-child-jvm")) && result.get("alive").contains(JsBoolean(true)),
+      "worker attestation result mismatch")
+    new VerifiedWorkerAttestation(raw,nonce,id,profile,context,binding)
   }
   private def mac(raw:String,key:Array[Byte]):Array[Byte]={val m=Mac.getInstance("HmacSHA256");m.init(new SecretKeySpec(key,"HmacSHA256"));m.doFinal(raw.getBytes(java.nio.charset.StandardCharsets.UTF_8))}
   private def progress(deadline:Long):Unit={require(System.nanoTime()<deadline,"guardian RPC deadline exceeded");Thread.sleep(5)}
@@ -92,6 +113,26 @@ object SnapshotGuardianWire {
         require(result.get("nonce").contains(JsString(nonce)) && result.get("identity").contains(identity.toJson) &&
           result.get("profile").contains(JsString(profile)) && result.get("provider").contains(JsString("managed-child-jvm")) &&
           result.get("alive").contains(JsBoolean(true)),"worker challenge proof mismatch")
+      } finally channel.close()
+    }
+    def attestContext(identity:SnapshotOwnerIdentity,profile:String,context:WorkerAttestationContext):VerifiedWorkerAttestation={
+      val bytes=new Array[Byte](32);random.nextBytes(bytes)
+      val nonce=Base64.getUrlEncoder.withoutPadding().encodeToString(bytes)
+      attestContextWithNonce(identity,profile,context,nonce)
+    }
+    def attestContextWithNonce(identity:SnapshotOwnerIdentity,profile:String,context:WorkerAttestationContext,
+      nonce:String):VerifiedWorkerAttestation={
+      require(nonce.matches("[A-Za-z0-9_-]{43}"),"invalid worker nonce")
+      val args=JsObject("nonce"->JsString(nonce),"identity"->identity.toJson,"profile"->JsString(profile),"context"->context.toJson)
+      val request=JsObject("method"->JsString("ATTEST_WORKER"),"args"->args)
+      val raw=request.compactPrint
+      val envelope=JsObject("payload"->JsString(raw),"mac"->JsString(Base64.getEncoder.encodeToString(mac(raw,secret))))
+      val channel=SocketChannel.open(StandardProtocolFamily.UNIX)
+      try {
+        channel.configureBlocking(false);channel.connect(UnixDomainSocketAddress.of(socket));val end=System.nanoTime()+5000000000L
+        while(!channel.finishConnect())progress(end)
+        write(channel,envelope)
+        verifyWorkerAttestation(read(channel),binding,identity,profile,context,nonce)
       } finally channel.close()
     }
   }

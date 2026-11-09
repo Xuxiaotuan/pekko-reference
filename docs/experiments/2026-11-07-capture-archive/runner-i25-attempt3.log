@@ -1,0 +1,71 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 4 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureControlFence.scala:220:17: private method writePrimitive in class ProtectedController is never used
+[warn]     private def writePrimitive(binding:CaptureFenceBinding):CaptureFenceReceipt={check();writeMarker(controller,binding)}
+[warn]                 ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureControlFence.scala:268:17: private method releasePrimitive in class ProtectedController is never used
+[warn]     private def releasePrimitive(receipt:CaptureFenceReceipt,permitId:String,stateDigest:String):Unit={check();releaseChecked(controller,receipt,permitId,stateDigest)}
+[warn]                 ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureControlFence.scala:376:15: private method releasePrimitive in object CaptureControlFence is never used
+[warn]   private def releasePrimitive(c:Connection,r:CaptureFenceReceipt,permitId:String,stateDigest:String):Unit={
+[warn]               ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapRunner.scala:428:53: return statement uses an exception to pass control to the caller of the enclosing named method run
+[warn]         if(s.phase=="CANCELED" || s.phase=="PAUSED")return
+[warn]                                                     ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapRunner.scala:431:34: return statement uses an exception to pass control to the caller of the enclosing named method run
+[warn]         if(state.phase=="PAUSED")return
+[warn]                                  ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapRunner.scala:449:21: return statement uses an exception to pass control to the caller of the enclosing named method run
+[warn]           if(stop())return
+[warn]                     ^
+[warn] 6 warnings found
+[info] done compiling
+[info] compiling 4 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureControlFence.scala:220:17: private method writePrimitive in class ProtectedController is never used
+[warn]     private def writePrimitive(binding:CaptureFenceBinding):CaptureFenceReceipt={check();writeMarker(controller,binding)}
+[warn]                 ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureControlFence.scala:268:17: private method releasePrimitive in class ProtectedController is never used
+[warn]     private def releasePrimitive(receipt:CaptureFenceReceipt,permitId:String,stateDigest:String):Unit={check();releaseChecked(controller,receipt,permitId,stateDigest)}
+[warn]                 ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureControlFence.scala:376:15: private method releasePrimitive in object CaptureControlFence is never used
+[warn]   private def releasePrimitive(c:Connection,r:CaptureFenceReceipt,permitId:String,stateDigest:String):Unit={
+[warn]               ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala:398:7: return statement uses an exception to pass control to the caller of the enclosing named method subscribe
+[warn]       return existing // Query/idempotency never rewrites an existing B, including B_PENDING.
+[warn]       ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala:435:7: return statement uses an exception to pass control to the caller of the enclosing named method requestFence
+[warn]       return f
+[warn]       ^
+[warn] 5 warnings found
+[info] done compiling
+[info] compiling 6 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[error] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/ControlFenceProcedureReaderProbeSpec.scala:159:36: not found: value lab
+[error]         }finally {if(stoppedSource)lab("start",crash=false);c.close()}
+[error]                                    ^
+[error] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/ControlFenceProcedureReaderProbeSpec.scala:159:48: not found: value crash
+[error]         }finally {if(stoppedSource)lab("start",crash=false);c.close()}
+[error]                                                ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/ControlFenceProcedureReaderProbeSpec.scala:146:15: local var writeId in value <local ControlFenceProcedureReaderProbeSpec> is never updated: consider using immutable val
+[warn]           var writeId=2
+[warn]               ^
+[warn] one warning found
+[error] two errors found
+[error] (Test / compileIncremental) Compilation failed
+[error] Total time: 8 s, completed 2026年11月7日 下午9:08:04

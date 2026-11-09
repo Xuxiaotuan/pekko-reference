@@ -1,0 +1,61 @@
+12:18:30,880 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+12:18:30,881 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7d446ed1 - No custom configurators were discovered as a service.
+12:18:30,881 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7d446ed1 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+12:18:30,881 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7d446ed1 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+12:18:30,882 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+12:18:30,883 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+12:18:30,885 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7d446ed1 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 2 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+12:18:30,885 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7d446ed1 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+12:18:30,886 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7d446ed1 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+12:18:30,886 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+12:18:30,886 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+12:18:30,927 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+12:18:30,927 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+12:18:30,930 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+12:18:30,935 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+12:18:30,935 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+12:18:30,936 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+12:18:30,936 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+12:18:30,936 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+12:18:30,936 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+12:18:30,938 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+12:18:30,938 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+12:18:30,939 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+12:18:30,939 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+12:18:30,939 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+12:18:30,939 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+12:18:30,939 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@12d2ce03 - End of configuration.
+12:18:30,940 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@7e5c856f - Registering current configuration as safe fallback point
+12:18:30,940 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7d446ed1 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 54 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+12:18:30.945 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+12:18:31.041 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+12:18:31.074 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown initiated...
+12:18:31.075 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown completed.
+12:18:31.080 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Starting...
+12:18:31.102 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Start completed.
+12:18:31.300 [34mINFO [0;39m [36m[managed-cdc-c6c5c511-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+12:18:31.564 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Starting...
+12:18:31.570 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Start completed.
+12:18:31.577 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown initiated...
+12:18:31.587 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown completed.
+Exception in thread "main" cn.xuyinyin.magic.workflow.cdc.CdcPlatformException: STORAGE_UNAVAILABLE
+	at cn.xuyinyin.magic.workflow.cdc.CdcPlatformRuntime.startupFailed(CdcPlatformRuntime.scala:88)
+	at cn.xuyinyin.magic.workflow.cdc.CdcPlatformRuntime.$anonfun$new$3(CdcPlatformRuntime.scala:109)
+	at cn.xuyinyin.magic.workflow.cdc.CdcPlatformRuntime.$anonfun$new$3$adapted(CdcPlatformRuntime.scala:109)
+	at scala.util.Success.foreach(Try.scala:260)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:481)
+	at scala.concurrent.ExecutionContext$parasitic$.execute(ExecutionContext.scala:222)
+	at scala.concurrent.impl.Promise$Transformation.submitWithValue(Promise.scala:429)
+	at scala.concurrent.impl.Promise$DefaultPromise.submitWithValue(Promise.scala:338)
+	at scala.concurrent.impl.Promise$DefaultPromise.tryComplete0(Promise.scala:285)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:504)
+	at scala.concurrent.ExecutionContext$parasitic$.execute(ExecutionContext.scala:222)
+	at scala.concurrent.impl.Promise$Transformation.submitWithValue(Promise.scala:429)
+	at scala.concurrent.impl.Promise$DefaultPromise.submitWithValue(Promise.scala:338)
+	at scala.concurrent.impl.Promise$DefaultPromise.tryComplete0(Promise.scala:285)
+	at scala.concurrent.impl.Promise$Transformation.handleFailure(Promise.scala:444)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:506)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)

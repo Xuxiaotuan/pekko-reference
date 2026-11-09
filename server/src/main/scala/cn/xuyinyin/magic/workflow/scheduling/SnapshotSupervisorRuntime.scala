@@ -11,10 +11,14 @@ final class SnapshotSupervisorRuntime(val metadata:SnapshotSupervisorStore,val c
   wake:(String,(String,String,Long))=>Unit=(_,_)=>()) {
   import SnapshotGuardianWire._
   require(minObservationIntervalMillis>0)
-  private val ha=metadata.store.ownership.get
+  private val ha=metadata.ownerRegistry
   private var own=Option.empty[String]
   private var nextBoot=UUID.randomUUID().toString
   def workerBoot:Option[String]=own
+  /** Explicit cutover entry point; it fails closed until the guardian proof, drain and permit plan are valid. */
+  def authorizeCutover(old:SnapshotWorkerLaunch,next:SnapshotWorkerLaunch,receiptRaw:String,lockPlan:LegacyAccountLockIntent.Plan,
+    accountUrl:String,adminUser:String,adminPassword:String):CutoverAuthorizationKey=
+    new SnapshotCutoverAuthorizer(metadata).authorize(control,old,next,receiptRaw,lockPlan,accountUrl,adminUser,adminPassword,Vector.empty)
   private def confirmControl():Unit={
     val inventory=client.request("INVENTORY")
     require(!inventory.fields.values.exists(_.asJsObject.fields("status")==JsString("UNKNOWN")),"guardian original process capability lost")

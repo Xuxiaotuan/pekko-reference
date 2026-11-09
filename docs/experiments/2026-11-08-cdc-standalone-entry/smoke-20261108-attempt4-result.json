@@ -1,0 +1,60 @@
+{
+  "pid": 15767,
+  "scope": "fourth isolated v1 startup, capture readiness and graceful stop, SDK tables precreated; no source fencing fault or data reconciliation",
+  "bound": true,
+  "port": 56353,
+  "capture_samples": [
+    {
+      "readiness": "STARTING",
+      "runtimeHealth": "STARTING",
+      "reason": "CAPTURE_STARTING"
+    },
+    {
+      "readiness": "ADMISSION_READY",
+      "runtimeHealth": "HEALTHY",
+      "reason": null
+    }
+  ],
+  "ready": true,
+  "private_log_bytes": 32577,
+  "status_before_stop": {
+    "activeSteps": 0,
+    "enabled": true,
+    "maxActiveSteps": 4,
+    "ownerState": "ACTIVE",
+    "reason": null
+  },
+  "shutdown_elapsed_seconds": 4.867,
+  "process_exit": 143,
+  "db_at_process_exit": {
+    "source": {
+      "exit": 0,
+      "rows": [
+        "1c3a8f74-7203-4910-9260-e62bfa619c77\t25821\t/private/tmp/pekko-archive-20261107-1/a/source/data/",
+        "0",
+        "1"
+      ]
+    },
+    "state": {
+      "exit": 0,
+      "rows": [
+        "78a80500-1849-402a-9f71-81cd1cf3fcfb\t25822\t/private/tmp/pekko-archive-20261107-1/a/state/data/",
+        "0",
+        "0",
+        "UNKNOWN",
+        "1"
+      ]
+    }
+  },
+  "source_session_before_cleanup": {
+    "id": 21,
+    "user": "cdc_lab",
+    "client": "127.0.0.1:56390",
+    "command": "Binlog Dump GTID",
+    "server_socket_state": "CLOSED",
+    "client_process": "not observed",
+    "active_transactions": 0
+  },
+  "cleanup": "Isolated source MySQL session 21 terminated after identity check; subsequently 0 other sessions and 0 transactions; neither this manual cleanup nor exit code 143 demonstrates runtime release confirmation.",
+  "evidence_scope": "isolated standalone startup and shutdown only; no source fencing fault, Actor Journal recovery, target Sink or field reconciliation"
+}

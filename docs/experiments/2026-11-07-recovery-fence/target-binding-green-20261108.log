@@ -1,0 +1,61 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[info] done compiling
+09:18:54,423 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+09:18:54,424 |-INFO in ch.qos.logback.classic.util.ContextInitializer@22e618ac - No custom configurators were discovered as a service.
+09:18:54,424 |-INFO in ch.qos.logback.classic.util.ContextInitializer@22e618ac - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+09:18:54,424 |-INFO in ch.qos.logback.classic.util.ContextInitializer@22e618ac - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+09:18:54,424 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+09:18:54,424 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+09:18:54,425 |-INFO in ch.qos.logback.classic.util.ContextInitializer@22e618ac - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+09:18:54,425 |-INFO in ch.qos.logback.classic.util.ContextInitializer@22e618ac - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+09:18:54,425 |-INFO in ch.qos.logback.classic.util.ContextInitializer@22e618ac - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+09:18:54,426 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+09:18:54,426 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+09:18:54,454 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+09:18:54,454 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+09:18:54,457 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+09:18:54,465 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+09:18:54,465 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+09:18:54,465 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+09:18:54,465 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+09:18:54,466 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+09:18:54,466 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+09:18:54,466 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+09:18:54,467 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+09:18:54,467 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+09:18:54,467 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+09:18:54,467 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+09:18:54,467 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+09:18:54,467 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@9eb4655 - End of configuration.
+09:18:54,467 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@3b454c3b - Registering current configuration as safe fallback point
+09:18:54,467 |-INFO in ch.qos.logback.classic.util.ContextInitializer@22e618ac - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 42 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+[info] BootstrapTargetSpec:
+[info] bootstrap target transactions
+[info] - should reject tampered table and schema bindings before writing target rows or activation
+[info] - should reserve an empty target and arbitrate immutable page replays
+[info] - should reject an actual TIMESTAMP target for a DATETIME sealed source
+[info] Run completed in 517 milliseconds.
+[info] Total number of tests run: 3
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 3, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 4 s, completed 2026年11月8日 上午9:18:54

@@ -1,0 +1,81 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[info] done compiling
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[info] done compiling
+10:47:25,827 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+10:47:25,828 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3ab4e554 - No custom configurators were discovered as a service.
+10:47:25,828 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3ab4e554 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+10:47:25,829 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3ab4e554 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+10:47:25,829 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+10:47:25,830 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+10:47:25,832 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3ab4e554 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+10:47:25,832 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3ab4e554 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+10:47:25,833 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3ab4e554 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+10:47:25,833 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+10:47:25,833 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+10:47:25,867 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+10:47:25,867 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+10:47:25,870 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+10:47:25,880 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+10:47:25,880 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+10:47:25,880 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+10:47:25,880 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+10:47:25,881 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+10:47:25,881 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+10:47:25,882 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+10:47:25,882 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+10:47:25,883 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+10:47:25,883 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+10:47:25,883 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+10:47:25,883 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+10:47:25,883 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@2dcbd46a - End of configuration.
+10:47:25,883 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@4e5875a - Registering current configuration as safe fallback point
+10:47:25,884 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3ab4e554 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 50 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+SLF4J(W): A number (1) of logging calls during the initialization phase have been intercepted and are
+SLF4J(W): now being replayed. These are subject to the filtering rules of the underlying logging system.
+SLF4J(W): See also https://www.slf4j.org/codes.html#replay
+10:47:25.886 [34mINFO [0;39m [36m[standalone-close-wait-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+10:47:26.394 [34mINFO [0;39m [36m[standalone-close-wait-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+10:47:26.416 [34mINFO [0;39m [36m[standalone-close-unknown-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+10:47:26.789 [34mINFO [0;39m [36m[standalone-close-unknown-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+10:47:26.805 [34mINFO [0;39m [36m[standalone-close-hook-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+10:47:26.823 [34mINFO [0;39m [36m[standalone-close-hook-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [UnknownReason]
+[info] CdcStandaloneShutdownSpec:
+[info] standalone CDC shutdown
+[info] - should wait for a later confirmed STOPPED without starting another close operation
+[info] - should time out instead of treating UNKNOWN as released
+[info] - should keep its wait inside the configured coordinated shutdown phase
+[info] - should use a standalone phase budget while respecting an explicit phase override
+[info] - should wait for the confirmed status when invoked by coordinated shutdown
+10:47:27.115 [34mINFO [0;39m [36m[cn-xuyinyin-magic-CdcStandaloneRoutesSpec-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+10:47:27.321 [34mINFO [0;39m [36m[cn-xuyinyin-magic-CdcStandaloneRoutesSpec-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+[info] CdcStandaloneRoutesSpec:
+[info] Standalone CDC routes
+[info] - should reject disabled, managed, and v2 configurations before opening resources
+[info] - should require an explicit loopback management endpoint
+[info] - should expose CDC operations and no workflow, schedule, or front-end routes
+[info] Run completed in 1 second, 876 milliseconds.
+[info] Total number of tests run: 8
+[info] Suites: completed 2, aborted 0
+[info] Tests: succeeded 8, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 7 s, completed 2026年11月8日 上午10:47:27

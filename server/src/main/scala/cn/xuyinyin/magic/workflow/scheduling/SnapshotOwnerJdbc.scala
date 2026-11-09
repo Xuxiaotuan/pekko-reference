@@ -7,9 +7,16 @@ import scala.util.control.NonFatal
 
 /** A single managed worker per JVM. Installed before ActorSystem (including the shared Journal pool). */
 object SnapshotOwnerJdbc {
-  final case class Context(identity:SnapshotOwnerIdentity,store:TableSchedulingStore,routes:Map[String,String],close:()=>Unit)
+  final case class Context(identity:SnapshotOwnerIdentity,control:ManagedControlTransactions,owner:ManagedOwnerStore,routes:Map[String,String],close:()=>Unit,
+    bindingPlans:Vector[CredentialBindingPlan]=Vector.empty)
+  object Context {
+    def apply(identity:SnapshotOwnerIdentity,store:TableSchedulingStore,routes:Map[String,String],close:()=>Unit):Context=
+      new Context(identity,store,store.ownership.getOrElse(throw new IllegalArgumentException("owner registry missing")),routes,close)
+  }
   @volatile private var installed:Option[Context]=None
   def context:Option[Context]=installed
+  def credentialBinding(workflowId:String,executionId:String,nodeId:String,role:String):Option[CredentialBinding]=
+    context.flatMap(ctx=>if(ctx.bindingPlans.isEmpty)None else ctx.control.cutoverStore.binding(workflowId,executionId,nodeId,role).filter(_.ownerId==ctx.identity.bootId))
   def install(value:Context):Unit=synchronized {
     require(installed.isEmpty,"one managed owner per JVM; boot identities may not be replaced")
     installed=Some(value)
@@ -43,6 +50,35 @@ object SnapshotOwnerJdbc {
     val q=c.createStatement();q.setQueryTimeout(5)
     try {val r=q.executeQuery("SELECT USER()");try {require(r.next());val name=r.getString(1);val split=name.lastIndexOf('@');if(split<0)name else name.substring(0,split)}finally r.close()}finally q.close()
   }
+  def activatePlannedBinding(workflowId:String,executionId:String,permit:SnapshotRecoveryPermit):Unit=context.foreach { ctx=>
+    ctx.bindingPlans.filter(p=>p.workflowId==workflowId && p.nodeId.nonEmpty).foreach { plan=>
+      require(plan.operationId.nonEmpty && plan.hostId.nonEmpty && plan.workflowId==workflowId,"binding plan workflow mismatch")
+      require(permit.workflowId==workflowId && permit.executionId==executionId && permit.owner==ctx.identity.bootId,
+        "binding permit does not belong to the managed worker")
+      val auth=ctx.control.cutoverStore.authorizationByOperation(ctx.identity.deploymentId,plan.hostId,plan.operationId)
+        .getOrElse(throw new IllegalStateException("cutover authorization is missing"))
+      require(auth.policyHash.nonEmpty,"cutover authorization policy is missing")
+      ctx.control.cutoverStore.recordBinding(CredentialBinding(workflowId,executionId,plan.nodeId,plan.nodeRole,permit.id,ctx.identity.bootId,
+        plan.operationId,plan.endpoint,plan.databaseName,plan.legacyUser,plan.runtimeUser,plan.passwordEnv,plan.definitionHash,"ACTIVE"),auth)
+    }
+  }
+  /** Apply only a durable, permit-bound runtime identity; persisted Workflow JSON is untouched. */
+  def rebindRuntimeNode(node:cn.xuyinyin.magic.workflow.execution.ExecutionNode,workflowId:String,executionId:String,definitionHash:String):cn.xuyinyin.magic.workflow.execution.ExecutionNode={
+    credentialBinding(workflowId,executionId,node.id,node.role) match {
+      case None=>node
+      case Some(binding) => applyCredentialBinding(node,binding,definitionHash)
+    }
+  }
+  def rebindRuntimeNode(node:cn.xuyinyin.magic.workflow.execution.ExecutionNode,binding:CredentialBinding):cn.xuyinyin.magic.workflow.execution.ExecutionNode=
+    applyCredentialBinding(node,binding,binding.definitionHash)
+  private def applyCredentialBinding(node:cn.xuyinyin.magic.workflow.execution.ExecutionNode,binding:CredentialBinding,definitionHash:String):cn.xuyinyin.magic.workflow.execution.ExecutionNode={
+    require(binding.definitionHash==definitionHash && binding.legacyUser==node.config.fields.get("username").collect{case spray.json.JsString(v)=>v}.getOrElse(""),"credential binding does not match the persisted node")
+    val host=node.config.fields.get("host").collect{case spray.json.JsString(v)=>v}.getOrElse("localhost")
+    val port=node.config.fields.get("port").collect{case spray.json.JsNumber(v)=>v.toInt}.getOrElse(3306)
+    val database=node.config.fields.get("database").collect{case spray.json.JsString(v)=>v}.getOrElse("")
+    require(endpoint(s"jdbc:mysql://$host:$port/$database")==binding.endpoint && database==binding.databaseName,"credential binding endpoint differs")
+    node.copy(config=spray.json.JsObject((node.config.fields-"password")+ ("username"->spray.json.JsString(binding.runtimeUser))+ ("passwordEnv"->spray.json.JsString(binding.passwordEnv))))
+  }
   def databaseIdentity(c:Connection):(String,Long,Long)={
     val q=c.createStatement();q.setQueryTimeout(5)
     try {
@@ -70,7 +106,7 @@ final class SnapshotOwnerJdbcDriver extends Driver {
     try {
       val (uuid,started,id)=SnapshotOwnerJdbc.databaseIdentity(c)
       require(uuid==expected,"database identity changed")
-      ctx.store.ownership.get.registerSession(ctx.identity.bootId,key,uuid,started,id,role,SnapshotOwnerJdbc.databaseUser(c))
+      ctx.owner.registerSession(ctx.identity.bootId,key,uuid,started,id,role,SnapshotOwnerJdbc.databaseUser(c))
       c
     } catch {case NonFatal(e)=>try c.close() catch {case NonFatal(close)=>e.addSuppressed(close)};throw e}
   }

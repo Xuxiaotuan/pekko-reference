@@ -1,0 +1,74 @@
+16:02:20,252 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+16:02:20,252 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6d025197 - No custom configurators were discovered as a service.
+16:02:20,252 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6d025197 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+16:02:20,252 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6d025197 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+16:02:20,253 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+16:02:20,253 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+16:02:20,256 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6d025197 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 2 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+16:02:20,256 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6d025197 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+16:02:20,256 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6d025197 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+16:02:20,256 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+16:02:20,257 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+16:02:20,294 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+16:02:20,294 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+16:02:20,297 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+16:02:20,303 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+16:02:20,303 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+16:02:20,303 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+16:02:20,303 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+16:02:20,303 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+16:02:20,304 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+16:02:20,304 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+16:02:20,305 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+16:02:20,305 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+16:02:20,305 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+16:02:20,305 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+16:02:20,305 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+16:02:20,305 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@27d4a09 - End of configuration.
+16:02:20,306 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@7e4204e2 - Registering current configuration as safe fallback point
+16:02:20,306 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6d025197 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 50 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+16:02:20.312 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+16:02:20.402 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+16:02:20.583 [34mINFO [0;39m [36m[snapshot-takeover-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+16:02:21.903 [31mWARN [0;39m [36m[snapshot-takeover-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.cluster.sharding.ShardRegion][0;39m - The `pekko.cluster.sharding.passivate-idle-entity-after` setting and associated methods are deprecated. Use the `pekko.cluster.sharding.passivation.default-idle-strategy.idle-entity.timeout` setting instead. See the documentation and reference config for more information on automatic passivation strategies.
+WINDOW {"at":"2026-11-08T16:02:21.903674Z","pid":86157,"kind":"WORKER_READY","address":"pekko://snapshot-takeover@127.0.0.1:61241","uid":-8872871941395690589,"mode":"candidate","automaticDispatch":true,"owner":"1283202a-079b-4ee9-b399-a1b8bf9b6c68"}
+16:02:26.872 [31mWARN [0;39m [36m[snapshot-takeover-pekko.actor.default-dispatcher-6][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://snapshot-takeover@127.0.0.1:61241] - Marking node as UNREACHABLE [Member(pekko://snapshot-takeover@127.0.0.1:61167, Down)].
+16:02:26.880 [31mWARN [0;39m [36m[snapshot-takeover-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.pekko.remote.artery.Association][0;39m - Association to [pekko://snapshot-takeover@127.0.0.1:61167] with UID [-9192816070146452767] is irrecoverably failed. UID is now quarantined and all messages to this UID will be delivered to dead letters. Remote ActorSystem must be restarted to recover from this situation. Reason: Cluster member removed, previous status [Down]
+16:02:27.513 [34mINFO [0;39m [36m[snapshot-takeover-pekko.persistence.dispatchers.default-plugin-dispatcher-26][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Starting...
+16:02:27.513 [31mWARN [0;39m [36m[snapshot-takeover-pekko.persistence.dispatchers.default-plugin-dispatcher-26][0;39m [1;35m[c.z.hikari.util.DriverDataSource][0;39m - Registered driver with driverClassName=cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbcDriver was not found, trying direct instantiation.
+16:02:27.513 [34mINFO [0;39m [36m[snapshot-takeover-pekko.persistence.dispatchers.default-plugin-dispatcher-26][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Start completed.
+WINDOW {"executionId":"478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd","grant":"d3625268-ede8-471a-afdd-aa8c9dc8335f","kind":"ENGINE_STARTED","at":"2026-11-08T16:02:27.699187Z"}
+16:02:27.707 [34mINFO [0;39m [36m[snapshot-takeover-pekko.actor.default-dispatcher-23][0;39m [1;35m[c.x.m.w.i.RealMySQLSnapshotTakeoverProcess$$anon$5][0;39m - Starting workflow execution: table-00
+WINDOW {"message":"开始执行工作流: table-00","kind":"ENGINE_LOG","at":"2026-11-08T16:02:27.707274Z"}
+16:02:27.712 [34mINFO [0;39m [36m[snapshot-takeover-pekko.workflow.jdbc-dispatcher-27][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Starting...
+16:02:27.712 [31mWARN [0;39m [36m[snapshot-takeover-pekko.workflow.jdbc-dispatcher-27][0;39m [1;35m[c.z.hikari.util.DriverDataSource][0;39m - Registered driver with driverClassName=cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbcDriver was not found, trying direct instantiation.
+16:02:28.733 [1;31mERROR[0;39m [36m[snapshot-takeover-pekko.workflow.jdbc-dispatcher-27][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-2 - Exception during pool initialization.
+java.sql.SQLException: Access denied for user 'legacy_87b753622a37'@'127.0.0.1' (using password: YES)
+	at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:121)
+	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:114)
+	at com.mysql.cj.jdbc.ConnectionImpl.createNewIO(ConnectionImpl.java:837)
+	at com.mysql.cj.jdbc.ConnectionImpl.<init>(ConnectionImpl.java:420)
+	at com.mysql.cj.jdbc.ConnectionImpl.getInstance(ConnectionImpl.java:238)
+	at com.mysql.cj.jdbc.NonRegisteringDriver.connect(NonRegisteringDriver.java:180)
+	at cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbcDriver.connect(SnapshotOwnerJdbc.scala:73)
+	at com.zaxxer.hikari.util.DriverDataSource.getConnection(DriverDataSource.java:138)
+	at com.zaxxer.hikari.pool.PoolBase.newConnection(PoolBase.java:359)
+	at com.zaxxer.hikari.pool.PoolBase.newPoolEntry(PoolBase.java:201)
+	at com.zaxxer.hikari.pool.HikariPool.createPoolEntry(HikariPool.java:470)
+	at com.zaxxer.hikari.pool.HikariPool.checkFailFast(HikariPool.java:561)
+	at com.zaxxer.hikari.pool.HikariPool.<init>(HikariPool.java:100)
+	at com.zaxxer.hikari.HikariDataSource.<init>(HikariDataSource.java:81)
+	at cn.xuyinyin.magic.connectors.mysql.sink.MySQLSinkNode.createSplitDataSource(MySQLSinkNode.scala:124)
+	at cn.xuyinyin.magic.connectors.mysql.sink.MySQLSinkNode.$anonfun$validateSnapshotReady$1(MySQLSinkNode.scala:94)
+	at scala.concurrent.Future$.$anonfun$apply$1(Future.scala:687)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:467)
+	at org.apache.pekko.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:73)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:110)
+	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:94)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:110)
+	at org.apache.pekko.dispatch.TaskInvocation.run(AbstractDispatcher.scala:59)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)

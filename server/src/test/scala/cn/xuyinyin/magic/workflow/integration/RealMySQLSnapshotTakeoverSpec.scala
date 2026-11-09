@@ -2,6 +2,7 @@ package cn.xuyinyin.magic.workflow.integration
 
 import cn.xuyinyin.magic.tags.ExternalIntegration
 import cn.xuyinyin.magic.workflow.scheduling._
+import cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitFingerprint
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
@@ -29,6 +30,10 @@ class RealMySQLSnapshotTakeoverSpec extends AnyWordSpec with Matchers {
       s"preserve physical isolation, authorization and full rows for $scenario" taggedAs ExternalIntegration in {
         if(!sys.env.get("RUN_MYSQL_SNAPSHOT_TAKEOVER").contains("1"))cancel("external_blocked: disposable loopback MySQL and explicit flag required")
         val settings=Settings.environment();val suffix=UUID.randomUUID().toString.replace("-","").take(12)
+        val accountCutover=sys.env.get("CDC_TAKEOVER_LOCK_LEGACY").contains("1")
+        require(!accountCutover || (scenario=="KILL_T_BEFORE_J" && sys.env.get("CDC_TAKEOVER_CDC_CONTROL").contains("1")),"account probe requires the fixed CDC control scenario")
+        val legacyUser="legacy_"+suffix;val legacyPassword=UUID.randomUUID().toString.replace("-","")
+        var legacyCreated=false
         val schema="pekko_test_cdc_window_"+suffix;val gate="owner-probe-"+suffix
         val dir=Path.of("target","snapshot-takeover",scenario+"-"+suffix).toAbsolutePath;Files.createDirectories(dir)
         OwnerIsolationProbeSupport.provision(settings,schema,gate)
@@ -36,6 +41,9 @@ class RealMySQLSnapshotTakeoverSpec extends AnyWordSpec with Matchers {
           val in=getClass.getClassLoader.getResourceAsStream("db/mysql/pekko-snapshot-ownership-schema.sql")
           val sql=try scala.io.Source.fromInputStream(in).mkString finally in.close()
           sql.split(";").map(_.trim).filter(_.nonEmpty).foreach(executeSql(c,_))
+          val cutover=getClass.getClassLoader.getResourceAsStream("db/mysql/pekko-snapshot-cutover-schema.sql")
+          val cutoverSql=try scala.io.Source.fromInputStream(cutover).mkString finally cutover.close()
+          cutoverSql.split(";").map(_.trim).filter(_.nonEmpty).foreach(executeSql(c,_))
           executeSql(c,"CREATE TABLE takeover_journal_writes (persistence_id VARCHAR(255),sequence_number BIGINT,owner_id VARCHAR(128),permit_id VARCHAR(64),generation BIGINT,admission_sequence BIGINT) ENGINE=InnoDB")
           executeSql(c,"""CREATE TRIGGER takeover_journal_write AFTER INSERT ON event_journal FOR EACH ROW
             BEGIN IF NEW.persistence_id='workflow-table-00' THEN
@@ -62,6 +70,8 @@ class RealMySQLSnapshotTakeoverSpec extends AnyWordSpec with Matchers {
         val replyLoss=new TakeoverCommitReplyLoss(ds,marker)
         val store=new TableSchedulingStore(replyLoss,SchedulingLimits(2,1,4,1,24576,16),ownershipEnabled=true)
         val ownership=store.ownership.get
+        val coordinatorOwnership:ManagedOwnerRegistry=if(sys.env.get("CDC_TAKEOVER_CDC_CONTROL").contains("1"))
+          new CdcManagedControlStore(replyLoss,store.limits).ownership else ownership
         val manager=new ManagedJvmIsolation("takeover-experiment",3)
         val denied=new AtomicBoolean(false)
         val restricted="takeover_"+suffix
@@ -78,9 +88,15 @@ class RealMySQLSnapshotTakeoverSpec extends AnyWordSpec with Matchers {
           java.sql.DriverManager.getConnection(settings.url(schema).replace("/"+schema+"?","/?")+"&connectTimeout=3000&socketTimeout=5000&connectionAttributes=pekko_owner:observer,pekko_role:observer",user,settings.password)
         }
         val observer=new MySqlOwnerDrainObserver(ownership,openObserver)
-        var coordinator=new SnapshotTakeoverCoordinator(ownership,manager,observer.observe,100)
+        var coordinator=new SnapshotTakeoverCoordinator(coordinatorOwnership,manager,observer.observe,100)
         var loop:AutoCloseable=coordinator.start(100)
         val children=scala.collection.mutable.ArrayBuffer.empty[(ManagedSnapshotChild,Child)]
+        val cutoverDefinitionHash={
+          val workflow=OwnerIsolationProbeSupport.workflow(settings.copy(user=legacyUser,password=legacyPassword),schema)
+          val source=workflow.nodes.find(_.id=="source").get;val target=workflow.nodes.find(_.id=="target").get
+          SnapshotSplitFingerprint.compute(1L,source,target)
+        }
+        var cutoverOperation=Option.empty[String]
         val holder=openObserver("")
         def event(child:Child,kind:String)=child.events.find(_.fields("kind")==JsString(kind)).getOrElse(child.awaitEvent(kind))
         def start(mode:String,seed:String):(ManagedSnapshotChild,Child)={
@@ -88,7 +104,14 @@ class RealMySQLSnapshotTakeoverSpec extends AnyWordSpec with Matchers {
           val builder=new ProcessBuilder(Path.of(System.getProperty("java.home"),"bin","java").toString,"-Xmx512m","-Duser.timezone=UTC","-cp",cp,
             RealMySQLSnapshotTakeoverProcess.getClass.getName.stripSuffix("$"),schema,boot,mode,scenario,gate,seed)
           builder.redirectErrorStream(true)
-          Map("RUN_MYSQL_SNAPSHOT_TAKEOVER"->"1","CDC_WINDOW_MYSQL_HOST"->settings.host,"CDC_WINDOW_MYSQL_PORT"->settings.port.toString,"CDC_WINDOW_MYSQL_USER"->settings.user,"CDC_WINDOW_MYSQL_PASSWORD"->settings.password).foreach{case(k,v)=>builder.environment().put(k,v)}
+          val legacy=accountCutover && mode=="fresh"
+          val env=Map("RUN_MYSQL_SNAPSHOT_TAKEOVER"->"1","CDC_WINDOW_MYSQL_HOST"->settings.host,"CDC_WINDOW_MYSQL_PORT"->settings.port.toString,"CDC_WINDOW_MYSQL_USER"->(if(legacy)legacyUser else settings.user),"CDC_WINDOW_MYSQL_PASSWORD"->(if(legacy)legacyPassword else settings.password))
+          env.foreach{case(k,v)=>builder.environment().put(k,v)}
+          if(accountCutover && mode!="fresh" && cutoverOperation.nonEmpty) {
+            builder.environment().put("CDC_TAKEOVER_CUTOVER","1");builder.environment().put("CDC_TAKEOVER_CUTOVER_OPERATION",cutoverOperation.get)
+            builder.environment().put("CDC_TAKEOVER_CUTOVER_HOST","test-host");builder.environment().put("CDC_TAKEOVER_DEFINITION_HASH",cutoverDefinitionHash)
+            builder.environment().put("CDC_TAKEOVER_LEGACY_USER",legacyUser)
+          }
           val managed=manager.launch(boot,builder)
           val child=new Child(managed.process,dir.resolve(s"worker-${children.size}.log"));children+=managed->child
           write(dir,s"worker-${children.size}-identity.json",JsObject("owner"->JsString(boot),"pid"->JsNumber(managed.identity.pid),"startIdentity"->JsString(managed.identity.startIdentity)))
@@ -106,6 +129,10 @@ class RealMySQLSnapshotTakeoverSpec extends AnyWordSpec with Matchers {
         def capture=JsObject("ha"->control,"data"->OwnerIsolationProbeSupport.capture(settings,schema))
         def releaseGate():Unit={query(holder,s"SELECT RELEASE_LOCK('$gate') AS released");()}
         try {
+          if(accountCutover)withConnection(settings,schema) { c=>
+            executeSql(c,s"CREATE USER '$legacyUser'@'127.0.0.1' IDENTIFIED BY '$legacyPassword'");legacyCreated=true
+            executeSql(c,s"GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,INDEX,ALTER,CREATE TEMPORARY TABLES ON `$schema`.* TO '$legacyUser'@'127.0.0.1'")
+          }
           if(scenario=="STARTUP_COMMIT_REPLY_LOST") {
             val failed=manager.launch(UUID.randomUUID().toString,new ProcessBuilder("/bin/sh","-c","sleep 0.1; exit 1"))
             replyLoss.armed.set(true);failed.process.waitFor()
@@ -151,8 +178,18 @@ class RealMySQLSnapshotTakeoverSpec extends AnyWordSpec with Matchers {
             }
             write(dir,"bootstrap-drained.json",control)
           }
-          val (nextWorker,b)=start(if(scenario=="B_RECOVERY_CRASH")"recovery-gated" else "candidate",aReady.fields("address").convertTo[String])
-          b.events.exists(_.fields("kind")==JsString("ENGINE_STARTED")) shouldBe false
+          var nextWorker:ManagedSnapshotChild=null;var b:Child=null
+          if(!accountCutover) {
+            val started=start(if(scenario=="B_RECOVERY_CRASH")"recovery-gated" else "candidate",aReady.fields("address").convertTo[String]);nextWorker=started._1;b=started._2
+            b.events.exists(_.fields("kind")==JsString("ENGINE_STARTED")) shouldBe false
+          }
+          if(accountCutover) {
+            val uuid=withConnection(settings,schema)(c=>query(c,"SELECT @@server_uuid AS uuid").elements.head.asJsObject.fields("uuid").convertTo[String])
+            LegacyAccountProbeAccess.lock(settings.url(schema),settings.user,settings.password,uuid,legacyUser)
+            intercept[java.sql.SQLException](java.sql.DriverManager.getConnection(settings.url(schema),legacyUser,legacyPassword))
+            old.process.isAlive shouldBe true
+            write(dir,"legacy-account-locked.json",JsObject("owner"->JsString(old.identity.bootId),"workerAlive"->JsBoolean(true),"newLoginDenied"->JsBoolean(true),"data"->capture))
+          }
           if(scenario=="COMPETING_CANDIDATES")start("candidate",aReady.fields("address").convertTo[String])
           if(scenario=="SIGSTOP_READ") {
             require(new ProcessBuilder("/bin/kill","-STOP",old.process.pid().toString).start().waitFor()==0)
@@ -174,13 +211,26 @@ class RealMySQLSnapshotTakeoverSpec extends AnyWordSpec with Matchers {
             ownership.confirmIsolation(SnapshotIsolationReceipt(operation,old.identity.copy(startIdentity="different-process"),"managed-child-jvm",System.currentTimeMillis(),"{}")) shouldBe false
             ownership.owner(old.identity.bootId).get.phase shouldBe "revoking"
             write(dir,"wrong-receipt-rejected.json",capture)
-            loop=new SnapshotTakeoverCoordinator(ownership,manager,observer.observe,100).start(100)
+            loop=new SnapshotTakeoverCoordinator(coordinatorOwnership,manager,observer.observe,100).start(100)
           }
           if(scenario=="OBSERVER_SEPARATE_ACCOUNT")unknownHolder=java.sql.DriverManager.getConnection(settings.url(schema),settings.user,settings.password)
           replyLoss.armed.set(scenario.endsWith("COMMIT_REPLY_LOST"))
           old.process.destroyForcibly().waitFor()
           awaitCondition("production coordinator persisted the exact isolation proof",15.seconds) {
             ownership.owner(old.identity.bootId).exists(o=>Set("fenced","drain_wait","db_drained").contains(o.phase))
+          }
+          if(accountCutover) {
+            awaitCondition("old account owner reached db_drained before policy switch",20.seconds) { ownership.owner(old.identity.bootId).exists(_.phase=="db_drained") }
+            loop.close()
+            val operation=ownership.owner(old.identity.bootId).flatMap(_.operation).getOrElse(throw new IllegalStateException("cutover operation missing"))
+            cutoverOperation=Some(operation)
+            val cutover=CdcManagedControlStore.CutoverIdentity("takeover-experiment","test-host",operation)
+            val owner=ownership.owner(old.identity.bootId).get
+            val key=CutoverAuthorizationKey(cutover.deploymentId,cutover.hostId,cutover.operationId,old.identity.bootId,owner.manifest,
+              cutover.policyHash(store.limits),"b"*64,"c"*64)
+            SnapshotCutoverProbeAccess.commitOwner(coordinatorOwnership.asInstanceOf[ManagedOwnerStore],key)
+            val started=start("candidate","self");nextWorker=started._1;b=started._2
+            b.events.exists(_.fields("kind")==JsString("ENGINE_STARTED")) shouldBe false
           }
           if(scenario.startsWith("KILL_DB_")) {
             val observations=ownership.instances(old.identity.bootId).map(i=>observer.observe(old.identity.bootId,i))
@@ -209,7 +259,7 @@ class RealMySQLSnapshotTakeoverSpec extends AnyWordSpec with Matchers {
           }
           if(scenario=="COORDINATOR_RESTART") {
             loop.close();write(dir,"coordinator-restart.json",capture)
-            coordinator=new SnapshotTakeoverCoordinator(ownership,manager,observer.observe,100);loop=coordinator.start(100)
+            coordinator=new SnapshotTakeoverCoordinator(coordinatorOwnership,manager,observer.observe,100);loop=coordinator.start(100)
           }
           releaseGate()
           if(scenario=="STALE_GRANT") {
@@ -268,7 +318,8 @@ class RealMySQLSnapshotTakeoverSpec extends AnyWordSpec with Matchers {
           val permission=ownership.permit("table-00").get
           permission.generation shouldBe (if(scenario=="B_RECOVERY_CRASH")3 else 2)
           permission.executionId shouldBe oldTask.executionId.get
-          store.release(TableGrant(oldTask,oldTask.grantId.get),"completed",true,Some(old.identity.bootId)) shouldBe false
+          if(accountCutover) intercept[IllegalStateException](store.release(TableGrant(oldTask,oldTask.grantId.get),"completed",true,Some(old.identity.bootId)))
+          else store.release(TableGrant(oldTask,oldTask.grantId.get),"completed",true,Some(old.identity.bootId)) shouldBe false
           children.drop(1).exists(_._2.events.exists(_.fields("kind")==JsString("ENGINE_STARTED"))) shouldBe true
           if(scenario=="KILL_T_BEFORE_J")children.drop(1).flatMap(_._2.events).count(_.fields.get("replay").contains(JsBoolean(true))) shouldBe 1
           if(scenario=="KILL_J_AFTER_STORE") {
@@ -289,12 +340,20 @@ class RealMySQLSnapshotTakeoverSpec extends AnyWordSpec with Matchers {
           write(dir,"result.json",JsObject("scenario"->JsString(scenario),"schema"->JsString(schema),"equal"->JsBoolean(true),
             "rows"->JsNumber(10),"fields"->JsNumber(6),"D"->JsString("N/A"),"automaticTakeover"->JsBoolean(true),"sameCluster"->JsBoolean(true),
             "runtime"->JsString(sys.env.getOrElse("SNAPSHOT_TAKEOVER_RUNTIME","unfrozen"))))
+        } catch {
+          case scala.util.control.NonFatal(error) =>
+            if (accountCutover) {
+              try write(dir, "failure-before-cleanup.json", capture)
+              catch { case scala.util.control.NonFatal(evidenceError) => error.addSuppressed(evidenceError) }
+            }
+            throw error
         } finally {
           if(unknownHolder!=null)unknownHolder.close()
           releaseGate();if(scenario=="B_RECOVERY_CRASH")query(holder,s"SELECT RELEASE_LOCK('${gate}-recovery') AS released");holder.close();denied.set(false)
           children.foreach { case(_,child)=>child.kill() }
           try loop.close()finally {
             if(temporaryUser)withConnection(settings,schema)(executeSql(_,s"DROP USER '$restricted'@'%';"))
+            if(legacyCreated)withConnection(settings,schema)(executeSql(_,s"DROP USER '$legacyUser'@'127.0.0.1';"))
             ds.close()
             write(dir,"workers-after-cleanup.json",JsArray(children.toVector.map { case (managed,_)=>
               JsObject("owner"->JsString(managed.identity.bootId),"pid"->JsNumber(managed.identity.pid),"alive"->JsBoolean(managed.process.isAlive))

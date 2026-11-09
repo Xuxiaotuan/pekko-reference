@@ -1,0 +1,82 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[info] done compiling
+00:55:07,302 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+00:55:07,302 |-INFO in ch.qos.logback.classic.util.ContextInitializer@615aede4 - No custom configurators were discovered as a service.
+00:55:07,302 |-INFO in ch.qos.logback.classic.util.ContextInitializer@615aede4 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+00:55:07,302 |-INFO in ch.qos.logback.classic.util.ContextInitializer@615aede4 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+00:55:07,303 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+00:55:07,303 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+00:55:07,304 |-INFO in ch.qos.logback.classic.util.ContextInitializer@615aede4 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+00:55:07,304 |-INFO in ch.qos.logback.classic.util.ContextInitializer@615aede4 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+00:55:07,304 |-INFO in ch.qos.logback.classic.util.ContextInitializer@615aede4 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+00:55:07,304 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+00:55:07,304 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+00:55:07,330 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+00:55:07,330 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+00:55:07,333 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+00:55:07,342 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+00:55:07,342 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+00:55:07,342 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+00:55:07,342 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+00:55:07,343 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+00:55:07,343 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+00:55:07,343 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+00:55:07,343 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+00:55:07,344 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+00:55:07,344 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+00:55:07,344 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+00:55:07,344 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+00:55:07,344 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@a8c86d5 - End of configuration.
+00:55:07,344 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@7b362eb9 - Registering current configuration as safe fallback point
+00:55:07,344 |-INFO in ch.qos.logback.classic.util.ContextInitializer@615aede4 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 40 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+00:55:07.455 [34mINFO [0;39m [36m[pool-8-thread-1-ScalaTest-running-CutoverAccountMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+00:55:07.465 [34mINFO [0;39m [36m[pool-8-thread-1-ScalaTest-running-CutoverAccountMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@50f35217
+00:55:07.466 [34mINFO [0;39m [36m[pool-8-thread-1-ScalaTest-running-CutoverAccountMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+LEGACY_INTENT_EVIDENCE child_exit=37 phase_before_recovery=INTENT
+DRAIN_DIAGNOSTIC thread=82 process=82 user=cdc_lab state=RUNNING
+DRAIN_DIAGNOSTIC thread=86 process=null user=null state=RUNNING
+00:55:08.468 [34mINFO [0;39m [36m[pool-8-thread-1-ScalaTest-running-CutoverAccountMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown initiated...
+00:55:08.468 [34mINFO [0;39m [36m[pool-8-thread-1-ScalaTest-running-CutoverAccountMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown completed.
+[info] CutoverAccountMySqlSpec:
+[info] a legacy account lock
+[info] - should deny new connections without treating an existing transaction as drained *** FAILED ***
+[info]   java.lang.IllegalStateException: legacy or unattributed transactions remain
+[info]   at cn.xuyinyin.magic.workflow.scheduling.LegacyMySqlAccountLock$.verifyDrain(LegacyMySqlAccountLock.scala:104)
+[info]   at cn.xuyinyin.magic.workflow.scheduling.CutoverAccountMySqlSpec.$anonfun$new$2(CutoverAccountMySqlSpec.scala:170)
+[info]   at org.scalatest.OutcomeOf.outcomeOf(OutcomeOf.scala:85)
+[info]   at org.scalatest.OutcomeOf.outcomeOf$(OutcomeOf.scala:83)
+[info]   at org.scalatest.OutcomeOf$.outcomeOf(OutcomeOf.scala:104)
+[info]   at org.scalatest.Transformer.apply(Transformer.scala:22)
+[info]   at org.scalatest.Transformer.apply(Transformer.scala:20)
+[info]   at org.scalatest.wordspec.AnyWordSpecLike$$anon$3.apply(AnyWordSpecLike.scala:1240)
+[info]   at org.scalatest.TestSuite.withFixture(TestSuite.scala:196)
+[info]   at org.scalatest.TestSuite.withFixture$(TestSuite.scala:195)
+[info]   ...
+[info] Run completed in 1 second, 320 milliseconds.
+[info] Total number of tests run: 1
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 0, failed 1, canceled 0, ignored 0, pending 0
+[info] *** 1 TEST FAILED ***
+[error] Failed tests:
+[error] 	cn.xuyinyin.magic.workflow.scheduling.CutoverAccountMySqlSpec
+[error] (Test / testOnly) sbt.TestsFailedException: Tests unsuccessful
+[error] Total time: 5 s, completed 2026年11月9日 上午12:55:08

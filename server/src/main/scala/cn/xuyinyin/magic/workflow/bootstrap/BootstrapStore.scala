@@ -16,13 +16,17 @@ final class BootstrapStore(open:()=>Connection,val id:String,maxBytes:Long) {
     val lock="bootstrap-register-"+hash(c.getCatalog).take(32)
     require(query(c,"SELECT GET_LOCK(?,5) AS acquired",lock).head("acquired")=="1","bootstrap registry admission timed out")
     try {
-    Vector(
-      "CREATE TABLE IF NOT EXISTS pekko_bootstrap_storage(bootstrap_id VARCHAR(128) PRIMARY KEY,definition_hash CHAR(64) NOT NULL,used_bytes BIGINT NOT NULL)",
-      "CREATE TABLE IF NOT EXISTS pekko_bootstrap_windows(bootstrap_id VARCHAR(128),window_id VARCHAR(128),spec_json LONGTEXT NOT NULL,spec_hash CHAR(64) NOT NULL,manifest_json LONGTEXT NULL,manifest_hash CHAR(64) NULL,PRIMARY KEY(bootstrap_id,window_id))",
-      "CREATE TABLE IF NOT EXISTS pekko_bootstrap_done(bootstrap_id VARCHAR(128),ordinal BIGINT,window_id VARCHAR(128),parent_root CHAR(64) NOT NULL,root CHAR(64) NOT NULL,PRIMARY KEY(bootstrap_id,ordinal))",
-      "CREATE TABLE IF NOT EXISTS pekko_bootstrap_pages(bootstrap_id VARCHAR(128),window_id VARCHAR(128),page_kind VARCHAR(16),page_index INT,payload LONGTEXT NOT NULL,digest CHAR(64) NOT NULL,PRIMARY KEY(bootstrap_id,window_id,page_kind,page_index))"
-    ).foreach(s=>update(c,s+" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin"))
-    require(query(c,"SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ('pekko_bootstrap_storage','pekko_bootstrap_windows','pekko_bootstrap_pages','pekko_bootstrap_done') AND engine='InnoDB'").head("n")=="4","bootstrap state requires InnoDB")
+    val tables=Vector(
+      "pekko_bootstrap_storage" -> "(bootstrap_id VARCHAR(128) PRIMARY KEY,definition_hash CHAR(64) NOT NULL,used_bytes BIGINT NOT NULL)",
+      "pekko_bootstrap_windows" -> "(bootstrap_id VARCHAR(128),window_id VARCHAR(128),spec_json LONGTEXT NOT NULL,spec_hash CHAR(64) NOT NULL,manifest_json LONGTEXT NULL,manifest_hash CHAR(64) NULL,PRIMARY KEY(bootstrap_id,window_id))",
+      "pekko_bootstrap_done" -> "(bootstrap_id VARCHAR(128),ordinal BIGINT,window_id VARCHAR(128),parent_root CHAR(64) NOT NULL,root CHAR(64) NOT NULL,PRIMARY KEY(bootstrap_id,ordinal))",
+      "pekko_bootstrap_pages" -> "(bootstrap_id VARCHAR(128),window_id VARCHAR(128),page_kind VARCHAR(16),page_index INT,payload LONGTEXT NOT NULL,digest CHAR(64) NOT NULL,PRIMARY KEY(bootstrap_id,window_id,page_kind,page_index))"
+    )
+    val existing=query(c,"SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ('pekko_bootstrap_storage','pekko_bootstrap_windows','pekko_bootstrap_pages','pekko_bootstrap_done')").map(_("table_name")).toSet
+    tables.filterNot(t=>existing(t._1)).foreach {case(name,definition)=>
+      update(c,"CREATE TABLE IF NOT EXISTS "+name+definition+" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin")
+    }
+    verifySchema(c)
     transaction {c=>
       query(c,"SELECT definition_hash FROM pekko_bootstrap_storage WHERE bootstrap_id=? FOR UPDATE",id).headOption match {
         case Some(r)=>require(r("definition_hash")==hash(definition),"bootstrap definition changed")
@@ -34,6 +38,39 @@ final class BootstrapStore(open:()=>Connection,val id:String,maxBytes:Long) {
     }
       }finally {require(query(c,"SELECT RELEASE_LOCK(?) AS released",lock).head("released")=="1","bootstrap registry release unknown")}
     }
+  }
+  /** The no-DDL path is safe only for exactly the same durable layout as a fresh store. */
+  private def verifySchema(c:Connection):Unit={
+    final case class Col(name:String,kind:String,length:Long,nullable:Boolean)
+    def v(n:String,l:Long,nullable:Boolean=false)=Col(n,"varchar",l,nullable)
+    def ch(n:String,nullable:Boolean=false)=Col(n,"char",64,nullable)
+    def text(n:String,nullable:Boolean=false)=Col(n,"longtext",4294967295L,nullable)
+    def number(n:String,kind:String)=Col(n,kind,0,false)
+    val expected=Map(
+      "pekko_bootstrap_storage"->Vector(v("bootstrap_id",128),ch("definition_hash"),number("used_bytes","bigint")),
+      "pekko_bootstrap_windows"->Vector(v("bootstrap_id",128),v("window_id",128),text("spec_json"),ch("spec_hash"),text("manifest_json",true),ch("manifest_hash",true)),
+      "pekko_bootstrap_done"->Vector(v("bootstrap_id",128),number("ordinal","bigint"),v("window_id",128,true),ch("parent_root"),ch("root")),
+      "pekko_bootstrap_pages"->Vector(v("bootstrap_id",128),v("window_id",128),v("page_kind",16),number("page_index","int"),text("payload"),ch("digest")))
+    val keys=Map("pekko_bootstrap_storage"->Vector("bootstrap_id"),"pekko_bootstrap_windows"->Vector("bootstrap_id","window_id"),
+      "pekko_bootstrap_done"->Vector("bootstrap_id","ordinal"),"pekko_bootstrap_pages"->Vector("bootstrap_id","window_id","page_kind","page_index"))
+    val tableList="'pekko_bootstrap_storage','pekko_bootstrap_windows','pekko_bootstrap_pages','pekko_bootstrap_done'"
+    val found=query(c,s"SELECT table_name,engine FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ($tableList)")
+    require(found.size==4 && found.forall(r=>expected.contains(r("table_name")) && r("engine")=="InnoDB"),"bootstrap state requires InnoDB tables")
+    val columns=query(c,s"SELECT table_name,column_name,data_type,character_maximum_length,is_nullable,character_set_name,collation_name,column_type,extra FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ($tableList) ORDER BY table_name,ordinal_position").groupBy(_("table_name"))
+    expected.foreach {case(table,want)=>
+      val actual=columns.getOrElse(table,Vector.empty)
+      require(actual.size==want.size && actual.zip(want).forall {case(r,x)=>
+        val stringType=Set("varchar","char","longtext")(x.kind)
+        r("column_name")==x.name && r("data_type")==x.kind &&
+          (if(stringType)r("character_maximum_length")!=null && r("character_maximum_length").toLong==x.length && r("character_set_name")=="utf8mb4" && r("collation_name")=="utf8mb4_bin" else r("column_type")!=null && !r("column_type").toLowerCase(java.util.Locale.ROOT).contains("unsigned")) &&
+          r("is_nullable")== (if(x.nullable)"YES" else "NO") && Option(r("extra")).forall(_.isEmpty)
+      },"bootstrap material schema conflict: "+table)
+      val indexes=query(c,"SELECT index_name,non_unique,column_name FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name=? ORDER BY index_name,seq_in_index",table)
+      require(indexes.filter(_("index_name")=="PRIMARY").map(_("column_name"))==keys(table) &&
+        !indexes.exists(r=>r("index_name")!="PRIMARY" && r("non_unique")=="0"),"bootstrap material key conflict: "+table)
+    }
+    require(query(c,s"SELECT constraint_name FROM information_schema.referential_constraints WHERE (constraint_schema=DATABASE() AND table_name IN ($tableList)) OR (unique_constraint_schema=DATABASE() AND referenced_table_name IN ($tableList)) LIMIT 1").isEmpty,
+      "bootstrap material foreign keys are unsupported")
   }
   private def tx[A](f:Connection=>A):A=transaction {c=>query(c,"SELECT bootstrap_id FROM pekko_bootstrap_storage WHERE bootstrap_id=? FOR UPDATE",id).head;f(c)}
   private def reserve(c:Connection,payload:String):Unit={

@@ -1,0 +1,50 @@
+21:39:48,469 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+21:39:48,469 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1ef6d34c - No custom configurators were discovered as a service.
+21:39:48,469 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1ef6d34c - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+21:39:48,470 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1ef6d34c - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+21:39:48,472 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+21:39:48,472 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+21:39:48,476 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1ef6d34c - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 2 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+21:39:48,476 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1ef6d34c - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+21:39:48,476 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1ef6d34c - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+21:39:48,476 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+21:39:48,477 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [jar:file:/private/tmp/pekko-cdc-managed-worker-20261108f/lib/cn.xuyinyin.pekko-reference-0.1.jar!/logback.xml]
+21:39:48,479 |-INFO in ch.qos.logback.core.joran.spi.ConfigurationWatchList@46271dd6 - URL [jar:file:/private/tmp/pekko-cdc-managed-worker-20261108f/lib/cn.xuyinyin.pekko-reference-0.1.jar!/logback.xml] is not of type file
+21:39:48,513 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+21:39:48,513 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+21:39:48,515 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+21:39:48,523 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+21:39:48,523 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+21:39:48,523 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+21:39:48,523 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+21:39:48,524 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+21:39:48,524 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+21:39:48,525 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+21:39:48,525 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+21:39:48,526 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+21:39:48,526 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+21:39:48,526 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+21:39:48,526 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+21:39:48,526 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@11bb571c - End of configuration.
+21:39:48,526 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@7c51f34b - Registering current configuration as safe fallback point
+21:39:48,526 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1ef6d34c - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 50 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+21:39:48.533 INFO  [main] [com.zaxxer.hikari.HikariDataSource] - HikariPool-1 - Starting...
+21:39:48.614 INFO  [main] [com.zaxxer.hikari.HikariDataSource] - HikariPool-1 - Start completed.
+21:39:48.780 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor LAUNCH_PREPARED (551401f9-4e5b-4137-aab0-6da130a41828)
+21:39:48.812 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor WORKER_STARTED (551401f9-4e5b-4137-aab0-6da130a41828)
+21:39:49.118 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor SAFE_PAUSE (java.sql.SQLSyntaxErrorException)
+21:39:49.399 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor SAFE_PAUSE (java.sql.SQLSyntaxErrorException)
+21:39:49.681 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor SAFE_PAUSE (java.sql.SQLSyntaxErrorException)
+21:39:57.120 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor PROOF_RECEIVED (551401f9-4e5b-4137-aab0-6da130a41828)
+21:39:57.123 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor PROOF_RECORDED (551401f9-4e5b-4137-aab0-6da130a41828)
+21:39:57.160 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor DATABASE_OBSERVED (551401f9-4e5b-4137-aab0-6da130a41828)
+21:39:57.172 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor DATABASE_OBSERVED (551401f9-4e5b-4137-aab0-6da130a41828)
+21:39:57.464 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor PROOF_RECEIVED (551401f9-4e5b-4137-aab0-6da130a41828)
+21:39:57.466 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor PROOF_RECORDED (551401f9-4e5b-4137-aab0-6da130a41828)
+21:39:57.495 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor DATABASE_OBSERVED (551401f9-4e5b-4137-aab0-6da130a41828)
+21:39:57.510 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor DATABASE_OBSERVED (551401f9-4e5b-4137-aab0-6da130a41828)
+21:39:57.521 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor QUOTA_RETURNED (551401f9-4e5b-4137-aab0-6da130a41828)
+21:39:57.530 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor WORKER_RETIRED (551401f9-4e5b-4137-aab0-6da130a41828)
+21:39:57.546 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor LAUNCH_PREPARED (bd5f9dc5-8afe-4433-ba9c-0ac0e2a6a98b)
+21:39:57.560 INFO  [main] [c.x.m.w.s.SnapshotSupervisorMain$] - Snapshot supervisor WORKER_STARTED (bd5f9dc5-8afe-4433-ba9c-0ac0e2a6a98b)

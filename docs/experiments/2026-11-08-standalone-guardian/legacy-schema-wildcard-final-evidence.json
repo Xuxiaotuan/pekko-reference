@@ -1,0 +1,14 @@
+{
+  "mysql": "9.5.0",
+  "source_sha256": {
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyMySqlAccountLock.scala": "0850c2ce9f518f9737fe7ea3ba5cc3ff55cfa533659dc83902a80bfd30e1d949",
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyAccountLockIntent.scala": "a56193a98bc4fb5ae4be4e837470b7cf821a3787f9f8f7e00e935e9de4b94c94",
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/CutoverAccountMySqlSpec.scala": "b859f9e94fb8730ba1f807183c1723855f2dce1c7aefea8196ef4a5f8733b73f",
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyIntentCrashProbe.scala": "f590d3b1f5af61e622dcb8ddeb986b824e841ba1fafca8db1a092779b12e8131",
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotGuardianSpec.scala": "66085eaff54829e194f8e91c911e9e25f4f20a01da12c96221ca6461c1b56b5d"
+  },
+  "tests_passed": 32,
+  "trusted_admin_assumption": "user accepted trusted administrators and single managed controller exclusive control of account and proxy changes",
+  "observed": "untrusted proxy, dangerous legacy grants, wildcard schema covering mysql, mandatory roles, anonymous accounts and legacy DEFINER objects refused; test-only JVM crash reentry passed",
+  "boundary": "exclusive admin authority is assumed rather than enforced; actual proxy login, guardian drain, database lock and quota cutover, and old Workflow end-to-end migration remain unverified"
+}

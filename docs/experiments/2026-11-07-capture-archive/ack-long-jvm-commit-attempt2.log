@@ -1,0 +1,203 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 2 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[info] done compiling
+[info] compiling 2 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcBootstrapKernel.scala:3:73: Unused import
+[warn] import cn.xuyinyin.magic.connectors.mysql.source.{DebeziumEngineFactory,MySQLCdcStateConfig}
+[warn]                                                                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcBootstrapKernel.scala:11:57: Unused import
+[warn] import org.apache.pekko.actor.typed.scaladsl.{Behaviors,adapter}
+[warn]                                                         ^
+[warn] two warnings found
+[info] done compiling
+[info] compiling 7 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureAckLongMySqlSpec.scala:117:56: match may not be exhaustive.
+[warn]     val Array(url,capture,head,anchor,intent,revision)=args
+[warn]                                                        ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/BootstrapMatrixWorker.scala:25:43: match may not be exhaustive.
+[warn]     val Array(schema,captureId,batchSize)=args;validateSchema(schema)
+[warn]                                           ^
+[warn] two warnings found
+[info] done compiling
+20:31:02,968 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+20:31:02,968 |-INFO in ch.qos.logback.classic.util.ContextInitializer@34e48101 - No custom configurators were discovered as a service.
+20:31:02,969 |-INFO in ch.qos.logback.classic.util.ContextInitializer@34e48101 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+20:31:02,969 |-INFO in ch.qos.logback.classic.util.ContextInitializer@34e48101 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+20:31:02,969 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+20:31:02,969 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+20:31:02,970 |-INFO in ch.qos.logback.classic.util.ContextInitializer@34e48101 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+20:31:02,970 |-INFO in ch.qos.logback.classic.util.ContextInitializer@34e48101 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+20:31:02,970 |-INFO in ch.qos.logback.classic.util.ContextInitializer@34e48101 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+20:31:02,971 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+20:31:02,971 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+20:31:03,048 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+20:31:03,048 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+20:31:03,052 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+20:31:03,064 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+20:31:03,064 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+20:31:03,064 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+20:31:03,064 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+20:31:03,065 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+20:31:03,065 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+20:31:03,066 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+20:31:03,066 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+20:31:03,067 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+20:31:03,067 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+20:31:03,067 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+20:31:03,067 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+20:31:03,067 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@6485322c - End of configuration.
+20:31:03,067 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@7dc7ee02 - Registering current configuration as safe fallback point
+20:31:03,067 |-INFO in ch.qos.logback.classic.util.ContextInitializer@34e48101 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 97 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+20:31:23,049 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+20:31:23,051 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485966cc - No custom configurators were discovered as a service.
+20:31:23,051 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485966cc - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+20:31:23,051 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485966cc - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+20:31:23,052 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+20:31:23,052 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+20:31:23,055 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485966cc - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+20:31:23,055 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485966cc - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+20:31:23,055 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485966cc - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+20:31:23,056 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+20:31:23,056 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+20:31:23,097 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+20:31:23,097 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+20:31:23,099 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+20:31:23,109 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+20:31:23,109 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+20:31:23,110 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+20:31:23,110 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+20:31:23,110 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+20:31:23,110 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+20:31:23,111 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+20:31:23,112 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+20:31:23,112 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+20:31:23,112 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+20:31:23,112 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+20:31:23,112 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+20:31:23,113 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@1de76cc7 - End of configuration.
+20:31:23,113 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@54bff557 - Registering current configuration as safe fallback point
+20:31:23,113 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485966cc - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 58 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+ACK_JVM pid=44112 revision=2
+20:31:23,578 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+20:31:23,579 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485966cc - No custom configurators were discovered as a service.
+20:31:23,579 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485966cc - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+20:31:23,579 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485966cc - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+20:31:23,580 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+20:31:23,580 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+20:31:23,583 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485966cc - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+20:31:23,583 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485966cc - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+20:31:23,583 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485966cc - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+20:31:23,583 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+20:31:23,584 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+20:31:23,622 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+20:31:23,622 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+20:31:23,625 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+20:31:23,635 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+20:31:23,635 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+20:31:23,635 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+20:31:23,635 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+20:31:23,636 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+20:31:23,636 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+20:31:23,637 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+20:31:23,637 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+20:31:23,638 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+20:31:23,638 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+20:31:23,638 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+20:31:23,638 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+20:31:23,638 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@1de76cc7 - End of configuration.
+20:31:23,638 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@54bff557 - Registering current configuration as safe fallback point
+20:31:23,638 |-INFO in ch.qos.logback.classic.util.ContextInitializer@485966cc - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 55 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+ACK_JVM pid=44151 revision=3
+ACK_COMMIT_UNKNOWN identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 guardian=test-guardian revision=4 pin=present
+ACK_PAGE revision=5 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=6 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=7 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=8 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=9 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=10 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=11 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=12 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=13 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=14 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=15 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=16 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=17 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=18 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=19 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=20 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=21 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=22 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=23 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=24 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=25 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=26 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=27 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=28 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=29 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=30 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=31 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=32 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=33 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=34 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=35 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=36 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=37 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=38 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=39 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=40 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=41 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=42 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=43 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=44 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=45 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=46 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=47 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=48 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=49 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=50 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=51 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=52 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=53 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=54 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=55 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=56 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=57 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=58 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=59 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=60 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=61 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=62 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=63 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=64 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=65 done=false identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_PAGE revision=66 done=true identity=6c9174bae45c8d520b4df87e64f2be9583753dde7be847b14b2e416076c58490 pin=present
+ACK_LONG schema=pekko_test_ack_long_89201dce2d head=4103 anchor=2 pages=63 restored=true
+[info] CaptureAckLongMySqlSpec:
+[info] ACK proof paging
+[info] - should resume a chain beyond the old 4096 bound and reject an absent parent
+[info] Run completed in 22 seconds, 274 milliseconds.
+[info] Total number of tests run: 1
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 1, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 29 s, completed 2026年11月7日 下午8:31:25

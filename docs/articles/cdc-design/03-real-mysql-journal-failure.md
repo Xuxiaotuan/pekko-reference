@@ -10,6 +10,20 @@
 
 原初始化的完整 61 项预期检查、运行环境、失败尝试与所有字段导出见[原实验报告](../../experiments/2026-10-25-bootstrap/README.md)；启动门后的实际结果见[A1/A2 报告](../../experiments/2026-10-27-capture-admission/README.md)。下文按“命题—切点—观察—判定”阅读保存的材料，协议推导见第四篇。未完成的候选实验仍保持待验证。
 
+2026-11-08 未提交候选新增一组互相对照的证据：修复前第五轮因正常重启累计恢复预算而暂停，源变更已进 L，目标未追上；修复后两组各五轮正常启停中，每轮源与目标逐字段相等，Journal 恢复次数为零。另一组在第二次运行后强制终止 JVM，替代进程因旧 owner 释放未证实而安全暂停；退出前的数据一致，但没有验证异常退出后的自动接管与追平。源码和[原始实验材料](../../experiments/2026-11-08-cdc-standalone-entry/README.md)均与旧版本分开保存。
+
+[L 未结束事务对照](../../experiments/2026-11-08-cdc-standalone-entry/README.md)进一步固定旧状态库事务：旧 worker 崩溃时事务仍可见，替代 worker 保持 UNKNOWN 且没有创建 Reader；旧事务回滚后它仍未自动接管。源目标缺行和多行均为零，但有 5 个字段不同，因此这项实验是安全暂停证据，不是恢复后对账成功。
+
+[D 滞后崩溃对照](../../experiments/2026-11-08-cdc-standalone-entry/README.md)在持有真实 offset 行锁时固定了 D 不变、Journal 从 revision 16 推进到 20；杀掉受控 Runner 并释放锁后，重启取得新 D，最终 64 行、384 字段一致。该样本不覆盖独立入口的 guardian 自动接管。
+
+[目标 COMMIT 结果未知对照](../../experiments/2026-11-08-cdc-standalone-entry/README.md)分别固定服务端 OK 丢失与 COMMIT 未转发；两次全量 baseline 最终均为 64 行、384 字段一致。这两项不是增量组账本的提交未知，也不验证独立入口的跨进程接管。
+
+[增量 replay 的目标提交对照](../../experiments/2026-11-08-cdc-standalone-entry/README.md)分别固定服务端 OK 回复丢失和 COMMIT 未转发：前者切点组账本有 1 条，后者为 0；两者最终均为 3 条，64 行 384 字段相等。它只验证受控 Runner 的两个时序，不证明迟提交或独立入口自动接管。
+
+[增量迟提交与旧连接断开](../../experiments/2026-11-08-cdc-standalone-entry/README.md)另固定旧目标事务：迟提交样本观察到真实 COMMIT OK，断开样本在切点观察到旧事务和锁等待；两者最终均为 64 行、384 字段一致。断开样本没有对应 PFS ROLLBACK 事件，只能确认最后事务采样为空。
+
+[独立入口 runtime18](../../experiments/2026-11-08-cdc-standalone-entry/README.md)在 JVM 崩溃后修改源表，替代进程因旧 owner 未证明释放而保持 UNKNOWN；T、J、D 采样未前进，目标保留崩溃前数据。源目标此时有差异，因此这是拒绝越界执行的证据，不是恢复追平的证据。
+
 ## 1. 先写判定规则，再看测试是否绿色
 
 | 编号 | 要检验的命题 | 成功或拒绝的判定 |
@@ -231,6 +245,24 @@ A14 在源 COMMIT 未知时的取消测试失败；B05 的启动与关闭竞争�
 生产入口的独立 C1 样本在真实 MySQL、Journal 和 Sink 上恢复至 STREAMING，源与目标各 64 行、384 字段相等。前两次运行分别在故障注入前因测试配置缺项和明文代理不兼容而失败，原始材料保留；本样本没有生产 raw ACK 顺序证据，强制清理后 CDC owner 仍为 ACTIVE，不证明正常停机。其余故障窗口仍仅有测试入口证据。 [生产入口 C1 证据](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)。
 
 这六个固定窗口没有覆盖控制表历史行数超过 4096 的情况。当前未知 B 的源控制表反查上限为 4096 行，超过时安全暂停；当前没有控制行 GC。因而这些实验不能证明 70 万表长期动态订阅下的恢复可用性。 [组件实验与限制](../../experiments/2026-10-29-cdc-b-proof-component/README.md)。
+
+## 两次受管 worker 异常退出
+
+在真实 MySQL、Actor Journal 与 MySQL Sink 上，实时任务连续经历两次 worker 异常退出，guardian 隔离和数据库排空后分别启动新 worker；最终第二次源与目标各 3 行、9 个字段相等。[日志与对账](../../experiments/2026-11-08-standalone-guardian/README.md)同时保留采集关闭导致的排空失败。本实验未保留完整原始 ACK 回调顺序，也未覆盖未知 B。
+
+后续 CDC 控制存储候选又完成一次真实单表 worker 故障接管，对账为 2 行、6 个字段一致；该次与旧版本实验分别计证据。 [候选实现与验证范围](../../experiments/2026-11-08-standalone-guardian/README.md)。
+
+补充实验在真实 MySQL、Journal 与 Sink 中注入旧格式 `unknown` 配额并终止受管 worker：隔离排空后配额回到旧队列，CDC 新 worker 追平 2 行、6 字段。配额由实验注入，未证明真实旧 Workflow 作业及全部迁移窗口。[证据与边界](../../experiments/2026-11-08-standalone-guardian/README.md)。
+
+补充真实旧 Workflow 作业：目标已提交、Journal 尚未确认时终止旧 worker，接管后源与目标 10 行、60 个字段一致。 [真实作业证据](../../experiments/2026-11-08-standalone-guardian/README.md)。
+
+## 2026-11-09 持久化切换授权与运行时身份
+
+本轮把切换拆成两个提交点。旧 worker 只有在 guardian 隔离 receipt、旧账号排空和 owner `db_drained` 成立后，才会迁移旧配额并写入新的策略身份；新 worker 获得自己的 recovery permit 后，才把旧 Workflow 定义中的用户名映射为运行时账号。原始 Workflow/Split 指纹仍按旧定义计算，密码只从 `passwordEnv` 读取，不写入 Journal 或控制表。
+
+在真实 MySQL、Actor Journal 和 MySQL Sink 的 `KILL_T_BEFORE_J` 实验中，源表 10 行、目标表 10 行、6 个投影字段逐字段一致；第一批 T 在恢复后以 replay 方式再次确认。`KILL_J_AFTER_STORE`、`FENCE_COMMIT_REPLY_LOST`、`STARTUP_COMMIT_REPLY_LOST`、`B_RECOVERY_CRASH`、`DRAIN_COMMIT_REPLY_LOST`、`QUOTA_COMMIT_REPLY_LOST`、`REVOKE_COMMIT_REPLY_LOST`、`OBSERVER_DENIED` 和 `STALE_GRANT` 也完成了本轮固定窗口验证。完整材料见[持久化切换授权实验](../../experiments/2026-11-09-persistent-cutover-authorization/README.md)及各场景目录。
+
+这里的“通过”指本轮真实实验结果。代码层已经实现绑定表、策略切换、permit 顺序和运行时重绑定；切换授权器仍由受管 supervisor 的显式入口调用，尚未扩展到 DDL、多 owner、共享 CDC 或跨实例迁移。未执行的历史场景、旧失败证据和这些边界仍然保留。
 
 ## 技术附录与证据入口
 

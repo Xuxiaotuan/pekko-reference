@@ -1,0 +1,31 @@
+{
+  "schema": "pekko_stop_0ef9b191a8",
+  "source_rows": [
+    "1\tafter\t33",
+    "3\tnew\t44"
+  ],
+  "target_rows": [
+    "1\tafter\t33",
+    "3\tnew\t44"
+  ],
+  "rows_equal": true,
+  "field_count_compared": 6,
+  "actual_D": {
+    "file": "binlog.000005",
+    "pos": 14301,
+    "gtids": "1c3a8f74-7203-4910-9260-e62bfa619c77:1-505"
+  },
+  "state": [
+    "OWNER=STOPPED",
+    "J_EVENTS=10",
+    "GROUP_LEDGER=3",
+    "ACTIVE_TRX=0",
+    "OTHER_SESSIONS=0"
+  ],
+  "source": [
+    "ACTIVE_TRX=0",
+    "OTHER_SESSIONS=0"
+  ],
+  "scala_source_unchanged": true,
+  "scope": "after second standalone stop, read-only MySQL; no cross-owner, source-fence faults or high-scale validation"
+}

@@ -94,6 +94,10 @@ B 是开始保留增量的边界；U 是扫描键上界；LOW/HIGH 属于一次�
 
 正常调度让出也不是一次故障恢复。上一 grant 的干净结果与当前 runtime owner 绑定，新的 Runner 逐项核对完整 J progress，才可免计一次 Interrupted。干净释放只证明资源边界，不能证明旧 RR 仍在：未封存窗口仍需新 attempt；J 已接受的 seal 丢失则暂停，不能借重新分批生成新内容。第二篇会沿这条边界展开。
 
+2026-11-08 的未提交候选进一步增加独立 CDC 入口：它装配现有捕获与初始化内核，不启动通用 Workflow Sharding 和 Scheduler。旧入口仍保留，两个入口若使用同一配置会读取同一份持久状态，仍需 owner 准入保护。真实五次正常启停及动态表结果见[实验记录](../../experiments/2026-11-08-cdc-standalone-entry/README.md)；这不证明旧 Workflow 依赖已经全部移除。
+
+新的 CDC 回放契约已从 Workflow 命名空间分出，旧适配器继续作为兼容桥。独立入口的 crash 样本在没有隔离证明时暂停，并未证明自动接管；见[本次实验](../../experiments/2026-11-08-cdc-standalone-entry/README.md)。
+
 ## 6. 没有变化的订阅怎样休眠，再由 L 唤醒
 
 只把 tail 空读变成定时步骤，仍可能让海量空闲表不断打开连接。平台进一步把空闲 STREAMING 记录停在持久索引中：不持有任务 grant，也不保留每表 Actor。
@@ -153,6 +157,24 @@ C0、C1、迟提交和迟回滚四项在接管后进入 STREAMING，各自源与
 生产入口的独立 C1 样本在真实 MySQL、Journal 和 Sink 上恢复至 STREAMING，源与目标各 64 行、384 字段相等。前两次运行分别在故障注入前因测试配置缺项和明文代理不兼容而失败，原始材料保留；本样本没有生产 raw ACK 顺序证据，强制清理后 CDC owner 仍为 ACTIVE，不证明正常停机。其余故障窗口仍仅有测试入口证据。 [生产入口 C1 证据](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)。
 
 当前未知 B 恢复还受一个明确的规模边界约束：源控制表反查最多 4096 行，且当前没有控制行 GC。历史控制行超过该上限时，未知 B 的恢复会安全暂停。持续新增和取消表会积累控制行，所以 70 万表长期动态订阅不能仅凭共享 Reader 和冷索引实验推断可恢复。 [组件实验与限制](../../experiments/2026-10-29-cdc-b-proof-component/README.md)。
+
+## 受管独立入口的边界
+
+独立 CDC worker 可以由 guardian 创建与隔离，启动链路不再启动 Workflow Sharding 和调度 Actor，最终实验中 supervisor 和 worker 的调度开关均为 false。当前候选的 supervisor 使用专用 CDC 控制存储类，兼容期间仍依赖旧锁和配额表。[真实环境与源码边界](../../experiments/2026-11-08-standalone-guardian/README.md)。
+
+当前 CDC 受管入口已接入专用控制存储类；兼容期间仍使用旧 admission 锁、审计序列和配额表，不能视为完成数据库层迁移。 [候选实现与验证范围](../../experiments/2026-11-08-standalone-guardian/README.md)。
+
+补充实验在真实 MySQL、Journal 与 Sink 中注入旧格式 `unknown` 配额并终止受管 worker：隔离排空后配额回到旧队列，CDC 新 worker 追平 2 行、6 字段。配额由实验注入，未证明真实旧 Workflow 作业及全部迁移窗口。[证据与边界](../../experiments/2026-11-08-standalone-guardian/README.md)。
+
+真实旧 Workflow 作业的单个故障窗口已用 CDC 控制存储接管；两者仍共用旧锁，数据库层切换尚未完成。 [真实作业证据](../../experiments/2026-11-08-standalone-guardian/README.md)。
+
+## 2026-11-09 持久化切换授权与运行时身份
+
+本轮把切换拆成两个提交点。旧 worker 只有在 guardian 隔离 receipt、旧账号排空和 owner `db_drained` 成立后，才会迁移旧配额并写入新的策略身份；新 worker 获得自己的 recovery permit 后，才把旧 Workflow 定义中的用户名映射为运行时账号。原始 Workflow/Split 指纹仍按旧定义计算，密码只从 `passwordEnv` 读取，不写入 Journal 或控制表。
+
+在真实 MySQL、Actor Journal 和 MySQL Sink 的 `KILL_T_BEFORE_J` 实验中，源表 10 行、目标表 10 行、6 个投影字段逐字段一致；第一批 T 在恢复后以 replay 方式再次确认。`KILL_J_AFTER_STORE`、`FENCE_COMMIT_REPLY_LOST`、`STARTUP_COMMIT_REPLY_LOST`、`B_RECOVERY_CRASH`、`DRAIN_COMMIT_REPLY_LOST`、`QUOTA_COMMIT_REPLY_LOST`、`REVOKE_COMMIT_REPLY_LOST`、`OBSERVER_DENIED` 和 `STALE_GRANT` 也完成了本轮固定窗口验证。完整材料见[持久化切换授权实验](../../experiments/2026-11-09-persistent-cutover-authorization/README.md)及各场景目录。
+
+这里的“通过”指本轮真实实验结果。代码层已经实现绑定表、策略切换、permit 顺序和运行时重绑定；切换授权器仍由受管 supervisor 的显式入口调用，尚未扩展到 DDL、多 owner、共享 CDC 或跨实例迁移。未执行的历史场景、旧失败证据和这些边界仍然保留。
 
 ## 技术附录与证据入口
 

@@ -1,0 +1,46 @@
+14:17:15,360 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+14:17:15,360 |-INFO in ch.qos.logback.classic.util.ContextInitializer@27d4a09 - No custom configurators were discovered as a service.
+14:17:15,360 |-INFO in ch.qos.logback.classic.util.ContextInitializer@27d4a09 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+14:17:15,361 |-INFO in ch.qos.logback.classic.util.ContextInitializer@27d4a09 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+14:17:15,362 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+14:17:15,362 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+14:17:15,364 |-INFO in ch.qos.logback.classic.util.ContextInitializer@27d4a09 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+14:17:15,364 |-INFO in ch.qos.logback.classic.util.ContextInitializer@27d4a09 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+14:17:15,364 |-INFO in ch.qos.logback.classic.util.ContextInitializer@27d4a09 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+14:17:15,364 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+14:17:15,365 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+14:17:15,404 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+14:17:15,404 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+14:17:15,407 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+14:17:15,412 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+14:17:15,412 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+14:17:15,412 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+14:17:15,412 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+14:17:15,413 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+14:17:15,413 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+14:17:15,414 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+14:17:15,414 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+14:17:15,415 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+14:17:15,415 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+14:17:15,415 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+14:17:15,415 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+14:17:15,415 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@7e4204e2 - End of configuration.
+14:17:15,415 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@b7c4869 - Registering current configuration as safe fallback point
+14:17:15,415 |-INFO in ch.qos.logback.classic.util.ContextInitializer@27d4a09 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 51 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+14:17:15.422 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+14:17:15.526 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+14:17:15.709 [34mINFO [0;39m [36m[snapshot-takeover-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+14:17:17.044 [31mWARN [0;39m [36m[snapshot-takeover-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.cluster.sharding.ShardRegion][0;39m - The `pekko.cluster.sharding.passivate-idle-entity-after` setting and associated methods are deprecated. Use the `pekko.cluster.sharding.passivation.default-idle-strategy.idle-entity.timeout` setting instead. See the documentation and reference config for more information on automatic passivation strategies.
+WINDOW {"at":"2026-11-09T14:17:17.044538Z","pid":97970,"kind":"WORKER_READY","address":"pekko://snapshot-takeover@127.0.0.1:53489","uid":-2850846376351304303,"mode":"recovery-gated","automaticDispatch":true,"owner":"fe090c5f-d1b1-47f6-83d9-bba7e9cf448f"}
+14:17:17.063 [31mWARN [0;39m [36m[snapshot-takeover-pekko.actor.default-dispatcher-22][0;39m [1;35m[o.apache.pekko.stream.Materializer][0;39m - [outbound connection to [pekko://snapshot-takeover@127.0.0.1:53429], message stream] Upstream failed, cause: StreamTcpException: The connection closed with error: Connection reset
+14:17:20.900 [31mWARN [0;39m [36m[snapshot-takeover-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.cluster.sharding.ShardRegion][0;39m - Workflow: ShardRegion is using [56.25 %] of its buffer capacity. The coordinator might not be available. You might want to check cluster membership status.
+14:17:21.562 [31mWARN [0;39m [36m[snapshot-takeover-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.cluster.sharding.ShardRegion][0;39m - Workflow: ShardRegion is using [65.625 %] of its buffer capacity. The coordinator might not be available. You might want to check cluster membership status.
+14:17:22.009 [31mWARN [0;39m [36m[snapshot-takeover-pekko.actor.default-dispatcher-6][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://snapshot-takeover@127.0.0.1:53489] - Marking node as UNREACHABLE [Member(pekko://snapshot-takeover@127.0.0.1:53429, Down)].
+14:17:22.220 [31mWARN [0;39m [36m[snapshot-takeover-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.cluster.sharding.ShardRegion][0;39m - Workflow: ShardRegion is using [75.0 %] of its buffer capacity. The coordinator might not be available. You might want to check cluster membership status.
+14:17:22.882 [31mWARN [0;39m [36m[snapshot-takeover-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.cluster.sharding.ShardRegion][0;39m - Workflow: ShardRegion is using [84.375 %] of its buffer capacity. The coordinator might not be available. You might want to check cluster membership status.
+14:17:23.026 [31mWARN [0;39m [36m[snapshot-takeover-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.pekko.remote.artery.Association][0;39m - Association to [pekko://snapshot-takeover@127.0.0.1:53429] with UID [5157704815876659823] is irrecoverably failed. UID is now quarantined and all messages to this UID will be delivered to dead letters. Remote ActorSystem must be restarted to recover from this situation. Reason: Cluster member removed, previous status [Down]
+14:17:23.285 [34mINFO [0;39m [36m[snapshot-takeover-pekko.persistence.dispatchers.default-plugin-dispatcher-26][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Starting...
+14:17:23.286 [31mWARN [0;39m [36m[snapshot-takeover-pekko.persistence.dispatchers.default-plugin-dispatcher-26][0;39m [1;35m[c.z.hikari.util.DriverDataSource][0;39m - Registered driver with driverClassName=cn.xuyinyin.magic.workflow.integration.TakeoverRecoveryJournalDriver was not found, trying direct instantiation.
+14:17:23.286 [34mINFO [0;39m [36m[snapshot-takeover-pekko.persistence.dispatchers.default-plugin-dispatcher-26][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Start completed.
+WINDOW {"kind":"RECOVERY_JOURNAL_WAIT","at":"2026-11-09T14:17:23.375844Z"}

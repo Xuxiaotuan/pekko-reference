@@ -8,10 +8,17 @@ import scala.jdk.CollectionConverters._
 /** Explicit opt-in. Schema provisioning and a quiescent migration baseline are operator prerequisites. */
 object SnapshotOwnerBootstrap {
   def enabled(config:Config):Boolean=config.hasPath("pekko.workflow.snapshot-ha.enabled") && config.getBoolean("pekko.workflow.snapshot-ha.enabled")
+  def bindingPlans(config:Config):Vector[CredentialBindingPlan]=if(!config.hasPath("pekko.workflow.snapshot-ha.credential-bindings"))Vector.empty else {
+    config.getConfigList("pekko.workflow.snapshot-ha.credential-bindings").asScala.toVector.map { c=>
+      CredentialBindingPlan(c.getString("workflow-id"),c.getString("node-id"),c.getString("node-role"),c.getString("operation-id"),c.getString("host-id"),
+        c.getString("endpoint"),c.getString("database"),c.getString("legacy-user"),c.getString("runtime-user"),c.getString("password-env"),c.getString("definition-hash"))
+    }
+  }
   def prepare(config:Config):Config={
     require(!config.hasPath("pekko.workflow.snapshot-ha.supervisor-config") || enabled(config),"managed launch cannot disable snapshot HA bootstrap")
     if(!enabled(config))return config
-    require(config.getBoolean("pekko.workflow.table-scheduling.enabled"),"HA requires durable table scheduling")
+    val cdcOnly=SnapshotSupervisorSettings.workerMain(config)=="cn.xuyinyin.magic.CdcStandalone"
+    require(cdcOnly || config.getBoolean("pekko.workflow.table-scheduling.enabled"),"HA requires durable table scheduling")
     require(config.getString("pekko.cluster.downing-provider-class").isEmpty,"HA requires externally proven retirement; automatic downing is unsupported")
     require(config.getString("pekko.cluster.auto-down-unreachable-after")=="off","automatic downing bypasses the isolation proof")
     val boot=config.getString("pekko.workflow.snapshot-ha.owner-id")
@@ -31,8 +38,13 @@ object SnapshotOwnerBootstrap {
     val ds=new HikariDataSource(pool)
     try {
       val limits=SchedulingLimits(scheduling.getInt("max-active-tables"),scheduling.getInt("max-active-tables-per-node"),scheduling.getInt("max-connections-per-instance"),scheduling.getInt("max-concurrent-starts"),scheduling.getBytes("max-page-reservation"),scheduling.getInt("candidate-page"))
-      val store=new TableSchedulingStore(ds,limits,ownershipEnabled=true)
-      val ha=store.ownership.get;ha.registerBootstrapOwner(identity)
+      val cutover=SnapshotSupervisorSettings.cutoverIdentity(config)
+      val (store,ha):(ManagedControlTransactions,ManagedOwnerStore)=if(cdcOnly) {
+        val cdc=new CdcManagedControlStore(ds,limits,cutover);(cdc,cdc.ownership)
+      } else {
+        val legacy=new TableSchedulingStore(ds,limits,ownershipEnabled=true,cutover);(legacy,legacy.ownership.get)
+      }
+      ha.registerBootstrapOwner(identity)
       val journal=config.getConfig("pekko-persistence-jdbc.shared-databases.slick.db")
       val endpoints=Vector((db.getString("url"),db.getString("username"),db.getString("password")),
         (journal.getString("url"),journal.getString("user"),journal.getString("password"))) ++
@@ -48,7 +60,7 @@ object SnapshotOwnerBootstrap {
           }
           ha.registerSession(boot,SnapshotOwnerJdbc.endpoint(url),uuid,started,id,"control",SnapshotOwnerJdbc.databaseUser(c));SnapshotOwnerJdbc.endpoint(url)->uuid}finally c.close()
       }.toMap
-      SnapshotOwnerJdbc.install(SnapshotOwnerJdbc.Context(identity,store,routes,()=>ds.close()))
+      SnapshotOwnerJdbc.install(SnapshotOwnerJdbc.Context(identity,store,ha,routes,()=>ds.close(),bindingPlans(config)))
       // Metadata/control borrows are registered using their own connection, avoiding recursive pool acquisition.
       store.onBorrow=c=>ha.registerControlSession(c,identity.bootId)
       ConfigFactory.parseMap(Map[String,AnyRef](

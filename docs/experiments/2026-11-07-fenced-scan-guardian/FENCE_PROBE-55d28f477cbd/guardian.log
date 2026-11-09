@@ -1,0 +1,32 @@
+20:56:12,662 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+20:56:12,662 |-INFO in ch.qos.logback.classic.util.ContextInitializer@176b75f7 - No custom configurators were discovered as a service.
+20:56:12,662 |-INFO in ch.qos.logback.classic.util.ContextInitializer@176b75f7 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+20:56:12,662 |-INFO in ch.qos.logback.classic.util.ContextInitializer@176b75f7 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+20:56:12,665 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+20:56:12,665 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+20:56:12,669 |-INFO in ch.qos.logback.classic.util.ContextInitializer@176b75f7 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 3 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+20:56:12,669 |-INFO in ch.qos.logback.classic.util.ContextInitializer@176b75f7 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+20:56:12,669 |-INFO in ch.qos.logback.classic.util.ContextInitializer@176b75f7 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+20:56:12,669 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+20:56:12,670 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+20:56:12,706 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+20:56:12,706 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+20:56:12,708 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+20:56:12,716 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+20:56:12,716 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+20:56:12,716 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+20:56:12,716 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+20:56:12,717 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+20:56:12,717 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+20:56:12,718 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+20:56:12,718 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+20:56:12,719 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+20:56:12,719 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+20:56:12,719 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+20:56:12,719 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+20:56:12,719 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@5965be2d - End of configuration.
+20:56:12,719 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@409c54f - Registering current configuration as safe fallback point
+20:56:12,719 |-INFO in ch.qos.logback.classic.util.ContextInitializer@176b75f7 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 50 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+20:56:12.724 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+20:56:12.813 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.

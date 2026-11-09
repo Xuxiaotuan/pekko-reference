@@ -1,0 +1,13 @@
+{
+  "mysql": "9.5.0",
+  "source_sha256": {
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyMySqlAccountLock.scala": "99915a15a59a449e297f596de82d59582bd01f9871ba44b5ba8b1fedff18a9ef",
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyAccountLockIntent.scala": "a56193a98bc4fb5ae4be4e837470b7cf821a3787f9f8f7e00e935e9de4b94c94",
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/CutoverAccountMySqlSpec.scala": "421f32b00573bb68b921e7edecc758177e05c76f60da2cdb88dc3795b84b1d70",
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyIntentCrashProbe.scala": "f590d3b1f5af61e622dcb8ddeb986b824e841ba1fafca8db1a092779b12e8131"
+  },
+  "tests_passed": 32,
+  "controlled_admin_assumption": "user accepted trusted administrators and one controller with exclusive account and proxy authority",
+  "observed": "mandatory role and anonymous account prevent legacy account lock; untrusted proxy and legacy-definer objects rejected; test-only JVM crash and repeat rechecks passed",
+  "boundary": "exclusive admin authority is not enforced by system; actual proxy login, guardian drain, cutover lock and quota migration, old Workflow end-to-end not validated"
+}

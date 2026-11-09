@@ -1,0 +1,42 @@
+{
+  "D_after": "{\"transaction_id\":\"70df9caa-1b7c-4082-9b92-470fbdae16c3:236\",\"ts_sec\":1794053756,\"file\":\"binlog.000001\",\"transaction_data_collection_order_pekko_test_freader_e406ad5203.pekko_capture_control\":1,\"pos\":128810,\"gtids\":\"70df9caa-1b7c-4082-9b92-470fbdae16c3:1-235\",\"server_id\":25521,\"event\":5}",
+  "D_before": "{\"ts_sec\":1794053755,\"file\":\"binlog.000001\",\"pos\":128731,\"gtids\":\"70df9caa-1b7c-4082-9b92-470fbdae16c3:1-235\"}",
+  "end": [{
+    "data": {
+      "id": "70df9caa-1b7c-4082-9b92-470fbdae16c3:236",
+      "ts_ms": 1794053756251,
+      "status": "END",
+      "data_collections": [{
+        "data_collection": "pekko_test_freader_e406ad5203.pekko_capture_control",
+        "event_count": 1
+      }],
+      "event_count": 1
+    },
+    "headers": [],
+    "key": {
+      "id": "70df9caa-1b7c-4082-9b92-470fbdae16c3:236"
+    },
+    "kind": "ORIGINAL_RECORD",
+    "offset": {
+      "offset": {
+        "event": 5,
+        "file": "binlog.000001",
+        "gtids": "70df9caa-1b7c-4082-9b92-470fbdae16c3:1-235",
+        "pos": 128810,
+        "server_id": 25521,
+        "transaction_data_collection_order_pekko_test_freader_e406ad5203.pekko_capture_control": 1,
+        "transaction_id": "70df9caa-1b7c-4082-9b92-470fbdae16c3:236",
+        "ts_sec": 1794053756
+      },
+      "version": 1
+    },
+    "pkCreate": false,
+    "pkDelete": false,
+    "schema": "Schema{io.debezium.connector.common.TransactionMetadataValue:STRUCT}",
+    "value": "Struct{status=END,id=70df9caa-1b7c-4082-9b92-470fbdae16c3:236,event_count=1,data_collections=[Struct{data_collection=pekko_test_freader_e406ad5203.pekko_capture_control,event_count=1}],ts_ms=1794053756251}"
+  }],
+  "readerFailure": null,
+  "status": "CAPTURE_READY",
+  "version_duplicate": "1",
+  "version_first": "1"
+}

@@ -1,0 +1,76 @@
+{
+  "baseline": "CAPTURE_READY",
+  "readerFailure": "java.lang.IllegalArgumentException: requirement failed: control marker requires its own transaction",
+  "transactionEndRecords": [{
+    "data": {
+      "id": "5b7f1314-66e2-4b62-8096-e67c49b1c6d1:11",
+      "ts_ms": 1793950357412,
+      "status": "END",
+      "data_collections": [{
+        "data_collection": "pekko_test_shared_wire.pekko_capture_control",
+        "event_count": 1
+      }],
+      "event_count": 1
+    },
+    "headers": [],
+    "key": {
+      "id": "5b7f1314-66e2-4b62-8096-e67c49b1c6d1:11"
+    },
+    "kind": "ORIGINAL_RECORD",
+    "offset": {
+      "offset": {
+        "event": 3,
+        "file": "binlog.000001",
+        "gtids": "5b7f1314-66e2-4b62-8096-e67c49b1c6d1:1-10",
+        "pos": 3111,
+        "server_id": 14365,
+        "transaction_data_collection_order_pekko_test_shared_wire.pekko_capture_control": 1,
+        "transaction_id": "5b7f1314-66e2-4b62-8096-e67c49b1c6d1:11",
+        "ts_sec": 1793950357
+      },
+      "version": 1
+    },
+    "pkCreate": false,
+    "pkDelete": false,
+    "schema": "Schema{io.debezium.connector.common.TransactionMetadataValue:STRUCT}",
+    "value": "Struct{status=END,id=5b7f1314-66e2-4b62-8096-e67c49b1c6d1:11,event_count=1,data_collections=[Struct{data_collection=pekko_test_shared_wire.pekko_capture_control,event_count=1}],ts_ms=1793950357412}"
+  }, {
+    "data": {
+      "id": "5b7f1314-66e2-4b62-8096-e67c49b1c6d1:14",
+      "ts_ms": 1793950357537,
+      "status": "END",
+      "data_collections": [{
+        "data_collection": "pekko_test_shared_wire.pekko_marker_directory",
+        "event_count": 1
+      }, {
+        "data_collection": "pekko_test_shared_wire.pekko_capture_control",
+        "event_count": 1
+      }],
+      "event_count": 2
+    },
+    "headers": [],
+    "key": {
+      "id": "5b7f1314-66e2-4b62-8096-e67c49b1c6d1:14"
+    },
+    "kind": "ORIGINAL_RECORD",
+    "offset": {
+      "offset": {
+        "event": 5,
+        "file": "binlog.000001",
+        "gtids": "5b7f1314-66e2-4b62-8096-e67c49b1c6d1:1-13",
+        "pos": 4234,
+        "server_id": 14365,
+        "transaction_data_collection_order_pekko_test_shared_wire.pekko_capture_control": 1,
+        "transaction_data_collection_order_pekko_test_shared_wire.pekko_marker_directory": 1,
+        "transaction_id": "5b7f1314-66e2-4b62-8096-e67c49b1c6d1:14",
+        "ts_sec": 1793950357
+      },
+      "version": 1
+    },
+    "pkCreate": false,
+    "pkDelete": false,
+    "schema": "Schema{io.debezium.connector.common.TransactionMetadataValue:STRUCT}",
+    "value": "Struct{status=END,id=5b7f1314-66e2-4b62-8096-e67c49b1c6d1:14,event_count=2,data_collections=[Struct{data_collection=pekko_test_shared_wire.pekko_marker_directory,event_count=1}, Struct{data_collection=pekko_test_shared_wire.pekko_capture_control,event_count=1}],ts_ms=1793950357537}"
+  }],
+  "triggered": "B_PENDING"
+}

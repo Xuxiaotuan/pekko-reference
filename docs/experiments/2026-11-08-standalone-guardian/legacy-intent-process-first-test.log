@@ -1,0 +1,181 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] Passed: Total 0, Failed 0, Errors 0, Passed 0
+[info] No tests to run for Test / testOnly
+[info] compiling 2 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[info] done compiling
+22:43:10,162 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+22:43:10,164 |-INFO in ch.qos.logback.classic.util.ContextInitializer@202174d4 - No custom configurators were discovered as a service.
+22:43:10,164 |-INFO in ch.qos.logback.classic.util.ContextInitializer@202174d4 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:43:10,165 |-INFO in ch.qos.logback.classic.util.ContextInitializer@202174d4 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:43:10,166 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+22:43:10,166 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+22:43:10,170 |-INFO in ch.qos.logback.classic.util.ContextInitializer@202174d4 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 2 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+22:43:10,170 |-INFO in ch.qos.logback.classic.util.ContextInitializer@202174d4 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:43:10,171 |-INFO in ch.qos.logback.classic.util.ContextInitializer@202174d4 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:43:10,171 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+22:43:10,171 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+22:43:10,315 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+22:43:10,315 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:43:10,324 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+22:43:10,353 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+22:43:10,353 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:43:10,353 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+22:43:10,353 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+22:43:10,356 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+22:43:10,357 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+22:43:10,359 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+22:43:10,360 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+22:43:10,360 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+22:43:10,360 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+22:43:10,360 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+22:43:10,360 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+22:43:10,360 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@cd69e73 - End of configuration.
+22:43:10,361 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@c01176c - Registering current configuration as safe fallback point
+22:43:10,361 |-INFO in ch.qos.logback.classic.util.ContextInitializer@202174d4 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 190 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+22:43:10.765 INFO  [pool-7-thread-1-ScalaTest-running-CutoverAccountMySqlSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-1 - Starting...
+22:43:10.794 INFO  [pool-7-thread-1-ScalaTest-running-CutoverAccountMySqlSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@27d02734
+22:43:10.795 INFO  [pool-7-thread-1-ScalaTest-running-CutoverAccountMySqlSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-1 - Start completed.
+22:43:13.065 INFO  [pool-7-thread-1-ScalaTest-running-CutoverAccountMySqlSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-1 - Shutdown initiated...
+22:43:13.084 INFO  [pool-7-thread-1-ScalaTest-running-CutoverAccountMySqlSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-1 - Shutdown completed.
+[info] CutoverAccountMySqlSpec:
+[info] a legacy account lock
+[info] - should deny new connections without treating an existing transaction as drained
+22:43:13.363 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-2 - Starting...
+22:43:13.797 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-2 - Added connection conn0: url=jdbc:h2:mem:202c107d-cbdf-4766-b2d1-e3383f78742e user=SA
+22:43:13.798 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-2 - Start completed.
+22:43:14.076 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-2 - Shutdown initiated...
+22:43:14.140 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-2 - Shutdown completed.
+22:43:14.151 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-3 - Starting...
+22:43:14.198 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-3 - Added connection conn4: url=jdbc:h2:mem:10668b76-c6e7-482c-b4c4-baaaa4214e90 user=SA
+22:43:14.198 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-3 - Start completed.
+22:43:14.284 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-3 - Shutdown initiated...
+22:43:14.290 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-3 - Shutdown completed.
+22:43:14.292 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-4 - Starting...
+22:43:14.307 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-4 - Added connection conn5: url=jdbc:h2:mem:4cd2cff9-4962-47b7-8d7e-62d0b30883e0 user=SA
+22:43:14.307 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-4 - Start completed.
+22:43:14.710 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-4 - Shutdown initiated...
+22:43:14.755 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-4 - Shutdown completed.
+22:43:14.773 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-5 - Starting...
+22:43:14.793 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-5 - Added connection conn15: url=jdbc:h2:mem:bac0d8c2-77f7-45ee-8b44-30fab5acbd19 user=SA
+22:43:14.793 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-5 - Start completed.
+22:43:15.130 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-5 - Shutdown initiated...
+22:43:15.131 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-5 - Shutdown completed.
+22:43:15.133 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-6 - Starting...
+22:43:15.135 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-6 - Added connection conn18: url=jdbc:h2:mem:32a45ec5-5dc6-4afb-86a1-5aecfc5a86ba user=SA
+22:43:15.135 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-6 - Start completed.
+22:43:15.157 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-6 - Shutdown initiated...
+22:43:15.158 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-6 - Shutdown completed.
+22:43:15.160 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-7 - Starting...
+22:43:15.162 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-7 - Added connection conn19: url=jdbc:h2:mem:a1784bf8-f5cb-463d-9baf-79ab3dc87e6e user=SA
+22:43:15.163 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-7 - Start completed.
+22:43:15.629 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-7 - Shutdown initiated...
+22:43:15.634 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-7 - Shutdown completed.
+22:43:15.638 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-8 - Starting...
+22:43:15.644 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-8 - Added connection conn23: url=jdbc:h2:mem:7180d5b5-90f5-45cd-8d8d-e7e040a8d2bd user=SA
+22:43:15.644 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-8 - Start completed.
+22:43:16.242 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-8 - Shutdown initiated...
+22:43:16.243 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-8 - Shutdown completed.
+22:43:16.246 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-9 - Starting...
+22:43:16.249 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-9 - Added connection conn27: url=jdbc:h2:mem:3a4e8b58-256a-4ab2-9d3c-86f827d53877 user=SA
+22:43:16.250 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-9 - Start completed.
+WARNING: A terminally deprecated method in java.lang.System has been called
+WARNING: System::setSecurityManager has been called by cn.xuyinyin.magic.workflow.scheduling.SnapshotSupervisorStoreSpec (file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes/)
+WARNING: Please consider reporting this to the maintainers of cn.xuyinyin.magic.workflow.scheduling.SnapshotSupervisorStoreSpec
+WARNING: System::setSecurityManager will be removed in a future release
+22:43:16.284 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-9 - Shutdown initiated...
+22:43:16.286 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-9 - Shutdown completed.
+22:43:16.288 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-10 - Starting...
+22:43:16.291 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-10 - Added connection conn28: url=jdbc:h2:mem:9f6c5c56-5c0a-46c0-a009-0490954ecb89 user=SA
+22:43:16.291 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-10 - Start completed.
+22:43:16.873 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-10 - Shutdown initiated...
+22:43:16.876 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-10 - Shutdown completed.
+22:43:16.880 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-11 - Starting...
+22:43:16.883 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-11 - Added connection conn32: url=jdbc:h2:mem:2005b136-5812-4dd4-b9c4-5e68d4598215 user=SA
+22:43:16.883 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-11 - Start completed.
+22:43:17.116 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-11 - Shutdown initiated...
+22:43:17.117 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-11 - Shutdown completed.
+22:43:17.121 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-12 - Starting...
+22:43:17.124 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-12 - Added connection conn36: url=jdbc:h2:mem:fdb3a9f9-e8a7-4852-95a9-4e9dbd8e0536 user=SA
+22:43:17.124 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-12 - Start completed.
+22:43:17.207 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-12 - Shutdown initiated...
+22:43:17.208 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-12 - Shutdown completed.
+22:43:17.211 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-13 - Starting...
+22:43:17.215 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-13 - Added connection conn37: url=jdbc:h2:mem:12405232-9935-4a6d-96f4-3239643bc1de user=SA
+22:43:17.216 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-13 - Start completed.
+22:43:17.234 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-13 - Shutdown initiated...
+22:43:17.235 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-13 - Shutdown completed.
+22:43:17.237 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-14 - Starting...
+22:43:17.240 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-14 - Added connection conn38: url=jdbc:h2:mem:6f1c7d70-2e92-438f-95f3-b40e975db1f3 user=SA
+22:43:17.240 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-14 - Start completed.
+22:43:17.250 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-14 - Shutdown initiated...
+22:43:17.251 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-14 - Shutdown completed.
+22:43:17.254 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-15 - Starting...
+22:43:17.256 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-15 - Added connection conn39: url=jdbc:h2:mem:e34c9b11-77ff-4000-afdd-eafd065e796a user=SA
+22:43:17.256 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-15 - Start completed.
+22:43:17.264 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-15 - Shutdown initiated...
+22:43:17.264 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-15 - Shutdown completed.
+22:43:17.266 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-16 - Starting...
+22:43:17.267 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-16 - Added connection conn40: url=jdbc:h2:mem:2569f746-00ac-4c7d-87b7-bfd0f23336fa user=SA
+22:43:17.267 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-16 - Start completed.
+22:43:17.276 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-16 - Shutdown initiated...
+22:43:17.277 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-16 - Shutdown completed.
+22:43:17.279 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-17 - Starting...
+22:43:17.280 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-17 - Added connection conn41: url=jdbc:h2:mem:36ebbba8-ecdb-4d96-80a2-d1a7ae85d4c7 user=SA
+22:43:17.280 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-17 - Start completed.
+22:43:17.288 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-17 - Shutdown initiated...
+22:43:17.289 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-17 - Shutdown completed.
+22:43:17.290 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-18 - Starting...
+22:43:17.293 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-18 - Added connection conn42: url=jdbc:h2:mem:6add4bdd-22cb-441d-a365-9295f5f1a075 user=SA
+22:43:17.293 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-18 - Start completed.
+22:43:17.298 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-18 - Shutdown initiated...
+22:43:17.299 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-18 - Shutdown completed.
+22:43:17.300 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-19 - Starting...
+22:43:17.301 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-19 - Added connection conn43: url=jdbc:h2:mem:5402b712-ff6e-448b-98c5-e6bb83e44aeb user=SA
+22:43:17.301 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-19 - Start completed.
+22:43:17.314 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-19 - Shutdown initiated...
+22:43:17.314 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-19 - Shutdown completed.
+22:43:17.316 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-20 - Starting...
+22:43:17.317 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.pool.HikariPool] - HikariPool-20 - Added connection conn44: url=jdbc:h2:mem:8d0b12f0-7f45-4c6a-931c-95c2b85d6fba user=SA
+22:43:17.317 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-20 - Start completed.
+22:43:17.348 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-20 - Shutdown initiated...
+22:43:17.349 INFO  [pool-7-thread-1-ScalaTest-running-SnapshotSupervisorStoreSpec] [com.zaxxer.hikari.HikariDataSource] - HikariPool-20 - Shutdown completed.
+[info] SnapshotSupervisorStoreSpec:
+[info] supervisor control transactions
+[info] - should persist an immutable legacy account lock intent across controller replacement
+[info] - should refuse legacy admission after the durable policy changes
+[info] - should retain legacy quota until the owner is drained when using CDC control storage
+[info] - should serialize distinct control and legacy scheduling transaction instances on the same lock
+[info] - should reject an owner registry from another transaction context
+[info] - should attest only the original live worker independently of supervisor sequence
+[info] - should isolate a live worker when its managed CDC owner needs recovery
+[info] - should keep a fork with failed identity lookup unknown instead of cancelling it as never started
+[info] - should prune only proven ended active-owner sessions so a healthy worker can keep opening pages
+[info] - should continue drain observation after the wake budget is exhausted
+[info] - should pause before drain transitions when guardian control disappears after receiving its proof
+[info] - should reject replacing the original capability even when a pending fork has no recorded PID
+[info] - should keep nested ownership reads on the admission transaction connection
+[info] - should roll back nested owner changes when the enclosing controller transaction fails
+[info] - should retain launch quota and reject stale controller writes after restart
+[info] - should bind cancelled tickets permanently and never reuse a boot
+[info] - should not rebind a live deployment to a new guardian or change its worker policy
+[info] - should freeze the original isolation operation and require complete drain before retirement
+[info] - should recover the guardian process slot when SQL retirement committed but RETIRE RPC never arrived
+[info] Run completed in 7 seconds, 810 milliseconds.
+[info] Total number of tests run: 20
+[info] Suites: completed 2, aborted 0
+[info] Tests: succeeded 20, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 13 s, completed 2026年11月8日 下午10:43:17

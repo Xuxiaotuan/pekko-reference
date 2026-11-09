@@ -17,11 +17,15 @@ trait CdcPlatformKernel {
   def start():Unit
   def captures:Vector[CdcCaptureView]
   def run(task:CdcTaskRequest,id:String,cancel:Boolean,continuation:Option[BootstrapProgress],stop:()=>Boolean,workPool:String):CdcKernelOutcome
+  def runWithContinuation(task:CdcTaskRequest,id:String,cancel:Boolean,continuation:Option[BootstrapProgress],
+    sameOwner:Boolean,stop:()=>Boolean,workPool:String):CdcKernelOutcome=run(task,id,cancel,continuation,stop,workPool)
   def requestStop():Unit=()
   def closeAndVerify():Boolean
   /** None permits a cold activation; Some restricts admission to the bounded pinned validation set. */
   def admissibleTasks(pool:String):Option[Set[String]]=None
   def dispatchCaptureIds:Set[String]=Set.empty
+  /** Captures whose readers are paused solely to resume a claimed v2 permit. */
+  def recoveryCaptureIds:Set[String]=Set.empty
 }
 
 /** One coordinator, two independent work budgets, no Future or Actor allocated per cold index row. */
@@ -154,6 +158,30 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
       val dispatch=store.dispatch(runtimeAttemptId,kernel.dispatchCaptureIds,128,now)
       lastDispatchAt=now;dispatchCaughtUp=dispatch.caughtUp
       val ready=kernel.captures.filter(c=>c.readiness=="ADMISSION_READY" && c.runtimeHealth=="HEALTHY").map(_.captureId).toSet
+      def launch(g:CdcTaskGrant):Unit={
+        active.incrementAndGet()
+        Future {
+          if(stopping.get() || guardianLost.get())throw new CdcKernelDeferred
+          val current=store.getRecord(g.task.view.taskId).get
+          val (continuation,sameOwner)=store.continuationWithProvenance(g)
+          val out=kernel.runWithContinuation(current.definition,current.view.taskId,current.view.desiredState=="CANCELED",continuation,sameOwner,()=>stopping.get(),g.pool)
+          if(out.releaseConfirmed)store.finish(g,out.progress,out.initializationEvidence,"ADMISSION_READY",out.didWork,out.validationComplete,
+            if(out.progress.phase=="STREAMING")limits.tailDelayMillis else math.max(limits.snapshotDelayMillis,out.nextDelayMillis),now)
+          else {store.finishUnknown(g,ExecutionFailure.ReleaseUnknown,now);if(managedOwner.nonEmpty){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN")}}
+        }(workerEc).onComplete {result=>
+          result match {
+            case Failure(_:CdcKernelDeferred)=>
+              try store.defer(g,limits.tailDelayMillis,now)catch {case NonFatal(_)=>ownerState="UNKNOWN";reason=Some("STORAGE_UNAVAILABLE")}
+            case Failure(e)=>
+              val failure=ExecutionFailure.from(e,"cdc-step")
+              try {if(failure.releaseConfirmed)store.finishFailureReleased(g,failure.code,now)else {store.finishUnknown(g,failure.code,now);if(managedOwner.nonEmpty){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN")}}}catch {case NonFatal(_)=>ownerState="UNKNOWN";reason=Some("STORAGE_UNAVAILABLE")}
+            case _=>()
+          }
+          active.decrementAndGet()
+        }(ExecutionContext.parasitic)
+      }
+      if(!stopping.get() && managedOwner.nonEmpty)
+        store.claimFenceRecovery(runtimeAttemptId,kernel.recoveryCaptureIds,now).foreach(launch)
       for(pool<-Vector("TAIL","SNAPSHOT")){
         val maximum=if(pool=="TAIL")limits.tailSteps else limits.snapshotSteps
         var left=maximum;var more=true
@@ -161,27 +189,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
           val grant=store.claim(runtimeAttemptId,pool,ready,now,kernel.admissibleTasks(pool))
           grant match {
             case None=>more=false
-            case Some(g)=>left-=1;active.incrementAndGet()
-              Future {
-                if(stopping.get() || guardianLost.get())throw new CdcKernelDeferred
-                val current=store.getRecord(g.task.view.taskId).get
-                val out=kernel.run(current.definition,current.view.taskId,current.view.desiredState=="CANCELED",store.continuation(g),()=>stopping.get(),g.pool)
-                if(out.releaseConfirmed)store.finish(g,out.progress,out.initializationEvidence,"ADMISSION_READY",out.didWork,out.validationComplete,
-                  if(out.progress.phase=="STREAMING")limits.tailDelayMillis else math.max(limits.snapshotDelayMillis,out.nextDelayMillis),now)
-                else {store.finishUnknown(g,ExecutionFailure.ReleaseUnknown,now);if(managedOwner.nonEmpty){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN")}}
-              }(workerEc).onComplete {result=>
-                result match {
-                  case Failure(_:CdcKernelDeferred)=>
-                    try store.defer(g,limits.tailDelayMillis,now)catch {case NonFatal(_)=>ownerState="UNKNOWN";reason=Some("STORAGE_UNAVAILABLE")}
-                  case Failure(e)=>
-                    val failure=ExecutionFailure.from(e,"cdc-step")
-                    val code=failure.code
-                    // A failed disposition is not permission to drop a persistent grant.
-                    try {if(failure.releaseConfirmed)store.finishFailureReleased(g,code,now)else {store.finishUnknown(g,code,now);if(managedOwner.nonEmpty){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN")}}}catch {case NonFatal(_)=>ownerState="UNKNOWN";reason=Some("STORAGE_UNAVAILABLE")}
-                  case _=>()
-                }
-                active.decrementAndGet()
-              }(ExecutionContext.parasitic)
+            case Some(g)=>left-=1;launch(g)
           }
         }
       }

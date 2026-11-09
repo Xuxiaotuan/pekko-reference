@@ -3,6 +3,7 @@ package cn.xuyinyin.magic.workflow.scheduling
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
+import com.typesafe.config.ConfigFactory
 
 class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
   private def fixture(f:TableSchedulingStore=>Unit):Unit={
@@ -11,7 +12,7 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
     val ds=new HikariDataSource(config)
     try {
       val c=ds.getConnection
-      try Vector("db/h2/pekko-table-scheduling-schema.sql","db/h2/pekko-snapshot-ownership-schema.sql","db/h2/pekko-snapshot-supervisor-schema.sql").foreach { name=>
+      try Vector("db/h2/pekko-table-scheduling-schema.sql","db/h2/pekko-snapshot-ownership-schema.sql","db/h2/pekko-snapshot-supervisor-schema.sql","db/h2/pekko-legacy-lock-intent-schema.sql","db/h2/pekko-snapshot-cutover-schema.sql").foreach { name=>
         val in=getClass.getClassLoader.getResourceAsStream(name)
         val sql=try scala.io.Source.fromInputStream(in).mkString finally in.close()
         sql.split(";").map(_.trim).filter(_.nonEmpty).foreach { s=>val q=c.createStatement();try q.execute(s) finally q.close() }
@@ -20,6 +21,172 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
     }finally ds.close()
   }
   "supervisor control transactions" should {
+    "parse explicit cutover binding plans without secrets" in {
+      val config=ConfigFactory.parseString("""
+        pekko.workflow.snapshot-ha.credential-bindings=[
+          {workflow-id="w",node-id="source",node-role="source",operation-id="op",host-id="h",endpoint="127.0.0.1:3306",database="db",legacy-user="old",runtime-user="new",password-env="NEW_PASSWORD",definition-hash="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+        ]
+      """)
+      SnapshotOwnerBootstrap.bindingPlans(config).size shouldBe 1
+      SnapshotOwnerBootstrap.bindingPlans(config).head.passwordEnv shouldBe "NEW_PASSWORD"
+    }
+    "refuse cutover before a guardian-signed isolation proof" in fixture { s=>
+      val metadata=new SnapshotSupervisorStore(s,GuardianBinding("d","h","g","key"),1);metadata.enroll()
+      val control=metadata.claimController("controller")
+      val identity=SnapshotOwnerIdentity("old","d",1,"start")
+      val launch=SnapshotWorkerLaunch("old","profile","launched",Some(identity),Some("op"),Some("bad"))
+      val plan=LegacyAccountLockIntent.Plan("op","uuid",LegacyMySqlAccountLock.Account("old_user","127.0.0.1"),Set("controller"))
+      val next=SnapshotWorkerLaunch("next","profile","prepared",None,None,None)
+      intercept[Exception](new SnapshotCutoverAuthorizer(metadata).authorize(control,launch,next,"bad",plan,"jdbc:mysql://127.0.0.1:3306/db","controller","secret",Vector.empty))
+      metadata.ownerRegistry.owner("old") shouldBe None
+    }
+    "persist an idempotent cutover authorization and credential binding without a secret" in fixture { s=>
+      val key=CutoverAuthorizationKey("d","h","op", "old", 3L, "a"*64, "b"*64, "c"*64)
+      s.cutoverStore.recordAuthorization(key)
+      s.cutoverStore.recordAuthorization(key)
+      val binding=CredentialBinding("workflow","execution","source","source","permit","new-owner","op","127.0.0.1:3306","db","old_user","new_user","CDC_NEW_PASSWORD","d"*64,"ACTIVE")
+      s.transaction { c=>
+        s.update(c,"INSERT INTO pekko_table_tasks (workflow_id,revision,workflow_json,source_instance,target_instance,parallelism,page_bytes,phase,execution_id,queue_order,not_before,grant_id,owner_id) VALUES ('workflow',1,'{}','s','t',1,1,'running','execution',1,0,'permit','new-owner')")
+        s.update(c,"INSERT INTO pekko_snapshot_writer_permissions (workflow_id,owner_id,generation,permit_id,grant_id,execution_id,revision,definition_hash,phase,predecessor_owner) VALUES ('workflow','new-owner',1,'permit','permit','execution',1,?, 'active',NULL)","d"*64)
+      }
+      s.cutoverStore.recordBinding(binding,key)
+      s.cutoverStore.recordBinding(binding,key)
+      s.cutoverStore.authorization(key) shouldBe Some(key)
+      s.cutoverStore.binding("workflow","execution","source","source") shouldBe Some(binding)
+      intercept[IllegalArgumentException](s.cutoverStore.recordBinding(binding.copy(runtimeUser="other"),key))
+    }
+    "serialize controller replacement with a fenced cutover side effect" in fixture { s=>
+      val metadata=new SnapshotSupervisorStore(s,GuardianBinding("d","h","g","key"),1);metadata.enroll()
+      val first=metadata.claimController("first")
+      val pool=java.util.concurrent.Executors.newFixedThreadPool(2)
+      val entered=new java.util.concurrent.CountDownLatch(1);val release=new java.util.concurrent.CountDownLatch(1)
+      val attempting=new java.util.concurrent.CountDownLatch(1);val claimed=new java.util.concurrent.CountDownLatch(1)
+      try {
+        val sideEffect=pool.submit(new Runnable {def run():Unit=metadata.fenced(first) {
+          entered.countDown();require(release.await(5,java.util.concurrent.TimeUnit.SECONDS))
+        }})
+        entered.await(5,java.util.concurrent.TimeUnit.SECONDS) shouldBe true
+        val replacement=pool.submit(new Runnable {def run():Unit={attempting.countDown();metadata.claimController("second");claimed.countDown()}})
+        attempting.await(5,java.util.concurrent.TimeUnit.SECONDS) shouldBe true
+        claimed.await(250,java.util.concurrent.TimeUnit.MILLISECONDS) shouldBe false
+        release.countDown();sideEffect.get(5,java.util.concurrent.TimeUnit.SECONDS);replacement.get(5,java.util.concurrent.TimeUnit.SECONDS)
+        intercept[IllegalArgumentException](metadata.fenced(first){()})
+      } finally {release.countDown();pool.shutdownNow()}
+    }
+    "persist an immutable legacy account lock intent across controller replacement" in fixture { s=>
+      val binding=GuardianBinding("d","h","g","key")
+      val metadata=new SnapshotSupervisorStore(s,binding,1);metadata.enroll()
+      val first=metadata.claimController("first")
+      val plan=LegacyAccountLockIntent.Plan("op1","uuid1",LegacyMySqlAccountLock.Account("old","127.0.0.1"),Set("control"))
+      val intents=new LegacyAccountLockIntent(metadata)
+      intents.prepare(first,plan).phase shouldBe "INTENT"
+      intents.prepare(first,plan).phase shouldBe "INTENT"
+      val replacement=metadata.claimController("second")
+      new LegacyAccountLockIntent(metadata).prepare(replacement,plan).phase shouldBe "INTENT"
+      intercept[IllegalArgumentException](intents.prepare(first,plan))
+      intercept[IllegalArgumentException](intents.prepare(replacement,plan.copy(operationId="op2")))
+      intercept[IllegalArgumentException](intents.prepare(replacement,plan.copy(protectedUsers=Set("other"))))
+      intercept[IllegalArgumentException](intents.prepare(replacement,plan.copy(trustedProxyPrincipals=Set(LegacyMySqlAccountLock.Account("root","localhost")))))
+    }
+    "refuse legacy admission after the durable policy changes" in fixture { s=>
+      s.transaction(c=>s.update(c,"UPDATE pekko_table_admission_lock SET policy_hash=? WHERE id=1","cutover-blocked"))
+      val error=intercept[IllegalStateException] {
+        s.transaction(_=>fail("legacy admission executed after the cutover marker"))
+      }
+      error.getMessage should include ("policy differs")
+      s.read(c=>s.query(c,"SELECT policy_hash FROM pekko_table_admission_lock WHERE id=1")(_.getString(1)).head) shouldBe "cutover-blocked"
+    }
+    "retain legacy quota until the owner is drained when using CDC control storage" in {
+      val cfg=new HikariConfig();cfg.setJdbcUrl("jdbc:h2:mem:"+java.util.UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1")
+      cfg.setUsername("sa");val ds=new HikariDataSource(cfg)
+      try {
+        val c=ds.getConnection
+        try Vector("db/h2/pekko-table-scheduling-schema.sql","db/h2/pekko-snapshot-ownership-schema.sql","db/h2/pekko-snapshot-supervisor-schema.sql").foreach { name=>
+          val in=getClass.getClassLoader.getResourceAsStream(name);val sql=try scala.io.Source.fromInputStream(in).mkString finally in.close()
+          sql.split(";").map(_.trim).filter(_.nonEmpty).foreach { text=>val q=c.createStatement();try q.execute(text) finally q.close() }
+        } finally c.close()
+        val limits=SchedulingLimits(2,1,8,1,1048576,8)
+        val control=new CdcManagedControlStore(ds,limits)
+        val registry=control.ownership
+        registry.registerOwner(SnapshotOwnerIdentity("old","d",1,"start"))
+        val legacy=new TableSchedulingStore(ds,limits,ownershipEnabled=true)
+        legacy.transaction { c=>legacy.update(c,"INSERT INTO pekko_table_tasks (workflow_id,revision,workflow_json,source_instance,target_instance,parallelism,page_bytes,phase,queue_order,not_before,grant_id,owner_id) VALUES ('w',1,'{}','s','t',1,1,'unknown',1,0,'g','old')") }
+        registry.hasOutstandingQuota("old") shouldBe true
+        registry.releaseDrained("old",10) shouldBe 0
+        legacy.transaction(c=>legacy.update(c,"UPDATE pekko_snapshot_owners SET phase='db_drained' WHERE owner_id='old'"))
+        registry.releaseDrained("old",10) shouldBe 1
+        registry.hasOutstandingQuota("old") shouldBe false
+        legacy.get("w").get.state shouldBe "ready"
+      } finally ds.close()
+    }
+    "serialize distinct control and legacy scheduling transaction instances on the same lock" in {
+      val cfg=new HikariConfig();cfg.setJdbcUrl("jdbc:h2:mem:"+java.util.UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1")
+      cfg.setUsername("sa");cfg.setMaximumPoolSize(3)
+      val ds=new HikariDataSource(cfg)
+      val executor=java.util.concurrent.Executors.newFixedThreadPool(2)
+      val entered=new java.util.concurrent.CountDownLatch(1)
+      val release=new java.util.concurrent.CountDownLatch(1)
+      val attempting=new java.util.concurrent.CountDownLatch(1)
+      val acquired=new java.util.concurrent.CountDownLatch(1)
+      try {
+        val c=ds.getConnection
+        try {
+          val in=getClass.getClassLoader.getResourceAsStream("db/h2/pekko-table-scheduling-schema.sql")
+          val sql=try scala.io.Source.fromInputStream(in).mkString finally in.close()
+          sql.split(";").map(_.trim).filter(_.nonEmpty).foreach { text=>val q=c.createStatement();try q.execute(text) finally q.close() }
+        } finally c.close()
+        val limits=SchedulingLimits(2,1,8,1,1048576,8)
+        val legacy=new TableSchedulingStore(ds,limits)
+        val control=new ManagedControlTransactions(ds,cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.sha256(limits.toString)) {}
+        val old=executor.submit(new Runnable {def run():Unit=legacy.transaction { _=>
+          entered.countDown();require(release.await(5,java.util.concurrent.TimeUnit.SECONDS))
+        }})
+        entered.await(5,java.util.concurrent.TimeUnit.SECONDS) shouldBe true
+        val next=executor.submit(new Runnable {def run():Unit={attempting.countDown();control.transaction { _=>acquired.countDown() }}})
+        attempting.await(5,java.util.concurrent.TimeUnit.SECONDS) shouldBe true
+        acquired.await(250,java.util.concurrent.TimeUnit.MILLISECONDS) shouldBe false
+        release.countDown()
+        old.get(5,java.util.concurrent.TimeUnit.SECONDS)
+        next.get(5,java.util.concurrent.TimeUnit.SECONDS)
+        acquired.getCount shouldBe 0L
+      } finally {release.countDown();executor.shutdownNow();ds.close()}
+    }
+    "open a migrated control policy only after an explicit durable switch" in {
+      val cfg=new HikariConfig();cfg.setJdbcUrl("jdbc:h2:mem:"+java.util.UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1")
+      cfg.setUsername("sa");val ds=new HikariDataSource(cfg)
+      try {
+        val c=ds.getConnection
+        try Vector("db/h2/pekko-table-scheduling-schema.sql","db/h2/pekko-snapshot-ownership-schema.sql").foreach { name=>
+          val in=getClass.getClassLoader.getResourceAsStream(name);val sql=try scala.io.Source.fromInputStream(in).mkString finally in.close()
+          sql.split(";").map(_.trim).filter(_.nonEmpty).foreach { text=>val q=c.createStatement();try q.execute(text) finally q.close() }
+        } finally c.close()
+        val limits=SchedulingLimits(2,1,8,1,1048576,8)
+        val id=CdcManagedControlStore.CutoverIdentity("deployment","host","operation")
+        val migrated=new CdcManagedControlStore(ds,limits,Some(id))
+        intercept[IllegalStateException](migrated.transaction(_=>()))
+        val old=new TableSchedulingStore(ds,limits,ownershipEnabled=true)
+        old.ownership.get.registerOwner(SnapshotOwnerIdentity("old","deployment",1,"test-start"))
+        old.transaction { c=>
+          old.update(c,"INSERT INTO pekko_table_tasks (workflow_id,revision,workflow_json,source_instance,target_instance,parallelism,page_bytes,phase,queue_order,not_before,grant_id,owner_id) VALUES ('w',1,'{}','s','t',1,1,'unknown',1,0,'g','old')")
+          old.update(c,"UPDATE pekko_snapshot_owners SET phase='db_drained' WHERE owner_id='old'")
+          old.update(c,"UPDATE pekko_table_admission_lock SET policy_hash=? WHERE id=1",id.policyHash(limits))
+        }
+        intercept[IllegalStateException](old.transaction(_=>()))
+        migrated.transaction(c=>migrated.query(c,"SELECT grant_id FROM pekko_table_tasks WHERE workflow_id='w'")(_.getString(1))) shouldBe Vector("g")
+        val reopened=new CdcManagedControlStore(ds,limits,Some(id))
+        reopened.transaction(_=>())
+        reopened.ownership.releaseDrained("old",8) shouldBe 1
+        reopened.ownership.hasOutstandingQuota("old") shouldBe false
+        val wrong=new CdcManagedControlStore(ds,limits,Some(id.copy(operationId="other")))
+        intercept[IllegalStateException](wrong.transaction(_=>()))
+      }finally ds.close()
+    }
+    "reject an owner registry from another transaction context" in fixture { s=>
+      val other=new ManagedControlTransactions(null,cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.sha256(s.limits.toString)) {}
+      val binding=GuardianBinding("d","h","g","key")
+      intercept[IllegalArgumentException](new SnapshotSupervisorStore(other,s.ownership.get,binding,1))
+      noException should be thrownBy new SnapshotSupervisorStore(s,s.ownership.get,binding,1)
+    }
     "attest only the original live worker independently of supervisor sequence" in fixture { s=>
       import spray.json._
       import spray.json.DefaultJsonProtocol._

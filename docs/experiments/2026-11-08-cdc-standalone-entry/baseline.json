@@ -1,0 +1,4663 @@
+{
+  "captured_at": "2026-11-08T02:07:26.549536+00:00",
+  "head": "68b0a1d20d8ccdb05fb244c58ba87dfe09d128e7",
+  "upstream": "574ba8ffb50330c2ba4b143d614d063ecc91f7f7",
+  "entry_count": 665,
+  "entries": [
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNode.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "1a9f10ba96d2cfd5b9763bcebac654955ca0c5c5794f3b2b1dfbaaa8fb0b3569"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CapturedLogSource.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "f96330378bdda98f73d3049e874bdaf1dde32f6eb2cff964933b2d4a794d2584"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/MySQLCaptureStore.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "6e5d82fb41407a97aa715c8a80f1972a5b0d65740f5918c3c5c5863dd773a6a7"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "56df1694ada01448cd94ef66200338a1fdc1d8f587c57154d47e41870cea2f3a"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "68fcc2fa914a091ffa460bf048813c95c90e4ee29f5fd70ba8fc067b3d1fdc8d"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapJournal.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "312998103c6b4156fe5152fb25d0ea7afc9a13d85391d0257a4ea9e5d2f26fb9"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapProtocol.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "39f6ca0106374a930f0cf25e3269103e0a5adc6f4b99b5d5fd5082a06dbc8cf1"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapReplaySink.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "6884e00eab958efcdbd6a555e34a71ddd778c35d3b01f025e98323d5156b0fd0"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapRunner.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "6daa04cb4a005b7cd1be42ecddeb9dd32dfd6cb99df30efa35999af20659dcd0"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapStep.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "b5057ee24195777c4a45b61174cc33cd7e5e7787bcdc9b4953aa3e3feb581052"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapStore.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "38bfa5ba535324da6cd96819f4367dc85f65832cde0ba25f27705e4a44998ccf"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapTarget.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "d2742f8d4d5f26f69583a09c9ea34c071e57a6d6fa7a08672bb83e3459d121c6"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcBootstrapKernel.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "dc4c006fafc1cc339ddcdde07ec5c317ba17edcafc14b9ae5e30c41290ecd228"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcManagedPendingB.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "5c323f341a80252c90412caf92fb3d37a0974e40fd8943f3b582ba9b4c23f645"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcManagedRecovery.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "abf170612bb96384020f0d1dad13c49a67bc9940c4e435292e9a9cd591d542ad"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcPlatformExtension.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "7cacea4ef2590a063e8272ebfd424807420d43388c53fe2e35eb12082111c7c3"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcPlatformRuntime.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "6ef2ef67fafad29525f621a0b3e6127ca92bb8b3af876d5af5861a71f6beb658"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcPlatformSettings.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "2ba9eacc8f70f62d9e6b88a5f0d52a754fa1db20a3370250d4caad861adf8812"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcTaskModels.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "17e08d6321a1c577e3492a0a5456daa395e233239e8fe960e90936f61c7e8f0e"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcTaskStore.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "6301118f83335d6ec344aa147cd43ec77af7ca4c281306d0242c156c99f47356"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/execution/ReliableRunContext.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "f11be13bc4e984c3cefb5f73455ec072b8fd2143484fe0777ae351a74799b044"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "b9da69e9b9e0457a2798f9fd36c8ec80d47985aa8328e653968fa72043bc0baa"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotGuardianService.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "51804c00d12d2d8092e7693cd0befd931d51bb7b2a542ff9a2d71eea97f17695"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotGuardianWire.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "862685a9e8bb5de0d059577d58d41da6bcbd5a783b25cdefe08f72e3321f4a8e"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorProcesses.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "b2be1218afd0b10222ce77de2313013f90b40ccd00af1a078de6d9d1f68e3942"
+    },
+    {
+      "status": " M",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/spi/CheckpointedNodes.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "fa59aa12c4916e77ad80e70d781de504620e93e434cae77fabd627f8b1fdfa19"
+    },
+    {
+      "status": " M",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureAckProofSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "4948988eb015e8212817b7a1289414d2439398dec7b6bd386840a77ef1d710c5"
+    },
+    {
+      "status": " M",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "56747543f9f453eee5533eb4aa8cc3cf5530c66e9937d12f9597a7b85a78f0b5"
+    },
+    {
+      "status": " M",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapJournalSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "fe41ba151ff9f9c3403b21da18dcc2c2e7fb95cadc80f80d5cc16675700a98ce"
+    },
+    {
+      "status": " M",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapStepAdmissionSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "0bb99fdad498e815a5632b2f38d1794b21bb81d5a7348e27fe74e7fbaab00e5e"
+    },
+    {
+      "status": " M",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapTargetSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "b7550e014c2d24a3e772a0e2df2be8189f3ec711a5d0f708a858aff14db303b8"
+    },
+    {
+      "status": " M",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcManagedMatrixWorker.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "a9ad63a70401078e715280921b02de8966bebced7bc1fce1a7c6aa03f0a32fde"
+    },
+    {
+      "status": " M",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcPlatformSettingsSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "a2e7ce0b578d5fbd8617619de3d3979293e501edd61425c96ad5a941f1d6e5ca"
+    },
+    {
+      "status": " M",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/integration/BootstrapMatrixSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "e7d26da5f849fb0d3994b9eb8fe4bd9dcbd60ba6e28f7d9dd51ee018dc2ad954"
+    },
+    {
+      "status": " M",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/integration/BootstrapMatrixWorker.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "22b19e728a4e1ff906348e82bac071ec463596ff0413886f2b8bb8b330ececf8"
+    },
+    {
+      "status": " M",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/integration/CdcManagedUnknownBSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "526ab546b7487073cc14ad9d2fdef691174af76f0c86666d4a2136ffa52f9967"
+    },
+    {
+      "status": " M",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/integration/ManagedBootstrapJournalRecoverySpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "5dd601e71a3b8c406ceef1533e9782920ec09f5428c22e5766c3db84247f29a3"
+    },
+    {
+      "status": " M",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/integration/MySQLCommitResponseProxy.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "1f75ddb1471d10abaef558afd57e03e57a73e58c33f2a59c112a3504e94ad3bb"
+    },
+    {
+      "status": " M",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotGuardianSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "9245c8925b89178c584cce10c045b60b07bc2ca044c4bba12cf2b04e94dd7ef0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-10-29-proof-cursor-snapshot/README.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "41b213e97dd5aa41ec54967c06b789215dd491bb46ce15ddc6070da965c65718"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-10-29-proof-cursor-snapshot/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "7d459e976b48eb7f83e8aa46ee1c2acbdf6d5890e20de9b6f3e021ebd07a27bd"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-10-29-proof-cursor-snapshot/trigger-binlog.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "23a8f7b69d4e6a82d36efa58ed8d819d52f1d2bb1b9e299482873bf097243349"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-filtered-marker-transaction/README.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "f6c7dd097df8d7c1a70ab10f2941dd21298e6df44f08a42b8c3e4fb67b5d5934"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-filtered-marker-transaction/cleanup-attempt1.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "faacd36478d1a2c9293e92556fa65f901cc932aa33653b57a4112af66d27da94"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-filtered-marker-transaction/environment-and-cleanup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "0a329fbb9ae03a3c6104ee3c5f04225c162f0edce2e9a047c69de9c600f465d2"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-filtered-marker-transaction/events-attempt1.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "922b4ed41f9dcf84a0897704fbe202c4dd645029b5a283ff88372761c161f857"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-filtered-marker-transaction/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "6e231581783b1133d0af056aebfa3476549ec76afa93b09d7e407b97bdb71a98"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-filtered-marker-transaction/probe-final.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "7b911bca519214b8abb2524fa225b5d79d5ae6aff6ab4e5befd067f84437940a"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-filtered-marker-transaction/result-attempt1.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "c3bf84bf03bd08c99a41774ca87244b3f881fcf89c47cac3540c9969d79d4100"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-filtered-marker-transaction/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "0ecac8e55d1333307354ea1d30625f1b0da056bbd09d921e08138e9afc5ec834"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-filtered-marker-transaction/runner-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "e8dcf583fd5bd6a95ddc911627f4d69efda049d47157eb876fac4daa3cb50563"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-filtered-marker-transaction/runner-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "1b2916a44f73c081c08055a8c0caac061d5177cbe24b27272618510b02fd12c0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-marker-transaction/README.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "0ab8d9ffde5236f9be416ab8925eb34adb317a6bdae3460778313b51934fa0e3"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-marker-transaction/cleanup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "71f89b80f08a4f1405570ed9cb1b913e3e5dcc7672e1f7bff329a03802834d2f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-marker-transaction/environment.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "2450541ed7f20769f9822b09dd513e6b62ee73044a4ac0c5dfcf69311cb5c01b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-marker-transaction/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "3cb3bab06d4e6045a6b0d377bd088807e7095d215d7a2df1251fba19a9b836de"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-marker-transaction/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "b9a7ff48a0a660bfd5c3545815d69e680791b2ff587edf47a2a50222ac86029a"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-marker-transaction/runner-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "67d36300cc370153b5efd84ecd758c0dbbcfba06c331e3c06891bcbf4280adef"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-marker-transaction/runner-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "f3db0c56a6a705eb351c167d128896bd643c793dc560b5530f38d66425b7f673"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-marker-transaction/runner-excluded.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "03bc49f3d8f7a0bfb6a0a0148eade01a5bda2785aab761d9b517060592cd82fd"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-source-version-probe/README.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "e0fa021584b058e6b7820464b85ed8d222ef3fa1ad4104a2eb209a336df1ba30"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-source-version-probe/environment-and-cleanup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "0a329fbb9ae03a3c6104ee3c5f04225c162f0edce2e9a047c69de9c600f465d2"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-source-version-probe/probe.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "c0b6b9963f2275629eeac9887e70e3d2e65700c4c73843c9decef90b48e7160a"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-source-version-probe/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "1a8c9a0075a3a787708a41f131fa58b67c6e91b6cc9f67f86ed3bbb58a368577"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-source-version-probe/runner.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "34c80ad29c66a2ae27e8c10ed11094141eaf80af7e249d11b5ed2d491668192a"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/LATE_COMMIT-88d86f539c64/01-unknown.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "5bc17a77964e76105735b46f8265ca761ba013bc595ed4585fb6c67c6f75b04f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/LATE_COMMIT-88d86f539c64/02-isolated.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "22d71eecb3f680825ec3d941551b64a52e7111de8b4cf8ff107ff72759989f04"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/LATE_COMMIT-88d86f539c64/03-recovered.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "f6ee1487b09830d2baf90d7969cd48972e30ab57ccbc58de3a2b0d3aa456983f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/LATE_COMMIT-88d86f539c64/7a5b84c9-fccd-4b44-9f0b-aa13a9156e3d-events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "e22e34a161e7b1b0e289d22c0fdcaf1964659ed4cc3bb2d9d767fe9a22d81349"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/LATE_COMMIT-88d86f539c64/7a5b84c9-fccd-4b44-9f0b-aa13a9156e3d-ready.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "1e9c508d9a89ce3043089d6bf4de91649d06787a6f318e0f8d086373f7de16d3"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/LATE_COMMIT-88d86f539c64/7a5b84c9-fccd-4b44-9f0b-aa13a9156e3d-worker.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "ce2ea4599939a50c8ec75802f9df8d0f9eaffc82c166ff98bf22f0642ba89788"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/LATE_COMMIT-88d86f539c64/a3731b84-124f-4262-b74e-f9ada242ac80-events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "74ae3e6bcc235cb3b073c98c4c6ac9082333cb525201a7ac0c27a937356b0f72"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/LATE_COMMIT-88d86f539c64/a3731b84-124f-4262-b74e-f9ada242ac80-ready.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "5366e3898b4174c6136d7dd901487bd290dc3f45bf0cee5468df3b8b9087f983"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/LATE_COMMIT-88d86f539c64/a3731b84-124f-4262-b74e-f9ada242ac80-worker.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "66ddefde2645e2c1c991fec6e85ebaeb2be2f8cc78b51c451fb0c25a1ee348b9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/LATE_COMMIT-88d86f539c64/cleanup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "e51e61cfb166dc4feeac23cacd61bcb8a741a51c8c96685733a5ecae500a2e7d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/LATE_COMMIT-88d86f539c64/environment.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "ed06a7aa9542ae1001dbe420c2f63c127b88ea493c12002ebf3f33f54885ec56"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/LATE_COMMIT-88d86f539c64/guardian.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "d1bbc5c94b6f9f7ac9960c4eea6f69735cf0b9b8e5e11cdee9a26b8d3f409726"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/LATE_COMMIT-88d86f539c64/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "b9e9e3e0d783b2c3978f9c745de07f6f56d72ed6a0475efc7d28b3d48add8727"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/LATE_COMMIT-88d86f539c64/source-sha256.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "551c261e64f4987edcd3f8dbf0a55ffbd98679d69ee363edb37c23cd96119215"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/README.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "2ec64068b753d59f3aa13c1b8a6504cda4d92d4359e260e5deeb08c8c727ecd9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/cleanup-lab.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "52f240f3cc49cdaa979a5f1f5fd2d983abcbb3155af1c0321cf56af482484fb9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-pfs-regression/runner.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "ee1b1c2751f226fe29c56cf6d51ab971d41b216c1e71b5e79c7d13ebbc1973b3"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-regression/LATE_COMMIT-ef30aad90cbe/01-unknown.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "656f02850ad7282ed66ad60d7842b67ce089956d41e85fa2e75e1942137b9de7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-regression/LATE_COMMIT-ef30aad90cbe/02-isolated.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "af5a6cf2c0a6cd9e6c237c41e77cc81da34f49b297b6962f8a22e11a1ea26833"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-regression/LATE_COMMIT-ef30aad90cbe/2193f85f-2166-48db-85eb-3c4b904f92ee-events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "bcbeed0c2eb14f5971df24a8719e0a0af311027cfaebe9cab36466a57ce81146"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-regression/LATE_COMMIT-ef30aad90cbe/2193f85f-2166-48db-85eb-3c4b904f92ee-ready.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "4b159c8850d4d32017f4b9cfbc639424593d51701a411d5f0f0872183ae93bb7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-regression/LATE_COMMIT-ef30aad90cbe/2193f85f-2166-48db-85eb-3c4b904f92ee-worker.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "45d4b02b57bacc5d538a5d6312cbf882ed20872b8c4d74f71ca70aedd1dbcc35"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-regression/LATE_COMMIT-ef30aad90cbe/cleanup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "517bcce9f35202de9ff755ab1cdf102435034ddaf88d0ff6f4caf1916c990d64"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-regression/LATE_COMMIT-ef30aad90cbe/environment.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "d9267b337a6362ef3fe780e1e29e2ab6171f17da4bd25abcd6292b21e7fda181"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-regression/LATE_COMMIT-ef30aad90cbe/failure-state.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "136cf3ccc8ce98bd6db2279381c528ca48c5c78bc785b4e905bafd2b3d600362"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-regression/LATE_COMMIT-ef30aad90cbe/failure.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "662d85caa8e9409714f2b941352f678fd7a4d0d7d75843fe872a47bb3208a3e5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-regression/LATE_COMMIT-ef30aad90cbe/guardian.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "c02df6278e0cbd04d5d04b621b5ce3f4319e667be8ce0ccc005959371e1602ce"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-regression/LATE_COMMIT-ef30aad90cbe/source-sha256.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "551c261e64f4987edcd3f8dbf0a55ffbd98679d69ee363edb37c23cd96119215"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-regression/README.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "3367ff96a50fdd0b24ee60d20316cfaf6847efa03b58a2077150fe0702c05c5e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-regression/cleanup-lab.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "8856ad1abd5f33c180a9d0bd42fa38310673661bc629d978064b4dcb461f4cb0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-guardian-regression/runner.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "92867d0e26ed4c12a7a255f6eb229727860f9ccd20937d3c43379ed0af5f2dd9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-lock-probe/README.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "897e12dc75e48cae13c9b5c73004446ce61ec42d0d3132d2dd6a812f9eb6b109"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-lock-probe/cleanup-lab.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "8856ad1abd5f33c180a9d0bd42fa38310673661bc629d978064b4dcb461f4cb0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-lock-probe/probe.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "4371bb12eae10722d7c1e813b0163a98f4999bd0b4ed231cf029b436074c6749"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-lock-probe/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "34a0770e501bbd776434643a98679c9d179cac6d33e974f666f1f13ed1d64436"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-06-version-lock-probe/runner.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "0f9fbf10e6e73fe205670ac0fdce7e4dfa78baabf42513d21f077b2ea62df5a3"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ack-long-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "4b67ec14ca2dc2624478b4e61cd85410368fae7fc5b48e45d36fa78d6068168f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ack-long-jvm-commit-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "8d1cd67a67101ce37138c8eba1281eeab3fb127f98489dab689ccddc86a3bf4e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ack-long-jvm-commit-interrupted.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "59566e8f0ed70171bae292bbeb8d6d92631bf87de978bfe265803e2f68139324"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ack-page-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "09bea79594d41ab7d5690ed859cdd96b3dfe95b80e03fc9f3c98d11cce2645f6"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/activation-fence-identity-green-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "3176b99979c8b3f6fd2b4040685d20d8bdfc24fa7a1a1616871a715f06affd97"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/activation-fence-identity-red-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "72d877b2d090a5d1f40f37e0e00afb7543859b21968ac15bf40b54dab3048e90"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/activation-fence-mysql-20261108-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "78eec3e9ed264be2a027486962e43cc19d2222017f4f8dcd8f97a3e2095f3298"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/activation-fence-state-release-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "e373575cf778a82e8780d3ba641110023291d458b22762f7e1635013f81aae84"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/archive-pool-release.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "e8bbdb6aff613b98cc96c191d0035313dbf98954b0f2eb9b48429bbf91339ad5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/audit-tamper-20261108-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "17d7039c6e61732845dff4a2dfbc886f2a2d757b334ce0ec6e95970b7714be09"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-jvm-pool-release.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "b44dc8bce8988ad38cdcbe208aebffd666b823159c2cf1ba813d87cbed2c86e6"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-jvm-pool-setup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "d8147dbc2936b1f0c1f38c5267efdd7b8b1d0285b5869b2f84ccd7734fdd6e6d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-lock-pool-release.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "979af0427ca49ca349035064da8792aff1e90e4c0199fc7f9ea3951f7f161c5c"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-lock-pool-setup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "b0f337a9039b076323e566cf0fa383266355c5a36a157b984676ec8eed324994"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-locked-account-final-20261108.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "a7f7d9c35edef324b1de859c9ff731dace026bbf0dd8d29a3eae8b9b69575f93"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-locked-account-final-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "5fdea563b7f6aed85b178d7c3ce1702f50f214b8c626cd98648fa933037018e5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-locked-account-final-admission-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "84dda7cf181515769c41e0b5c47ef7de92eb6019e870e68c457370af4f8ac80a"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-locked-account-final-release-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "62192ece4bd04bd78c6934fb7140a333a9ee482e4bcdfb794d4e00e113756e44"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-locked-account-green-20261108-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "ef88646371b3c4ff512c7bd0a5f99e320d31a6d8c0ee8ca92e7d3f4c7f4903a6"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-locked-account-red-20261108-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "c5de3eb4f8b9d60de58cf97afafac8546f76fd9eae3338fe440c2e3bee39bd76"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-locked-account-red-20261108-attempt3.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "f42d4f1b3601930cfd3164bf2d9119d23b57e270aaaaebf82b971c20a2a3b548"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-locked-account-red-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "87cb15dfdadcb37637e14be4bef558727c2dc5305d8c2eb1759b045041cfb8d2"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-locked-account-state-release-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "62192ece4bd04bd78c6934fb7140a333a9ee482e4bcdfb794d4e00e113756e44"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-pool-release.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "9bdc3361ca120cadc7bee84c56c52c6f26f25d8252c9caabfa4bde350bfb8230"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-pool-setup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "391adb195badc2b9e7b4594b5251bd0c9b5473fc8170d5bc3cc04059ff54ab55"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-range-jvm-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "e8a1e364ef15ee94b0a8eb1dc5c8abb9f66ee8750f556154cbf0a7d755710ef0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/birth-range-read-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "b92f64a91cc7e61dab7d2df6b593ea699f8fc77df4c7ea2acda82bfe99dce601"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-jfloor-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "9ea5fe677988f1c85f468bc7933362f19306eaba6ffe32f66e3e905288872e5b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-56932727f093/environment.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "c2b931d38c4c2b73220633e5427f6f96ed182da91aeefa064ef4926e8e4d4287"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-56932727f093/final.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "791d13af5fc21af403af192a500e174299a8808bcb1b40ac263b51c92c48767a"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-56932727f093/journal-before-projection.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "b5a15b4f26707d93e248b84b52186c488c59636fa1b3138d16e163a2bfb788fb"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-56932727f093/original.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "663e8bcd631ae5be905e5e8f4bd58586bc76965ac664cb416fb016cf4a21346b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-56932727f093/projection-recovered.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "63a92de4c4677acb1355871579c670f9bbd116c376c75b7f12dd5ea6ba713670"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-56932727f093/recovered.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "334d4ddd26d63d79fffd88dedda2ab92d26d228825b200f7b63a5750070ce3af"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-56932727f093/release.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "df10b672bf21cae95badd25922d0b9773a7d96dba02fabaf196c20f24506de2b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-56932727f093/tombstone-codec.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "f154dc126499487953936eebe40698f4c6447ff8ce859c82ba9e5d85e48681d8"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-823c98a66afc/environment.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "14728edb2b613fe622a571bf2b7de15426234983c987d3fb4481fe9ddc9f7046"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-823c98a66afc/final.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "250c66d313ee3483f0a2f74c2eae33cf2c985019030748115fbc43e4a066831d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-823c98a66afc/journal-before-projection.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "c1215b79a804f960c6920c9e49d39b03f9962c15b480ee563d82eb29ca132db8"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-823c98a66afc/journal-projection-cutpoint.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "4976e8db0328fcaf48dc7e51ebd3893f65ecd95bd5c80b9e3b403c91978898c6"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-823c98a66afc/original.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "26e3a167ce2b94d76e2107eed1ec531ed340bb1db3a08f729968a1f6fddc68f6"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-823c98a66afc/projection-recovered.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "76959a5e1652ea828ae0662878615f75ad45519d4cd5cc7c48d24eddf3c3037e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-823c98a66afc/recovered-after-tombstone.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "e5b5fb3f4cf4e236a4b3cbe1dc8d354aeed6acca54c4580848c5543902e2ad6e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-823c98a66afc/recovered.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "4d4b27dc6f2d838bf7080011fafa3536e96278be1496509fc5e7bf8b5d86d014"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-823c98a66afc/release.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "df10b672bf21cae95badd25922d0b9773a7d96dba02fabaf196c20f24506de2b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-823c98a66afc/tombstone-codec.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "d67c999a7f5bc6c9f0f7d0f3666a9743531fbd895c50df5f16708af26cca63a5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-823c98a66afc/tombstone-isolated-recovery.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "66475a1ce993ac0aee3b7f1feaf99d59279c342bd5b000c87c65a70f984663a7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-823c98a66afc/tombstone-size-probe.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "87596c82d28ec0d593c4f84a7c22d08b15c413370571b4a488a297c7d5bf7e22"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-89c6b8bab7bc/environment.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "2830fac501277e90cfd01cc64cc9cfcfaf5a0629e9d836dd92aef2d4b452e7c7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-89c6b8bab7bc/final.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "6e68f75322558bb5945f07b30899da65f51c0fd3aa59edfdfecff7594f588a63"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-89c6b8bab7bc/journal-before-projection.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "f502567ba7056948544ff18cd8e7d194dcd5f8653661560edd67e1467ea45a8b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-89c6b8bab7bc/journal-projection-cutpoint.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "05dab49689ce4fc17cf6405725ccee3ec5aae9684bfdf41b130fd928204e3647"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-89c6b8bab7bc/original.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "055f9be6c2aeaa579710e8cf2882c8d3ba0ab22b8899ad4b4855843d4decfab1"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-89c6b8bab7bc/projection-recovered.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "2d6baae0b93136d9f3a7252969f8b2fc50cc95cfd041fe5d795d0e45ae208d74"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-89c6b8bab7bc/recovered.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "8e464db5916080f49c804c91bfe38508404d72d3c6153f812ef13a9d902105be"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-89c6b8bab7bc/release.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "df10b672bf21cae95badd25922d0b9773a7d96dba02fabaf196c20f24506de2b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-89c6b8bab7bc/tombstone-codec.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "d594f058b08645871d93a94898d15d7a27e9df22bdbbb10618177d2755597718"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-89c6b8bab7bc/tombstone-size-probe.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "abce28e185af132095945e7da171e6acf07174c5e66cf13ef6e7acc2329743d6"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-94fb6098f04c/environment.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "0085fc53883afd9240be663023aa3822bd59da405b95e113f67a26326bd295f6"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-94fb6098f04c/final.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "d56ef3a346be72abcbeada1e17073dd4c9cee1965e66adc0519c5edb9e56e2a7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-94fb6098f04c/journal-before-projection.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "a5258ce52accf04ed42cdf5830c20d3b7bde726d6ac7b00dcc5b49037c3e8abc"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-94fb6098f04c/journal-projection-cutpoint.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "5ec8b799520c182ab48ab86ac271cb1c5418643bf458fdcb30df4b252b2a1273"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-94fb6098f04c/original.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "c946091d53330fdb527dd345a09654d4581935c8f87a64e02a5499519d476e19"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-94fb6098f04c/projection-recovered.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "23e2109abdc22ff601e502b0ba5d97da851e7d42adad43f1e8243531ddde1e05"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-94fb6098f04c/recovered-after-tombstone.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "af2ea0d4910fdb1ddc461ef7f972abb38f92b9b015597d07743abe0d3226d7fc"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-94fb6098f04c/recovered.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "9c66fbc2095a2874d3845e1324ce537211e3f6bde54e6bec6510615c905906c5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-94fb6098f04c/release.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "df10b672bf21cae95badd25922d0b9773a7d96dba02fabaf196c20f24506de2b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-94fb6098f04c/tombstone-codec.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "c14910dba0da02b96f606b94e636622f4d6b2d89dbb3b424fc382fb3621484a8"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-94fb6098f04c/tombstone-isolated-recovery.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "81a4a3facbe68bf518efce4786ea9a05738a49f7cc6cd5a6cae0a0c2dabf6514"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-94fb6098f04c/tombstone-size-probe.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "87596c82d28ec0d593c4f84a7c22d08b15c413370571b4a488a297c7d5bf7e22"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-dc16ff28cdf2/environment.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "af6a33e10ce0cff1c348c026efac62d7cc40ba6b5e7e8ea7faaaa93d0537a46e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-dc16ff28cdf2/final.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "dbce5c79e1326a3da45595c259781b528c155a334a6245c7884e08fa9ea1bb99"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-dc16ff28cdf2/journal-before-projection.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "4871c83bc2937b316879ab314ddf2050b801743d51787a9657411bdae97819e5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-dc16ff28cdf2/journal-projection-cutpoint.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "67e3cf600e2eff38b07fee8c8f04e4adc3ef1522a4eb9e73a1ca8e31834f3ec1"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-dc16ff28cdf2/original.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "da35d53c4e28297866920c5284e9df7348f1b74ac3f5fc13c7142ffb096f25b2"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-dc16ff28cdf2/projection-recovered.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "2a121b7024d54e86f4af2323ad08c8f9e7518621ef5491a49565ae091790d225"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-dc16ff28cdf2/recovered-after-tombstone.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "120003931e27b0fb0ab0b77032f4e46f4ec51fc2ba07053465935b28465aeef7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-dc16ff28cdf2/recovered.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "294f59872153a6d54f2c5b992ce4dd6f2fea7dcb624ca188d40cdca82ef04433"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-dc16ff28cdf2/release.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "df10b672bf21cae95badd25922d0b9773a7d96dba02fabaf196c20f24506de2b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-dc16ff28cdf2/tombstone-codec.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "1db1f3fe17a8f94c55c4a34deec2e81d113631811af02951f8c23fd8d8434b1b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-dc16ff28cdf2/tombstone-isolated-recovery.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "66475a1ce993ac0aee3b7f1feaf99d59279c342bd5b000c87c65a70f984663a7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/bootstrap-projection/I25-projection-dc16ff28cdf2/tombstone-size-probe.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "87596c82d28ec0d593c4f84a7c22d08b15c413370571b4a488a297c7d5bf7e22"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/descriptor-control-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "8b4b42465410d4457d521751991e5e663981d2357b25464c8866c788485b9953"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/descriptor-control-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "07c0a9c9578644adafdf2bc5df66586121a0ea39162e43029ad0291d14e0d1b7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/dual-ancestor-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "689d9b256fa3feb0b2dc462b8ce4ef17d0cb4d7f0526da5b3322b24513b19769"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/dual-ancestor-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "9a60a0e9505f95bf4a2ed17148812b09d4e71c782de74ba01bc757016ce44776"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/final-binding-audit-unit-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "107ba5d967c496a8913208b414e76e0109c60d4b022e78902152c781d2a4ab19"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/final-integrated-unit-20261108-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "7ea2522b72306ffbbb4c87ab7472e98a074e1926261545ebd6b1f44e759ad4c3"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/final-integrated-unit-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "8f57a51f7be9d83b59f7fcdd74cf8d105526e12b4ab4c41e30e30a58f23e9667"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/final-managed-material-unit-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "a9d51a2cdbcebf63f0d18e111948445f37dd86aebfa279503e89bb9d7e5951f2"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/final-scoped-regression.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "35863a1e99ea2a11218b842129d145f071ad98a6e27891eaf90541c60325b659"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/green-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "6b37c3295563d5545b61da4f5ad4dce726380bb4f29d7bbdd40f3a6bb3c0560e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/green-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "ab6fff79266df27051479092a84fa9bff31ca11515ed7074efbfc85ce0f53f4d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/green-attempt3.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "0f7f1093141faf474943393c5f87b6e7ccba352e076c7a92adaa6df1914a30bb"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/group-archive.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "2b20c0f6f7be4a4a8621abcd769ad2b06a37dc42cffd515b51b0e14dba253580"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/i25-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "59ce1ecdbf0b50cf13b1d93b990625703ae8bf892813d6c3d915ef95ba31a668"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/i25-tombstone-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "f0d9f82927f641a0a0192e6965ba87b01779d87220cf064bff58dc4d63fc0298"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ledger-fk-set-null-green-20261108-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "d381c0d749667fddef2eaab4da4c05279ddbef6fabbd182e82c52e2b40f16f1a"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ledger-fk-set-null-green-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "a9bbb7c643118966778f559ef2535046c5af06c6509d76a34b799839b35d9b51"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ledger-fk-set-null-green-20261108.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "d6a70ac07d7048212c12eed9b321d79f980728047026582c467627f9ec182122"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ledger-fk-set-null-red-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "e6b8e7206c104c9d292e7b1ba48b64828d9722ab0bab0d5ca691ee1bcaea07fc"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ledger-fk-state-release-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "4dc4ccc242ad09d61206980ce653199bcfa70f65360575f3b30d8e3b216d0a6e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ledger-guard-jdbc-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "52e9a59b32a9c8e5322cfb65e470e988008b357527b1349e5076cac64eba9e7b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ledger-guard-probe.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "3f563cc3ad1f222244bcbf2d9a1a0b4d31dfc194a08018b93d6446e7281407e2"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ledger-guard-slot-b-release.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "0a7263c0f41de755c00477303ffd953ff29ba81b3ff5a2fe1fdaac51c83bdcc2"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ledger-guard-slot-b.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "8f13b4ce1c012eb869bc355c9aeedaa18c615ed3c27f1ae96760271d4726102f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ledger-scope-green-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "df31a21e65d5f72250f8ded0caf391d8bb89986f3a57647b84f73d594c82faa5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ledger-scope-green-20261108.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "35d628eb0009a2d44510f64fa172765dafee5ae7d7e874f0ae3845411294bcbf"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ledger-scope-red-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "d345903183d0cbd6bc6fc3b152930fcf96a0499e21837010f29f784ee35ec6d2"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/ledger-scope-state-release-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "4dc4ccc242ad09d61206980ce653199bcfa70f65360575f3b30d8e3b216d0a6e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/legacy-fresh-regression.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "39a13fc0a2ec77e6e734c294f5a0c00f43a066ca7050fe545b86ce42d95139f7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/legacy-store-regression.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "b2b60d462f019f087c996d1f8f10001cd508e100d1713043e5d3af242e620ee9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/material-account-alias-red-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "9904dc41f1fa9cc108e50e4037ac5fe36aba14d46c11a8cdbbcf817d70c177e7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/material-account-settings-green-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "3967fd2b3c56d6529e3165eef31363e266cf95b6f37cedd3ae6a4ef1986c9a90"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/material-account-settings-red-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "0669142b51c179bad4a259b4fa5ea4348119bc8dbb764031c335049b43904cf1"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/material-append-only-20261108-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "6e59d30a7a54b3d0506e603bc1c2c48191aa99a48a648c3e4618213b94e3e78d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/material-append-only-20261108-grants.tsv",
+      "original": null,
+      "kind": "file",
+      "sha256": "9fd6893a6a76453f83203477c9660ee5cd40f51961e0a10c923a8a40c00a8bd2"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/material-initialize-green-20261108-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "8b40fc735c0cbf0a57dd83310253995f7ead1da772a77cef5589804d3569b116"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/material-initialize-green-20261108-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "7c6bee7c8365e0f9a6fa7b00312fa19243ba0e572bb392362b2cd4e80baefa3c"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/material-initialize-green-20261108-attempt3.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "411c5937c3ca4cb913feb506f6231d321154dd72c5fa389a7d200f998788703e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/material-initialize-red-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "9ce2fc6aacdea63a7df14e4de7d2a1188699b83942ef22051058790942201fa9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/material-mysql-restart-after-20261108.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "1a649e9a623570e761a7d6345f2e969b4da28714df3141a74536aecf8c77f07f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/material-mysql-restart-before-20261108.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "a267cd6d60a460ad9f5542dea7605ac405119c4d2ec49cf7c754dbb28e5868e4"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/material-owner-drain-mysql-20261108-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "04efdaf79c1be8030cae7c73b71fb1ebe2f16e86154eb706cb390b64329047da"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/material-owner-drain-mysql-20261108-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "f0ad8d70c7959a7a536359a82697a2bce5c801b070eb1f9048396486543b7f51"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/material-owner-drain-mysql-20261108-attempt3.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "a8934c548b6cc6a4ef8bc3a4a097f0ac18d44556e8f2189967397c2ce9885cc0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/material-owner-drain-release-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "e373575cf778a82e8780d3ba641110023291d458b22762f7e1635013f81aae84"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/metadata-query-benchmark.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "4018fefdff3ff58eb1f4f87c219a222cfb08358f24f0be738f6a7d6c9e445912"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/mysql-row-lock-windows.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "f45560740a99ecc8dfcda5599c8b26274802353ce5828e6a94f061a833e4177c"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/namespace-birth-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "5157903881f5bb1b3a438baabdb70e3f9f445b7cfff28124180fc8287d132966"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/offline-archive-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "3d127d5881382a826ed6d6da30d25edd6e398cca1aa0274e5de28150a37efb82"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/offline-archive-attempt1.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "9eea3102c4db9cd60efd0a9f88ed61a322a73655b4cce13356ce218c2b756d10"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/projection-suite-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "e9bfeb4c1f90c56807012612941e73250d0d7244e86aeb4953fbd48abee04eaf"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/red-test.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "f9777c88c56cbe92a996917a86c95f02426604701b2980292b32cc86c29ecb65"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/red.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "9a048de92782aba50b739baaa7c89f3802ccd76918022892ba20020ac5cc34ba"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/replay-claim-20261108-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "c218bcc953c21ac3f8c6cbab7a7ea593eedb4df4e184f0dd907379fcc6d4e6ee"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/replay-claim-20261108-state.tsv",
+      "original": null,
+      "kind": "file",
+      "sha256": "5f9b7ec673f526b6cd4c0785d98b4a7dfebf882c3d8f823a70cd2f9f918da3b0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/runner-i25-attempt3.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "128f74f5f85ce9e8c37d8e8abe26c6d62c4a478e2eff9cffbab752b34e957550"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/runner-i25-attempt4.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "367435f3fcc2fdbe651dc42f9c64db45fa6fe876c67f1105baab90c558737320"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/safe-floor-i25-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "a219ae8c979cdf1986ed6669f6a49eed3412f26d0bb7e1fad9708cb64a92a2c5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/spool-state-release-check-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "e373575cf778a82e8780d3ba641110023291d458b22762f7e1635013f81aae84"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/stale-binlog-session-cleanup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "b6361cf328d6d67930d5c1b9eedf5e427b4124ecf3cd895450fb4ca3ae6059eb"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/stale-cache-green.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "0b8e6ffe4157e47490bb8bc8334129082bd144adb638e1defff33abd95f604c9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/stale-cache-java21-interrupted.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "f9fdc790b2cb600d98f9c64deaf85e4332a6c506d64569beeb3eabd10dafc457"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/stale-cache-red.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "0d92338285adbedaf884003f04f4f065609607d4e8101a816a1b741766e493cc"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/state-release-check-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "e373575cf778a82e8780d3ba641110023291d458b22762f7e1635013f81aae84"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/target-tamper-20261108-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "2d88e3d65497f708c479a3b85b9c3ca2116ccbdb2494e40d2907bc20f7c9d319"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/workflow-journal-floor-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "c2448ecb45481f6d4eb86947e631b8c8020f764a898114d8008c9f2b2ac05e8f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/workflow-journal-floor-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "79ef8627695fb567b473f2a8fb908094262ed051724b9230349363e27fb53125"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/workflow-journal-floor-attempt3.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "d1e8cdd1dbe8bba0406c5a3c0e76a7ae61076d5484f109f6ce23e1cc1bc02411"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/workflow-journal-floor-attempt4.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "b9eb7b24ed23900c28d62404ba09daa5dc14ad6780685e615d2fcdc0c2ffa55e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/workflow-projection-20261108-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "0fa02084c778570e61f9f145b2bd069b8a876b2caf8082f1b7bfc8e08ec0eb38"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/workflow-projection-20261108-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "3a2f8543d49f881ea576f4255f491469aad7bd3cd9d3d95add6d8afa16cff62e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-capture-archive/workflow-projection-20261108-state-query.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "a4a4fc0a6f975f4f10b5c9c5d94134d4d70956ae074e35c8603b4b8fe2848aaa"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/README.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "16d0452db190d26525c82848e0980634b4ec48c3b85e41fe1a8c508c38307e8c"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "e8ba8f895f1c33bf883ade3181f6b32716131039dbe49e2e4bb182dc134e0521"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-before.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "1a418cb5711b186f9b5631591d80c3be792a6f7b313c480da911db6f66d0ef1e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-crash.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "b584fab6042c7ca69379a99cae2d610da2425fe8ebc483b60f44b66c61db8c65"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-crash/close-result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "2cb637eee88d00eb6d753cfb27a33fae32c62cb6b6eff0d5753e760bbb7d6930"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-crash/close-sockets-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "d81bc272e853efc5a3c4f617e58d3d89ae1b542443a0bc8daac97264577989c0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-crash/close-sockets-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "a70ace51266c7bce1f68f6c5c11558420b791e015e33f5325b3ea50849f3e197"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-crash/close-threads-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "c0894f29fadf96129603db61ee4b6c075023095117f94d4cd6775cb73f1c2c3b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-crash/close-threads-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "be2f62e0021c24edee9050a8923d7b35fdaff73cceb7d84c67fd794eb27a1396"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-crash/events-final.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "279a12caee6fb24137b973621463a02d8d6fd10b55737604635b4be9bf3e5c74"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-crash/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "279a12caee6fb24137b973621463a02d8d6fd10b55737604635b4be9bf3e5c74"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-crash/lab-start.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "19eaf43821a7660ec323a87c8457bf74823beb296c39f5e01aa8a683aa50f061"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-crash/lab-stop.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "19eaf43821a7660ec323a87c8457bf74823beb296c39f5e01aa8a683aa50f061"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-crash/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "f091526c96b22273d8fdd870640cb67d2afc7d397bc3188c90c01e7f13eacbb3"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-disconnect.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "f6cb7e21c12c197824aefb9aee71b4f555bcf82d6413a93fc0e3506e3e8206a6"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-disconnect/close-result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "1a9a57365fede2a5473101a0772f1ffdbc40f52e05afd094840b00763123bffd"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-disconnect/close-sockets-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "216fd254f176541474fdaf55fa742615cac3ffb6334420b8c37d61d11341940d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-disconnect/close-sockets-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "eeb860ad11c5d8b8f11434a0627ce0cd3b69a45be0c3fdd6e80ec7aab26f4bc1"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-disconnect/close-threads-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "b057b9c17f36462c2d35cf805634b7d6f3b294cb03f9d350f6320d757303a425"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-disconnect/close-threads-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "5d9e908e8a74325ddb5aadbc8a63975696a0165564ae89abcfa793bc9bce4aeb"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-disconnect/events-final.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "3250a5f72c65c9f22428819551926e835b9f409e7e9c2abca42281a4e615f71c"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-disconnect/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "3250a5f72c65c9f22428819551926e835b9f409e7e9c2abca42281a4e615f71c"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-disconnect/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "b7149a24ac1eb0ed45fe0a42a30266bf8821d4b9e803968093e56d70e5f7cef8"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-disconnect/server-tcp-observation.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "a435039395c980e55cdaef96f60380ddaa997fa69ef084a60a585eaf94194113"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-idle.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "0cec0d4efbc9e283b9f24506d31e3efe8fa871951874c2f9df98b56c74c74541"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-idle/close-result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "29deea801c95362452108aed3c06a3592364de8d615f035b92bdc8f021820aa5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-idle/close-sockets-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "3521fa26ce3cdc0a6126eb4ab8ea018886c167177c6d9a123cb160c12c9b268f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-idle/close-sockets-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "c6c8e8e96684e83315b48c31e8965b8b32d6b855e3556dee23024f77946232a1"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-idle/close-threads-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "6cb133a3b686fff1f511baf575b01ad009ee60e5b823981814e1d6ed40d7ffda"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-idle/close-threads-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "bfbf8f725c38f7a2db22a86548dd510ff048c994e034da09e026caf7b2496cba"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-idle/events-final.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "5ad976fb99e5cbef0d48840b6f71964b2c9d11ec51bdeada38e0053b52131167"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-idle/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "5ad976fb99e5cbef0d48840b6f71964b2c9d11ec51bdeada38e0053b52131167"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-idle/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "9329d8183342a9c2cb926fae1bc49890d54ad2bead53306cfbfa880adcce8126"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-socket.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "9ddd1f24b6c3f49c5ae51452ff477c8e7b12bbdc0573e29e3c8696be3d3b34fe"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-socket/close-result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "e45011877cd71aa70e4b74ef4aebab300d5cadc7e0c5898187e027f816b9829b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-socket/close-sockets-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "d3f5c6ea2111c655fbeddd683d3ea02d5f4922de2e78f3664026b64fbc0f3301"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-socket/close-sockets-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "9f6bfce83bb4ef418f0cb891dfc6ea55f6e7446c27045b3d96885ce832afea2e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-socket/close-threads-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "89ce1505eee5b71a3bfd743159020c17e83046eb46d4fda29296b9a42e6b40be"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-socket/close-threads-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "7851af3bf02777d56c2359334abc275ada27d35335dd8bc54268d6479a9e5d8e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-socket/events-final.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "54971418ac8480807be20ddde4bdd562a51354871ca489eb7cead7e041f982d5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-socket/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "54971418ac8480807be20ddde4bdd562a51354871ca489eb7cead7e041f982d5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-socket/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "89f70c093d05bf8d38500477f03f9cdb7121f8e1f2a463a1cb3924ac7f208778"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-unknown/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "adf1becdb0e6f5e2608c68c0e795b23ae928aa135ac1ac2da8c60870d750126c"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-unknown/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "9450097ad2c9ecfc022702be40a90e03d0457c31b5298f0b4a092766a35fbbfb"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-write.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "e2b4bd31c82dc3391dadfacbdd672197f35e1b35a9f9e7f21e374cde8dd234ef"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-write/close-result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "efe0765209f2b5525e2bd9fedd82af594a3211252fbc8ea27aa37c37171db3a2"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-write/close-sockets-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "bb1a466cf13d281105c1812bf9423d6a8cbbbee0c4269783ced33a57e81bf329"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-write/close-sockets-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "f20bd00247a67c8ad360895a9eeba2f1aeaded123ccec07378db53156ae777e7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-write/close-threads-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "4457fbdd241fa86b78dd39f061ca11bec216aeec10d1bf14ba16887a17faf120"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-write/close-threads-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "de871d8bc2f44729fbb8566162126aabd300e33d14be841fe664967d6d40d211"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-write/events-final.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "504799123c4d50b01aeb600185e296c740be8ba0f9ab62747f14de36c9bd79bf"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-write/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "0842c58f39f733e8dc504c8a620b2cd0c654599c72a006fd55aaac3b2e645d8a"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/close-matrix-write/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "265106e9a0e85864c5637b9b2bb5a60c439cfd3f9a0eaa1ea4e6b036642787f4"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/controller-close-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "96f4bdf3fb3824e53bfa47781a23e3b07d57758d95af1cad4d87eb54b079a041"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/controller-close-attempt1/close-failure.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "41f4e28e4475215d9f1019d70443bcf23c3de4ce67c28d1bf456e0053820b70c"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/controller-close-attempt1/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "ecc7847c4a95f841a11dd37326c5bc629c5675923af4ed7b4df5649624502da7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/controller-close-attempt1/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "f7d68e087869fd2855592704dd60dd77766dc653bd85fb307c2c20f4e7eff994"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/controller-unknown-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "a8cc75f6d9df2a78b29cf40ad3bb80c656626e2f88de2704c865339e1adcfcd7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/controller-unknown-attempt1.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "1a529b89a8e41297853530afaa12fcc6e8b4c668bb3bf78ef9e48718da74abf9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/controller-unknown-attempt1/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "d2ad112924c9f2dc336cce570e4caa95e944f4deeb08efcf16425de5bb649546"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/controller-unknown-attempt1/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "ef99c53f36e9ab0d5eb629717584a50d9415ba02ed493f1cc79bc2a8a4f6600f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/controller-unknown-attempt2-before.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "c64f0667eb77a53e26831f883eea271ac1b671be4f3867dfee213ccdc695af03"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/controller-unknown-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "9a4bfa6bbd41f76fc4a442967ed66126d7ad372ab61ccd44dc712963cbf7c7ce"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/controller-unknown-attempt2/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "7420e663b8bc0e0e52dde1bfde9801312479bb4a3877de1b41d94fa7d12739ae"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/controller-unknown-attempt2/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "0d4132595e32bd365da3496c313e03efe7adb9dd6e90302b60b097e3cb990f68"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/definer-identity-probe.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "be57544d86f286ac6518112e5a025845c371f7e7bdfc797c6fe407bc208fc2d1"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/definer-open-procedure-probe.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "1a4e6a2b8d99a8a606b35c080c069ea52798a9f541d704db4c8f667adc6b67d9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/dependency-sources.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "30a0f933e0e8764ae9638fe9f31c05dd5adb038ebe12e288bcca6d09c51af3ec"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/exact-host-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "2db4d50dff0d5fc4a9897f565bcd4dadbf32550975a52160a4741a06af7f2d01"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/exact-host-reader/close-result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "8a5c4576b7875899396339856fc47b22a70e2057234b8d659bc0121fe31d99c4"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/exact-host-reader/close-sockets-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "dc30dc1542dc71763fc7ac847760d2b02bb3859b5fc0d9c0932ea3a1e417097e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/exact-host-reader/close-sockets-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "430354d319e78fada38db72586f899891703464fbc1b2e9945b7b9f49437695e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/exact-host-reader/close-threads-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "c4034ae80b0d047fd70b2c549a2582cc5c0e41383124de8b00242468b65dfe99"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/exact-host-reader/close-threads-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "6d104fc6dea76e58c55131addb25f99ebba655d0333f082c1b598d25313cfe61"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/exact-host-reader/events-final.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "bd40968467562bc5cc92241acf0a135ac52d7bba7f21065b8cad142f14df967d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/exact-host-reader/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "bd40968467562bc5cc92241acf0a135ac52d7bba7f21065b8cad142f14df967d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/exact-host-reader/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "16867205c30e1e44ad8e3425ad4f7e278d86da8e2b4f3bb00ccd34d77d20d9bc"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/exact-host-unknown/close-failure.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "4a5913437df635282da62885336a042e6245b8b9f31557e3c69ac19baa3ed5b9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/exact-host-unknown/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "4d1a4c0ffe3c3d104ac9de83dc8456d1d7d22e7d786b0a1f5b6d81871f9c7e90"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/exact-host-unknown/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "c53a75e257596ed122a24167cdf1d6635708976083fd0cda4d76fdc286e3c6cf"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/fenced-bypass-attempt1.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "8d50abefe1bc776873c953eae5206c49ab408306151a8067da60aa1d4c35dd6e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/fenced-matching-writer-counterexample.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "727f580bec04d5c60dcf3297aec16329e4f13e024563afc4ce3b147cc2e60562"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/gate-lock-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "d2ab2ed7175710403802972f8c041af225b28984e1d301f91453747b3163f085"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/gate-lock-before.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "43a8dbb1d13561a68df943340dabf2e2af19b3a06dc3eed14a0b09f37b8e8b37"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/gate-lock-order/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "8bae941a0f885718be4e62bc7ae316b27439b2abbca5dda485db62b1ab15dd5e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/gate-open-reader/close-result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "93ca523199cb7f33630d562f1780ce6508a77078e1df24ec2f6bab2e7a2ac641"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/gate-open-reader/close-sockets-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "1d25989195f18667c9d50891aa895194d524700108ed9049257f9359c64c6079"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/gate-open-reader/close-sockets-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "44b505fdd311ce80280e241aefbaad11bba2c676b1c2433809933b0b82ed96df"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/gate-open-reader/close-threads-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "ff70c73d236334d7bef69c31348cd123c61c5a25e410acc967ac5e34297182bc"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/gate-open-reader/close-threads-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "c09c1314d43666f886cfbec6858197b8bf9c9c1c07d207d4059ad80a1c6c6957"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/gate-open-reader/events-final.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "bb6b7326da555b2131e42e4103b51f26601eeb26efb176a644d011de5eab75f0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/gate-open-reader/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "bb6b7326da555b2131e42e4103b51f26601eeb26efb176a644d011de5eab75f0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/gate-open-reader/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "ce5b9c2965c472fdb3f9d234ae9efbd1777d48177228d69be96c5d69701f0fd8"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/handoff-after-close-failure.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "6de6db4120ee87f22c35cf6564092e0d9193381c6c676e27710550b1236a15e0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/handoff-after-exact-host.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "6de6db4120ee87f22c35cf6564092e0d9193381c6c676e27710550b1236a15e0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/handoff-after-gate-lock.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "6de6db4120ee87f22c35cf6564092e0d9193381c6c676e27710550b1236a15e0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/handoff-after-source-crash.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "6de6db4120ee87f22c35cf6564092e0d9193381c6c676e27710550b1236a15e0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/handoff-db-status.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "9d1c2e6867d5076e4f7d9634eee004dff4152e816bc1faa4499de0c0d487db6b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/handoff2-db-status.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "9d1c2e6867d5076e4f7d9634eee004dff4152e816bc1faa4499de0c0d487db6b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/handoff3-db-status.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "08237a4478605e21da38c69459258f4fec8ecf1cc99c45716c0c5cbaaddb53ce"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/handoff4-db-status.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "9d1c2e6867d5076e4f7d9634eee004dff4152e816bc1faa4499de0c0d487db6b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/handoff5-db-status.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "9d1c2e6867d5076e4f7d9634eee004dff4152e816bc1faa4499de0c0d487db6b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/handoff6-db-status.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "9d1c2e6867d5076e4f7d9634eee004dff4152e816bc1faa4499de0c0d487db6b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/handoff7-db-status.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "9d1c2e6867d5076e4f7d9634eee004dff4152e816bc1faa4499de0c0d487db6b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/handoff8-db-status.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "9d1c2e6867d5076e4f7d9634eee004dff4152e816bc1faa4499de0c0d487db6b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/handoff9-db-status.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "9d1c2e6867d5076e4f7d9634eee004dff4152e816bc1faa4499de0c0d487db6b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "ef13c4b629014ea9be17331ea6ad33bdba862339b144ce812335af5ff6157376"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "c96d195c4ee0a020ccea1b868bcae220452c39addcb6ee9590a08aa24857cc16"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-attempt3.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "3f33d03e4575c60cd190d372ae791ec179480adc0368f0cc45da2fd2a53f1a66"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-before.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "fa7ab2731b2e09b104e1299be3ee8a66b3e6fb9871d57fd508371812698f4738"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup/events-final.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "3d2eb1b73c64a9d27987a2b2ad55514f345846b22dade967967c544f91b219a2"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "3d2eb1b73c64a9d27987a2b2ad55514f345846b22dade967967c544f91b219a2"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "0c73584ddea4419a2664c93a927daca317b6623df9faca88e5f2f7e9866b9ead"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup2/close-result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "6ff1568df9e03f3a46cac7296208b073bee30dee4f9b428d859baf4027beb919"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup2/close-sockets-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "1347248d7b2445fd9fdbb03078bb0e1faf3db97129765f690f9d086b0d70b94e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup2/close-sockets-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "044c5ad2dc951ef7acf0c2a87fd54f45ecfcb12729a421fba84f921c6f15e7b8"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup2/close-threads-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "0cbb74aa36724bdb5782251253b75bed4487431c1aa9db244659f42cc9a6267e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup2/close-threads-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "84f8550594ab8e2869cd8c927f1699d8238737ab844db58ff92e730e1e092242"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup2/events-final.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "0c8052114eee6a93961812ffa08c36a1188908c4928c83e12e59f53384c3d884"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup2/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "0c8052114eee6a93961812ffa08c36a1188908c4928c83e12e59f53384c3d884"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup2/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "d8ba3c1c46aae01db3fefd3526910e442b57a23c6c07fb200aad95865e4622e3"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup3/close-result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "f1ea93871ca252835dd6501aa3653fb4b4f4c719ac016f41777191cfcfe11803"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup3/close-sockets-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "c6bb3a3cb7e6301d6c19ecf0dc7296d02f10cfde3c6d3e8ffdc21d820cc19cae"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup3/close-sockets-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "9727f2c4a84bdf99cdee8f5c2be0b5b57c65f29021dc05967b3a342addee4180"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup3/close-threads-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "65590cc2ee0d35d8a44c3228c4e16743b8cf819d645c9b94c72520f6830aee91"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup3/close-threads-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "a7e06005d3c9c0ac622e543da8b749852699c3abed21399cab4dc619a85bfcfa"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup3/events-final.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "4ff966307009ea25a689c5de01a1cc677558f895cbcddee5271ea88b4ec837e9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup3/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "4ff966307009ea25a689c5de01a1cc677558f895cbcddee5271ea88b4ec837e9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-cleanup3/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "73b17f8d2e089483355bbcce187e2271ecf62bbae6fbd98d1f51a8ef60253959"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-crash.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "1d79bfd897dc92ae6845b3ed651f4e74f0c0b3b92070b922ac597dcf6f2b5f32"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-crash/close-result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "f5544dc00aa9902ba8a37dfb7743a2943f6653f49b3b3876e3ed8306c041bbcf"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-crash/close-sockets-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "342f54e35fcb4124fd52e44423dfbe7a783dbc9a49df31c46cb65eb8a48f3689"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-crash/close-sockets-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "a76acfaf68776c82e1c24c5cac35c6ed8368242c2d45094cd68e213e2f6db587"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-crash/close-threads-after.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "32478ee9fbbdf89a19723e334cc7118d8d19a9af24ba14f275f56cd67428b8c4"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-crash/close-threads-before.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "252bbeedcaadf4b4f60cd77770a47d02b338e89235c3eb9af11d680695e13fb6"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-crash/events-final.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "0dde0eb52a9b58c961ccc9df4408eb12b6caec6f27d3d77c9f5f1d7d45c21f9c"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-crash/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "0dde0eb52a9b58c961ccc9df4408eb12b6caec6f27d3d77c9f5f1d7d45c21f9c"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-crash/lab-start.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "19eaf43821a7660ec323a87c8457bf74823beb296c39f5e01aa8a683aa50f061"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-crash/lab-stop.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "19eaf43821a7660ec323a87c8457bf74823beb296c39f5e01aa8a683aa50f061"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-crash/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "ba4086ecac361b73b7c0e62fcf4e35b383750868b7fcf383fba664ded1edae73"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-failed-close-cleanup.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "a5470e5ab33f2f72a6ecfedeca13610e98a1fc9fb41967bced233dddf6ce9fb6"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-unknown/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "dd0c64d5e7d3594222a3f49f7232e9280ce43c93fc20abf7dc25b4e16d5c6cd6"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-unknown/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "ee9c6afc89db55e65afc663fd36cc269ac400bf00081ecefb36a0b35031d711a"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-unknown2/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "a7a7c908be6b5b2204628658e7641d6dd9aa10397d41cbf5e613339bb3d484ac"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-unknown2/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "fc7e4fe746a873f1922fe020695700faa11062bccef8132fe4a2ee55722ba030"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-unknown3/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "e1b510e093a1f8079ac921fa43d36ed19e006a0f70ef0d6ef4f94c3cb902356d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/open-v2-unknown3/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "b073646c9f6f8026e1062c6ac1f1ec521ad565f3c4ef09970cbc209822cc89e4"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/pre-final-db-status.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "9d1c2e6867d5076e4f7d9634eee004dff4152e816bc1faa4499de0c0d487db6b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/pre-release-db-status.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "9d1c2e6867d5076e4f7d9634eee004dff4152e816bc1faa4499de0c0d487db6b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/pre-release2-db-status.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "9d1c2e6867d5076e4f7d9634eee004dff4152e816bc1faa4499de0c0d487db6b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/pre-release3-db-status.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "9d1c2e6867d5076e4f7d9634eee004dff4152e816bc1faa4499de0c0d487db6b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/procedure-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "9e8995d2320ede4cbff23196a8e24434552415e4a779075d459e5747cf8bd7b1"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/procedure-attempt1.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "fb88a4095b3d06aa77328956134c90b8b1c28b8e4dba931bab579a110b9b7725"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/reader-attempt1/events-final.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "2de88823d2b1d425b9ff4dcb36a60b13ee9f0af19656d23effb3c61a55d3cac5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/reader-attempt1/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "2de88823d2b1d425b9ff4dcb36a60b13ee9f0af19656d23effb3c61a55d3cac5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/reader-attempt1/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "1dc48a0562afa31fa0d37fcef3b4f89352790b4a407c236f5298e68374ec78cb"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/reader-close-residual.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "2d7ae60198b044aae4f5b55f75574de82d55db19d90a8c7ef8968303b5ce379e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/reader-controller-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "382c3aba9aaed50ed5f445bdf1378071725262755e396ed83a74cc599aaa1d0f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "3c8e01f3b07dfb45f7c3f69f873c471c42fa61a4ace44af6c2459cf919cbba54"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "4a87fffb15cf33e16041c80bfd96cbb3020eb9d741a93043c0e74639bbf5c45b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-attempt3.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "264bc72981b42450fd0283c321f2e262a26edfc68bb287228a241de93637a308"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-reader-attempt1/events-final.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "376b31817904846d21f7208a8b5c7eb601475d11a74fb3c1589d9b18020f1ced"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-reader-attempt1/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "46d5c84a120eebf596bbe453b9717a2aad192bcbbf1b0d5a4f2186d4bc6898ea"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-reader-attempt1/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "c6756e43e4d7f4a064e9ab9ef4d3e6e347a12d4996a6c59e0c344bbcb4c585b9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-reader-attempt2/close-result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "53b54ffe14c95f99060d2b91d487e179e0df940b967ba003a3abb32bbede0639"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-reader-attempt2/close-second-wakeup.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "4903a40691e4898aa495021c378ab2cf233f95767ccf537f9301bc9d0a7eb1e5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-reader-attempt2/events-final.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "5137ed3d77f308f8667cea4cd076696fabbe59cd5da2fd30b2ce0047d5982791"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-reader-attempt2/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "5137ed3d77f308f8667cea4cd076696fabbe59cd5da2fd30b2ce0047d5982791"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-reader-attempt2/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "fdd842c61034549d33013b924bf68e5af03513d3ee9be562ee2deff9e7a4c5e3"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-reader-attempt3/close-result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "eb3323e15994db4a1af9366278aee7128f94a45656a2bb2090e57863b71af940"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-reader-attempt3/events-final.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "2c8b5005c0240212928d3aeb8b4d35298a4b063644980335c32cb7e1add0721f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-reader-attempt3/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "2c8b5005c0240212928d3aeb8b4d35298a4b063644980335c32cb7e1add0721f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-reader-attempt3/late-process-observation.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "d612b2ee2805febaac9b943e5565878c3344aec800fbdaa2d80cbe06a3f837f0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-reader-attempt3/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "a35c33c3d9cf6ab6522a482f7e516470a32518e0740ee58ecc09c1157dd0ce3c"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-reader-close-residual.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "2ba6cff746f80609fc241a7b86ed39e47d0d5ade9bcb375b4a82ad5022ff68d8"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-unknown-attempt1/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "c449051fea0af1976b303174ad5853b0b3a589600c295a579d6409eac53d27e6"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-unknown-attempt1/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "ea2b852f30832eb4ea75a1e03502e7a6ff763bf522bf08bedbf4a98fb925e634"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-unknown-attempt2/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "eb53046fed9c9ee06a9e372371892dc25e0da4fa264599ac7385534efa4ea9ed"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-unknown-attempt2/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "45053fe527b685d9e363243e3a594642212dd5b9a4771c3bc3c9ad44e54eec3a"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-unknown-attempt3/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "35d3a62be0acef0ad2a9dd9bc73f98775aa8b6942be9f027fb675aabf605315f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/release-unknown-attempt3/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "9e0ccfdb3a38eaa421009ce89b87d0a48279d54f8b59573701a15846a98248a5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/socket-unknown-attempt1/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "26d5bcd49133daafe3537fe8b320c8b9eb2b77b2015da4bd9881a55dccac946d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/socket-unknown-attempt1/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "f985edd5753ff5b54350804e75a46fa5cdaa758044580894f2923d416932da94"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/source.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "5020660a095240f468e721df97de21dfe462f9d671add43169ae20a38b9a7e2f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/storage-after-v2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "32f72120be16d2167472710b391aab5cc7c5f121d25d23bdaa39f0113ff44e3e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/trigger-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "a73e33c3b19ae96e433bd88daf5b42850a9041e91a414cafb882f6c3a4b19b05"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/trigger-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "f935399cd853295003977946343509c673584bbec9a0d2962717fb85ea46fe0f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/trigger-attempt2.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "69648a57cd1d55dbc27ba5cfee3841f8e7a3f8c656590fd5439fbbbd3da03bf7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/trigger-attempt3.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "92a07943eef1117aadc50fc1fdb1dd25439084b97a42721b0af73ea8da02c445"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/trigger-attempt4.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "be5e43306b7373c196a0837de5c768ef346f9cd34ea408177904bde999a6e84f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/trigger-attempt5.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "a6e972745413faf3ac490559dc4786a6d060e3f5e00e0db7935253ef400eb6ab"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/trigger-attempt6.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "ebbe96909af01f4d1de67b41f2a2f868429186d48498b4fe2bd0c24b939d7be3"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/trigger-attempt6.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "0dbb127ec23c789e24ea2f4dcf1e737b69c589bb4bed31526776d46b1822fe6c"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/trigger-direct.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "01e69a128478a9bfde28f59ff8fc09f42e9bb94bcfdda6c52a5cf144d4a4452e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-control-fence-candidate/trigger-source.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "09cd3e00754f874242f073add24b74bd9d9b46715cb064bbb92d2930241e9c63"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/01-unknown.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "4ef9e804f37c1803156c6179a81f62e6a99c99beec27b42718f7cf133847e14b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/02-isolated.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "5f2df80f6d4b55164dad042284527fd2851324dce8caa8c04543519c3ea4f508"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/78c58455-b909-4ee5-9164-6378b64719f2-events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "9da3cc94d58d310e1373e0e72ed792a9328727035a02c252cbc62d757543e35e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/78c58455-b909-4ee5-9164-6378b64719f2-ready.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "39d59e2f72a2c2f3f74d0f44caecc2897c80ced2afd8dfce55754e04a5bc81ac"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/78c58455-b909-4ee5-9164-6378b64719f2-worker.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "6acfb8474510624381d61902c99fc04009fa5f2da46c255a4ef97de7635436a5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/block-recovery",
+      "original": null,
+      "kind": "file",
+      "sha256": "496aca80e4d8f29fb8e8cd816c3afb48d3f103970b3a2ee1600c08ca67326dee"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/cleanup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "173d69ccdd06e7895ae8cf66e9093f3befd6d2688cd227352d3ceab48b45a38d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/eda49f41-50d8-4731-8ce5-1d16b2a4d32b-fence-probe.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "c49f6dbefdfee1ba504871762ecba7c83a4fe6f8dcd6e7cd52b0db4d4e73e32d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/eda49f41-50d8-4731-8ce5-1d16b2a4d32b-recovery-gated",
+      "original": null,
+      "kind": "file",
+      "sha256": "8f998dfb54f42f3c312986af74b33c6bc7f3f39751dcddc4b5bb860634423dae"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/eda49f41-50d8-4731-8ce5-1d16b2a4d32b-worker.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "342ccb252cebfe328087566308ed9f43d01ba8f39b93c431fb28bf43039cda54"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/environment.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "60fce3c1baf8f55d59d5741646617eac72222f344ffecec7a49f0b9324ba1fbf"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/failure-state.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "a350f02516ec2063f4719615557b729ad7b4ee4041c3126f67638fba43f4ba56"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/failure.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "41c6aa3369f8c7af9073a02eba5a1807d47db6ca12b6b62479555843a117f525"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/guardian.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "013139981edf241dcdcacd9b96c61cb12d866a8ea7b8363e9778b8659342a92b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/probe-source-fence-v2",
+      "original": null,
+      "kind": "file",
+      "sha256": "ba9c736f19e7f60b7f6764adb0b7908c0a2b394e09b6c09863528c7f2bc86095"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/release-recovery",
+      "original": null,
+      "kind": "file",
+      "sha256": "a4d451ec23463726f72c43d64c710968f6b602cd653b4de8adee1b556240a829"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-26db81e5d28a/source-sha256.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "13d7439abe4fdf2f34331f5012c8240eae86b17475227713e0213db6298ee546"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/01-unknown.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "ba01af5233a4e9318ac71365c4016bed455a44c9e08f5fea59414c846550874a"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/02-isolated.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "4992351c2ce4e71e5ef40db4f85f1d476e6d13f03555ccccad81cf5c740c6ca9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/03-fenced-rescan.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "9736c883f1cd5f3287688468828f4b03c333b01911cfc14ac076d82c5dbbad05"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/4b4d81dc-4364-4913-a51d-df126efc20c5-fence-probe.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "a9e05134c9609ae656ca31d3dd82d389d57a38d40fa8ebd17ed6b85a9ad952fc"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/4b4d81dc-4364-4913-a51d-df126efc20c5-recovery-gated",
+      "original": null,
+      "kind": "file",
+      "sha256": "8f998dfb54f42f3c312986af74b33c6bc7f3f39751dcddc4b5bb860634423dae"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/4b4d81dc-4364-4913-a51d-df126efc20c5-worker.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "ccf0699ad8f24dc9e5213ab09add2b45eecb9479cb48c810ebe325761ae3e003"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/block-recovery",
+      "original": null,
+      "kind": "file",
+      "sha256": "496aca80e4d8f29fb8e8cd816c3afb48d3f103970b3a2ee1600c08ca67326dee"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/cleanup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "e51e61cfb166dc4feeac23cacd61bcb8a741a51c8c96685733a5ecae500a2e7d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/environment.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "16fac9d31f7f393a4ec3df98e03d9072eab394a47190b1683d4ba725a7e3fe90"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/f0edf7d1-9ad8-47b3-b4f9-c63848e6961f-events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "34233174cc3834fdd0b3570d3c9f8662cb63c8325d35b93f33710aed0214c1de"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/f0edf7d1-9ad8-47b3-b4f9-c63848e6961f-ready.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "abe3e2c4b71a5a7560f3ed19b3e842f10a9090d8cd7d7cb49690e12dcd3cec71"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/f0edf7d1-9ad8-47b3-b4f9-c63848e6961f-worker.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "6163377e14720f1763aa79fc65302bc8b82a4c19a93829ec8fb4afb18bcfa119"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/guardian.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "938016b76f0abe78913cc374f3d844c4d086dfa8bd9e9bc75bc23c7cfa579940"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/probe-source-fence-v2",
+      "original": null,
+      "kind": "file",
+      "sha256": "ba9c736f19e7f60b7f6764adb0b7908c0a2b394e09b6c09863528c7f2bc86095"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/release-recovery",
+      "original": null,
+      "kind": "file",
+      "sha256": "a4d451ec23463726f72c43d64c710968f6b602cd653b4de8adee1b556240a829"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "ad3f2f0e9de7a91c3c6df0790c12ca07a8543d4e127b6f3464034a526c824491"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-3113b209f16a/source-sha256.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "d25ff043d724dadf98fb3597412df1cbeccfd6a0a198c6a681e068022a962a2e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/01-unknown.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "e4ba813bc698aaa49a833a6f4e1516411a26d58b91179a0e4ede2b22e9c829d5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/02-isolated.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "23e8c0f8ea904ca8188340a274c714d2814c872d5e0dfa24c4b28c0be9101a35"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/2213fea6-6af8-4d29-8234-440124cda3e1-recovery-gated",
+      "original": null,
+      "kind": "file",
+      "sha256": "8f998dfb54f42f3c312986af74b33c6bc7f3f39751dcddc4b5bb860634423dae"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/2213fea6-6af8-4d29-8234-440124cda3e1-worker.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "aad9a98dbff9cb39de15d17e0944b024137607d7ad070296f0939c5db16995a4"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/a5ad7832-e4b7-4592-8a3d-0020a141e964-events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "bec0d84f4608cda60497dc832ac767e176d1ef3e7ab4d0169060c6b1d1ee4b30"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/a5ad7832-e4b7-4592-8a3d-0020a141e964-ready.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "9ca278d7b044d449d097c63b25d697aa907244d7ecb3d6cec98ebee8575205d9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/a5ad7832-e4b7-4592-8a3d-0020a141e964-worker.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "f0d0c2f7056325b678d3818ba7fee220647b1970c7fa57bcf5ac6847000847e2"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/block-recovery",
+      "original": null,
+      "kind": "file",
+      "sha256": "496aca80e4d8f29fb8e8cd816c3afb48d3f103970b3a2ee1600c08ca67326dee"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/cleanup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "173d69ccdd06e7895ae8cf66e9093f3befd6d2688cd227352d3ceab48b45a38d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/environment.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "b36befee862fe44e7e538444354762efb05299ccd9b47978a11dd30e508b8669"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/failure-state.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "805dd1b367164babe31a8b0224afd037e056a0e53482d7c75886dad17edcc8d5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/failure.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "dcb6456a4508de1c1a4e7027fba64d0968d71e1392aac59507ebefc879573393"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/guardian.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "7c3520b9d5b85cfd3d2d8adaa196427e743985abacd9ff9e0c1a8a008089e593"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/probe-source-fence-v2",
+      "original": null,
+      "kind": "file",
+      "sha256": "ba9c736f19e7f60b7f6764adb0b7908c0a2b394e09b6c09863528c7f2bc86095"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/release-recovery",
+      "original": null,
+      "kind": "file",
+      "sha256": "a4d451ec23463726f72c43d64c710968f6b602cd653b4de8adee1b556240a829"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-55d28f477cbd/source-sha256.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "8face9cac9527bd34c4bf43fbbd0bbbd8e9d3a8c72e51e79eec0817ddef8e2fc"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-b2650fdfe082/01-unknown.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "e62d17d9db46ea424e0893f4d864cc6c261c84494bb539501b98511e13f357d2"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-b2650fdfe082/02-isolated.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "9a293db30b0efd337fde6951757afb715399ab591c3ec1da115d906a9407f3dd"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-b2650fdfe082/82a8ba7b-6a47-4bf8-a513-c2f6f28d74d7-events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "0de229b34341d1e4174fa161be37e5f51953cc3dcd405e861787174b1c615e6d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-b2650fdfe082/82a8ba7b-6a47-4bf8-a513-c2f6f28d74d7-ready.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "720747253b968b75a11d707252fc49e06be8c2854c2b90a9a23fb0ad5d559e36"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-b2650fdfe082/82a8ba7b-6a47-4bf8-a513-c2f6f28d74d7-worker.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "735c64a17793d960c0c9c6b5919b7fb9dd94dc69773741a0266b24b14b7688ac"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-b2650fdfe082/block-recovery",
+      "original": null,
+      "kind": "file",
+      "sha256": "496aca80e4d8f29fb8e8cd816c3afb48d3f103970b3a2ee1600c08ca67326dee"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-b2650fdfe082/cleanup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "517bcce9f35202de9ff755ab1cdf102435034ddaf88d0ff6f4caf1916c990d64"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-b2650fdfe082/environment.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "11261d74d4868f4f742605765051a12b512127f7dbefdcc65ec65b9094fc0e24"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-b2650fdfe082/failure-state.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "1ca81fb7462d1ede54a209819405c459a30608422fa0b5aee96af7818d1d4e51"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-b2650fdfe082/failure.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "f07b7d58db09b48ed6cf60c4f04d5b31a3162c8e95c543ac4ea42fd622303145"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-b2650fdfe082/guardian.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "2c918c376e9157c8b76f290b1d7951d5da772a9b52bb9c7b50bfb65b2a4d2d5e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-b2650fdfe082/source-sha256.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "54241d5cf6eb80916249a1a72d1f0d7cfe116f86084cb09069ec02692d083235"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-e8ecd945bab6/c6c5c511-5c6f-43b9-a625-5480d9c88482-events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "0880925e0e110c0d89f4403a632e1f2fabc2d8b91b6310ab5b4d6f4cc34b6bd3"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-e8ecd945bab6/c6c5c511-5c6f-43b9-a625-5480d9c88482-worker.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "5191e1e31783c3253cbc42c6dbeefc41cf1438a27f5f830e886776ef7f17b011"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-e8ecd945bab6/cleanup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "173d69ccdd06e7895ae8cf66e9093f3befd6d2688cd227352d3ceab48b45a38d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-e8ecd945bab6/environment.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "3cc4bfabe7419e206b8877aecce4d802a3f443c4d737e8652f4fcb74429e2500"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-e8ecd945bab6/failure.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "8f19f4b57247241f4983dae0e433f73acb76b14ed6eefb9ebe84bf4f613e3ebb"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-e8ecd945bab6/guardian.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "af4ce463788d18f9c556217301092cc767b9628fa4d8e2ac099dbd00f61cbcc9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/FENCE_PROBE-e8ecd945bab6/source-sha256.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "86c59a88b5affe5ef95f7b7be40f8acc952df8ecf7937205b323317d8c7e642d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/README.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "913ea7bdf695f2dc1bdf24c1ab8638fca26505a7b4db445f019c47ccea3f9174"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_CLOSE-32f8282eb206/01-unknown.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "b95817fa7ece90513b42f8793cdacf1eda8adc2a4a8af31ba96d8b9ca63679f1"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_CLOSE-32f8282eb206/02-isolated.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "67979e41b3b206b088e61f74bbe469dbb54f603c44cef6c7686b5840e07fbf83"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_CLOSE-32f8282eb206/0a93a470-9f83-403c-a478-e9c5167dfd3e-ready.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "c4e9ae5ce7a8b2dc834cd5335b04162416d53e966009d3a38cae76843b4af618"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_CLOSE-32f8282eb206/0a93a470-9f83-403c-a478-e9c5167dfd3e-worker.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "c9598fc387349b694342f122a4047785bc32c3d953a78388eb41183a0fc99a9f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_CLOSE-32f8282eb206/304c4d60-11b5-4342-8c65-c726ffe45512-events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "d50a05efd2ccf3e74c1c16aa7cf376f2986a68083931b3e49e1b9535e3fbc0d5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_CLOSE-32f8282eb206/304c4d60-11b5-4342-8c65-c726ffe45512-ready.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "52f11e345e0793e0c266ff67385f7f35620e87dbb9a204580311eb4542842b97"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_CLOSE-32f8282eb206/304c4d60-11b5-4342-8c65-c726ffe45512-worker.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "c766cd8ee9e79ad546e7e6bc745db390b091d926d85b18426ac065885056a4e0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_CLOSE-32f8282eb206/cleanup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "173d69ccdd06e7895ae8cf66e9093f3befd6d2688cd227352d3ceab48b45a38d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_CLOSE-32f8282eb206/environment.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "a84c2b261e364fe2b8e4b59c74684bcb3ef67b3baf5f6ce9c010d632933e3dd1"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_CLOSE-32f8282eb206/failure-state.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "f88a4c9e5e4491dba2854a64192c91015655a573b271b83fb4431b836fbaa6ca"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_CLOSE-32f8282eb206/failure.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "512f92d1ae41520c2f80cd42c6a3905265daaaaad1e7756b199e0e7d3edeca39"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_CLOSE-32f8282eb206/guardian.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "01baad16c57588c8fb5e47f28c61d4736d671baacda94a90bfdfa15687b85080"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_CLOSE-32f8282eb206/inject-controller-close",
+      "original": null,
+      "kind": "file",
+      "sha256": "dc083dbe056a217097b6d6aba9e34f057b5f728b2fa63d0099a5e3c3f297cb5a"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_CLOSE-32f8282eb206/source-sha256.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "79f4c692e7a6db2297c29c4462871e0fb8d34a3dd2596336190ea220b8622ea0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_READER-be2144acddea/01-unknown.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "4ea1878a552b159fc97a147a4dd8ddd8056209381163ce7d22d8cbcad7e710d7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_READER-be2144acddea/02-isolated.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "c079b585ae8d33d95b99b4dadc462a6d69c7c30b73810e4f8052d736e30f8ac6"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_READER-be2144acddea/8a3da422-8432-4828-b8f8-2b57f09fd03f-events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "911a9563becf89cbb1c664d9f1589c426d23a33467db08ecb2ae945b99e67d8a"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_READER-be2144acddea/8a3da422-8432-4828-b8f8-2b57f09fd03f-ready.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "53db17bc94544b0581c825116c876859b748b318a78e8ee8627b217ec49c69f4"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_READER-be2144acddea/8a3da422-8432-4828-b8f8-2b57f09fd03f-worker.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "3311c9958a69a0e46c4ba8317d3c64a1dac7f344beab238471364b9f7dcee3f0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_READER-be2144acddea/97710475-974c-4e11-a8e9-b2f8c5d416c3-ready.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "36bc551a3890ad4f40a8e5eae1ce9d734c900f3bb563ca8d9e10e75c9ac8d9a8"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_READER-be2144acddea/97710475-974c-4e11-a8e9-b2f8c5d416c3-worker.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "aab6cfd7f34a06ae3055332b20997f14f29fa323c70167e7ca92f58a484a943b"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_READER-be2144acddea/cleanup.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "173d69ccdd06e7895ae8cf66e9093f3befd6d2688cd227352d3ceab48b45a38d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_READER-be2144acddea/environment.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "470034141cfe6ad6ebda4bb28a5f5860bc988b4e1d2ff9589743dfb6b42a4b89"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_READER-be2144acddea/failure-state.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "dd41c8dd8f767604088c696247d3e97ae21da8fa34bf6cacbbeecbf4cd85ab42"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_READER-be2144acddea/failure.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "afe6e97d03bf5c482392faeab00aff7ccfcb6d03fabc043b87507e122a8ce704"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_READER-be2144acddea/guardian.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "e92b89fd095f7e38cfd429b88277b59320aa6ecb90c8726fb1d0b71dfdeceea1"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/V2_READER-be2144acddea/source-sha256.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "65f0ddcb2bfea5937ad7697ad133280bf826567450132843b14c49781200ba99"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "161f6e765a0724601c00cb8698b3fc4118fe3a6b3d0bc9019c06c3bcba6d1594"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "8218702f4b9616c8f7224ca33c2b182de6493189da0b0ff7f8b60ed9f9f132e5"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/attempt3.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "d39f3a51ac10b8db0402b953571bacf13924a87171ba1db9bc69806432c79d36"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/attempt4-worker-readonly.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "4aeffb3a597740b14949e6ad72299f3b37c867a7ab18a8f2e4fd3ec641ae4d7d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/attempt4.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "0430c6ce244b7b8eed377175ffd945b7a719b6476074ac6ace3208e39dd80f4f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/attempt5.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "9b74a266c5f67f041e958b927251a4c49b8895d29d47350100462ad0a1071453"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/attempt6-source-after.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "0842850f3be7a513a7483d0cce242d978f2faa6bf22c0fe2afb5607eda6197b3"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/attempt6-source-before.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "c578b1714c385505fdc4255c7ae73d4e49e998f941c27087fc4299ad92f58b93"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/attempt6.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "70320625ad03f3c96673c7f1904f7133e2935bf635ebf02478ee1f9a0b67d33f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/attempt7-source-after.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "21abc6a39dc85249bbeb08daa22d7e22a42d7a8d5c024f219e7c6f02c0d0a6fc"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/attempt7-source-before.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "0bd85c60f2dfbf1386215e6ddf0182b68a3bb0379be4cdb4828397efc49a6704"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/attempt7.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "d00f8dc6382dca9a08939aeead0d72c76d2c551c2cb66308d5c98654a0b7a92d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/attempt8-source-after.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "65d24669e3303a2d1e7be35e2126725709d713ca92855239a8e74c8ab4535b45"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/attempt8-source-before.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "cb95727d316885f39b3fb5174e137f8bb9d1660a92cdd52ad5d4fc533995e59d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/attempt8.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "d1ad262af143e65e5bc4f7612f1cfb8aa586149b8367f38c048ac2b1b476e279"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/frozen-admission-h2-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "7ea5e6229e7d03e42aeb60c90f8f08dd6196825f52b6d1ae541bc1db3fc57c98"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/frozen-admission-h2-attempt2.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "c0b5f98a0927218f1046df53c438b282857d24464d386ba506d295f388a1d65f"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/handoff-after-attempt3.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "93b95cdc332038b17a06f01bfe2a134378e29ad1b9a4f00956136047a2b32078"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/handoff-after-attempt5.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "93b95cdc332038b17a06f01bfe2a134378e29ad1b9a4f00956136047a2b32078"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/handoff-after-attempt6.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "93b95cdc332038b17a06f01bfe2a134378e29ad1b9a4f00956136047a2b32078"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/handoff-after-attempt7.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "93b95cdc332038b17a06f01bfe2a134378e29ad1b9a4f00956136047a2b32078"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/handoff-after-attempt8.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "93b95cdc332038b17a06f01bfe2a134378e29ad1b9a4f00956136047a2b32078"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/handoff-after-journal-suite.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "93b95cdc332038b17a06f01bfe2a134378e29ad1b9a4f00956136047a2b32078"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/journal-lock-attempt1/contender-jvm.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "cfc51a241ca7ecfb1febbc3b1e99f79dc011979687b6ce06600535651b883395"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/journal-lock-attempt1/offset-contender-jvm.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "15faa3a14f49b399a8301c4138b239efa0dec6397c864cd7751690fded5b2605"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/journal-lock-attempt1/range-lock-result.txt",
+      "original": null,
+      "kind": "file",
+      "sha256": "e8d29e38ed2901dccdf82a9b07d42a38ec405c1051f94857c7f9c754486bd235"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-fenced-scan-guardian/journal-suite-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "06a9d63e9a30d4409839a9bf3e422e9460b67a00314f9c625ed63bcbc261ae66"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-journal-permit-binding/README.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "6ff776c68fe950e3616b257b8a2666c22c6194455769c242223330916ed7b805"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-journal-permit-binding/cleanup-lab.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "b9e635bd0b9aaaa42e943e87c614653bc9c5c5df03358c3ef3a8c48afce81df7"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-journal-permit-binding/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "2b8ba851214552ca9bfcef5f719271eb7452aa7d4b323849e3062f80163fc2f2"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-journal-permit-binding/runner.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "e2a6b944f74ecf5652c29753a69ebaaf266a3cc1d0ae421fa57e66550968be9c"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-journal-permit-binding/source.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "63f0eafa612bd363bb651b2c4c3b4db3e328c84297c4b793ec10b9cd722d3def"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-marker-same-connection/README.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "865a094d816457dfd9de9b057eef092e8b7d5c84b1ed8364963b59b138793f28"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-marker-same-connection/cleanup-lab.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "6899a30c28a3a6b8cacbd97b8e5abf2870e5624cc0dbab70074d5883e4277131"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-marker-same-connection/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "c7f24c859e640c50b4b44c80cce3bb890960105fffe468b3d5ed01806a605c15"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-marker-same-connection/probe.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "5f140b214f479f556e8fed3e5ad9eb31d735a34fda5e41974133a74fe2ab96b0"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-marker-same-connection/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "57fc99f45a7b0b95fa2009d2bcb41d0af458442b5da43863cedef9cafd5ec0a3"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-marker-same-connection/runner.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "9ac99943825a202d7c114c876c9bc0cd94c4ebb4b7a8b4664734d3640a4a8e80"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-marker-version-reentry/README.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "cff12041c6ee5cf6bd58dfd9ffa33c8669cb20dbd32c75947d4226481449a206"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-marker-version-reentry/cleanup-lab.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "494a93f09c5b169b1178931225269b014eb706b020a136a11ce8a07a158c9e20"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-marker-version-reentry/events.jsonl",
+      "original": null,
+      "kind": "file",
+      "sha256": "b5a24e8fc450c154024e6257e678fdeab67ef366b4827eb5f218b3db528c7a99"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-marker-version-reentry/probe.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "eac649c0495dbe451d61ae1b30e2118d50c7e7dec11745dee944d5be25fee9c1"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-marker-version-reentry/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "f68777c6ccd31715ee5adde144e2026ffe7bfae8fc3c9149c94fdce6293d245a"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-marker-version-reentry/runner.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "a2688e8be7f93f996721af12405eccb8aaf61ea6bf3261f9d2fcbec6b9476f5d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-recovery-fence/README.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "b566a78cf4338b7c838584a9cdd78d97a38ece766611d09ab26d341112794862"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-recovery-fence/end-owner-claimed-v2-green.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "967e59ace0459425a0a6344c3d369600199da537a532d4c3b65f713aa7baedbf"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-recovery-fence/end-owner-claimed-v2-red.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "f2243cdb21ee605b1f4ceb732f8be5586569286544672b877186cda8dd68d5ab"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-recovery-fence/end-owner-mysql-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "86af6b08eb1f305f2e5fa339a6e91c664f56b1b0305c0236bd824be4559c5664"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-recovery-fence/target-binding-green-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "4dd5875ec61d82d4e8d15d888b255a76b35f0395c044a07e154ed9aa4acdaebe"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-recovery-fence/target-binding-red-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "c1eef5f0b59d7cbbfe8a309911ba650342f4e43474d21428ca248b2132615274"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-recovery-fence/target-binding-state-release-20261108.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "e373575cf778a82e8780d3ba641110023291d458b22762f7e1635013f81aae84"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-source-fence-writer/README.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "f4ba228482a25511ec9cc16b107bf2d4562b5ea10cf4b91f10a81a0c2aa91463"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-source-fence-writer/cleanup-lab.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "18d4212dac5ff02b853637459b9f931e493e36ae092f4abb3e90097f78be5a34"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-source-fence-writer/green-first.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "78027ece8384b3e3fb9a7e5ce8e4b2477d169295a7bac07062c3620f5d7fc62e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-source-fence-writer/green.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "7c2e362b47b55b57b8def5d6a800fd2ec849a03aacf317e8a8617bc8ddbe7c66"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-source-fence-writer/red.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "0fffa94477ffe0ac87cfd9ec53482663ca4fc083cec2180394c007382f4ae130"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-source-fence-writer/review-cleanup-lab.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "1835c1f26b999ee5f5fd3e99ac8314d12168bc23dab61898ef22e869ce17e053"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-source-fence-writer/review-final.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "af875b91fab01526e879ea4944c5fbd3b69a7753061ff1afb52151776897c92d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-source-fence-writer/review-green.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "fc8cfe236c3b8f67115d4992af3acda3263edcc6fb31846627ff1360c43c715e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-source-fence-writer/review-red.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "bb8d116b9f1895a5eaaf3058ca2a4be217fd134ae879ed89d1366b6950b341e3"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-source-fence-writer/source.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "df3b9f51235fc8868ef597b867c3f1c4383c20cda0ee51f1cf3a40cf0129ca9d"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-source-fence-writer/test-only-source-final.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "b89762c7101d76a4beffc5675bd22e9df3a49971602ecd4cfa0dca7d4ed795dc"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-source-fence-writer/test-only-source.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "2d81786a29009cfdacaf09cb8f52a56ec1c299a8a034be3414900185ee94f600"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-version-permit-race/README.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "c65fcd04319e4b177495b45952e0b0382283fa947f7afad6245eaf40eb5f018c"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-version-permit-race/cleanup-lab.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "52f240f3cc49cdaa979a5f1f5fd2d983abcbb3155af1c0321cf56af482484fb9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-version-permit-race/probe-attempt1.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "3faae5dd644ef39c2ee70fbd829be3644f0d9a857e0787bf4995a84d44b1d5ce"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-version-permit-race/probe.sha256",
+      "original": null,
+      "kind": "file",
+      "sha256": "e344dd8eaec431236d24f4e4f7db2956594d0bfd101d90aa09f79cb8cd4ac45e"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-version-permit-race/production-boundary-audit.md",
+      "original": null,
+      "kind": "file",
+      "sha256": "592de6a1d5693e76badf934da57efba7ba75f12b51f637e846a536726b44d915"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-version-permit-race/result-attempt1.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "e44cf824325d3147be03404e88b0a8d8e7f9fc857167c8301071c0029c52fcf9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-version-permit-race/result.json",
+      "original": null,
+      "kind": "file",
+      "sha256": "e44cf824325d3147be03404e88b0a8d8e7f9fc857167c8301071c0029c52fcf9"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-version-permit-race/runner-attempt1.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "e1528057002d61cc9ce3fafcbb7dde365b3d3996816613db66ae756f3cd5c729"
+    },
+    {
+      "status": "??",
+      "path": "docs/experiments/2026-11-07-version-permit-race/runner.log",
+      "original": null,
+      "kind": "file",
+      "sha256": "0bbce45286c814038475d24beed70ce41b05a1b1c1417009b76ef14ffd2c1481"
+    },
+    {
+      "status": "??",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureAckPaging.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "cb97ef1e33f7023af5677e209611d9c1239790cda91b2d872effc4e255cc9b85"
+    },
+    {
+      "status": "??",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureConsumerIdentity.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "9436df9d7c67b8e860e06e5dd9d95f902cb16c59f3fbfbeb810c413531d2856c"
+    },
+    {
+      "status": "??",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureControlFence.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "1b9ebfe3ef197ce3401832f79b6f29acb3de84c08df0091c6512a64eb61e3442"
+    },
+    {
+      "status": "??",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureGroupTombstone.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "89a771c05ecadfe8ed53ad2d42fb4b4f9201efd27c84da5f937aa4b3cb44ea48"
+    },
+    {
+      "status": "??",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureLedgerGuard.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "2c1b3e035a2ba7f5e1483e2a4a405588a1f70181ddc199316f8b30d7908c7550"
+    },
+    {
+      "status": "??",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureNamespaceBirth.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "d2517d48bf668e3427f62cd8595da16764d3c455a9269e1253fc5b4fb71b0c1d"
+    },
+    {
+      "status": "??",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalProgressVerifier.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "34f71aaa33ff43f8a615de2c38573198352b2e0b8b1af412e16fc8b96ec18c40"
+    },
+    {
+      "status": "??",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapJournalProgressVerifier.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "3f23d0fc5d4777d348f4b78f4ee0b715d83936312834e3eec48858ee12f90b86"
+    },
+    {
+      "status": "??",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcCaptureFenceVerifier.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "10ba041d882f618533afcb8abe00638a76575000deef6d8a768f8bd6dfa1eb6d"
+    },
+    {
+      "status": "??",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcFenceRecoverySession.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "ca1c022e8fed2983d988a8f0e097d526625de8c11f708570ec2a6c0f15899180"
+    },
+    {
+      "status": "??",
+      "path": "server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcJournalFenceVerifier.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "b1acab3a1249df4cd66d7efccebe94813fcb54bd5416a7df7b6b507c482b03d8"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/SourceFencePrimitiveProbe.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "0db33e75452ec8fbf4a98e0e0d9902c588f03bd233fe1f396cc577423250eabd"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/ControlFenceProcedureReaderProbeSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "8411d39d9dc4c1d93d3cf8ede6b177a5d78b6b959111b407f6c92901b8e19c13"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/FilteredMarkerTransactionProbeSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "19c5a6524f6707eb06f797acfdb52784fc400507a4f96e3c8a957d58485e5188"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MarkerSameConnectionProbeSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "b8a55d20791ed3f588ca0286f7a052fd36ff0e0765b48d4f524cae3f17dbb0cf"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MarkerTransactionProbeSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "57d48404c4aab059222dff794ad31f673fb2e418c0014d0abb993fa7e2ab4cab"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MarkerVersionReentryProbeSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "d1e8274424791ac2ad13428a48c3f809fe4e23a9f59c6f20b2c8aa7eed118bfb"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/SourceVersionProbeSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "7a93f74c3638f77a6184606648fd57b886f705fa65b962a651e31abbe2b10023"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/VersionLockProbeSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "adc9465dd1040677a928997562b034abe809424e260011eb53584ce2de8f9332"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureAckLongMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "dc869625271c1bed6f156a07fd997061097105320c70eb2a2d11dd041dfd4bca"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureArchiveMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "55491c4f4e1369444105dc7562f1d86091658767a6d6b4627bccefca943d1dcb"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureControlFenceMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "5acfd60306ccd5e73b17d965d8aa931a211696eabab3d1618f0b9c9fc613d4ee"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureControlFenceTriggerMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "595c27614552e26542f827267cf9545420c1122c8d175744cbb3d0be0b9f6abb"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureFenceGrantSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "2b4e72d37de44d6550b77ddeef359fba7e6c73c3f2aaeac3f9199769a3253a09"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureGroupTombstoneSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "2b3d3dfa6e383bb1f7a2a12b1f2df91cc8a42009151146afd95995dc836d1fcf"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureLedgerGuardMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "bb3bb73832c747a6d458b62ed709652425db85ae06108457111170f092466b4a"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureNamespaceBirthMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "26435d25d4d89a345619f0b0a445f0003922eec5373037b3b15c9c53602ae984"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/ReaderRecoveryGateSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "803aa295ef94ca331c56bed24a8190336695ef83722fca8cb63562200ab17aaf"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SourceFenceLockOrderMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "d1c6c5f2610d1f765aa18c53db1fccbec50ebddbb4554ff7acf6f4c7f8641759"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SourceFenceMarkerWriter.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "f7a21ae8a4c099e9763271eafc8be65273d4da5ee893de63a9fa949ae6218f22"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SourceFenceMarkerWriterMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "b94609f218c906003e029c8aab629207d0bb0a4ce226b1600d4792d8581dbdb4"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "cd972e0c75c7217131ba96361cd70c5ab8f24652358c1ed9ffe200fcb5381656"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapActivationFenceMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "8159d203c93a74aa005563a64b71635074a0b8139b5c8732ce55562702b860e3"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapAuditTamperMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "710425a93d72c67ad9b656c69ef290c67dbfe3de1cca16df8ceff4d95d79d642"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapJournalFloorMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "98063c364fe8d7192fabc7ffa3b770b360b8c63387905c996ec50d6cd8a25b52"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapMaterialAppendOnlyMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "f74e3eb9458c0cbd8f6c6c87b88c66c70fe1dc1330e871fe86d3dccb0b063557"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapReplayClaimMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "3589ddd5524c9120bb782aef69b34e919a31e9b2ccd45605d35245ebecfd976d"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapTargetTamperMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "a3c5cf3e3a9a4790808a2301ab707b23eba9fe73a46a5e1d05dff28df1e74869"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcEndOwnerMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "1611baa75e91ce488afa92ba7826289d5f633c37266261b93ca76b92b28fbecb"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcJournalFenceMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "768e95812f9a54d4a4a5627263e40d6b657791f7c64c9b99a5b39327c4d6ddf7"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcKernelDowngradeMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "eea0e74c630a203e4310598eb54168d7ae4ba06022bbe235e6f0f07efcae96dd"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcProgressCompatibilitySpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "40c3b32c87f92b7c01744ca759890b072f200683b6ac618b3715cb81d33fde93"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcRecoveryFenceStorageSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "c1d155bbcf89a2fcdd837161b890105b791310eba668326d6b31bed6706da8c4"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcVersionPermitRaceProbeSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "fc31853b5a4b12b6741968a525a1b1d72ef9acbe298c877f36e531de51053208"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/integration/SourceFenceCommitUnknownSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "8a94c8b2ed8c25f95432e018d23eb4b0c4671563b848e4e2e67c29c207e53361"
+    },
+    {
+      "status": "??",
+      "path": "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/MaterialOwnerDrainMySqlSpec.scala",
+      "original": null,
+      "kind": "file",
+      "sha256": "0d430c5385557a765d4fa12197a7bdaf6ea11c201b4edb826b36b016b7d8179d"
+    }
+  ]
+}

@@ -96,7 +96,13 @@ final class CaptureReleaseGuard(attempt:String,closeLocal:()=>Unit,localConfirme
                 }
               }else update(local="CONFIRMED",reason=observed.reason.orElse(Some("SERVER_RELEASE_UNKNOWN")))
               if(continue && (System.nanoTime()>=deadline || observed.reason.contains("OBSERVER_UNAVAILABLE")))continue=false
-              if(continue)Thread.sleep(20)
+              // INNODB_TRX uses a shared cache refreshed only after an idle interval.
+              // Polling faster than that interval can keep an already ended transaction visible.
+              if(continue) {
+                val pollMillis=250L
+                if(deadline-System.nanoTime()<=TimeUnit.MILLISECONDS.toNanos(pollMillis))continue=false
+                else Thread.sleep(pollMillis)
+              }
             }
           }
         }catch {

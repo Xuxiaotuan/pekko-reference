@@ -26,6 +26,10 @@ object PekkoServer extends App {
   // 显示启动横幅
   logger.info(PekkoBanner.pekkoServer)
 
+  require(!(PekkoConfig.root.hasPath("pekko.cdc-standalone.managed-worker") &&
+    PekkoConfig.root.getBoolean("pekko.cdc-standalone.managed-worker")),
+    "managed CDC worker must use CdcStandalone")
+
   ConfigValidator.validateOrThrow(PekkoConfig.root)
 
   // 启动集群服务（包含所有复杂逻辑）

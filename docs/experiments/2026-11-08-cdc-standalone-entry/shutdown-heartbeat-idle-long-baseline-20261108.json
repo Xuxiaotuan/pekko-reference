@@ -1,0 +1,332 @@
+{
+  "schema": "pekko_stop_aa186dde8d",
+  "port": 50708,
+  "mode": "baseline",
+  "pid": 29954,
+  "stage_jar_sha256": "be5849d99fbfce8f8b29dd20589164dc35790a6fb1fda4ba02b9896cc8386c13",
+  "requested_phase_timeout": 30,
+  "await_cap_seconds": 15,
+  "samples": [
+    {
+      "t": 0.0,
+      "source": {
+        "ok": true,
+        "rows": [
+          "0",
+          "139\tstop_obs_aa186dde8d\t127.0.0.1:50738\tSleep\t2\t",
+          "142\tcdc_lab\t127.0.0.1:50763\tSleep\t1\t",
+          "143\tcdc_lab\t127.0.0.1:50766\tSleep\t1\t",
+          "144\tcdc_lab\t127.0.0.1:50781\tBinlog Dump GTID\t1\tSource has sent all binlog to replica; waiting for more updates"
+        ],
+        "error": null
+      },
+      "state": {
+        "ok": true,
+        "rows": [
+          "0",
+          "1919\tstop_sdk_aa186dde8d\t127.0.0.1:50733\tSleep\t1\t",
+          "1924\tcdc_lab\t127.0.0.1:50739\tSleep\t2\t",
+          "1931\tstop_sdk_aa186dde8d\t127.0.0.1:50749\tSleep\t1\t",
+          "1937\tstop_sdk_aa186dde8d\t127.0.0.1:50760\tSleep\t1\t",
+          "OWNER=UNKNOWN",
+          "D_COUNT=1"
+        ],
+        "error": null
+      },
+      "source_tcp": [
+        "COMMAND   PID     USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME",
+        "mysqld  26682 xujiawei   21u  IPv4  0x491668ecc39ebdb      0t0  TCP 127.0.0.1:25821 (LISTEN)",
+        "mysqld  26682 xujiawei   39u  IPv4 0x660cafe1fba51ec9      0t0  TCP 127.0.0.1:25821->127.0.0.1:50738 (ESTABLISHED)",
+        "mysqld  26682 xujiawei   41u  IPv4 0x8e870ea840a3a0a8      0t0  TCP 127.0.0.1:25821->127.0.0.1:50766 (ESTABLISHED)",
+        "mysqld  26682 xujiawei   42u  IPv4 0x9073911811ec9322      0t0  TCP 127.0.0.1:25821->127.0.0.1:50763 (ESTABLISHED)",
+        "mysqld  26682 xujiawei   43u  IPv4 0x4ff7ea3da0718db4      0t0  TCP 127.0.0.1:25821->127.0.0.1:50781 (ESTABLISHED)",
+        "java    29954 xujiawei  207u  IPv6 0xa928d4baae78cdde      0t0  TCP 127.0.0.1:50738->127.0.0.1:25821 (ESTABLISHED)",
+        "java    29954 xujiawei  210u  IPv6 0xf2850e97f87be10a      0t0  TCP 127.0.0.1:50763->127.0.0.1:25821 (ESTABLISHED)",
+        "java    29954 xujiawei  211u  IPv6 0x82b3b2f9f579cf62      0t0  TCP 127.0.0.1:50766->127.0.0.1:25821 (ESTABLISHED)",
+        "java    29954 xujiawei  214u  IPv6 0x84e477a3cf9aa4e2      0t0  TCP 127.0.0.1:50781->127.0.0.1:25821 (ESTABLISHED)"
+      ],
+      "process_exit": null
+    },
+    {
+      "t": 1.0,
+      "source": {
+        "ok": true,
+        "rows": [
+          "0",
+          "139\tstop_obs_aa186dde8d\t127.0.0.1:50738\tSleep\t0\t",
+          "144\tcdc_lab\t127.0.0.1:50781\tBinlog Dump GTID\t2\tSource has sent all binlog to replica; waiting for more updates"
+        ],
+        "error": null
+      },
+      "state": {
+        "ok": true,
+        "rows": [
+          "0",
+          "1919\tstop_sdk_aa186dde8d\t127.0.0.1:50733\tSleep\t2\t",
+          "1924\tcdc_lab\t127.0.0.1:50739\tSleep\t0\t",
+          "OWNER=UNKNOWN",
+          "D_COUNT=1"
+        ],
+        "error": null
+      },
+      "source_tcp": [
+        "COMMAND   PID     USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME",
+        "mysqld  26682 xujiawei   21u  IPv4  0x491668ecc39ebdb      0t0  TCP 127.0.0.1:25821 (LISTEN)",
+        "mysqld  26682 xujiawei   39u  IPv4 0x660cafe1fba51ec9      0t0  TCP 127.0.0.1:25821->127.0.0.1:50738 (ESTABLISHED)",
+        "mysqld  26682 xujiawei   43u  IPv4 0x4ff7ea3da0718db4      0t0  TCP 127.0.0.1:25821->127.0.0.1:50781 (CLOSE_WAIT)",
+        "java    29954 xujiawei  207u  IPv6 0xa928d4baae78cdde      0t0  TCP 127.0.0.1:50738->127.0.0.1:25821 (ESTABLISHED)"
+      ],
+      "process_exit": null
+    },
+    {
+      "t": 3.005,
+      "source": {
+        "ok": true,
+        "rows": [
+          "0",
+          "139\tstop_obs_aa186dde8d\t127.0.0.1:50738\tSleep\t0\t",
+          "144\tcdc_lab\t127.0.0.1:50781\tBinlog Dump GTID\t4\tSource has sent all binlog to replica; waiting for more updates"
+        ],
+        "error": null
+      },
+      "state": {
+        "ok": true,
+        "rows": [
+          "0",
+          "1919\tstop_sdk_aa186dde8d\t127.0.0.1:50733\tSleep\t4\t",
+          "1924\tcdc_lab\t127.0.0.1:50739\tSleep\t0\t",
+          "OWNER=UNKNOWN",
+          "D_COUNT=1"
+        ],
+        "error": null
+      },
+      "source_tcp": [
+        "COMMAND   PID     USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME",
+        "mysqld  26682 xujiawei   21u  IPv4  0x491668ecc39ebdb      0t0  TCP 127.0.0.1:25821 (LISTEN)",
+        "mysqld  26682 xujiawei   39u  IPv4 0x660cafe1fba51ec9      0t0  TCP 127.0.0.1:25821->127.0.0.1:50738 (ESTABLISHED)",
+        "mysqld  26682 xujiawei   43u  IPv4 0x4ff7ea3da0718db4      0t0  TCP 127.0.0.1:25821->127.0.0.1:50781 (CLOSE_WAIT)",
+        "java    29954 xujiawei  207u  IPv6 0xa928d4baae78cdde      0t0  TCP 127.0.0.1:50738->127.0.0.1:25821 (ESTABLISHED)"
+      ],
+      "process_exit": null
+    },
+    {
+      "t": 5.004,
+      "source": {
+        "ok": true,
+        "rows": [
+          "0",
+          "139\tstop_obs_aa186dde8d\t127.0.0.1:50738\tSleep\t0\t",
+          "144\tcdc_lab\t127.0.0.1:50781\tBinlog Dump GTID\t6\tSource has sent all binlog to replica; waiting for more updates"
+        ],
+        "error": null
+      },
+      "state": {
+        "ok": true,
+        "rows": [
+          "0",
+          "1919\tstop_sdk_aa186dde8d\t127.0.0.1:50733\tSleep\t6\t",
+          "1924\tcdc_lab\t127.0.0.1:50739\tSleep\t0\t",
+          "OWNER=UNKNOWN",
+          "D_COUNT=1"
+        ],
+        "error": null
+      },
+      "source_tcp": [
+        "COMMAND   PID     USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME",
+        "mysqld  26682 xujiawei   21u  IPv4  0x491668ecc39ebdb      0t0  TCP 127.0.0.1:25821 (LISTEN)",
+        "mysqld  26682 xujiawei   39u  IPv4 0x660cafe1fba51ec9      0t0  TCP 127.0.0.1:25821->127.0.0.1:50738 (ESTABLISHED)",
+        "mysqld  26682 xujiawei   43u  IPv4 0x4ff7ea3da0718db4      0t0  TCP 127.0.0.1:25821->127.0.0.1:50781 (CLOSED)",
+        "java    29954 xujiawei  207u  IPv6 0xa928d4baae78cdde      0t0  TCP 127.0.0.1:50738->127.0.0.1:25821 (ESTABLISHED)"
+      ],
+      "process_exit": null
+    },
+    {
+      "t": 10.005,
+      "source": {
+        "ok": true,
+        "rows": [
+          "0"
+        ],
+        "error": null
+      },
+      "state": {
+        "ok": true,
+        "rows": [
+          "0",
+          "OWNER=STOPPED",
+          "D_COUNT=1"
+        ],
+        "error": null
+      },
+      "source_tcp": [
+        "COMMAND   PID     USER   FD   TYPE            DEVICE SIZE/OFF NODE NAME",
+        "mysqld  26682 xujiawei   21u  IPv4 0x491668ecc39ebdb      0t0  TCP 127.0.0.1:25821 (LISTEN)"
+      ],
+      "process_exit": 143
+    },
+    {
+      "t": 15.005,
+      "source": {
+        "ok": true,
+        "rows": [
+          "0"
+        ],
+        "error": null
+      },
+      "state": {
+        "ok": true,
+        "rows": [
+          "0",
+          "OWNER=STOPPED",
+          "D_COUNT=1"
+        ],
+        "error": null
+      },
+      "source_tcp": [
+        "COMMAND   PID     USER   FD   TYPE            DEVICE SIZE/OFF NODE NAME",
+        "mysqld  26682 xujiawei   21u  IPv4 0x491668ecc39ebdb      0t0  TCP 127.0.0.1:25821 (LISTEN)"
+      ],
+      "process_exit": 143
+    },
+    {
+      "t": 20.003,
+      "source": {
+        "ok": true,
+        "rows": [
+          "0"
+        ],
+        "error": null
+      },
+      "state": {
+        "ok": true,
+        "rows": [
+          "0",
+          "OWNER=STOPPED",
+          "D_COUNT=1"
+        ],
+        "error": null
+      },
+      "source_tcp": [
+        "COMMAND   PID     USER   FD   TYPE            DEVICE SIZE/OFF NODE NAME",
+        "mysqld  26682 xujiawei   21u  IPv4 0x491668ecc39ebdb      0t0  TCP 127.0.0.1:25821 (LISTEN)"
+      ],
+      "process_exit": 143
+    },
+    {
+      "t": 30.005,
+      "source": {
+        "ok": true,
+        "rows": [
+          "0"
+        ],
+        "error": null
+      },
+      "state": {
+        "ok": true,
+        "rows": [
+          "0",
+          "OWNER=STOPPED",
+          "D_COUNT=1"
+        ],
+        "error": null
+      },
+      "source_tcp": [
+        "COMMAND   PID     USER   FD   TYPE            DEVICE SIZE/OFF NODE NAME",
+        "mysqld  26682 xujiawei   21u  IPv4 0x491668ecc39ebdb      0t0  TCP 127.0.0.1:25821 (LISTEN)"
+      ],
+      "process_exit": 143
+    },
+    {
+      "t": 40.003,
+      "source": {
+        "ok": true,
+        "rows": [
+          "0"
+        ],
+        "error": null
+      },
+      "state": {
+        "ok": true,
+        "rows": [
+          "0",
+          "OWNER=STOPPED",
+          "D_COUNT=1"
+        ],
+        "error": null
+      },
+      "source_tcp": [
+        "COMMAND   PID     USER   FD   TYPE            DEVICE SIZE/OFF NODE NAME",
+        "mysqld  26682 xujiawei   21u  IPv4 0x491668ecc39ebdb      0t0  TCP 127.0.0.1:25821 (LISTEN)"
+      ],
+      "process_exit": 143
+    }
+  ],
+  "before": {
+    "status": {
+      "code": 200,
+      "body": {
+        "activeSteps": 0,
+        "enabled": true,
+        "maxActiveSteps": 4,
+        "ownerState": "ACTIVE",
+        "reason": null
+      }
+    },
+    "capture": {
+      "code": 200,
+      "body": {
+        "items": [
+          {
+            "captureId": "capture",
+            "database": "pekko_stop_aa186dde8d",
+            "readiness": "ADMISSION_READY",
+            "reason": null,
+            "runtimeHealth": "HEALTHY"
+          }
+        ]
+      }
+    },
+    "alive": true,
+    "sample": {
+      "t": 0,
+      "source": {
+        "ok": true,
+        "rows": [
+          "0",
+          "139\tstop_obs_aa186dde8d\t127.0.0.1:50738\tSleep\t2\t",
+          "142\tcdc_lab\t127.0.0.1:50763\tSleep\t1\t",
+          "143\tcdc_lab\t127.0.0.1:50766\tSleep\t1\t",
+          "144\tcdc_lab\t127.0.0.1:50781\tBinlog Dump GTID\t1\tSource has sent all binlog to replica; waiting for more updates"
+        ],
+        "error": null
+      },
+      "state": {
+        "ok": true,
+        "rows": [
+          "0",
+          "1919\tstop_sdk_aa186dde8d\t127.0.0.1:50733\tSleep\t1\t",
+          "1924\tcdc_lab\t127.0.0.1:50739\tSleep\t2\t",
+          "1931\tstop_sdk_aa186dde8d\t127.0.0.1:50749\tSleep\t1\t",
+          "1937\tstop_sdk_aa186dde8d\t127.0.0.1:50760\tSleep\t1\t",
+          "OWNER=ACTIVE",
+          "D_COUNT=1"
+        ],
+        "error": null
+      },
+      "source_tcp": [
+        "COMMAND   PID     USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME",
+        "mysqld  26682 xujiawei   21u  IPv4  0x491668ecc39ebdb      0t0  TCP 127.0.0.1:25821 (LISTEN)",
+        "mysqld  26682 xujiawei   39u  IPv4 0x660cafe1fba51ec9      0t0  TCP 127.0.0.1:25821->127.0.0.1:50738 (ESTABLISHED)",
+        "mysqld  26682 xujiawei   41u  IPv4 0x8e870ea840a3a0a8      0t0  TCP 127.0.0.1:25821->127.0.0.1:50766 (ESTABLISHED)",
+        "mysqld  26682 xujiawei   42u  IPv4 0x9073911811ec9322      0t0  TCP 127.0.0.1:25821->127.0.0.1:50763 (ESTABLISHED)",
+        "mysqld  26682 xujiawei   43u  IPv4 0x4ff7ea3da0718db4      0t0  TCP 127.0.0.1:25821->127.0.0.1:50781 (ESTABLISHED)",
+        "java    29954 xujiawei  207u  IPv6 0xa928d4baae78cdde      0t0  TCP 127.0.0.1:50738->127.0.0.1:25821 (ESTABLISHED)",
+        "java    29954 xujiawei  210u  IPv6 0xf2850e97f87be10a      0t0  TCP 127.0.0.1:50763->127.0.0.1:25821 (ESTABLISHED)",
+        "java    29954 xujiawei  211u  IPv6 0x82b3b2f9f579cf62      0t0  TCP 127.0.0.1:50766->127.0.0.1:25821 (ESTABLISHED)",
+        "java    29954 xujiawei  214u  IPv6 0x84e477a3cf9aa4e2      0t0  TCP 127.0.0.1:50781->127.0.0.1:25821 (ESTABLISHED)"
+      ]
+    }
+  },
+  "process_exit": 143,
+  "scope": "isolated normal CDC startup/stop; no source fencing fault injection; no Sink reconciliation"
+}

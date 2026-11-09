@@ -14,6 +14,7 @@ final class CdcPlatformExtension(system:ActorSystem[_]) extends Extension {
     val state=MySQLCdcStateConfig.load(system.settings.config)
     val config=system.settings.config
     var guardianCheck:()=>Unit=()=>()
+    var freshAttest:Option[(SnapshotGuardianWire.WorkerAttestationContext,String)=>SnapshotGuardianWire.VerifiedWorkerAttestation]=None
     val managed=if(config.hasPath("pekko.workflow.snapshot-ha.supervisor-config")) {
       val identity=SnapshotOwnerJdbc.context.getOrElse(throw new IllegalStateException("managed owner bootstrap missing")).identity
       val self=ProcessHandle.current()
@@ -26,16 +27,18 @@ final class CdcPlatformExtension(system:ActorSystem[_]) extends Extension {
         val b=supervisor.binding
         val client=new SnapshotGuardianWire.WorkerClient(supervisor.socket,supervisor.secret.clone(),b)
         guardianCheck=()=>client.attest(identity,profile)
+        freshAttest=Some((context,nonce)=>client.attestContextWithNonce(identity,profile,context,nonce))
         Some(CdcManagedOwner(identity.bootId,identity.deploymentId,b.hostId,b.bootId,b.publicKey,identity.pid,identity.startIdentity,profile))
       } finally supervisor.close()
     }else None
     val store=new CdcTaskStore(()=>SnapshotOwnerJdbc.open(CdcJdbc.withTimeouts(state.jdbcUrl),state.username,state.password,"control",managed.nonEmpty),settings.limits)
     val recover=managed.map { _ =>
       val supervisorConfig=Path.of(config.getString("pekko.workflow.snapshot-ha.supervisor-config"))
-      () => CdcManagedRecovery.recover(store,settings,supervisorConfig,guardianCheck)
+      val standalone=config.hasPath("pekko.cdc-standalone.managed-worker") && config.getBoolean("pekko.cdc-standalone.managed-worker")
+      () => CdcManagedRecovery.recover(store,settings,supervisorConfig,guardianCheck,allowPendingB= !standalone)
     }.getOrElse(() => ())
     val kernel=new CdcBootstrapKernel(settings,system,managed=managed.nonEmpty,
-      recoveryStore=if(managed.nonEmpty)Some(store)else None)
+      recoveryStore=if(managed.nonEmpty)Some(store)else None,freshAttest=freshAttest,fenceGuardStore=Some(store))
     val runtime=new CdcPlatformRuntime(store,kernel,settings.limits,
       polling=true,pollIntervalMillis=settings.pollIntervalMillis,managedOwner=managed,recoverManaged=recover,guardianCheck=guardianCheck)
     CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate,"stop-cdc-platform") {()=>

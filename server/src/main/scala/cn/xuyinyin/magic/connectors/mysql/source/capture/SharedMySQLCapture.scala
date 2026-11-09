@@ -20,8 +20,15 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   snapshotMonitor:Option[CaptureSnapshotMonitor]=None,
   resourceObserver:Option[CaptureResourceObserver]=None,
   closeBudget:CaptureCloseBudget=CaptureCloseBudget(),
-  authorizePendingB:Option[(String,Vector[String])=>Boolean]=None) extends AutoCloseable {
+  authorizePendingB:Option[(String,Vector[String])=>Boolean]=None,
+  sourceFenceRequired:Boolean=false,
+  sourceFenceObserver:Option[()=>Connection]=None,
+  sourceFenceUuid:Option[String]=None,
+  recoveryGate:Option[cn.xuyinyin.magic.workflow.cdc.CdcTaskStore.ReaderRecoveryGate]=None) extends AutoCloseable {
   require(source.connectorId==store.captureId,"capture namespace mismatch")
+  require(recoveryGate.isEmpty || sourceFenceRequired,"recovery gate requires v2 source protection")
+  recoveryGate.foreach(g=>require(g!=null && g.captureId==store.captureId,"reader recovery gate capture changed"))
+  @volatile private var installedRecoveryGate=recoveryGate
   private val started=new AtomicBoolean(false);private val closed=new AtomicBoolean(false)
   private val stopping=new AtomicBoolean(false)
   private val startup=new CaptureStartupState(java.util.UUID.randomUUID().toString)
@@ -42,6 +49,13 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   private case class Marker(id:String,table:String,generation:String,action:String,point:CapturePoint,done:Long=>Unit)
   private val markers=mutable.Map.empty[String,Marker]
   private val commandLock=new AnyRef
+  /** Install only after state and source release proof; never replace a gate in flight. */
+  private[magic] def installRecoveryGate(gate:cn.xuyinyin.magic.workflow.cdc.CdcTaskStore.ReaderRecoveryGate):Unit=commandLock.synchronized {
+    require(gate!=null && sourceFenceRequired && !started.get() && !stopping.get() && !closed.get() && installedRecoveryGate.isEmpty,
+      "reader recovery gate unavailable or already installed")
+    require(gate.captureId==store.captureId,"reader recovery gate capture changed")
+    installedRecoveryGate=Some(gate)
+  }
   private val closeLock=new AnyRef
   private var closeFailure:Throwable=null
   private val localCloseFinished=new AtomicBoolean(false)
@@ -172,6 +186,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     require(started.compareAndSet(false,true),"capture already started")
     if(stopping.get() || closed.get())throw new CaptureAdmissionException("CAPTURE_STOPPING")
     try {
+      if(sourceFenceRequired)verifyOpenSourceFence()
       var controlPresent=false
       val sourceUuid=withSourceConnection {c=>
         val uuid=query(c,"SELECT @@server_uuid").head
@@ -188,30 +203,45 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       ownerId=query(owner,"SELECT CONNECTION_ID()").head.toLong
       val (existing,hasEvidence,hasBoundaries,unbound)=store.recoveryInventory
       val checkpoint=readCheckpoint()
-      val pendingRecovery=if(authorizePendingB.nonEmpty && unbound && checkpoint.status=="COMPLETE" && checkpoint.value.nonEmpty){
-        val ids=store.recoverablePendingAt(checkpoint.value.get)
-        if(ids.nonEmpty && authorizePendingB.get(checkpoint.value.get,ids))ids else Vector.empty[String]
-      }else Vector.empty[String]
       val (offsetTable,historyTable)=MySQLCdcSourceNode.connectorStateTables(state,store.captureId)
       val historyPresent=stateTableExists(owner,historyTable) && query(owner,s"SELECT 1 FROM `$historyTable` LIMIT 1").nonEmpty
-      val covered=checkpoint.value.exists(v=>try {store.verifyOffset(v);true}catch {
+      val v2RecoveryCandidate=sourceFenceRequired && installedRecoveryGate.nonEmpty && unbound && checkpoint.status=="COMPLETE" && checkpoint.value.nonEmpty
+      // A v2 recovery uses the gate's pinned, bounded D/ACK proof. Ordinary startup
+      // retains legacy verifyOffset; it must not be mistaken for a bounded proof.
+      val locallyCovered= !v2RecoveryCandidate && checkpoint.value.exists(v=>try {store.verifyOffset(v);true}catch {
         case scala.util.control.NonFatal(e) if !store.releaseConfirmed=>throw releaseUnknown("capture-store",e)
         case scala.util.control.NonFatal(_)=>false
       })
       startup.starting(checkpoint.status,store.lastAckSequence)
+      val preconditions=CaptureRecoveryFacts(existing,hasEvidence,hasBoundaries,false,controlPresent,historyPresent,checkpoint,locallyCovered || v2RecoveryCandidate)
+      CaptureStartupGuard.classify(preconditions).foreach {reason=>startup.pause(reason);throw new CaptureAdmissionException(reason)}
+      if(installedRecoveryGate.nonEmpty && !unbound)throw new CaptureAdmissionException("RECOVERY_PENDING_CHANGED")
+      val pendingRecovery=if(sourceFenceRequired && installedRecoveryGate.nonEmpty && unbound && checkpoint.status=="COMPLETE" && checkpoint.value.nonEmpty){
+        val ids=store.pendingBIdsAtMostTwo
+        if(ids.size==1){
+          installedRecoveryGate.get.consume(owner,store.captureId,checkpoint.value.get,ids.head)
+          verifyOpenSourceFence(Some(installedRecoveryGate.get.releaseEpoch));ids
+        }else Vector.empty[String]
+      }else if(!sourceFenceRequired && authorizePendingB.nonEmpty && unbound && checkpoint.status=="COMPLETE" && checkpoint.value.nonEmpty){
+        val ids=store.recoverablePendingAt(checkpoint.value.get)
+        if(ids.nonEmpty && authorizePendingB.get(checkpoint.value.get,ids))ids else Vector.empty[String]
+      }else Vector.empty[String]
+      val covered=locallyCovered || (v2RecoveryCandidate && pendingRecovery.size==1)
       val facts=CaptureRecoveryFacts(existing,hasEvidence,hasBoundaries,unbound && pendingRecovery.isEmpty,controlPresent,historyPresent,checkpoint,covered)
       CaptureStartupGuard.classify(facts).foreach {reason=>startup.pause(reason);throw new CaptureAdmissionException(reason)}
       if(existing && controlPresent)validateRetainedControls()
       resourceObserver.foreach(_.beforeStart(startup.evidence.runtimeAttemptId,ownerId))
       if(!controlPresent)withSourceConnection(c=>update(c,"CREATE TABLE IF NOT EXISTS pekko_capture_control(operation_id VARCHAR(128) PRIMARY KEY,action VARCHAR(32) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL)"))
       snapshots.beforeStart()
-      profileSequence=store.rememberProfile(JsObject("version"->JsNumber(1),"database"->JsString(source.database),
+      val profile=JsObject("version"->JsNumber(1),"database"->JsString(source.database),
         "sourceLineage"->JsString(sourceUuid),"stateLineage"->JsString(query(owner,"SELECT @@server_uuid").head),
         "offsetTable"->JsString(state.offsetTable),"historyTable"->JsString(state.historyTable),
-        "maxLogBytes"->JsNumber(store.maxBytes),"decoder"->JsString("debezium-3.6.1/capture-v1")).compactPrint)
+        "maxLogBytes"->JsNumber(store.maxBytes),"decoder"->JsString("debezium-3.6.1/capture-v1"))
+      profileSequence=store.rememberProfile((if(sourceFenceRequired)JsObject(profile.fields+("controlFenceVersion"->JsNumber(2)))else profile).compactPrint)
       val props=MySQLCdcSourceNode.connectorProperties(source.copy(table="pekko_capture_control",groupProtocol=None),state)
       props.setProperty("snapshot.mode","no_data")
-      props.setProperty("table.include.list",java.util.regex.Pattern.quote(source.database)+"\\..*")
+      val includedTables=if(sourceFenceRequired)"\\.(?!pekko_capture_control_(?:fence|release)_v1$).*" else "\\..*"
+      props.setProperty("table.include.list",java.util.regex.Pattern.quote(source.database)+includedTables)
       props.setProperty("include.schema.changes","true")
       props.setProperty("provide.transaction.metadata","true")
       props.setProperty("skipped.operations","none")
@@ -219,14 +249,21 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       props.setProperty("max.queue.size.in.bytes",(16L*1024*1024).toString)
       props.setProperty("schema.history.internal.store.only.captured.databases.ddl","true")
       props.setProperty("heartbeat.interval.ms","1000")
+      // Debezium's record heartbeat is distinct from the MySQL replication heartbeat.
+      // Bound idle binlog-session detection without treating it as release evidence.
+      props.setProperty("connect.keep.alive.interval.ms","5000")
       if(stopping.get())throw new CaptureAdmissionException("CAPTURE_STOPPING")
       engine=factory.create(props)
       // A stop can arrive while the factory is blocked. Do not start a newly
       // created engine after that stop: an early SDK close can race initialization.
       if(stopping.get())throw new CaptureAdmissionException("CAPTURE_STOPPING")
+      assertOwner()
+      if(sourceFenceRequired && pendingRecovery.nonEmpty){
+        installedRecoveryGate.get.requireLive();verifyOpenSourceFence(Some(installedRecoveryGate.get.releaseEpoch));assertOwner()
+      }
       val running=engine.start(new DebeziumBatchConsumer {def handleBatch(rs:Vector[SourceRecord],h:CdcBatchCommitHandle):Unit=accept(rs,h)})
       completion=running
-      pendingRecovery.foreach {id=>
+      (if(sourceFenceRequired)Vector.empty[String]else pendingRecovery).foreach {id=>
         val pending=store.subscription(id).getOrElse(throw new IllegalStateException("pending recovery subscription missing"))
         if(pending.status=="B_PENDING")writeMarker(pending,stop=false)
       }
@@ -244,6 +281,22 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       }
       error.compareAndSet(null,problem)
       throw problem
+    }
+  }
+  private def verifyOpenSourceFence(expectedEpoch:Option[Long]=None):Unit=withSourceConnection {writer=>
+    val uuid=sourceFenceUuid.getOrElse(throw new CaptureAdmissionException("SOURCE_FENCE_IDENTITY_MISSING"))
+    require(uuid==store.lineage,"source fence lineage changed")
+    writer.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);writer.setAutoCommit(false)
+    val observer=sourceFenceObserver.getOrElse(throw new CaptureAdmissionException("SOURCE_FENCE_OBSERVER_MISSING"))()
+    try {
+      observer.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);observer.setAutoCommit(false)
+      CaptureControlFence.protect(observer,writer,uuid,source.database)
+      val state=CaptureControlFence.observe(observer,uuid,source.database)
+      if(state.phase!="OPEN")throw new CaptureAdmissionException("SOURCE_FENCE_ACTIVE")
+      expectedEpoch.foreach(epoch=>if(state.epoch!=epoch)throw new CaptureAdmissionException("SOURCE_FENCE_EPOCH_CHANGED"))
+      observer.rollback();writer.rollback()
+    } finally try observer.close() catch {case e:Throwable=>
+      sourceReleaseUncertain.set(true);throw releaseUnknown("capture-fence-observer-close",e)
     }
   }
   private[source] def accept(records:Vector[SourceRecord],handle:CdcBatchCommitHandle):Unit={
@@ -362,13 +415,17 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     val changes=v.getArray[Struct]("tableChanges").asScala
     changes.foreach {change=>
       val id=change.getString("id");val table=id.split("\\.").last.replace("\"","").replace("`","")
-      if(change.getString("type")!="DROP") {
+      if(ignoreInternalSchema(table))()
+      else if(change.getString("type")!="DROP") {
         val schema=store.rememberSchema(table,schemaJson(change.getStruct("table")).compactPrint)
         references+=store.schemaSequence(table,schema.id)
       }else if(Option(v.getStruct("source").get("snapshot")).forall(x=>x.toString=="false"))references+=store.dropSchema(table)
     }
     references.result()
   }
+  /** Debezium may emit schema records for tables excluded from row capture. */
+  protected def ignoreInternalSchema(table:String):Boolean=sourceFenceRequired &&
+    Set(CaptureControlFence.FenceTable,CaptureControlFence.ReleaseTable)(table)
   private def schemaJson(value:Any):JsValue=value match {
     case null=>JsNull
     case s:Struct=>JsObject(s.schema().fields().asScala.map(f=>f.name()->schemaJson(s.get(f))).toMap)
@@ -382,6 +439,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   }
   def subscribe(id:String,table:String,generation:String):CaptureSubscription=commandLock.synchronized {
     active();assertOwner()
+    require(!ignoreInternalSchema(table),"internal source control table cannot be subscribed")
     store.subscription(id).foreach {existing=>
       require(existing.table==table && existing.generation==generation,"subscription request conflict")
       return existing // Query/idempotency never rewrites an existing B, including B_PENDING.
@@ -438,10 +496,21 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     try withSourceConnection {c=>
       stage="WRITING"
       c.setAutoCommit(false)
-      val q=c.prepareStatement("INSERT INTO pekko_capture_control VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE operation_id=operation_id")
-      q.setQueryTimeout(5)
-      try {q.setString(1,operation);q.setString(2,action);q.setString(3,table);q.setString(4,generation);q.executeUpdate()}finally q.close()
-      stage="COMMITTING";c.commit();stage="COMMITTED"
+      if(sourceFenceRequired){
+        c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
+        val observer=sourceFenceObserver.getOrElse(throw new IllegalStateException("source fence observer unavailable"))()
+        try {
+          observer.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);observer.setAutoCommit(false)
+          CaptureControlFence.protect(observer,c,sourceFenceUuid.getOrElse(throw new IllegalStateException("source fence identity unavailable")),source.database)
+            .writeOpen(operation,action,table,generation)
+          stage="COMMITTING";c.commit();stage="COMMITTED"
+        } finally {try observer.rollback()finally observer.close()}
+      }else{
+        val q=c.prepareStatement("INSERT INTO pekko_capture_control VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE operation_id=operation_id")
+        q.setQueryTimeout(5)
+        try {q.setString(1,operation);q.setString(2,action);q.setString(3,table);q.setString(4,generation);q.executeUpdate()}finally q.close()
+        stage="COMMITTING";c.commit();stage="COMMITTED"
+      }
     }catch {case e:Throwable=>
       sourceReleaseUncertain.set(true)
       val code=if(stage=="COMMITTING")"MARKER_COMMIT_UNKNOWN" else if(stage=="COMMITTED")"MARKER_COMMITTED_RELEASE_UNKNOWN" else "MARKER_WRITE_UNPROVEN"

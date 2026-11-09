@@ -1,0 +1,36 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 5 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[info] done compiling
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[error] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcManagedRecovery.scala:119:51: type mismatch;
+[error]  found   : cn.xuyinyin.magic.connectors.mysql.source.capture.CaptureBDescriptor
+[error]  required: cn.xuyinyin.magic.connectors.mysql.source.capture.BoundBProof
+[error]           require(log.controlsBound(values,taskId,proof,System.nanoTime()+15000000000L),"source control contains an unbound or uncovered marker")
+[error]                                                   ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcManagedRecovery.scala:20:15: private method fencePendingB in object CdcManagedRecovery is never used
+[warn]   private def fencePendingB(store:CdcTaskStore,cfg:CdcCaptureSettings,attempt:String,taskId:String,
+[warn]               ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcManagedRecovery.scala:135:15: private method issueFencedPermit in object CdcManagedRecovery is never used
+[warn]   private def issueFencedPermit(store:CdcTaskStore,cfg:CdcCaptureSettings,attempt:String,proof:CdcManagedIsolation.Verified,
+[warn]               ^
+[warn] two warnings found
+[error] one error found
+[error] (Compile / compileIncremental) Compilation failed
+[error] Total time: 6 s, completed 2026年11月7日 下午8:21:24

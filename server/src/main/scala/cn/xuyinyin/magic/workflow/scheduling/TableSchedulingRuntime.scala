@@ -101,6 +101,7 @@ final class TableSchedulingRuntime(val store: TableSchedulingStore, val nodeId: 
   def find(workflowId: String): Future[Option[ScheduledTable]] = io(store.get(workflowId))
   def listAfter(after: Option[String], limit: Int): Future[Vector[ScheduledTableSummary]] = io(store.listAfter(after,limit))
   def summary(id: String): Future[Option[ScheduledTableSummary]] = io(store.findSummary(id))
+  def permit(workflowId:String):Future[Option[SnapshotRecoveryPermit]]=io(store.ownership.flatMap(_.permit(workflowId)))
   def bind(grant: TableGrant): Future[Boolean] = io {
     // A previous window may be committed READY while its release reply is still in flight.
     // Leave the new grant HELD until the local old disposition has been reconciled.
@@ -203,7 +204,8 @@ final class TableSchedulingExtension(system: ActorSystem[_]) extends Extension {
       }
       val c=root.getConfig("pekko.workflow.table-scheduling")
       val aliases=c.getConfigList("instance-aliases").asScala.map(a=>a.getString("from").toLowerCase(java.util.Locale.ROOT)->a.getString("to")).toMap
-      Some(new TableSchedulingRuntime(managed.store,managed.identity.bootId,aliases,c.getInt("max-pending-operations"))(
+      val legacy=managed.control match {case s:TableSchedulingStore=>s;case _=>throw new IllegalStateException("workflow scheduling is unavailable for a CDC-only managed owner")}
+      Some(new TableSchedulingRuntime(legacy,managed.identity.bootId,aliases,c.getInt("max-pending-operations"))(
         system.dispatchers.lookup(DispatcherSelector.fromConfig("pekko.workflow.table-scheduling.jdbc-dispatcher"))))
     } else if (!root.hasPath("pekko.workflow.table-scheduling.enabled") || !root.getBoolean("pekko.workflow.table-scheduling.enabled")) None else {
       val c = root.getConfig("pekko.workflow.table-scheduling")

@@ -41,5 +41,20 @@ class DebeziumTerminationEvidenceSpec extends STSpec {
       }finally {leave.countDown();access.close()}
       access.localTerminationConfirmed shouldBe true
     }
+    "close the engine when its completion callback arrives before the runner finishes" in {
+      val entered=new CountDownLatch(1);val closed=new CountDownLatch(1);val leave=new CountDownLatch(1)
+      val access=new RealDebeziumEngineAccess(new Properties(),(_,callback)=>new DebeziumEngine[RecordChangeEvent[SourceRecord]] {
+        def run():Unit={callback.handle(true,"early completion",null);entered.countDown();leave.await()}
+        def close():Unit={closed.countDown();leave.countDown()}
+      })
+      implicit val ec:ExecutionContext=ExecutionContext.global
+      access.start((_,_)=>());entered.await(2,TimeUnit.SECONDS) shouldBe true
+      val closing=Future(access.closeManaged())
+      try {
+        closed.await(1,TimeUnit.SECONDS) shouldBe true
+        Await.result(closing,5.seconds)
+        access.localTerminationConfirmed shouldBe true
+      }finally {leave.countDown();scala.util.Try(Await.result(closing,5.seconds))}
+    }
   }
 }

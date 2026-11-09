@@ -10,18 +10,37 @@ import java.util.{Base64,UUID}
 import scala.jdk.CollectionConverters._
 
 object SnapshotSupervisorSettings {
+  def cutoverIdentity(config:Config):Option[CdcManagedControlStore.CutoverIdentity]=
+    Option.when(config.hasPath("pekko.workflow.snapshot-ha.cutover")) {
+      val c=config.getConfig("pekko.workflow.snapshot-ha.cutover")
+      CdcManagedControlStore.CutoverIdentity(c.getString("deployment-id"),c.getString("host-id"),c.getString("operation-id"))
+    }
+  private[scheduling] def exclusiveCdcAccounts(settings:Vector[cn.xuyinyin.magic.workflow.cdc.CdcPlatformSettings]):Map[String,Set[String]]=
+    settings.flatMap(_.captures).flatMap {c=>
+      Vector(SnapshotOwnerJdbc.endpoint(s"jdbc:mysql://${c.source.host}:${c.source.port}/${c.source.database}")->c.source.username,
+        SnapshotOwnerJdbc.endpoint(c.sdkState.jdbcUrl)->c.sdkState.username)++
+        c.materialState.toVector.map(m=>SnapshotOwnerJdbc.endpoint(m.jdbcUrl)->m.username)
+    }.groupMap(_._1)(_._2).view.mapValues(_.toSet).toMap
   private[scheduling] def appendParameters(url:String,parameters:String):String={
     val existing=url.split("\\?",2).drop(1).flatMap(_.split("&"))
     require(!existing.exists(_.takeWhile(_!='=').equalsIgnoreCase("connectionAttributes")),"control connection attributes cannot be overridden")
     val separator=if(!url.contains("?"))"?" else if(url.endsWith("?") || url.endsWith("&"))"" else "&"
     url+separator+parameters
   }
+  private[scheduling] def workerMain(worker:Config):String =
+    if(worker.hasPath("pekko.cdc-standalone.managed-worker") && worker.getBoolean("pekko.cdc-standalone.managed-worker")) {
+      require(worker.hasPath("pekko.workflow.cdc-platform.enabled") && worker.getBoolean("pekko.workflow.cdc-platform.enabled"),"managed CDC worker requires CDC platform")
+      "cn.xuyinyin.magic.CdcStandalone"
+    } else "cn.xuyinyin.magic.PekkoServer"
   private[scheduling] def validateWorker(worker:Config,controller:Config):Unit={
     require(SnapshotOwnerBootstrap.enabled(controller) && SnapshotOwnerBootstrap.enabled(worker),"both supervisor and worker require explicit snapshot HA")
-    require(worker.getBoolean("pekko.workflow.table-scheduling.enabled") && controller.getBoolean("pekko.workflow.table-scheduling.enabled"),"managed workers require durable scheduling")
+    val cdcOnly=workerMain(worker)=="cn.xuyinyin.magic.CdcStandalone"
+    require(cdcOnly || (worker.getBoolean("pekko.workflow.table-scheduling.enabled") && controller.getBoolean("pekko.workflow.table-scheduling.enabled")),"managed workflow workers require table scheduling")
     require(worker.getString("pekko.workflow.snapshot-ha.deployment-id")==controller.getString("pekko.workflow.snapshot-ha.deployment-id"),"worker deployment differs from guardian")
     val prefix="pekko.workflow.table-scheduling.jdbc."
     Vector("url","username","password").foreach(k=>require(worker.getString(prefix+k)==controller.getString(prefix+k),"worker scheduling database differs from supervisor"))
+    require(cutoverIdentity(worker)==cutoverIdentity(controller),"worker and supervisor cutover policy differs")
+    require(SnapshotOwnerBootstrap.bindingPlans(worker)==SnapshotOwnerBootstrap.bindingPlans(controller),"worker and supervisor credential binding plans differ")
   }
 }
 
@@ -40,8 +59,19 @@ final class SnapshotSupervisorSettings(val path:Path) extends AutoCloseable {
   hc.setUsername(jdbc.getString("username"));hc.setPassword(jdbc.getString("password"));hc.setMaximumPoolSize(3);hc.setMinimumIdle(0);hc.setConnectionTimeout(5000)
   val dataSource=new HikariDataSource(hc)
   val limits=SchedulingLimits(scheduling.getInt("max-active-tables"),scheduling.getInt("max-active-tables-per-node"),scheduling.getInt("max-connections-per-instance"),scheduling.getInt("max-concurrent-starts"),scheduling.getBytes("max-page-reservation"),scheduling.getInt("candidate-page"))
-  val tableStore=new TableSchedulingStore(dataSource,limits,ownershipEnabled=true)
-  val metadata=new SnapshotSupervisorStore(tableStore,binding,maxWorkers)
+  private val cutover=SnapshotSupervisorSettings.cutoverIdentity(config)
+  val workerConfig=Path.of(root.getString("worker-config-file"))
+  private val cdcOnly=SnapshotSupervisorSettings.workerMain(ConfigFactory.parseFile(workerConfig.toFile).withFallback(ConfigFactory.load()).resolve())=="cn.xuyinyin.magic.CdcStandalone"
+  lazy val tableStore:TableSchedulingStore={
+    require(!cdcOnly,"workflow scheduling store is unavailable for a CDC-only worker")
+    new TableSchedulingStore(dataSource,limits,ownershipEnabled=true,cutover)
+  }
+  private val controlStore:ManagedControlTransactions=if(cdcOnly)new CdcManagedControlStore(dataSource,limits,cutover) else tableStore
+  private val ownership:ManagedOwnerStore=controlStore match {
+    case c:CdcManagedControlStore=>c.ownership
+    case s:TableSchedulingStore=>s.ownership.get
+  }
+  val metadata=new SnapshotSupervisorStore(controlStore,ownership,binding,maxWorkers)
   def lock(role:String):AutoCloseable={
     val channel=FileChannel.open(Path.of(root.getString(role+"-lock")),StandardOpenOption.CREATE,StandardOpenOption.WRITE)
     val lock=try channel.tryLock()catch{case e:Exception=>channel.close();throw e}
@@ -49,17 +79,19 @@ final class SnapshotSupervisorSettings(val path:Path) extends AutoCloseable {
     ()=>{lock.release();channel.close()}
   }
   def signingKey=KeyFactory.getInstance("Ed25519").generatePrivate(new PKCS8EncodedKeySpec(Base64.getDecoder.decode(Files.readString(Path.of(root.getString("private-key-file"))).trim)))
-  val workerConfig=Path.of(root.getString("worker-config-file"))
   private val heap=root.getInt("worker-xmx-mib");require(heap>=128 && heap<=65536)
   def profileHash:String=cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.sha256(Files.readString(workerConfig)+"|"+heap+"|"+System.getProperty("java.class.path"))
   def validateWorkerProfile():Unit=SnapshotSupervisorSettings.validateWorker(ConfigFactory.parseFile(workerConfig.toFile).withFallback(ConfigFactory.load()).resolve(),config)
   def builder(expected:String)(ticket:SnapshotWorkerLaunch):ProcessBuilder={
     validateWorkerProfile()
     require(profileHash==expected && ticket.profileHash==expected,"worker configuration changed")
+    val worker=ConfigFactory.parseFile(workerConfig.toFile).withFallback(ConfigFactory.load()).resolve()
+    SnapshotSupervisorSettings.validateWorker(worker,config)
+    val main=SnapshotSupervisorSettings.workerMain(worker)
     val builder=new ProcessBuilder(Path.of(System.getProperty("java.home"),"bin","java").toString,"-Xmx"+heap+"m",
       "-Dconfig.file="+workerConfig.toAbsolutePath,"-Dpekko.workflow.snapshot-ha.owner-id="+ticket.bootId,
       "-Dpekko.workflow.snapshot-ha.supervisor-config="+path.toAbsolutePath,"-Dpekko.workflow.snapshot-ha.launch-profile="+expected,
-      "-cp",System.getProperty("java.class.path"),"cn.xuyinyin.magic.PekkoServer")
+      "-cp",System.getProperty("java.class.path"),main)
     builder.inheritIO();builder
   }
   def observer:MySqlOwnerDrainObserver={
@@ -67,11 +99,8 @@ final class SnapshotSupervisorSettings(val path:Path) extends AutoCloseable {
     val routes=(Vector((jdbc.getString("url"),jdbc.getString("username"),jdbc.getString("password")),(journal.getString("url"),journal.getString("user"),journal.getString("password")))++
       config.getConfigList("pekko.workflow.snapshot-ha.instances").asScala.map(c=>(c.getString("url"),c.getString("username"),c.getString("password")))).map { case(url,user,password)=>SnapshotOwnerJdbc.endpoint(url)->(url,user,password)}.toMap
     val worker=ConfigFactory.parseFile(workerConfig.toFile).withFallback(ConfigFactory.load()).resolve()
-    val exclusive=cn.xuyinyin.magic.workflow.cdc.CdcPlatformSettings.load(worker).toVector.flatMap(_.captures).flatMap {c=>
-      Vector(SnapshotOwnerJdbc.endpoint(s"jdbc:mysql://${c.source.host}:${c.source.port}/${c.source.database}")->c.source.username,
-        SnapshotOwnerJdbc.endpoint(c.sdkState.jdbcUrl)->c.sdkState.username)
-    }.groupMap(_._1)(_._2).view.mapValues(_.toSet).toMap
-    new MySqlOwnerDrainObserver(tableStore.ownership.get,key=>{
+    val exclusive=SnapshotSupervisorSettings.exclusiveCdcAccounts(cn.xuyinyin.magic.workflow.cdc.CdcPlatformSettings.load(worker).toVector)
+    new MySqlOwnerDrainObserver(ownership,key=>{
       val (url,user,password)=routes.getOrElse(key,throw new IllegalStateException("unregistered observation endpoint"))
       java.sql.DriverManager.getConnection(SnapshotSupervisorSettings.appendParameters(url,"connectTimeout=5000&socketTimeout=10000&connectionAttributes=pekko_owner:observer,pekko_role:observer"),user,password)
     },exclusiveAccounts=exclusive)
@@ -87,7 +116,7 @@ final class SnapshotSupervisorSettings(val path:Path) extends AutoCloseable {
         val url=s"jdbc:mysql://${capture.source.host}:${capture.source.port}/${capture.source.database}?useSSL=false&allowPublicKeyRetrieval=true&connectTimeout=5000&socketTimeout=5000"
         val endpoint=SnapshotOwnerJdbc.endpoint(url)
         if(endpoint==instance._1){
-          val ownership=tableStore.ownership.get
+          val ownership=metadata.ownerRegistry
           require(ownership.owner(boot).exists(o=>Set("fenced","drain_wait")(o.phase)) && instance._2==capture.sourceLineage &&
             ownership.databaseUsers(boot,endpoint)(capture.source.username),"CDC wake lacks isolated source manifest")
           val user=capture.sourceObserverUsername.getOrElse(capture.source.username)
@@ -110,8 +139,20 @@ final class SnapshotSupervisorSettings(val path:Path) extends AutoCloseable {
               slot.foreach {slot=>
               val operation=wake.operation(capture.id,boot,slot)
               val generation=wake.generation(boot,slot)
-              val insert=c.prepareStatement("INSERT IGNORE INTO pekko_capture_control VALUES(?,'WAKE',?,?)");insert.setQueryTimeout(5)
-              try {insert.setString(1,operation);insert.setString(2,wake.table(capture.id));insert.setString(3,generation);insert.executeUpdate()}finally insert.close()
+              if(capture.sourceFenceV2){
+                require(capture.sourceObserverUsername.exists(_!=capture.source.username) && capture.sourceObserverPassword.nonEmpty,"v2 wake requires a distinct trusted observer")
+                c.setTransactionIsolation(java.sql.Connection.TRANSACTION_READ_COMMITTED);c.setAutoCommit(false)
+                val writer=java.sql.DriverManager.getConnection(url,capture.source.username,capture.source.password)
+                try {
+                  writer.setTransactionIsolation(java.sql.Connection.TRANSACTION_READ_COMMITTED);writer.setAutoCommit(false)
+                  cn.xuyinyin.magic.connectors.mysql.source.capture.CaptureControlFence.protect(c,writer,sourceUuid,capture.source.database)
+                    .writeOpen(operation,"WAKE",wake.table(capture.id),generation)
+                  writer.commit()
+                } finally {try writer.close()finally c.rollback()}
+              }else{
+                val insert=c.prepareStatement("INSERT IGNORE INTO pekko_capture_control VALUES(?,'WAKE',?,?)");insert.setQueryTimeout(5)
+                try {insert.setString(1,operation);insert.setString(2,wake.table(capture.id));insert.setString(3,generation);insert.executeUpdate()}finally insert.close()
+              }
               val check=c.prepareStatement("SELECT action,table_name,generation FROM pekko_capture_control WHERE operation_id=?");check.setQueryTimeout(5)
               try {check.setString(1,operation);val r=check.executeQuery();try require(r.next() && r.getString(1)=="WAKE" && r.getString(2)==wake.table(capture.id) && r.getString(3)==generation && !r.next(),"CDC wake marker conflict")finally r.close()}finally check.close()
               }

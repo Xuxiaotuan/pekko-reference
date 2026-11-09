@@ -37,6 +37,20 @@ object RealMySQLSnapshotTakeoverProcess {
     require(sys.env.get("RUN_MYSQL_SNAPSHOT_TAKEOVER").contains("1"))
     val Array(schema,boot,mode,scenario,gate,seed)=args
     val s=Settings.environment();validateSchema(schema)
+    val cutoverEnabled=sys.env.get("CDC_TAKEOVER_CUTOVER").contains("1")
+    val cutoverOperation=if(cutoverEnabled)sys.env.getOrElse("CDC_TAKEOVER_CUTOVER_OPERATION",throw new IllegalArgumentException("cutover operation missing")) else ""
+    val cutoverHost=sys.env.getOrElse("CDC_TAKEOVER_CUTOVER_HOST","test-host")
+    val cutoverDefinition=if(cutoverEnabled)sys.env.getOrElse("CDC_TAKEOVER_DEFINITION_HASH",throw new IllegalArgumentException("cutover definition hash missing")) else ""
+    val cutoverConfig=if(cutoverEnabled) {
+      val legacy=sys.env("CDC_TAKEOVER_LEGACY_USER");val endpoint=s"${s.host}:${s.port}"
+      ConfigFactory.parseString(s"""
+        pekko.workflow.snapshot-ha.cutover { deployment-id = \"takeover-experiment\", host-id = \"$cutoverHost\", operation-id = \"$cutoverOperation\" }
+        pekko.workflow.snapshot-ha.credential-bindings = [
+          { workflow-id = \"table-00\", node-id = \"source\", node-role = \"source\", operation-id = \"$cutoverOperation\", host-id = \"$cutoverHost\", endpoint = \"$endpoint\", database = \"$schema\", legacy-user = \"$legacy\", runtime-user = \"${s.user}\", password-env = \"CDC_WINDOW_MYSQL_PASSWORD\", definition-hash = \"$cutoverDefinition\" },
+          { workflow-id = \"table-00\", node-id = \"target\", node-role = \"sink\", operation-id = \"$cutoverOperation\", host-id = \"$cutoverHost\", endpoint = \"$endpoint\", database = \"$schema\", legacy-user = \"$legacy\", runtime-user = \"${s.user}\", password-env = \"CDC_WINDOW_MYSQL_PASSWORD\", definition-hash = \"$cutoverDefinition\" }
+        ]
+      """)
+    } else ConfigFactory.empty()
     val base=ConfigFactory.parseMap(Map[String,AnyRef](
       "pekko-persistence-jdbc.shared-databases.slick.profile"->"slick.jdbc.MySQLProfile$",
       "pekko-persistence-jdbc.shared-databases.slick.db.driver"->"com.mysql.cj.jdbc.Driver",
@@ -61,8 +75,9 @@ object RealMySQLSnapshotTakeoverProcess {
       "pekko.workflow.snapshot-ha.owner-id"->boot,
       "pekko.workflow.snapshot-ha.deployment-id"->"takeover-experiment",
       "pekko.workflow.event-sourcing.snapshot-every"->Int.box(if(scenario=="KILL_DB_SNAPSHOT_WAIT")1 else 1000)
-    ).asJava).withFallback(ConfigFactory.load("application-multinode-test")).withFallback(ConfigFactory.load())
+    ).asJava).withFallback(cutoverConfig).withFallback(ConfigFactory.load("application-multinode-test")).withFallback(ConfigFactory.load())
     val prepared=SnapshotOwnerBootstrap.prepare(base)
+    if(cutoverEnabled) emit("CUTOVER_PLAN_COUNT","count"->JsNumber(SnapshotOwnerBootstrap.bindingPlans(prepared).size),"operation"->JsString(cutoverOperation))
     if(mode=="bootstrap-gated") {
       emit("WORKER_READY","owner"->JsString(boot),"pid"->JsNumber(ProcessHandle.current().pid()),"mode"->JsString(mode),"actorSystemCreated"->JsBoolean(false))
       scala.io.Source.stdin.getLines().foreach(_=>())

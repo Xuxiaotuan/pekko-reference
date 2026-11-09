@@ -65,7 +65,14 @@ class SharedCaptureReaderSpec extends AnyWordSpec with Matchers {
       store.initialize()
       val source=MySQLCdcSourceConfig(id,sys.env.getOrElse("CDC_WINDOW_MYSQL_HOST","127.0.0.1"),sys.env.getOrElse("CDC_WINDOW_MYSQL_PORT","13365").toInt,"pekko_test_shared_wire",table,user,pw,310002,1,100)
       val state=MySQLCdcStateConfig(stateUrl,user,pw,"capture_offsets","capture_history",0)
-      val session=new SharedMySQLCapture(source,state,store)
+      val effectiveKeepAlive=new java.util.concurrent.atomic.AtomicReference[String]()
+      val factory=new DebeziumEngineFactory {
+        def create(properties:java.util.Properties):DebeziumEngineAccess={
+          effectiveKeepAlive.set(properties.getProperty("connect.keep.alive.interval.ms"))
+          DebeziumEngineFactory.real.create(properties)
+        }
+      }
+      val session=new SharedMySQLCapture(source,state,store,factory)
       val misplaced=new MySQLCaptureStore(()=>DriverManager.getConnection(sourceUrl,user,pw),id+"_misplaced",lineage,10000000)
       misplaced.initialize()
       val invalid=new SharedMySQLCapture(source.copy(connectorId=misplaced.captureId),state,misplaced)
@@ -75,6 +82,7 @@ class SharedCaptureReaderSpec extends AnyWordSpec with Matchers {
         withClue(label){p shouldBe true}}
       session.start()
       try {
+        effectiveKeepAlive.get() shouldBe "5000"
         await("schema callback")(store.schema(table).nonEmpty)
         await("recoverable capture admission")(session.startupEvidence.phase=="ADMISSION_READY")
         session.subscribe("request",table,"g1")

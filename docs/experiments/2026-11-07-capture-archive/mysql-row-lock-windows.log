@@ -1,0 +1,6 @@
+dedicated isolated schema=pekko_test_archive_lock_0bb80d954a
+direct MySQL row-lock experiment; does not execute application reader or seal.
+FOR SHARE held; FOR UPDATE competing: timeout observed elapsed_s=1.023
+FOR UPDATE after release: success
+FOR UPDATE held; FOR SHARE competing: timeout observed elapsed_s=1.021
+FOR SHARE after release: success

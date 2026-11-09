@@ -2,7 +2,6 @@ package cn.xuyinyin.magic.workflow.bootstrap
 
 import cn.xuyinyin.magic.cdc.MySQLCdcGroup
 import cn.xuyinyin.magic.connectors.mysql.source.capture._
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL.Node
 import cn.xuyinyin.magic.workflow.engine.ExecutionFailure
 import java.sql.Connection
 import java.util.concurrent.{Semaphore,TimeUnit}
@@ -32,26 +31,54 @@ final case class BootstrapLimits(chunkRows:Int=32,pageRows:Int=8,groupBatch:Int=
   */
 final class BootstrapRunner(val id:String,val table:String,val generation:String,definition:String,
   capture:SharedMySQLCapture,logStore:MySQLCaptureStore,spool:BootstrapStore,target:BootstrapTarget,
-  journal:BootstrapJournalAccess,source:BootstrapSnapshot,sink:BootstrapReplaySink,sinkNode:Node,
+  journal:BootstrapJournalAccess,source:BootstrapSnapshot,sink:cn.xuyinyin.magic.cdc.CdcReplaySink,
   database:String,leaseOpen:()=>Connection,admission:BootstrapAdmission,limits:BootstrapLimits=BootstrapLimits(),
-  observe:(String,JsObject)=>Unit=(_,_)=>())(implicit sinkEc:ExecutionContext) {
+  observe:(String,JsObject)=>Unit=(_,_)=>(),journalProgressVerifier:Option[BootstrapJournalProgressVerifier]=None)(implicit sinkEc:ExecutionContext) {
+  /** Retain the pre-separation constructor descriptor for compiled Workflow adapters. */
+  def this(id:String,table:String,generation:String,definition:String,capture:SharedMySQLCapture,
+    logStore:MySQLCaptureStore,spool:BootstrapStore,target:BootstrapTarget,journal:BootstrapJournalAccess,
+    source:BootstrapSnapshot,sink:cn.xuyinyin.magic.workflow.bootstrap.CdcReplaySink,database:String,
+    leaseOpen:()=>Connection,admission:BootstrapAdmission,limits:BootstrapLimits,
+    observe:(String,JsObject)=>Unit,journalProgressVerifier:Option[BootstrapJournalProgressVerifier])(implicit sinkEc:ExecutionContext) =
+    this(id,table,generation,definition,capture,logStore,spool,target,journal,source,
+      sink:cn.xuyinyin.magic.cdc.CdcReplaySink,database,leaseOpen,admission,limits,observe,journalProgressVerifier)(sinkEc)
   require(id.matches("[A-Za-z0-9_-]{1,96}"))
   private val boundDefinition=MySQLCdcGroup.canonical(JsObject("version"->JsNumber(1),"definition"->JsString(definition),
     "capture"->JsString(logStore.captureId),"lineage"->JsString(logStore.lineage),"database"->JsString(database),"table"->JsString(table),
     "generation"->JsString(generation),"target"->JsString(target.table),"schema"->JsString(source.codec.schemaId)))
-  private val log=new CapturedLogSource(logStore,database)
+  private val log=new CapturedLogReader(logStore,database)
   private def waitFor[A](f:Future[A]):A=Await.result(f,40.seconds)
   private def waitSink[A](f:Future[A]):A=try waitFor(f) catch {
     case e:java.util.concurrent.TimeoutException=>throw new cn.xuyinyin.magic.workflow.engine.CdcExecutionException(
       ExecutionFailure(ExecutionFailure.ReleaseUnknown,"bootstrap-replay-wait",releaseConfirmed=false),e)
   }
   def state:BootstrapProgress=waitFor(journal.read())
-  private def update(f:BootstrapProgress=>BootstrapProgress):BootstrapProgress={val n=waitFor(journal.update(f));observe("J_COMMITTED",json(n));n}
+  private val retentionConsumer=CaptureConsumerIdentity.bootstrap(logStore.captureId,id,generation)
+  private var retentionRegistered=false
+  private def registerRetention(current:BootstrapProgress):Unit=if(!retentionRegistered){
+    logStore.registerConsumer(retentionConsumer,"BOOTSTRAP",id,"bootstrap",current.deltaAfter);retentionRegistered=true
+  }
+  private def update(f:BootstrapProgress=>BootstrapProgress):BootstrapProgress={
+    val n=waitFor(journal.update(f));observe("J_COMMITTED",json(n))
+    if(retentionRegistered){
+      val evidence=MySQLCdcGroup.hash(MySQLCdcGroup.canonical(JsObject("revision"->JsNumber(n.revision),"phase"->JsString(n.phase),
+        "deltaAfter"->JsNumber(n.deltaAfter),"execution"->JsString(n.executionId))))
+      logStore.projectConsumerJournal(retentionConsumer,"BOOTSTRAP",id,"bootstrap",n.deltaAfter,n.revision,evidence)
+      journalProgressVerifier.foreach { verifier=>
+        val receipt=waitFor(journal.persistedProgress()).getOrElse(throw new IllegalStateException("persisted bootstrap progress missing"))
+        require(receipt.state==n,"bootstrap Journal moved before projection")
+        logStore.projectBootstrapVerified(retentionConsumer,id,generation,MySQLCdcGroup.hash(boundDefinition),receipt,verifier)
+        observe("J_FLOOR_VERIFIED",JsObject("deltaAfter"->JsNumber(n.deltaAfter),"journalSequence"->JsNumber(receipt.sequenceNr)))
+      }
+    }
+    n
+  }
   private def canonical(v:JsValue)=MySQLCdcGroup.canonical(v)
   def json(s:BootstrapProgress):JsObject=JsObject("revision"->JsNumber(s.revision),"phase"->JsString(s.phase),"executionId"->JsString(s.executionId),
     "index"->JsNumber(s.index),"attempt"->JsNumber(s.attempt),"window"->s.window.map(JsString(_)).getOrElse(JsNull),"appliedPage"->JsNumber(s.appliedPage),
-    "fence"->s.fence.map(JsString(_)).getOrElse(JsNull),"deltaAfter"->JsNumber(s.deltaAfter),"completionRoot"->JsString(s.completionRoot),
-    "recoveryAttempts"->JsNumber(s.recoveryAttempts),"cancelRequested"->JsBoolean(s.cancelRequested),"failure"->s.failure.map(JsString(_)).getOrElse(JsNull))
+    "fence"->s.fence.map(JsString(_)).getOrElse(JsNull),"deltaAfter"->JsNumber(s.deltaAfter),"batchSequence"->JsNumber(s.batchSequence),"completionRoot"->JsString(s.completionRoot),
+    "recoveryAttempts"->JsNumber(s.recoveryAttempts),"cancelRequested"->JsBoolean(s.cancelRequested),"failure"->s.failure.map(JsString(_)).getOrElse(JsNull),
+    "recoveryPermit"->s.recoveryPermit.map(JsString(_)).getOrElse(JsNull))
   private def healthy():Unit=capture.failure.foreach(throw _)
   private def poll(label:String)(ready: =>Boolean):Unit={val deadline=System.nanoTime()+30000000000L
     while(!ready){healthy();require(System.nanoTime()<deadline,"bootstrap wait expired: "+label);Thread.sleep(25)}}
@@ -65,6 +92,12 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
   private def number(spec:String,name:String):String=spec.parseJson.asJsObject.fields(name).asInstanceOf[JsString].value
   private def lower(spec:String):Option[String]=spec.parseJson.asJsObject.fields("lower") match{case JsString(s)=>Some(s);case JsNull=>None;case _=>throw new IllegalArgumentException("invalid range")}
   private def context(window:String):String=canonical(JsObject("bootstrap"->JsString(id),"window"->JsString(window),"schema"->JsString(source.codec.schemaId)))
+  private def activationFence(fenceId:Option[String],sub:CaptureSubscription):CaptureFence={
+    val f=logStore.fence(fenceId.getOrElse(throw new IllegalArgumentException("bootstrap activation fence missing")))
+      .getOrElse(throw new IllegalArgumentException("bootstrap activation fence not found"))
+    BootstrapActivationFence.verify(id,table,generation,source.codec.schemaId,context("F"),sub,f)
+    f
+  }
   private def recover(reason:String):Unit={val s=state
     if(s.recoveryAttempts>=3)update(_.copy(phase="PAUSED",failure=Some(ExecutionFailure.BudgetExhausted)))
     else update(_.copy(recoveryAttempts=s.recoveryAttempts+1,failure=Some(reason)))
@@ -80,7 +113,7 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
     require(raw.size==spool.pageCount(w,"RAW"),"sealed input pages missing")
     raw.zipWithIndex.foreach {case(h,i)=>require(h==JsString(MySQLCdcGroup.hash(canonical(JsArray(spool.page(w,"RAW",i))))),"sealed input page proof changed")}
     var after=lo.sequence.get;var root="";var count=0L;var more=true
-    while(more){val rows=logStore.readThrough(id,after,hi.id,limits.groupBatch);more=rows.nonEmpty
+    while(more){val rows=logStore.readThroughForConsumer(id,after,hi.id,limits.groupBatch,retentionConsumer);more=rows.nonEmpty
       rows.foreach {r=>root=MySQLCdcGroup.hash(root+r.group.canonicalJson);count+=1;after=r.sequence}}
     require(proof("groupRoot")==JsString(root) && proof("groups")==JsNumber(count),"sealed input L proof changed")
   }
@@ -98,10 +131,10 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
       }
     }
     require(ordinal==s.index && root==s.completionRoot && bound==s.upper,"bootstrap baseline coverage proof incomplete")
-    val f=logStore.fence(s.fence.get).get;require(f.covered,"activation fence not covered")
+    val f=activationFence(s.fence,logStore.subscription(id).get)
     var after=logStore.subscription(id).get.bSequence.get;var more=true
-    while(more){val entries=logStore.readThrough(id,after,f.id,limits.groupBatch);more=entries.nonEmpty
-      if(entries.nonEmpty){val b=log.readBatch(id,after,entries.size,"source",s.executionId,0).get
+    while(more){val entries=logStore.readThroughForConsumer(id,after,f.id,limits.groupBatch,retentionConsumer);more=entries.nonEmpty
+      if(entries.nonEmpty){val b=log.readBatch(id,after,entries.size,"source",s.executionId,0,Some(retentionConsumer)).get
         b.rows.foreach(g=>target.verifyGroup(g,b.cursor.upperBound));after=entries.last.sequence}}
     canonical(JsObject("version"->JsNumber(1),"bootstrap"->JsString(id),"definition"->JsString(MySQLCdcGroup.hash(boundDefinition)),
       "baselineRoot"->JsString(root),"windows"->JsNumber(ordinal),"B"->logStore.subscription(id).get.b.get.json.parseJson,
@@ -133,7 +166,7 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
       val rawHashes=Vector.newBuilder[JsValue]
       (0 until spool.pageCount(w,"RAW")).foreach {p=>val rows=spool.page(w,"RAW",p);fold.snapshot(rows);rawHashes+=JsString(MySQLCdcGroup.hash(canonical(JsArray(rows))))}
       var after=low.sequence.get;var more=true;var count=0L;var root=""
-      while(more){val entries=logStore.readThrough(id,after,high.id,limits.groupBatch);more=entries.nonEmpty
+      while(more){val entries=logStore.readThroughForConsumer(id,after,high.id,limits.groupBatch,retentionConsumer);more=entries.nonEmpty
         entries.foreach {r=>r.group.members.foreach {case(_,e)=>fold.event(e.op.code,e.key,e.after)}
           root=MySQLCdcGroup.hash(root+r.group.canonicalJson);count+=1;after=r.sequence;emit("FOLD_GROUP","window"->JsString(w),"sequence"->JsNumber(r.sequence))}}
       val proof=canonical(JsObject("LOW"->low.point.get.json.parseJson,"HIGH"->high.point.get.json.parseJson,"lowSequence"->JsNumber(low.sequence.get),"highSequence"->JsNumber(high.sequence.get),"rawPages"->JsArray(rawHashes.result()),"groups"->JsNumber(count),"groupRoot"->JsString(root)))
@@ -154,10 +187,13 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
       update(x=>x.copy(index=x.index+1,nextLower=Some(number(spec,"upper")),window=None,manifest=None,appliedPage=0,attempt=0,completionRoot=root));emit("WINDOW_COMPLETE","window"->JsString(w));if(state.nextLower==state.upper)emit("LAST_WINDOW_COMPLETE","window"->JsString(w))}
   }
   private def replay(tail:Boolean):Boolean={val s=state
-    val entries=if(tail)logStore.read(id,s.deltaAfter,limits.groupBatch)else logStore.readThrough(id,s.deltaAfter,s.fence.get,limits.groupBatch)
-    if(entries.nonEmpty){val b=log.readBatch(id,s.deltaAfter,entries.size,"source",s.executionId,s.batchSequence).get
+    val entries=if(tail)logStore.readForConsumer(id,s.deltaAfter,limits.groupBatch,retentionConsumer)else {
+      val f=activationFence(s.fence,logStore.subscription(id).get)
+      logStore.readThroughForConsumer(id,s.deltaAfter,f.id,limits.groupBatch,retentionConsumer)
+    }
+    if(entries.nonEmpty){val b=log.readBatch(id,s.deltaAfter,entries.size,"source",s.executionId,s.batchSequence,Some(retentionConsumer)).get
       require(b.rows.size==entries.size,"capture finite replay moved")
-      admission.writing {waitSink(sink.commitBatch(sinkNode,id,s.executionId,b,b.rows,_=>()));emit("REPLAY_T","batchSequence"->JsNumber(b.batchSequence),"groups"->JsNumber(b.rows.size),"lastSequence"->JsNumber(entries.last.sequence))}
+      admission.writing {waitSink(sink.commitBatch(id,s.executionId,b,_=>()));emit("REPLAY_T","batchSequence"->JsNumber(b.batchSequence),"groups"->JsNumber(b.rows.size),"lastSequence"->JsNumber(entries.last.sequence))}
       update(_.copy(deltaAfter=entries.last.sequence,batchSequence=s.batchSequence+1));true
     }else false
   }
@@ -187,8 +223,7 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
     private var bound:Option[String]=None
     private var baseline=true
     private val sub=logStore.subscription(id).get
-    private val f=logStore.fence(accepted.fence.get).get
-    require(f.covered,"activation fence not covered")
+    private val f=activationFence(accepted.fence,sub)
     private var after=sub.bSequence.get
     private var finite=true
     private var proof:Option[String]=None
@@ -215,9 +250,9 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
         }
         None
       }else if(finite){
-        val entries=logStore.readThrough(id,after,f.id,limits.groupBatch)
+        val entries=logStore.readThroughForConsumer(id,after,f.id,limits.groupBatch,retentionConsumer)
         if(entries.nonEmpty){
-          val b=log.readBatch(id,after,entries.size,"source",accepted.executionId,0).get
+          val b=log.readBatch(id,after,entries.size,"source",accepted.executionId,0,Some(retentionConsumer)).get
           b.rows.foreach(g=>target.verifyGroup(g,b.cursor.upperBound));after=entries.last.sequence
           None
         }else {
@@ -231,9 +266,9 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
           }else proof
         }
       }else if(accepted.phase=="STREAMING"){
-        val entries=logStore.read(id,after,limits.groupBatch).takeWhile(_.sequence<=accepted.deltaAfter)
+        val entries=logStore.readForConsumer(id,after,limits.groupBatch,retentionConsumer).takeWhile(_.sequence<=accepted.deltaAfter)
         if(entries.nonEmpty){
-          val b=log.readBatch(id,after,entries.size,"source",accepted.executionId,0).get
+          val b=log.readBatch(id,after,entries.size,"source",accepted.executionId,0,Some(retentionConsumer)).get
           b.rows.foreach(g=>target.verifyGroup(g,b.cursor.upperBound));after=entries.last.sequence
           if(after==accepted.deltaAfter)proof else None
         }else {
@@ -279,6 +314,7 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
   /** Reconstruct the session once, checking the last clean continuation against Journal. */
   private def prepareStep(continuation:Option[BootstrapProgress]):Unit={
     val before=state
+    require(before.phase!="RECOVERY_PENDING","bootstrap recovery receipt has not been consumed")
     val proof=stepLastClean.orElse(continuation)
     proof.foreach(p=>require(BootstrapStepContinuation.matches(p,before),"clean bootstrap step no longer matches Journal"))
     if(!stepPrepared){
@@ -306,7 +342,7 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
 
   /** Advance at most one bounded unit of initialization, replay, activation, or tailing. */
   private def advanceStep(stop:()=>Boolean,work:StepActivity):Unit={
-    if(!Set("PAUSED","CANCELED").contains(state.phase) && !stop()){
+    if(!Set("PAUSED","CANCELED","RECOVERY_PENDING").contains(state.phase) && !stop()){
       healthy()
       if(canceled){stepAudit=None;work.didWork=scheduledCancel()}
       else {
@@ -329,7 +365,7 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
         }else state.phase match {
           case "SCANNING"=>work.didWork=scheduledScan()
           case "REPLAYING"=>
-            if(!replay(false))update(_.copy(phase="ACTIVATING",deltaAfter=logStore.fence(state.fence.get).get.sequence.get))
+            if(!replay(false))update(_.copy(phase="ACTIVATING",deltaAfter=activationFence(state.fence,logStore.subscription(id).get).sequence.get))
             work.didWork=true
           case "ACTIVATING"=>
             if(stepAudit.isEmpty)stepAudit=Some(new StepAudit(state))
@@ -358,6 +394,7 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
   def step(stop:()=>Boolean=()=>false,continuation:Option[BootstrapProgress]=None):BootstrapStepResult=synchronized {
     if(stepReleaseUnknown)return BootstrapStepResult(stepLastObserved.getOrElse(state),false,false,0,validationComplete=false)
     val initial=state
+    if(initial.phase=="RECOVERY_PENDING")return BootstrapStepResult(initial,false,true,250,validationComplete=false)
     if(stop() || Set("PAUSED","CANCELED").contains(initial.phase))
       return BootstrapStepResult(initial,false,true,0)
     if(capture.cachedStartupEvidence.phase!="ADMISSION_READY"){
@@ -372,6 +409,7 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
       val acquired=leaseJdbc.query(c,"SELECT GET_LOCK(?,0) AS acquired",name).head("acquired")=="1"
       require(acquired,"bootstrap already running")
       try {
+        registerRetention(state)
         prepareStep(continuation)
         advanceStep(stop,work)
       }catch {case NonFatal(e)=>
@@ -398,11 +436,13 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
   }
 
   def run(stop:()=>Boolean=()=>false):Unit={
+    if(state.phase=="RECOVERY_PENDING")return
     admission.reserveRun();val leaseJdbc=new BootstrapJdbc(leaseOpen,1);var release=true
     try leaseJdbc.connection {c=>
       val name="bootstrap-"+MySQLCdcGroup.hash(logStore.captureId+"|"+id).take(40)
       val lock=leaseJdbc.query(c,"SELECT GET_LOCK(?,0) AS acquired",name).head("acquired");require(lock=="1","bootstrap already running")
       try {
+        registerRetention(state)
         spool.initialize(boundDefinition,state.definition.nonEmpty);source.validate(Some(logStore.lineage));target.claim()
         val s=state
         if(s.phase=="CANCELED" || s.phase=="PAUSED")return
@@ -411,9 +451,9 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
         if(state.phase=="PAUSED")return
         if(state.phase=="STREAMING"){
           val proof=audit();require(target.activation.contains(proof),"durable STREAMING has no target activation proof")
-          var after=logStore.fence(state.fence.get).get.sequence.get;val last=state.deltaAfter;var more=true
-          while(more){val entries=logStore.read(id,after,limits.groupBatch).takeWhile(_.sequence<=last);more=entries.nonEmpty
-            if(entries.nonEmpty){val b=log.readBatch(id,after,entries.size,"source",state.executionId,0).get
+          var after=activationFence(state.fence,logStore.subscription(id).get).sequence.get;val last=state.deltaAfter;var more=true
+          while(more){val entries=logStore.readForConsumer(id,after,limits.groupBatch,retentionConsumer).takeWhile(_.sequence<=last);more=entries.nonEmpty
+            if(entries.nonEmpty){val b=log.readBatch(id,after,entries.size,"source",state.executionId,0,Some(retentionConsumer)).get
               b.rows.foreach(g=>target.verifyGroup(g,b.cursor.upperBound));after=entries.last.sequence}}
           require(after==last,"streaming Journal cursor is not retained in L")
         }
@@ -445,7 +485,7 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
                 recovering=false}
               state.phase match {
                 case "SCANNING"=>scanStep()
-                case "REPLAYING"=>if(!replay(false))update(_.copy(phase="ACTIVATING",deltaAfter=logStore.fence(state.fence.get).get.sequence.get))
+                case "REPLAYING"=>if(!replay(false))update(_.copy(phase="ACTIVATING",deltaAfter=activationFence(state.fence,logStore.subscription(id).get).sequence.get))
                 case "ACTIVATING"=>
                   val proof=audit();emit("BEFORE_ACTIVATE","proof"->proof.parseJson)
                   if(!canceled){target.activate(proof);emit("ACTIVATION_T","proof"->proof.parseJson)

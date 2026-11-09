@@ -1,0 +1,121 @@
+14:00:52,063 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+14:00:52,063 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6d025197 - No custom configurators were discovered as a service.
+14:00:52,063 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6d025197 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+14:00:52,064 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6d025197 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+14:00:52,065 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+14:00:52,066 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+14:00:52,068 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6d025197 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 2 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+14:00:52,068 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6d025197 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+14:00:52,069 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6d025197 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+14:00:52,069 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+14:00:52,070 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+14:00:52,117 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+14:00:52,117 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+14:00:52,121 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+14:00:52,127 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+14:00:52,127 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+14:00:52,128 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+14:00:52,128 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+14:00:52,129 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+14:00:52,129 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+14:00:52,130 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+14:00:52,130 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+14:00:52,132 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+14:00:52,132 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+14:00:52,132 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+14:00:52,132 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+14:00:52,132 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@27d4a09 - End of configuration.
+14:00:52,132 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@7e4204e2 - Registering current configuration as safe fallback point
+14:00:52,132 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6d025197 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 63 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+14:00:52.140 INFO  [main] [com.zaxxer.hikari.HikariDataSource] - HikariPool-1 - Starting...
+14:00:52.266 INFO  [main] [com.zaxxer.hikari.HikariDataSource] - HikariPool-1 - Start completed.
+14:00:52.487 INFO  [snapshot-takeover-pekko.actor.default-dispatcher-6] [o.a.pekko.event.slf4j.Slf4jLogger] - Slf4jLogger started
+14:00:54.166 WARN  [snapshot-takeover-pekko.actor.default-dispatcher-14] [o.a.p.cluster.sharding.ShardRegion] - The `pekko.cluster.sharding.passivate-idle-entity-after` setting and associated methods are deprecated. Use the `pekko.cluster.sharding.passivation.default-idle-strategy.idle-entity.timeout` setting instead. See the documentation and reference config for more information on automatic passivation strategies.
+WINDOW {"at":"2026-11-08T14:00:54.167175Z","pid":30494,"kind":"WORKER_READY","address":"pekko://snapshot-takeover@127.0.0.1:50272","uid":-893284105340320693,"mode":"candidate","automaticDispatch":true,"owner":"533628e5-0c01-4951-ba33-acda29fb1b5c"}
+14:00:57.802 WARN  [snapshot-takeover-pekko.actor.default-dispatcher-3] [org.apache.pekko.cluster.Cluster] - Cluster Node [pekko://snapshot-takeover@127.0.0.1:50272] - Marking node as UNREACHABLE [Member(pekko://snapshot-takeover@127.0.0.1:50195, Down)].
+14:00:57.815 WARN  [snapshot-takeover-pekko.actor.default-dispatcher-6] [o.a.pekko.remote.artery.Association] - Association to [pekko://snapshot-takeover@127.0.0.1:50195] with UID [4860990395491883662] is irrecoverably failed. UID is now quarantined and all messages to this UID will be delivered to dead letters. Remote ActorSystem must be restarted to recover from this situation. Reason: Cluster member removed, previous status [Down]
+14:00:58.492 INFO  [snapshot-takeover-pekko.persistence.dispatchers.default-plugin-dispatcher-30] [com.zaxxer.hikari.HikariDataSource] - db - Starting...
+14:00:58.492 WARN  [snapshot-takeover-pekko.persistence.dispatchers.default-plugin-dispatcher-30] [c.z.hikari.util.DriverDataSource] - Registered driver with driverClassName=cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbcDriver was not found, trying direct instantiation.
+14:00:58.493 INFO  [snapshot-takeover-pekko.persistence.dispatchers.default-plugin-dispatcher-30] [com.zaxxer.hikari.HikariDataSource] - db - Start completed.
+WINDOW {"executionId":"478a5671ca2899bb9021f6fa17dfefec72a9773840f1b4208715013963cdb1fd","grant":"f0340016-859d-4226-a72c-d20064d1c10c","kind":"ENGINE_STARTED","at":"2026-11-08T14:00:59.984831Z"}
+WINDOW {"message":"开始执行工作流: table-00","kind":"ENGINE_LOG","at":"2026-11-08T14:01:00.054979Z"}
+14:01:00.054 INFO  [snapshot-takeover-pekko.actor.default-dispatcher-27] [c.x.m.w.i.RealMySQLSnapshotTakeoverProcess$$anon$5] - Starting workflow execution: table-00
+14:01:00.070 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-2 - Starting...
+14:01:00.070 WARN  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [c.z.hikari.util.DriverDataSource] - Registered driver with driverClassName=cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbcDriver was not found, trying direct instantiation.
+14:01:00.133 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-2 - Start completed.
+14:01:00.240 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-2 - Shutdown initiated...
+14:01:00.245 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-2 - Shutdown completed.
+WINDOW {"update":"RetrySnapshotSplit","rows":0,"kind":"J_CONFIRMED","at":"2026-11-08T14:01:00.336874Z"}
+WINDOW {"split":"150e97c6e8a774314a915ad28d4ec53474a4eade0902abbadca269905817c763:0","resume":null,"kind":"READER_OPEN","at":"2026-11-08T14:01:00.337689Z"}
+14:01:00.371 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-34] [com.zaxxer.hikari.HikariDataSource] - HikariPool-3 - Starting...
+14:01:00.371 WARN  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-34] [c.z.hikari.util.DriverDataSource] - Registered driver with driverClassName=cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbcDriver was not found, trying direct instantiation.
+14:01:00.436 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-34] [com.zaxxer.hikari.HikariDataSource] - HikariPool-3 - Start completed.
+WINDOW {"batch":{"batchId":"519630588b1a18ef9aa5078c4c06cc2ad7a31e0e3929723f627d261ebedfb0b6","rows":[{"amount":"-123.4500","id":"-9","label":"负键🙂","note":"","revision":"2","updated_at":"2026-10-23T00:00:00.000001"},{"amount":"1.1200","id":"1","label":"初始-1","note":"  中文🙂  ","revision":"0","updated_at":"2026-10-18T01:02:03.654321"}],"sequence":0,"split":"150e97c6e8a774314a915ad28d4ec53474a4eade0902abbadca269905817c763:0"},"kind":"PAGE_READ","at":"2026-11-08T14:01:00.676856Z"}
+14:01:00.682 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-4 - Starting...
+14:01:00.682 WARN  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [c.z.hikari.util.DriverDataSource] - Registered driver with driverClassName=cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbcDriver was not found, trying direct instantiation.
+WINDOW {"batch":{"batchId":"e7bd7e818aea968a5cf580f234c76c91e2e007adda140054b32a1a5203f9ef14","rows":[{"amount":"2.1200","id":"2","label":"初始-2","note":null,"revision":"0","updated_at":"2026-10-18T01:02:03.654321"},{"amount":"3.1200","id":"3","label":"初始-3","note":"  中文🙂  ","revision":"0","updated_at":"2026-10-18T01:02:03.654321"}],"sequence":1,"split":"150e97c6e8a774314a915ad28d4ec53474a4eade0902abbadca269905817c763:0"},"kind":"PAGE_READ","at":"2026-11-08T14:01:00.706910Z"}
+14:01:00.729 INFO  [snapshot-takeover-pekko.workflow.session-close-dispatcher-41] [com.zaxxer.hikari.HikariDataSource] - HikariPool-3 - Shutdown initiated...
+14:01:00.731 INFO  [snapshot-takeover-pekko.workflow.session-close-dispatcher-41] [com.zaxxer.hikari.HikariDataSource] - HikariPool-3 - Shutdown completed.
+14:01:00.814 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-4 - Start completed.
+WINDOW {"message":"[MySQL Sink] 批次 519630588b1a18ef9aa5078c4c06cc2ad7a31e0e3929723f627d261ebedfb0b6 已确认，目标行数: 2","kind":"ENGINE_LOG","at":"2026-11-08T14:01:00.989670Z"}
+14:01:00.989 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-4 - Shutdown initiated...
+WINDOW {"batch":{"batchId":"519630588b1a18ef9aa5078c4c06cc2ad7a31e0e3929723f627d261ebedfb0b6","rows":[{"amount":"-123.4500","id":"-9","label":"负键🙂","note":"","revision":"2","updated_at":"2026-10-23T00:00:00.000001"},{"amount":"1.1200","id":"1","label":"初始-1","note":"  中文🙂  ","revision":"0","updated_at":"2026-10-18T01:02:03.654321"}],"sequence":0,"split":"150e97c6e8a774314a915ad28d4ec53474a4eade0902abbadca269905817c763:0"},"replay":true,"kind":"T_CONFIRMED","at":"2026-11-08T14:01:00.998605Z"}
+14:01:00.998 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-4 - Shutdown completed.
+WINDOW {"update":"CommitSnapshotPage","rows":2,"kind":"J_CONFIRMED","at":"2026-11-08T14:01:01.074645Z"}
+14:01:01.075 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-34] [com.zaxxer.hikari.HikariDataSource] - HikariPool-5 - Starting...
+14:01:01.075 WARN  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-34] [c.z.hikari.util.DriverDataSource] - Registered driver with driverClassName=cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbcDriver was not found, trying direct instantiation.
+14:01:01.157 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-34] [com.zaxxer.hikari.HikariDataSource] - HikariPool-5 - Start completed.
+WINDOW {"message":"[MySQL Sink] 批次 e7bd7e818aea968a5cf580f234c76c91e2e007adda140054b32a1a5203f9ef14 已确认，目标行数: 2","kind":"ENGINE_LOG","at":"2026-11-08T14:01:01.230733Z"}
+14:01:01.231 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-34] [com.zaxxer.hikari.HikariDataSource] - HikariPool-5 - Shutdown initiated...
+WINDOW {"batch":{"batchId":"e7bd7e818aea968a5cf580f234c76c91e2e007adda140054b32a1a5203f9ef14","rows":[{"amount":"2.1200","id":"2","label":"初始-2","note":null,"revision":"0","updated_at":"2026-10-18T01:02:03.654321"},{"amount":"3.1200","id":"3","label":"初始-3","note":"  中文🙂  ","revision":"0","updated_at":"2026-10-18T01:02:03.654321"}],"sequence":1,"split":"150e97c6e8a774314a915ad28d4ec53474a4eade0902abbadca269905817c763:0"},"replay":false,"kind":"T_CONFIRMED","at":"2026-11-08T14:01:01.242062Z"}
+14:01:01.241 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-34] [com.zaxxer.hikari.HikariDataSource] - HikariPool-5 - Shutdown completed.
+WINDOW {"update":"CommitSnapshotPage","rows":4,"kind":"J_CONFIRMED","at":"2026-11-08T14:01:01.270914Z"}
+WINDOW {"update":"CompleteSnapshotSplit","rows":4,"kind":"J_CONFIRMED","at":"2026-11-08T14:01:01.337109Z"}
+WINDOW {"update":"StartSnapshotSplit","rows":4,"kind":"J_CONFIRMED","at":"2026-11-08T14:01:01.361465Z"}
+WINDOW {"split":"150e97c6e8a774314a915ad28d4ec53474a4eade0902abbadca269905817c763:1","resume":null,"kind":"READER_OPEN","at":"2026-11-08T14:01:01.362168Z"}
+14:01:01.375 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-6 - Starting...
+14:01:01.375 WARN  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [c.z.hikari.util.DriverDataSource] - Registered driver with driverClassName=cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbcDriver was not found, trying direct instantiation.
+14:01:01.421 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-6 - Start completed.
+WINDOW {"batch":{"batchId":"e6a8e5c1513648db677604d7184834588627852c4d716556f41e19d5d5fa808b","rows":[{"amount":"4.1200","id":"4","label":"初始-4","note":null,"revision":"0","updated_at":"2026-10-18T01:02:03.654321"},{"amount":"5.1200","id":"5","label":"初始-5","note":"  中文🙂  ","revision":"0","updated_at":"2026-10-18T01:02:03.654321"}],"sequence":0,"split":"150e97c6e8a774314a915ad28d4ec53474a4eade0902abbadca269905817c763:1"},"kind":"PAGE_READ","at":"2026-11-08T14:01:01.449878Z"}
+14:01:01.451 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-7 - Starting...
+14:01:01.451 WARN  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [c.z.hikari.util.DriverDataSource] - Registered driver with driverClassName=cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbcDriver was not found, trying direct instantiation.
+WINDOW {"batch":{"batchId":"ba3e686e8b529247a5e5d652fca6887f521d05c73ef80309a3f1d768e3a5c7d7","rows":[{"amount":"6.1200","id":"6","label":"初始-6","note":null,"revision":"0","updated_at":"2026-10-18T01:02:03.654321"},{"amount":"7.1200","id":"7","label":"初始-7","note":"  中文🙂  ","revision":"0","updated_at":"2026-10-18T01:02:03.654321"}],"sequence":1,"split":"150e97c6e8a774314a915ad28d4ec53474a4eade0902abbadca269905817c763:1"},"kind":"PAGE_READ","at":"2026-11-08T14:01:01.453480Z"}
+14:01:01.455 INFO  [snapshot-takeover-pekko.workflow.session-close-dispatcher-45] [com.zaxxer.hikari.HikariDataSource] - HikariPool-6 - Shutdown initiated...
+14:01:01.456 INFO  [snapshot-takeover-pekko.workflow.session-close-dispatcher-45] [com.zaxxer.hikari.HikariDataSource] - HikariPool-6 - Shutdown completed.
+14:01:01.486 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-7 - Start completed.
+WINDOW {"message":"[MySQL Sink] 批次 e6a8e5c1513648db677604d7184834588627852c4d716556f41e19d5d5fa808b 已确认，目标行数: 2","kind":"ENGINE_LOG","at":"2026-11-08T14:01:01.552681Z"}
+14:01:01.552 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-7 - Shutdown initiated...
+14:01:01.554 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-7 - Shutdown completed.
+WINDOW {"batch":{"batchId":"e6a8e5c1513648db677604d7184834588627852c4d716556f41e19d5d5fa808b","rows":[{"amount":"4.1200","id":"4","label":"初始-4","note":null,"revision":"0","updated_at":"2026-10-18T01:02:03.654321"},{"amount":"5.1200","id":"5","label":"初始-5","note":"  中文🙂  ","revision":"0","updated_at":"2026-10-18T01:02:03.654321"}],"sequence":0,"split":"150e97c6e8a774314a915ad28d4ec53474a4eade0902abbadca269905817c763:1"},"replay":false,"kind":"T_CONFIRMED","at":"2026-11-08T14:01:01.555064Z"}
+WINDOW {"update":"CommitSnapshotPage","rows":6,"kind":"J_CONFIRMED","at":"2026-11-08T14:01:01.566137Z"}
+14:01:01.568 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-34] [com.zaxxer.hikari.HikariDataSource] - HikariPool-8 - Starting...
+14:01:01.568 WARN  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-34] [c.z.hikari.util.DriverDataSource] - Registered driver with driverClassName=cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbcDriver was not found, trying direct instantiation.
+14:01:01.609 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-34] [com.zaxxer.hikari.HikariDataSource] - HikariPool-8 - Start completed.
+WINDOW {"message":"[MySQL Sink] 批次 ba3e686e8b529247a5e5d652fca6887f521d05c73ef80309a3f1d768e3a5c7d7 已确认，目标行数: 2","kind":"ENGINE_LOG","at":"2026-11-08T14:01:01.692417Z"}
+14:01:01.692 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-34] [com.zaxxer.hikari.HikariDataSource] - HikariPool-8 - Shutdown initiated...
+WINDOW {"batch":{"batchId":"ba3e686e8b529247a5e5d652fca6887f521d05c73ef80309a3f1d768e3a5c7d7","rows":[{"amount":"6.1200","id":"6","label":"初始-6","note":null,"revision":"0","updated_at":"2026-10-18T01:02:03.654321"},{"amount":"7.1200","id":"7","label":"初始-7","note":"  中文🙂  ","revision":"0","updated_at":"2026-10-18T01:02:03.654321"}],"sequence":1,"split":"150e97c6e8a774314a915ad28d4ec53474a4eade0902abbadca269905817c763:1"},"replay":false,"kind":"T_CONFIRMED","at":"2026-11-08T14:01:01.694812Z"}
+14:01:01.694 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-34] [com.zaxxer.hikari.HikariDataSource] - HikariPool-8 - Shutdown completed.
+WINDOW {"update":"CommitSnapshotPage","rows":8,"kind":"J_CONFIRMED","at":"2026-11-08T14:01:01.703304Z"}
+WINDOW {"update":"CompleteSnapshotSplit","rows":8,"kind":"J_CONFIRMED","at":"2026-11-08T14:01:01.713066Z"}
+WINDOW {"update":"StartSnapshotSplit","rows":8,"kind":"J_CONFIRMED","at":"2026-11-08T14:01:01.731068Z"}
+WINDOW {"split":"150e97c6e8a774314a915ad28d4ec53474a4eade0902abbadca269905817c763:2","resume":null,"kind":"READER_OPEN","at":"2026-11-08T14:01:01.731215Z"}
+14:01:01.735 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-9 - Starting...
+14:01:01.735 WARN  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [c.z.hikari.util.DriverDataSource] - Registered driver with driverClassName=cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbcDriver was not found, trying direct instantiation.
+14:01:01.810 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-9 - Start completed.
+WINDOW {"batch":{"batchId":"e60e73454b10708e6d7ed57512db5ca74ec8f84524a0dc009a4489ae36ec924c","rows":[{"amount":"8.1200","id":"8","label":"初始-8","note":null,"revision":"0","updated_at":"2026-10-18T01:02:03.654321"},{"amount":"99999999999999.9999","id":"9007199254740993","label":"大键🙂","note":null,"revision":"3","updated_at":"2026-10-23T23:59:59.999999"}],"sequence":0,"split":"150e97c6e8a774314a915ad28d4ec53474a4eade0902abbadca269905817c763:2"},"kind":"PAGE_READ","at":"2026-11-08T14:01:01.949693Z"}
+14:01:01.950 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-10 - Starting...
+14:01:01.950 WARN  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [c.z.hikari.util.DriverDataSource] - Registered driver with driverClassName=cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbcDriver was not found, trying direct instantiation.
+14:01:01.958 INFO  [snapshot-takeover-pekko.workflow.session-close-dispatcher-41] [com.zaxxer.hikari.HikariDataSource] - HikariPool-9 - Shutdown initiated...
+14:01:01.964 INFO  [snapshot-takeover-pekko.workflow.session-close-dispatcher-41] [com.zaxxer.hikari.HikariDataSource] - HikariPool-9 - Shutdown completed.
+14:01:02.088 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-10 - Start completed.
+WINDOW {"message":"[MySQL Sink] 批次 e60e73454b10708e6d7ed57512db5ca74ec8f84524a0dc009a4489ae36ec924c 已确认，目标行数: 2","kind":"ENGINE_LOG","at":"2026-11-08T14:01:02.202539Z"}
+14:01:02.202 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-10 - Shutdown initiated...
+14:01:02.204 INFO  [snapshot-takeover-pekko.workflow.jdbc-dispatcher-31] [com.zaxxer.hikari.HikariDataSource] - HikariPool-10 - Shutdown completed.
+WINDOW {"batch":{"batchId":"e60e73454b10708e6d7ed57512db5ca74ec8f84524a0dc009a4489ae36ec924c","rows":[{"amount":"8.1200","id":"8","label":"初始-8","note":null,"revision":"0","updated_at":"2026-10-18T01:02:03.654321"},{"amount":"99999999999999.9999","id":"9007199254740993","label":"大键🙂","note":null,"revision":"3","updated_at":"2026-10-23T23:59:59.999999"}],"sequence":0,"split":"150e97c6e8a774314a915ad28d4ec53474a4eade0902abbadca269905817c763:2"},"replay":false,"kind":"T_CONFIRMED","at":"2026-11-08T14:01:02.208901Z"}
+WINDOW {"update":"CommitSnapshotPage","rows":10,"kind":"J_CONFIRMED","at":"2026-11-08T14:01:02.228712Z"}
+WINDOW {"update":"CompleteSnapshotSplit","rows":10,"kind":"J_CONFIRMED","at":"2026-11-08T14:01:02.251436Z"}
+WINDOW {"update":"RetireSnapshotWindow$","rows":10,"kind":"J_CONFIRMED","at":"2026-11-08T14:01:02.291979Z"}
+WINDOW {"update":"FinishSnapshotEnumeration$","rows":10,"kind":"J_CONFIRMED","at":"2026-11-08T14:01:02.345966Z"}
+WINDOW {"message":"工作流执行成功完成 (耗时: 2294ms)","kind":"ENGINE_LOG","at":"2026-11-08T14:01:02.349035Z"}
+14:01:02.350 INFO  [snapshot-takeover-pekko.actor.default-dispatcher-46] [c.x.m.w.i.RealMySQLSnapshotTakeoverProcess$$anon$5] - Workflow executed successfully: table-00 in 2294ms

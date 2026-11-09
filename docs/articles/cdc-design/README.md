@@ -167,3 +167,23 @@
 | 版本与入口 | 六项样本各保存源码摘要、故障前后 B/F、D、L、T、J 和 ACK 日志 | 测试 JVM 协调器、测试 worker 显式接线；不证明所有生产入口窗口或时序 |
 | 生产入口 C1 | [真实三入口样本](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)：COMMIT 已提交、回复丢失后恢复 STREAMING；64 行、384 字段相等 | 单个 C1；无生产 raw ACK 顺序；后继强制清理后 CDC owner 仍 ACTIVE；前两次配置及代理失败和未退休尾态保留 |
 | 长期动态订阅的恢复上限 | `CdcManagedPendingB` 最多反查 4096 条源控制表记录；当前无控制行 GC | 超限时未知 B 安全暂停；历史记录会累积，70 万表长期动态订阅及恢复可用性尚未验证。详见[组件实验](../../experiments/2026-10-29-cdc-b-proof-component/README.md) |
+
+### 2026-11-08 未提交候选的验证范围
+
+本组实验与前述历史版本分开统计；[环境、失败记录和原始材料入口](../../experiments/2026-11-08-cdc-standalone-entry/README.md)列出制品散列及各自限制。
+
+| 范围 | 当前观察 | 未验证边界 |
+| --- | --- | --- |
+| 清洁重启 | 两组各五轮正常关闭、重启，源与目标逐字段一致，Journal 恢复次数为零 | 小数据正常窗口；旧 owner 隔离证明不能只靠 PID |
+| 异常退出 | SIGKILL 后源新增数据，独立入口保持 UNKNOWN、T/J/D 未前进；L 未结束事务窗口新 Reader 为 0 | 目标仍落后源；L 事务回滚后仍暂停，均未证明 guardian 自动接管及追平 |
+| 活跃 owner 与 D 滞后 | P07 旧 owner 活跃时新 Reader 为 0、旧 owner 后续继续对账；I13-lag-crash 在 D 不变且 J 推进后崩溃，重启后 64 行 384 字段一致 | 受控 Runner 的固定 F/offset 锁窗口；未证明独立入口自动接管或全部 ACK/J/D 恢复窗口 |
+| 动态表 | P01 动态 5→7；P09 固定第三表读视图时增删改，追平后取消一表，另两表继续逐字段一致；P04 初始化中取消 | 受控测试 Runtime；P09 只覆盖指定 READ_OPEN 窗口，不代表全部 LOW/HIGH 时序 |
+| 初始化与重放 | I04 固定读视图内修改，I11 固定范围故障重读，I16 全量目标写入后故障，I20 增量目标写入后故障，样本对账通过 | 指定 Runner 和故障切点，不代表全部 Checkpoint/ACK 组合 |
+| 全量目标 COMMIT 未知 | I17 的真实 OK 回复丢失、I17-C0 的 COMMIT 未转发，最终各 64 行 384 字段相等 | baseline 页事务的受控 Runner；不是独立入口的自动接管，也不覆盖增量组事务未知 |
+| 增量 replay COMMIT 未知 | C1/C0 以及迟提交、旧连接断开两个样本最终组账本各 3 条、64 行 384 字段相等 | 受控 Runner 的指定窗口；断开样本无 PFS ROLLBACK 事件，不覆盖批次重排或独立入口自动接管 |
+| 独立入口与解耦 | 独立入口不启动 Workflow Sharding 和 Scheduler；目标配置和 CDC 回放契约不需 Workflow Node，旧 Runner 构造器与 Journal 样本保留 | 旧兼容适配、bootstrap 持久化与 guardian 调度依赖仍在；并未完全迁出 Workflow |
+| 冷任务元数据 | [候选版 H01](../../experiments/2026-11-08-cdc-standalone-entry/metadata-candidate/H01-metadata-63169a06a2ce/result.json)精确计数 700,000 条、完整扫描 7,000 页 | 未启动 ActorSystem/Reader；未测 70 万真实表、活跃吞吐或 Runtime 冷启动 |
+
+## 2026-11-09 持久化切换授权实验
+
+本轮真实旧 Workflow、独立 worker、Actor Journal 和 MySQL Sink 已完成 `KILL_T_BEFORE_J` 的持久化策略切换与运行时账号重绑定，源/目标 10 行、6 字段逐字段一致；并完成 Journal 提交后故障、启动回复丢失、配额/排空回复丢失、观察拒绝和 stale grant 窗口。结果和失败材料见 [持久化切换授权实验](../../experiments/2026-11-09-persistent-cutover-authorization/README.md)。

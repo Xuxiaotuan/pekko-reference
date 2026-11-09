@@ -286,6 +286,7 @@ lazy val root = (project in file("."))
     // 自定义任务别名 - 提供便捷命令
     // ================================
     addCommandAlias("runServer", "pekko-server/run"),
+    addCommandAlias("runCdcStandalone", "pekko-server/runMain cn.xuyinyin.magic.CdcStandalone"),
     addCommandAlias("testAll", "test"),
     addCommandAlias("dockerBuild", "pekko-server/Docker/publishLocal"),
     addCommandAlias("dockerPublish", "pekko-server/Docker/publish"),

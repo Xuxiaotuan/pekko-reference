@@ -272,13 +272,14 @@ final class RealDebeziumEngineAccess private[source] (
 
   private def closeInternal(waitForStartingTasks:Boolean): Unit = {
     if (closed.compareAndSet(false, true)) {
-      val engineAlreadyCompleted = completion.isCompleted
       closeRequested.set(true)
       if (!started.get()) runnerFinished.countDown()
       val current = engine.get()
       var failure: IllegalStateException = null
       try {
-        if (current != null && !engineAlreadyCompleted && runnerFinished.getCount != 0L) {
+        // The completion callback can arrive before the runner actually exits.
+        // In that case the engine still owns resources and must receive close.
+        if (current != null && runnerFinished.getCount != 0L) {
           // Debezium 3.6.1 close can race initialization before task startup.
           // Managed callers keep their bounded worker and report UNKNOWN while
           // the SDK has not reached polling or finished its runner.

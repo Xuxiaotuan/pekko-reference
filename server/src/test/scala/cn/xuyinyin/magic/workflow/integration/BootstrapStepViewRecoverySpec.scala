@@ -102,7 +102,7 @@ class BootstrapStepViewRecoverySpec extends AnyWordSpec with Matchers {
           "port" -> JsNumber(state.port), "database" -> JsString(schema), "table" -> JsString("target_a"), "username" -> JsString(state.user), "passwordEnv" -> JsString("CDC_WINDOW_MYSQL_PASSWORD")))
         def runner(access: BootstrapJournalAccess) = new BootstrapRunner(id, "a", "g1", "same-owner-view-recovery", capture, log, spool, target,
           access, new BootstrapSnapshot(() => sourceOpen(), "a", codec, 10000, 8L * 1024 * 1024, event),
-          new BootstrapReplaySink(_ => stateOpen()), node, schema, () => stateOpen(), admission, BootstrapLimits(chunkRows = 16, pageRows = 4), event)(ExecutionContext.parasitic)
+          new BootstrapReplaySink(_ => stateOpen()).bind(node), schema, () => stateOpen(), admission, BootstrapLimits(chunkRows = 16, pageRows = 4), event)(ExecutionContext.parasitic)
         firstJournal = kit.spawn(BootstrapJournal(captureId + "-" + id), "first")
         val first = runner(new BootstrapJournalAccess(firstJournal)); var cut: BootstrapStepResult = null
         awaitCondition("actual RAW page failure returned a clean step", 90.seconds) { cut = first.step(); cut.progress.recoveryAttempts == 1 }

@@ -67,6 +67,25 @@ class CaptureReleaseGuardSpec extends STSpec with org.scalatest.concurrent.Event
       Await.result(f.guard.refresh(),2.seconds).reusable shouldBe true
       f.owners.get() shouldBe 1
     }
+    "space unknown server observations while keeping one close operation" in {
+      val calls=new AtomicInteger()
+      val firstSeen=new CountDownLatch(1)
+      val ownerClosed=new AtomicBoolean(false)
+      @volatile var firstAt=0L
+      @volatile var secondAt=0L
+      val guard=new CaptureReleaseGuard("attempt",()=>(),()=>true,_=>{
+        val n=calls.incrementAndGet()
+        if(n==1){firstAt=System.nanoTime();firstSeen.countDown()}
+        if(n==2)secondAt=System.nanoTime()
+        CaptureServerRelease("attempt",if(n==1)"UNKNOWN" else "CONFIRMED",None)
+      },()=>ownerClosed.set(true),()=>ownerClosed.get(),()=>(),CaptureCloseBudget(100,1000))
+      val result=guard.request()
+      firstSeen.await(1,TimeUnit.SECONDS) shouldBe true
+      guard.refresh()
+      Await.result(result,2.seconds).reusable shouldBe true
+      calls.get() shouldBe 3 // unknown, confirmed, final confirmation
+      (secondAt-firstAt).nanos should be >= 220.millis
+    }
     "treat an observer failure as unknown rather than zero sessions" in {
       val f=new Fixture;f.server.set(true);f.observerFailed.set(true)
       Await.result(f.guard.request(),2.seconds).reusable shouldBe false

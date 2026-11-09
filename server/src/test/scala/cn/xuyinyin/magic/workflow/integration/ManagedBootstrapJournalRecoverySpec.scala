@@ -36,7 +36,7 @@ class ManagedBootstrapJournalRecoverySpec extends AnyWordSpec with Matchers {
       implicit val ec:scala.concurrent.ExecutionContext=kit.system.executionContext
       implicit val scheduler:org.apache.pekko.actor.typed.Scheduler=kit.system.scheduler
       val id="b-real-"+UUID.randomUUID().toString
-      def actor()=kit.spawn(BootstrapJournal(id,(p,_)=>Future.successful(p=="test-permit")))
+      def actor()=kit.spawn(BootstrapJournal(id,(p,_)=>Future.successful(Set("test-permit","replacement-permit")(p))))
       try {
         val first=actor();val access=new BootstrapJournalAccess(first)
         val paused=Await.result(access.update(_.copy(phase="PAUSED",definition="definition",executionId="execution",failure=Some("local_release_unconfirmed"))),15.seconds)
@@ -46,15 +46,24 @@ class ManagedBootstrapJournalRecoverySpec extends AnyWordSpec with Matchers {
         Await.result(recovered.resumePendingB(paused.revision,"execution","definition","invalid"),15.seconds) shouldBe "REJECTED"
         Await.result(recovered.resumePendingB(paused.revision,"execution","definition","test-permit"),15.seconds) shouldBe "ACCEPTED"
         val resumed=Await.result(recovered.read(),15.seconds);resumed.phase shouldBe "QUEUED"
+        resumed.recoveryPermit shouldBe Some("test-permit")
         kit.stop(second)
-        val third=actor();val after=Await.result(new BootstrapJournalAccess(third).read(),15.seconds);after shouldBe resumed
+        val third=actor();val thirdAccess=new BootstrapJournalAccess(third)
+        val after=Await.result(thirdAccess.read(),15.seconds);after shouldBe resumed
+        Await.result(thirdAccess.resumePendingB(after.revision,"execution","definition","invalid"),15.seconds) shouldBe "REJECTED"
+        Await.result(thirdAccess.resumePendingB(after.revision,"execution","definition","replacement-permit"),15.seconds) shouldBe "ACCEPTED"
+        kit.stop(third)
+        val fourth=actor();val rebound=Await.result(new BootstrapJournalAccess(fourth).read(),15.seconds)
+        rebound.recoveryPermit shouldBe Some("replacement-permit")
+        rebound.revision shouldBe after.revision+1
         val connection=DriverManager.getConnection(url,user,password)
         val journalRows=try {val q=connection.prepareStatement("SELECT sequence_number FROM event_journal WHERE persistence_id=? ORDER BY sequence_number")
           try {q.setString(1,"bootstrap-v1-"+id);val rs=q.executeQuery();val b=Vector.newBuilder[JsValue];try while(rs.next())b+=JsNumber(rs.getLong(1)) finally rs.close();b.result()}finally q.close()}finally connection.close()
-        journalRows shouldBe Vector(JsNumber(1),JsNumber(2))
+        journalRows shouldBe Vector(JsNumber(1),JsNumber(2),JsNumber(3))
         val result=JsObject("scope"->JsString("real MySQL Actor Journal; injected permit validator; no guardian, Reader or Sink"),"serverUuid"->JsString(expected),
           "persistenceId"->JsString("bootstrap-v1-"+id),"pausedRevision"->JsNumber(paused.revision),"resumedRevision"->JsNumber(after.revision),
-          "resumedPhase"->JsString(after.phase),"journalSequenceNumbers"->JsArray(journalRows),"invalidPermitRejected"->JsBoolean(true))
+          "resumedPhase"->JsString(after.phase),"journalSequenceNumbers"->JsArray(journalRows),"invalidPermitRejected"->JsBoolean(true),
+          "originalPermit"->JsString(after.recoveryPermit.get),"reboundPermit"->JsString(rebound.recoveryPermit.get),"reboundRevision"->JsNumber(rebound.revision))
         val dir=Path.of(sys.env("CDC_MANAGED_JOURNAL_EVIDENCE"));Files.createDirectories(dir);Files.writeString(dir.resolve("result.json"),result.prettyPrint)
       } finally kit.shutdownTestKit()
     }

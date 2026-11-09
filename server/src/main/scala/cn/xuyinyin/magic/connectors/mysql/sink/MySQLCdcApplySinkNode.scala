@@ -36,6 +36,10 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
 
   protected[sink] def beforeLedgerClaim(batchId: String): Unit = ()
 
+  /** Invoked inside the target transaction before any group or row is written. */
+  protected[magic] def beforeTargetWrite(connection: Connection, config: MySQLCdcApplyConfig,
+    workflowId: String, batch: SourceBatch): Unit = ()
+
   protected[sink] def targetTypeName(rows: ResultSet): String = requiredMetadata(rows, "TYPE_NAME")
 
   override def validateReady(
@@ -88,8 +92,13 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
     batch: SourceBatch,
     transformedRows: Vector[String],
     onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = {
-    val config = parseConfig(node)
+  )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] =
+    commitBatchConfigured(parseConfig(node),workflowId,executionId,batch,transformedRows,onLog)
+
+  private[magic] def commitBatchConfigured(
+    config:MySQLCdcApplyConfig,workflowId:String,executionId:String,batch:SourceBatch,
+    transformedRows:Vector[String],onLog:String=>Unit
+  )(implicit blockingEc:ExecutionContext):Future[BatchCommitResult] = {
     Future {
       if (transformedRows.size != batch.rows.size) {
         throw new IllegalStateException("CDC transformed row count does not match source row count")
@@ -120,6 +129,7 @@ class MySQLCdcApplySinkNode extends NodeSink with CheckpointedNodeSink {
         )
         val expected = LedgerRecord(batch.batchId, workflowId, executionId, checkpoint)
         connection.setAutoCommit(false)
+        beforeTargetWrite(connection, config, workflowId, batch)
         val result = if (groups.nonEmpty) {
           validateGroupLedger(connection, target.name)
           val appliedGroups = using(new JdbcStatementScope(connection)) { statements =>

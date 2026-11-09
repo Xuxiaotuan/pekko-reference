@@ -1,6 +1,7 @@
 package cn.xuyinyin.magic.workflow.integration
 
-import cn.xuyinyin.magic.connectors.mysql.source.capture.MySQLCaptureStore
+import cn.xuyinyin.magic.connectors.mysql.source.capture.{CaptureGroupTombstone,MySQLCaptureStore}
+import cn.xuyinyin.magic.cdc.{MySQLCdcGroup,MySQLCdcGroupProtocol}
 import cn.xuyinyin.magic.tags.ExternalIntegration
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
@@ -18,7 +19,7 @@ class BootstrapMatrixSpec extends AnyWordSpec with Matchers {
     "I10-F-C1","I10-high-C0","I10-high-late-commit","I10-high-late-rollback","I10-F-C0",
     "I10-F-late-commit","I10-F-late-rollback","I22-late-low")
   "online bootstrap with real MySQL, Actor Journal and Sink" should {
-    for(variant<-Vector("I01","I02","I03","I04","I05","I06","I07","I08","I09","I10","I11","I12","I13","I14","I15","I16","I17","I18","I19","I20","I21","I22","I23","I24","I10-low-C0","I10-low-C1","I10-low-late-commit","I10-low-late-rollback","I10-F-C1","I17-C0","I17-late-commit","I17-late-rollback","I13-prefix","I15-raw","I15-schema","I15-L","I18-reject","I18-budget","I18-release","I19-last-window","I20-split","I21-postF","I22-beforeB","I22-target","I22-unknown-B","I23-activation","I24-capacity","I18-replay-timeout","I18-replay-close","I17-replay-C0","I17-replay-C1","I17-replay-late-commit","I17-replay-late-rollback","I15-registry","I22-late-low","I10-high-C0","I10-high-late-commit","I10-high-late-rollback","I10-F-C0","I10-F-late-commit","I10-F-late-rollback","I18-reject-after-T")) {
+    for(variant<-Vector("I01","I02","I03","I04","I05","I06","I07","I08","I09","I10","I11","I12","I13","I14","I15","I16","I17","I18","I19","I20","I21","I22","I23","I24","I10-low-C0","I10-low-C1","I10-low-late-commit","I10-low-late-rollback","I10-F-C1","I17-C0","I17-late-commit","I17-late-rollback","I13-prefix","I13-lag-crash","I15-raw","I15-schema","I15-L","I18-reject","I18-budget","I18-release","I19-last-window","I20-split","I21-postF","I22-beforeB","I22-target","I22-unknown-B","I23-activation","I24-capacity","I18-replay-timeout","I18-replay-close","I17-replay-C0","I17-replay-C1","I17-replay-late-commit","I17-replay-late-rollback","I15-registry","I22-late-low","I10-high-C0","I10-high-late-commit","I10-high-late-rollback","I10-F-C0","I10-F-late-commit","I10-F-late-rollback","I18-reject-after-T","I25-projection")) {
       if(!markerUnknownContract || markerUnknownVariants(variant)){
       val scenario=variant.take(3)
       val safePauseCase=markerUnknownVariants(variant) &&
@@ -27,6 +28,7 @@ class BootstrapMatrixSpec extends AnyWordSpec with Matchers {
         else s"preserve window, application and acknowledgement evidence for $variant"
       caseName taggedAs ExternalIntegration in {
         if(!sys.env.get("RUN_SHARED_CAPTURE_MATRIX").contains("1"))cancel("dedicated dual MySQL required")
+        Class.forName("com.mysql.cj.jdbc.Driver")
         val source=Settings.environment();val state=source.copy(port=sys.env("CAPTURE_STATE_PORT").toInt)
         val suffix=UUID.randomUUID().toString.replace("-","").take(12);val schema="pekko_test_cdc_window_"+suffix;val captureId="boot_"+suffix
         val dir=Path.of(if(markerUnknownContract)"target/bootstrap-marker-unknown"else"target/bootstrap-matrix",sys.env.getOrElse("BOOTSTRAP_EVIDENCE_RUN","manual"),variant+"-"+suffix).toAbsolutePath;Files.createDirectories(dir)
@@ -108,6 +110,111 @@ class BootstrapMatrixSpec extends AnyWordSpec with Matchers {
         try {
           child=start(if(variant=="I20-split")128 else 1,"original");child.awaitEvent("PROCESS_READY");awaitCondition("schema ready"){names.forall(t=>store.schema(t).nonEmpty)}
           scenario match {
+            case "I25"=>
+              boot(child);ready(child)
+              arm(child,"J_AFTER_GROUP");mutation("a","journal-before-projection")
+              val cut=child.awaitEvent("CUTPOINT")
+              val projected=withConnection(state,schema)(query(_,s"SELECT consumer_id,journal_floor,audit_floor,observed_floor,journal_revision FROM pekko_capture_consumers_v1 WHERE capture_id='$captureId' AND consumer_kind='BOOTSTRAP'"))
+              projected.elements.size shouldBe 1
+              val floor=projected.elements.head.asJsObject.fields("observed_floor").convertTo[String].toLong
+              val journalAfter=cut.fields("deltaAfter").convertTo[Long]
+              floor should be < journalAfter
+              projected.elements.head.asJsObject.fields("journal_floor") shouldBe JsString("0")
+              projected.elements.head.asJsObject.fields("audit_floor") shouldBe JsString("0")
+              val raw=withConnection(state,schema)(query(_,s"SELECT * FROM pekko_capture_log WHERE capture_id='$captureId' AND seq=$journalAfter"))
+              raw.elements.size shouldBe 1
+              val frame=raw.elements.head.asJsObject.fields.map {case(k,JsString(v))=>k->v;case(k,JsNull)=>k->null;case _=>throw new IllegalArgumentException("invalid capture frame fixture")}
+              val captureGroup=MySQLCdcGroup.parse(frame("payload"),store.protocol)
+              val targetProtocol=MySQLCdcGroupProtocol("a","g1",lineage)
+              val targetId=MySQLCdcGroup.id(targetProtocol,captureGroup.members.head._2)
+              val ledger=withConnection(state,schema)(query(_,s"SELECT evidence FROM pekko_sync_cdc_group_ledger WHERE group_id='$targetId'"))
+              ledger.elements.size shouldBe 1
+              val evidence=ledger.elements.head.asJsObject.fields("evidence").convertTo[String]
+              val proof=evidence.parseJson.asJsObject.fields
+              val identity=MySQLCdcGroup.canonical(proof("identity"));val targetTable=proof("targetTable").convertTo[String]
+              val tombstone=CaptureGroupTombstone.seal(frame,store.protocol,"g1",targetTable,identity,evidence)
+              CaptureGroupTombstone.recover(frame,tombstone,store.protocol,targetTable,identity,evidence) shouldBe frame("payload")
+              intercept[IllegalArgumentException](CaptureGroupTombstone.recover(frame,tombstone,store.protocol,targetTable+"_wrong",identity,evidence))
+              intercept[IllegalArgumentException](CaptureGroupTombstone.recover(frame,tombstone,store.protocol,targetTable,identity,evidence.replace(targetId,"0"*64)))
+              write(dir,"tombstone-codec.json",JsObject("captureSequence"->JsNumber(journalAfter),"captureGroupId"->JsString(captureGroup.groupId),
+                "targetGroupId"->JsString(targetId),"payloadBytes"->JsNumber(frame("payload").getBytes("UTF-8").length),
+                "tombstoneJsonBytes"->JsNumber(tombstone.getBytes("UTF-8").length),"minimumLogicalSaving"->JsNumber(512),
+                "selected"->JsBoolean(CaptureGroupTombstone.worthwhile(frame("payload"),tombstone,512)),"roundTrip"->JsBoolean(true),"deletionEnabled"->JsBoolean(false)))
+              write(dir,"journal-projection-cutpoint.json",JsObject("J"->cut,"consumer"->projected,"sourceAndTarget"->comparison("a")))
+              save("journal-before-projection",child);crash(child)
+              recovered=start(1,"recovered");recovered.awaitEvent("PROCESS_READY");boot(recovered);ready(recovered)
+              awaitCondition("J-before-projection recovered full-field equality"){equal("a")}
+              write(dir,"projection-recovered.json",JsObject("consumer"->withConnection(state,schema)(query(_,s"SELECT * FROM pekko_capture_consumers_v1 WHERE capture_id='$captureId'")),"comparison"->comparison("a")))
+              sql(source,"UPDATE a SET label=REPEAT('y',120),note=REPEAT('x',240),revision=revision+1 WHERE id=1")
+              awaitCondition("large payload full-field equality"){equal("a")}
+              val highRaw=withConnection(state,schema)(query(_,s"SELECT * FROM pekko_capture_log WHERE capture_id='$captureId' AND kind='GROUP' AND subscription_id='a' ORDER BY seq DESC LIMIT 1"))
+              val high=highRaw.elements.head.asJsObject.fields.map {case(k,JsString(v))=>k->v;case(k,JsNull)=>k->null;case _=>throw new IllegalArgumentException("invalid capture frame fixture")}
+              val highGroup=MySQLCdcGroup.parse(high("payload"),store.protocol)
+              val highId=MySQLCdcGroup.id(targetProtocol,highGroup.members.head._2)
+              val highLedger=withConnection(state,schema)(query(_,s"SELECT evidence FROM pekko_sync_cdc_group_ledger WHERE group_id='$highId'"))
+              val highEvidence=highLedger.elements.head.asJsObject.fields("evidence").convertTo[String]
+              val highFields=highEvidence.parseJson.asJsObject.fields
+              val highIdentity=MySQLCdcGroup.canonical(highFields("identity"));val highTable=highFields("targetTable").convertTo[String]
+              val highTombstone=CaptureGroupTombstone.seal(high,store.protocol,"g1",highTable,highIdentity,highEvidence)
+              CaptureGroupTombstone.recover(high,highTombstone,store.protocol,highTable,highIdentity,highEvidence) shouldBe high("payload")
+              val lowSelected=CaptureGroupTombstone.worthwhile(frame("payload"),tombstone,512)
+              val highSelected=CaptureGroupTombstone.worthwhile(high("payload"),highTombstone,512)
+              lowSelected shouldBe false;highSelected shouldBe true
+              sql(state,"CREATE TABLE tombstone_payload_probe(id INT PRIMARY KEY,payload LONGTEXT NOT NULL) ENGINE=InnoDB")
+              withConnection(state,schema){c=>val q=c.prepareStatement("INSERT INTO tombstone_payload_probe VALUES (?,?)")
+                try {Vector(frame("payload"),high("payload")).zipWithIndex.foreach {case(value,i)=>q.setInt(1,i+1);q.setString(2,value);q.executeUpdate()}}finally q.close()}
+              val datadir=withConnection(state,schema)(query(_,"SELECT @@datadir AS datadir")).elements.head.asJsObject.fields("datadir").convertTo[String]
+              val tableFile=Path.of(datadir,schema,"tombstone_payload_probe.ibd")
+              def fileBytes:JsValue=scala.util.Try(Files.size(tableFile)).toOption.map(n=>JsNumber(n)).getOrElse(JsNull)
+              val fileBefore=fileBytes
+              val physicalBefore=withConnection(state,schema)(query(_,"SELECT DATA_LENGTH,INDEX_LENGTH FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='tombstone_payload_probe'"))
+              val logicalBefore=withConnection(state,schema)(query(_,"SELECT id,OCTET_LENGTH(payload) AS bytes FROM tombstone_payload_probe ORDER BY id"))
+              withConnection(state,schema){c=>val q=c.prepareStatement("UPDATE tombstone_payload_probe SET payload=? WHERE id=2")
+                try {q.setString(1,highTombstone);q.executeUpdate() shouldBe 1}finally q.close()}
+              val logicalAfter=withConnection(state,schema)(query(_,"SELECT id,OCTET_LENGTH(payload) AS bytes FROM tombstone_payload_probe ORDER BY id"))
+              val physicalAfter=withConnection(state,schema)(query(_,"SELECT DATA_LENGTH,INDEX_LENGTH FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='tombstone_payload_probe'"))
+              val fileAfter=fileBytes
+              write(dir,"tombstone-size-probe.json",JsObject("minimumLogicalSaving"->JsNumber(512),"lowSelected"->JsBoolean(lowSelected),
+                "highSelected"->JsBoolean(highSelected),"logicalBefore"->logicalBefore,"logicalAfter"->logicalAfter,
+                "innodbEstimatedBefore"->physicalBefore,"innodbEstimatedAfter"->physicalAfter,"fileLengthBefore"->fileBefore,"fileLengthAfter"->fileAfter,
+                "liveLChanged"->JsBoolean(false)))
+              val highSeq=high("seq").toLong
+              awaitCondition("large GROUP committed in Journal"){status(recovered).fields("actors").asJsObject.fields("a").asJsObject.fields("deltaAfter").convertTo[Long]>=highSeq}
+              recovered.send("STOP");recovered.exit() shouldBe 0;recovered=null
+              val lFile=Path.of(datadir,schema,"pekko_capture_log.ibd")
+              def lFileBytes:JsValue=scala.util.Try(Files.size(lFile)).toOption.map(n=>JsNumber(n)).getOrElse(JsNull)
+              val lFileBefore=lFileBytes
+              val compact=DriverManager.getConnection(state.url(schema),state.user,state.password)
+              try {
+                compact.setAutoCommit(false)
+                val headLock=compact.prepareStatement("SELECT lineage FROM pekko_capture_readers WHERE capture_id=? FOR UPDATE")
+                try {headLock.setString(1,captureId);val r=headLock.executeQuery();try {r.next();r.getString(1) shouldBe lineage}finally r.close()}finally headLock.close()
+                val lock=compact.prepareStatement("SELECT payload FROM pekko_capture_log WHERE capture_id=? AND seq=? FOR UPDATE")
+                try {lock.setString(1,captureId);lock.setLong(2,highSeq);val r=lock.executeQuery();try {r.next();r.getString(1) shouldBe high("payload")}finally r.close()}finally lock.close()
+                val ledgerLock=compact.prepareStatement("SELECT evidence FROM pekko_sync_cdc_group_ledger WHERE group_id=? FOR UPDATE")
+                try {ledgerLock.setString(1,highId);val r=ledgerLock.executeQuery();try {r.next();r.getString(1) shouldBe highEvidence}finally r.close()}finally ledgerLock.close()
+                val update=compact.prepareStatement("UPDATE pekko_capture_log SET payload=? WHERE capture_id=? AND seq=?")
+                try {update.setString(1,CaptureGroupTombstone.Prefix+highTombstone);update.setString(2,captureId);update.setLong(3,highSeq);update.executeUpdate() shouldBe 1}finally update.close()
+                val started=new java.util.concurrent.CountDownLatch(1)
+                val duplicate=scala.concurrent.Future {started.countDown();store.append(highGroup)}(scala.concurrent.ExecutionContext.global)
+                require(started.await(5,java.util.concurrent.TimeUnit.SECONDS),"duplicate append did not start")
+                intercept[java.util.concurrent.TimeoutException](scala.concurrent.Await.result(duplicate,scala.concurrent.duration.Duration(300,"millis")))
+                compact.commit()
+                scala.concurrent.Await.result(duplicate,scala.concurrent.duration.Duration(15,"seconds")) shouldBe Some(highSeq)
+              }finally compact.close()
+              store.read("a",highSeq-1,1).head.group.canonicalJson shouldBe high("payload")
+              store.append(highGroup) shouldBe Some(highSeq)
+              sql(state,"CREATE TABLE tombstone_ledger_backup LIKE pekko_sync_cdc_group_ledger")
+              sql(state,s"INSERT INTO tombstone_ledger_backup SELECT * FROM pekko_sync_cdc_group_ledger WHERE group_id='$highId'")
+              sql(state,s"DELETE FROM pekko_sync_cdc_group_ledger WHERE group_id='$highId'")
+              intercept[IllegalArgumentException](store.read("a",highSeq-1,1))
+              sql(state,"INSERT INTO pekko_sync_cdc_group_ledger SELECT * FROM tombstone_ledger_backup")
+              write(dir,"tombstone-isolated-recovery.json",JsObject("sequence"->JsNumber(highSeq),"duplicateBlockedWhileHeadLocked"->JsBoolean(true),"duplicateReturnedSameSequence"->JsBoolean(true),
+                "missingLedgerRejected"->JsBoolean(true),"originalPayloadBytes"->JsNumber(high("payload").getBytes("UTF-8").length),
+                "replacementPayloadBytes"->JsNumber((CaptureGroupTombstone.Prefix+highTombstone).getBytes("UTF-8").length),
+                "lFileLengthBefore"->lFileBefore,"lFileLengthAfter"->lFileBytes,"liveProductionGcEnabled"->JsBoolean(false)))
+              recovered=start(1,"recovered-after-tombstone");recovered.awaitEvent("PROCESS_READY");boot(recovered);ready(recovered)
+              awaitCondition("tombstone recovered full-field equality"){equal("a")}
             case "I01"=>
               Vector("a","b","c","d","e").foreach(t=>boot(child,t,t));Vector("a","b","c","d","e").foreach(t=>ready(child,t))
               Vector("f","g").foreach(t=>boot(child,t,t));names.foreach(t=>mutation(t,"dynamic-seven"));names.foreach(t=>ready(child,t));awaitCondition("seven full field equal"){names.forall(equal)}
@@ -153,7 +260,28 @@ class BootstrapMatrixSpec extends AnyWordSpec with Matchers {
                 }
               }
             case "I13"=>
-              if(variant=="I13-prefix"){
+              if(variant=="I13-lag-crash"){
+                arm(child,"F_BOUND");boot(child);child.awaitEvent("CUTPOINT")
+                store.fence("a_F").get.covered shouldBe false
+                val digest=java.security.MessageDigest.getInstance("SHA-256").digest(captureId.getBytes(java.nio.charset.StandardCharsets.UTF_8)).map(b=>f"${b&255}%02x").mkString.take(32)
+                val offsetTable=s"capture_offsets_$digest"
+                blocker=DriverManager.getConnection(state.url(schema),state.user,state.password);blocker.setAutoCommit(false)
+                query(blocker,s"SELECT * FROM $offsetTable FOR UPDATE")
+                def actualD=withConnection(state,schema)(query(_,s"SELECT * FROM $offsetTable"))
+                val heldD=actualD
+                val jBefore=status(child).fields("actors").asJsObject.fields("a").asJsObject.fields("revision").convertTo[Long]
+                save("F-bound-D-held",child);release(child);ready(child)
+                mutation("a","before-d-lag-crash");awaitCondition("applied before crash with D held"){equal("a")}
+                actualD shouldBe heldD
+                val jAfter=status(child).fields("actors").asJsObject.fields("a").asJsObject.fields("revision").convertTo[Long]
+                jAfter should be > jBefore
+                store.fence("a_F").get.covered shouldBe true
+                save("streaming-D-held-before-crash",child)
+                crash(child);blocker.rollback();blocker.close();blocker=null
+                mutation("a","after-d-lag-crash")
+                recovered=start(128,"recovered-D-lag");recovered.awaitEvent("PROCESS_READY");boot(recovered);ready(recovered)
+                awaitCondition("D lag restart full equality"){equal("a")};save("after-D-lag-recovery",recovered)
+              }else if(variant=="I13-prefix"){
                 arm(child,"HIGH_BOUND");boot(child);child.awaitEvent("CUTPOINT");save("HIGH-not-covered",child)
                 val f=store.fence("a_0_0_H").get;f.sequence.nonEmpty shouldBe true;f.covered shouldBe false
                 val manifests=withConnection(state,schema)(query(_,"SELECT COUNT(*) n FROM pekko_bootstrap_windows WHERE manifest_json IS NOT NULL"));manifests.elements.head.asJsObject.fields("n") shouldBe JsString("0")

@@ -2,6 +2,7 @@ package cn.xuyinyin.magic.workflow.integration
 
 import cn.xuyinyin.magic.tags.ExternalIntegration
 import cn.xuyinyin.magic.workflow.cdc.{CdcPlatformLimits,CdcTaskRequest,CdcTaskStore}
+import cn.xuyinyin.magic.connectors.mysql.source.capture.CaptureControlFence
 import cn.xuyinyin.magic.workflow.scheduling._
 import com.typesafe.config.{ConfigFactory,ConfigRenderOptions}
 import java.io.File
@@ -25,7 +26,8 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
   import CdcJournalWindowSupport._
   import SnapshotGuardianWire._
   "managed unknown B recovery" should {
-    for(mode<-Vector("C0","C1","LATE_COMMIT","LATE_ROLLBACK","GUARDIAN_LOST","GUARDIAN_UNREACHABLE")) {
+    for(mode<-Vector("C0","C1","LATE_COMMIT","LATE_ROLLBACK","GUARDIAN_LOST","GUARDIAN_UNREACHABLE") ++
+      (if(sys.env.get("RUN_CDC_FENCE_MATRIX").contains("1"))Vector("FENCE_PROBE","V2_CLOSE","V2_READER")else Vector.empty)) {
       s"preserve isolation and complete field reconciliation for $mode" taggedAs ExternalIntegration in {
         if(!sys.env.get("RUN_CDC_MANAGED_B_MATRIX").contains("1"))cancel("dedicated dual MySQL fixture required")
         require(sys.env.get("CDC_LAB_EXCLUSIVE_LEASE").exists(_.nonEmpty))
@@ -36,6 +38,10 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
         require(sourceUuid==sys.env("CAPTURE_EXPECT_SOURCE_UUID") && stateUuid==sys.env("CAPTURE_EXPECT_STATE_UUID") && sourceUuid!=stateUuid)
         val suffix=UUID.randomUUID().toString.replace("-","").take(12);val schema="pekko_test_cdc_window_"+suffix
         val capture="managed_"+suffix;val srcUser="cs_"+suffix;val sdkUser="ds_"+suffix
+        val v2Fixture=Set("FENCE_PROBE","V2_CLOSE","V2_READER")(mode)
+        val workerControl=if(v2Fixture)"wc_"+suffix else state.user
+        val sourceController="cc_"+suffix
+        val sourceHost=if(v2Fixture)"127.0.0.1"else "%"
         val dir=Path.of(sys.env("CDC_MANAGED_B_EVIDENCE"),mode+"-"+suffix).toAbsolutePath;Files.createDirectories(dir)
         val paths=Files.walk(Path.of("server/src/main/scala"))
         val production=try paths.iterator().asScala.filter(p=>Files.isRegularFile(p) && p.toString.endsWith(".scala")).toVector.sorted finally paths.close()
@@ -56,11 +62,11 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
         val events=new ConcurrentLinkedQueue[JsObject]()
         val proxy=new MySQLCommitResponseProxy(source.host,source.port,(kind,value)=>events.add(JsObject(value.fields+("kind"->JsString(kind)))))
         def sql(s:Settings,v:String):Unit=withConnection(s,schema)(executeSql(_,v))
-        def account(s:Settings,user:String,sourceRole:Boolean):Unit=withConnection(s,"") {c=>
+        def account(s:Settings,user:String,sourceRole:Boolean,host:String="%"):Unit=withConnection(s,"") {c=>
           val p=s.password.replace("\\","\\\\").replace("'","\\'")
-          executeSql(c,s"CREATE USER '$user'@'%' IDENTIFIED BY '$p'")
-          executeSql(c,s"GRANT ALL PRIVILEGES ON `$schema`.* TO '$user'@'%'")
-          if(sourceRole)executeSql(c,s"GRANT SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '$user'@'%'")
+          executeSql(c,s"CREATE USER '$user'@'$host' IDENTIFIED BY '$p'")
+          executeSql(c,s"GRANT ALL PRIVILEGES ON `$schema`.* TO '$user'@'$host'")
+          if(sourceRole)executeSql(c,s"GRANT SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '$user'@'$host'")
         }
         try {
           initialize(source,schema);initialize(state,schema)
@@ -74,7 +80,31 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
               text.split(";").map(_.trim).filter(_.nonEmpty).foreach(executeSql(c,_))
             }
           }
-          account(source,srcUser,sourceRole=true);account(state,sdkUser,sourceRole=false)
+          account(source,srcUser,sourceRole=true,host=sourceHost);account(state,sdkUser,sourceRole=false)
+          if(v2Fixture){
+            account(state,workerControl,sourceRole=false);account(source,sourceController,sourceRole=false,host=sourceHost)
+            withConnection(state,"")(c=>executeSql(c,s"GRANT PROCESS ON *.* TO '$workerControl'@'%'"))
+          }
+          if(mode=="V2_CLOSE" || mode=="V2_READER"){
+            withConnection(source,schema){c=>
+              executeSql(c,"CREATE TABLE pekko_capture_control(operation_id VARCHAR(128) PRIMARY KEY,action VARCHAR(32) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL) ENGINE=InnoDB")
+              executeSql(c,"CREATE TABLE pekko_capture_control_fence_v1(domain_id VARCHAR(16) PRIMARY KEY,source_uuid CHAR(36) NOT NULL,database_name VARCHAR(64) NOT NULL,epoch BIGINT NOT NULL,owner_token CHAR(64) NOT NULL,phase VARCHAR(16) NOT NULL,version BIGINT NOT NULL,operation_id VARCHAR(128) NOT NULL,action VARCHAR(32) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL) ENGINE=InnoDB")
+              val q=c.prepareStatement("INSERT INTO pekko_capture_control_fence_v1 VALUES('default',?,?,0,'','OPEN',0,'','','','')")
+              try {q.setString(1,sourceUuid);q.setString(2,schema);q.executeUpdate()}finally q.close()
+              CaptureControlFence.TriggerDdl.foreach(executeSql(c,_));executeSql(c,CaptureControlFence.OpenProcedureDdl);executeSql(c,CaptureControlFence.ReleaseTableDdl)
+            }
+            withConnection(source,""){c=>
+              executeSql(c,s"REVOKE ALL PRIVILEGES, GRANT OPTION FROM '$srcUser'@'$sourceHost'")
+              executeSql(c,s"GRANT SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '$srcUser'@'$sourceHost'")
+              executeSql(c,s"GRANT SELECT, SHOW VIEW ON `$schema`.* TO '$srcUser'@'$sourceHost'")
+              executeSql(c,s"GRANT EXECUTE ON PROCEDURE `$schema`.${CaptureControlFence.OpenProcedure} TO '$srcUser'@'$sourceHost'")
+              executeSql(c,s"REVOKE ALL PRIVILEGES, GRANT OPTION FROM '$sourceController'@'$sourceHost'")
+              executeSql(c,s"GRANT SELECT ON `$schema`.* TO '$sourceController'@'$sourceHost'")
+              executeSql(c,s"GRANT SELECT, INSERT, UPDATE ON `$schema`.pekko_capture_control TO '$sourceController'@'$sourceHost'")
+              executeSql(c,s"GRANT SELECT, UPDATE ON `$schema`.pekko_capture_control_fence_v1 TO '$sourceController'@'$sourceHost'")
+              executeSql(c,s"GRANT SELECT, INSERT ON `$schema`.${CaptureControlFence.ReleaseTable} TO '$sourceController'@'$sourceHost'")
+            }
+          }
         }catch {case e:Throwable=>
           Try(proxy.close());write(dir,"fixture-failure.json",JsObject("class"->JsString(e.getClass.getName),"message"->JsString(Option(e.getMessage).getOrElse("").replace(source.password,"[REDACTED]"))))
           throw e
@@ -95,15 +125,19 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
           "pekko-persistence-jdbc.shared-databases.slick.profile"->"slick.jdbc.MySQLProfile$","pekko-persistence-jdbc.shared-databases.slick.db.driver"->"com.mysql.cj.jdbc.Driver",
           "pekko-persistence-jdbc.shared-databases.slick.db.url"->state.url(schema),"pekko-persistence-jdbc.shared-databases.slick.db.user"->state.user,
           "pekko-persistence-jdbc.shared-databases.slick.db.password"->state.password)
-        val captureConfig=Map[String,AnyRef]("id"->capture,"host"->"127.0.0.1","port"->Int.box(proxy.port),"database"->schema,
+        val captureSettings=Map[String,AnyRef]("id"->capture,"host"->"127.0.0.1","port"->Int.box(proxy.port),"database"->schema,
           "username"->srcUser,"password"->source.password,"server-id"->Long.box(250000+(suffix.hashCode.toLong & 0x7fffffffL)),
           "source-lineage"->sourceUuid,"state-lineage"->stateUuid,"exclusive-sdk-accounts"->java.lang.Boolean.TRUE,
-          "sdk-state-username"->sdkUser,"sdk-state-password"->state.password,"source-observer-username"->source.user,"source-observer-password"->source.password).asJava
+          "sdk-state-username"->sdkUser,"sdk-state-password"->state.password,"source-observer-username"->source.user,"source-observer-password"->source.password)
+        val captureConfig=(if(v2Fixture)captureSettings++Map[String,AnyRef]("source-controller-username"->sourceController,
+          "source-controller-password"->source.password,"source-fence-v2"->java.lang.Boolean.valueOf(mode!="FENCE_PROBE"))else captureSettings).asJava
         val workerSettings=common++Map[String,AnyRef]("pekko.actor.provider"->"local","pekko.cluster.downing-provider-class"->"",
+          "pekko.workflow.table-scheduling.jdbc.username"->workerControl,
+          "pekko-persistence-jdbc.shared-databases.slick.db.user"->workerControl,
           "pekko.cluster.auto-down-unreachable-after"->"off","pekko.workflow.cdc-platform.enabled"->java.lang.Boolean.TRUE,
           "pekko.workflow.cdc-platform.captures"->Vector(captureConfig).asJava,"pekko.workflow.cdc-platform.snapshot-steps"->Int.box(1),
           "pekko.workflow.cdc-platform.tail-steps"->Int.box(1),"pekko.workflow.cdc-platform.poll-interval-ms"->Long.box(50),
-          "pekko.workflow.mysql-cdc.state-jdbc.url"->state.url(schema),"pekko.workflow.mysql-cdc.state-jdbc.username"->state.user,
+          "pekko.workflow.mysql-cdc.state-jdbc.url"->state.url(schema),"pekko.workflow.mysql-cdc.state-jdbc.username"->workerControl,
           "pekko.workflow.mysql-cdc.state-jdbc.password"->state.password,"pekko.workflow.mysql-cdc.state-jdbc.offset-table"->"capture_offsets",
           "pekko.workflow.mysql-cdc.state-jdbc.history-table"->"capture_history","pekko.workflow.mysql-cdc.state-jdbc.offset-flush-interval-ms"->Int.box(0))
         val worker=anchor.resolve("worker.conf")
@@ -172,7 +206,8 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
           oldReady.fields("ownerState") shouldBe JsString("ACTIVE")
           val oldPort=oldReady.fields("port").convertTo[Int]
           awaitCondition("shared capture admission ready",120.seconds){Try(request(oldPort,"GET","cdc-captures")._2.toString.contains("ADMISSION_READY")).getOrElse(false)}
-          val cutMode=if(mode.startsWith("GUARDIAN_"))"LATE_COMMIT"else mode
+          val cutMode=if(mode.startsWith("GUARDIAN_"))"LATE_COMMIT"else if(v2Fixture)"C1"else mode
+          if(mode=="V2_CLOSE")Files.writeString(dir.resolve("inject-controller-close"),"armed")
           proxy.arm(cutMode,JsObject("stage"->JsString("B")))
           val submitted=request(oldPort,"POST","cdc-tasks",Some(JsObject("requestId"->JsString("a"),"captureId"->JsString(capture),"table"->JsString("a"),"generation"->JsString("g1"),"targetTable"->JsString("target_a"))))
           submitted._1 shouldBe 202
@@ -182,7 +217,7 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
           val pending=db(state,s"SELECT request_id,status FROM pekko_capture_subscriptions WHERE request_id='$task'")
           pending.elements.size shouldBe 1
           val markerStatus=pending.elements.head.asJsObject.fields("status")
-          if(mode=="C1")Set[JsValue](JsString("B_PENDING"),JsString("CAPTURE_READY")) should contain (markerStatus)
+          if(cutMode=="C1")Set[JsValue](JsString("B_PENDING"),JsString("CAPTURE_READY")) should contain (markerStatus)
           else markerStatus shouldBe JsString("B_PENDING")
           val intent=db(state,s"SELECT kind FROM pekko_capture_log WHERE subscription_id='$task' AND kind='B_INTENT'")
           intent.elements.size shouldBe 1
@@ -192,6 +227,7 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
             val held=withConnection(source,"")(query(_,s"SELECT trx_mysql_thread_id FROM information_schema.innodb_trx WHERE trx_mysql_thread_id=$connection"))
             held.elements.size shouldBe 1
           }
+          if(mode=="FENCE_PROBE")Files.writeString(dir.resolve("block-recovery"),"block")
           dump("01-unknown");coordinator.tick()
           awaitCondition("old worker isolated",40.seconds){coordinator.tick();supervisor.metadata.launch(oldBoot).exists(_.proof.nonEmpty)}
           val old=supervisor.tableStore.ownership.get.owner(oldBoot).get
@@ -204,7 +240,76 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
           }else proxy.dropHeldResponse()
           awaitCondition("old owner drained and replacement forked",150.seconds){coordinator.tick();supervisor.metadata.launch(oldBoot).exists(_.phase=="retired") && coordinator.workerBoot.exists(_!=oldBoot)}
           val replacementBoot=coordinator.workerBoot.get
-          if(mode.startsWith("GUARDIAN_")){
+          if(mode=="FENCE_PROBE"){
+            awaitCondition("replacement before fence probe",60.seconds)(Files.exists(dir.resolve(replacementBoot+"-recovery-gated")))
+            withConnection(source,schema){c=>
+              executeSql(c,"CREATE TABLE pekko_capture_control_fence_v1(domain_id VARCHAR(16) PRIMARY KEY,source_uuid CHAR(36) NOT NULL,database_name VARCHAR(64) NOT NULL,epoch BIGINT NOT NULL,owner_token CHAR(64) NOT NULL,phase VARCHAR(16) NOT NULL,version BIGINT NOT NULL,operation_id VARCHAR(128) NOT NULL,action VARCHAR(32) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL) ENGINE=InnoDB")
+              val q=c.prepareStatement("INSERT INTO pekko_capture_control_fence_v1 VALUES('default',?,?,0,'','OPEN',0,'','','','')")
+              try {q.setString(1,sourceUuid);q.setString(2,schema);q.executeUpdate()}finally q.close()
+              CaptureControlFence.TriggerDdl.foreach(executeSql(c,_))
+              executeSql(c,CaptureControlFence.OpenProcedureDdl)
+              executeSql(c,CaptureControlFence.ReleaseTableDdl)
+            }
+            withConnection(source,""){c=>
+              executeSql(c,s"REVOKE ALL PRIVILEGES, GRANT OPTION FROM '$srcUser'@'$sourceHost'")
+              executeSql(c,s"GRANT SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '$srcUser'@'$sourceHost'")
+              executeSql(c,s"GRANT SELECT, SHOW VIEW ON `$schema`.* TO '$srcUser'@'$sourceHost'")
+              executeSql(c,s"GRANT EXECUTE ON PROCEDURE `$schema`.${CaptureControlFence.OpenProcedure} TO '$srcUser'@'$sourceHost'")
+              executeSql(c,s"REVOKE ALL PRIVILEGES, GRANT OPTION FROM '$sourceController'@'$sourceHost'")
+              executeSql(c,s"GRANT SELECT ON `$schema`.* TO '$sourceController'@'$sourceHost'")
+              executeSql(c,s"GRANT SELECT, INSERT, UPDATE ON `$schema`.pekko_capture_control TO '$sourceController'@'$sourceHost'")
+              executeSql(c,s"GRANT SELECT, UPDATE ON `$schema`.pekko_capture_control_fence_v1 TO '$sourceController'@'$sourceHost'")
+              executeSql(c,s"GRANT SELECT, INSERT ON `$schema`.${CaptureControlFence.ReleaseTable} TO '$sourceController'@'$sourceHost'")
+            }
+            Files.writeString(dir.resolve("probe-source-fence-v2"),"probe")
+            proxy.arm("FENCE_C1",JsObject("stage"->JsString("source-fence-commit")))
+            Files.writeString(dir.resolve("release-recovery"),"release")
+            val probe=dir.resolve(replacementBoot+"-fence-probe.json")
+            def replacementAlive:Boolean=supervisor.metadata.launch(replacementBoot).flatMap(_.identity).exists {id=>
+              val h=ProcessHandle.of(id.pid);h.isPresent && h.get.isAlive && h.get.info().startInstant().isPresent &&
+                h.get.info().startInstant().get().toString==id.startIdentity
+            }
+            awaitCondition("fenced rescan probe",90.seconds)(Files.exists(probe) || !guardian.alive || !replacementAlive)
+            require(Files.exists(probe),"fenced rescan did not complete")
+            val result=Files.readString(probe).parseJson.asJsObject
+            result.fields("status") shouldBe JsString("FENCED_RESCAN_ONLY")
+            events.asScala.exists(e=>e.fields.get("kind").contains(JsString("PROXY_COMMIT_OK_DROPPED")) &&
+              e.fields.get("mode").contains(JsString("FENCE_C1"))) shouldBe true
+            store.ownerStatus shouldBe "UNKNOWN"
+            dump("03-fenced-rescan")
+          }else if(mode=="V2_READER"){
+            val replacement=ready(replacementBoot);val port=replacement.fields("port").convertTo[Int]
+            def paused:Boolean=Try(request(port,"GET","cdc-tasks/"+task)._2.asJsObject.fields.get("phase").contains(JsString("PAUSED"))).getOrElse(false)
+            awaitCondition("v2 Reader startup token",150.seconds){
+              db(state,s"SELECT permit_id FROM pekko_cdc_reader_start_v2 WHERE task_id='$task'").elements.nonEmpty || paused
+            }
+            require(!paused,"v2 recovery task paused before Reader startup")
+            awaitCondition("v2 B captured and acknowledged",150.seconds){
+              val subscription=db(state,s"SELECT status FROM pekko_capture_subscriptions WHERE request_id='$task'")
+              subscription.elements.exists(_.asJsObject.fields.get("status").contains(JsString("CAPTURE_READY"))) &&
+                db(state,s"SELECT seq FROM pekko_capture_log WHERE subscription_id='$task' AND kind='BARRIER'").elements.nonEmpty
+            }
+            dump("03-v2-reader-b-captured")
+          }else if(mode=="V2_CLOSE"){
+            val replacement=ready(replacementBoot);val port=replacement.fields("port").convertTo[Int]
+            def paused:Boolean=Try(request(port,"GET","cdc-tasks/"+task)._2.asJsObject.fields.get("phase").contains(JsString("PAUSED"))).getOrElse(false)
+            val fault=dir.resolve(replacementBoot+"-controller-close-fault.json")
+            awaitCondition("controller close fault",150.seconds)(Files.exists(fault) || paused)
+            require(Files.exists(fault),"v2 recovery task paused before controller close fault")
+            val faultData=Files.readString(fault).parseJson.asJsObject
+            val connection=faultData.fields("connectionId").convertTo[Long]
+            val held=withConnection(source,"")(query(_,s"SELECT ID,USER,COMMAND FROM information_schema.processlist WHERE ID=$connection"))
+            held.elements.size shouldBe 1
+            awaitCondition("unknown recovery grant after close failure",90.seconds){store.ownerStatus=="UNKNOWN" && store.counts.getOrElse("UNKNOWN",0L)>0L}
+            dump("03-controller-close-unknown")
+            coordinator.tick()
+            awaitCondition("controller owner isolated and drained",180.seconds){
+              coordinator.tick();supervisor.metadata.launch(replacementBoot).exists(_.phase=="retired")
+            }
+            val after=withConnection(source,"")(query(_,s"SELECT ID FROM information_schema.processlist WHERE ID=$connection"))
+            after.elements shouldBe empty
+            dump("04-controller-isolated")
+          }else if(mode.startsWith("GUARDIAN_")){
             awaitCondition("replacement before recovery",60.seconds)(Files.exists(dir.resolve(replacementBoot+"-recovery-gated")))
             if(mode=="GUARDIAN_LOST")guardian.kill()
             else {val hidden=anchor.resolve("guardian-hidden.sock");Files.move(supervisor.socket,hidden);hiddenSocket=Some(hidden)}
@@ -221,7 +326,7 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
             result.fields("equal") shouldBe JsBoolean(true);result.fields("fieldsCompared") shouldBe JsNumber(384)
             result.fields("missing") shouldBe JsArray();result.fields("extra") shouldBe JsArray();result.fields("fieldDifferences") shouldBe JsArray()
           }
-          succeeded=true;write(dir,"result.json",JsObject("mode"->JsString(mode),"status"->JsString("DATA_CONVERGED_CLEANUP_PENDING"),"oldBoot"->JsString(oldBoot),"replacementBoot"->JsString(replacementBoot),"taskId"->JsString(task)))
+          succeeded=true;write(dir,"result.json",JsObject("mode"->JsString(mode),"status"->JsString(if(mode=="FENCE_PROBE")"FENCED_RESCAN_CLEANUP_PENDING"else if(mode=="V2_CLOSE")"CLOSE_ISOLATION_CLEANUP_PENDING"else if(mode=="V2_READER")"V2_READER_B_CLEANUP_PENDING"else "DATA_CONVERGED_CLEANUP_PENDING"),"oldBoot"->JsString(oldBoot),"replacementBoot"->JsString(replacementBoot),"taskId"->JsString(task)))
         } catch {case e:Throwable=>
           Try(dump("failure-state"))
           write(dir,"failure.json",JsObject("mode"->JsString(mode),"class"->JsString(e.getClass.getName),"message"->JsString(Option(e.getMessage).getOrElse("").replace(source.password,"[REDACTED]")),"proxy"->eventFile()))
@@ -250,13 +355,14 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
           guardian.kill();Try(proxy.close());supervisor.close()
           val sessionsGone=Try(awaitCondition("test capture sessions closed",180.seconds){
             withConnection(source,"")(query(_,s"SELECT ID FROM information_schema.processlist WHERE USER='$srcUser'")).elements.isEmpty &&
-              withConnection(state,"")(query(_,s"SELECT ID FROM information_schema.processlist WHERE USER='$sdkUser'")).elements.isEmpty
+              withConnection(state,"")(query(_,s"SELECT ID FROM information_schema.processlist WHERE USER='$sdkUser'")).elements.isEmpty &&
+              (!v2Fixture || withConnection(state,"")(query(_,s"SELECT ID FROM information_schema.processlist WHERE USER='$workerControl'")).elements.isEmpty)
           }).isSuccess
           val clean=(drained || mode=="GUARDIAN_LOST") && sessionsGone && !guardian.alive
           write(dir,"cleanup.json",JsObject("guardianAlive"->JsBoolean(guardian.alive),"guardianDrainConfirmed"->JsBoolean(drained),"sessionsGone"->JsBoolean(sessionsGone),"dataAssertionsPassed"->JsBoolean(succeeded),"clean"->JsBoolean(clean)))
           if(succeeded){
             val p=dir.resolve("result.json");val prior=Files.readString(p).parseJson.asJsObject
-            write(dir,"result.json",JsObject(prior.fields.updated("status",JsString(if(clean)"PASS"else"DATA_CONVERGED_CLEANUP_UNCONFIRMED"))))
+            write(dir,"result.json",JsObject(prior.fields.updated("status",JsString(if(clean && mode=="FENCE_PROBE")"FENCED_RESCAN_ONLY_PASS"else if(clean && mode=="V2_CLOSE")"CLOSE_ISOLATION_ONLY_PASS"else if(clean && mode=="V2_READER")"V2_READER_B_ONLY_PASS"else if(clean)"PASS"else"DATA_CONVERGED_CLEANUP_UNCONFIRMED"))))
             require(clean,"test worker resources remain unconfirmed")
           }
         }

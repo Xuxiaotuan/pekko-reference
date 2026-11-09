@@ -6,6 +6,7 @@
 |---|---|
 | `./quick-test.sh` / `scripts/test.sh` | 同一组局部测试；根入口保持兼容 |
 | `scripts/run.sh` / `sbt runServer` | 启动原有 server 主类 |
+| `sbt runCdcStandalone` | 启动独立 CDC 入口；需要显式启用 CDC 和配置回环 API 端口，见根 README |
 | `scripts/package.sh` | package、Universal/stage、Docker/stage；不发布镜像 |
 | `python3 scripts/check-layout.py` | 根目录、package 路径、项目 ID 和导航检查 |
 

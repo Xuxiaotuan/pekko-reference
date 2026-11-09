@@ -1,0 +1,97 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 2 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcBootstrapKernel.scala:3:73: Unused import
+[warn] import cn.xuyinyin.magic.connectors.mysql.source.{DebeziumEngineFactory,MySQLCdcStateConfig}
+[warn]                                                                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcBootstrapKernel.scala:11:57: Unused import
+[warn] import org.apache.pekko.actor.typed.scaladsl.{Behaviors,adapter}
+[warn]                                                         ^
+[warn] two warnings found
+[info] done compiling
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[info] done compiling
+09:26:53,812 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+09:26:53,813 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7463562 - No custom configurators were discovered as a service.
+09:26:53,813 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7463562 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+09:26:53,813 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7463562 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+09:26:53,813 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+09:26:53,813 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+09:26:53,814 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7463562 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+09:26:53,814 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7463562 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+09:26:53,815 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7463562 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+09:26:53,815 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+09:26:53,815 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+09:26:53,844 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+09:26:53,844 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+09:26:53,847 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+09:26:53,856 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+09:26:53,856 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+09:26:53,857 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+09:26:53,857 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+09:26:53,858 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+09:26:53,858 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+09:26:53,858 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+09:26:53,859 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+09:26:53,859 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+09:26:53,859 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+09:26:53,859 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+09:26:53,859 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+09:26:53,859 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@7a0d8892 - End of configuration.
+09:26:53,860 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@53c0c365 - Registering current configuration as safe fallback point
+09:26:53,860 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7463562 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 45 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+09:26:53.966 [34mINFO [0;39m [36m[pool-8-thread-10-ScalaTest-running-MaterialOwnerDrainMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+09:26:53.979 [34mINFO [0;39m [36m[pool-8-thread-10-ScalaTest-running-MaterialOwnerDrainMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@652e418e
+09:26:53.980 [34mINFO [0;39m [36m[pool-8-thread-10-ScalaTest-running-MaterialOwnerDrainMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+09:26:54.163 [34mINFO [0;39m [36m[pool-8-thread-10-ScalaTest-running-MaterialOwnerDrainMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown initiated...
+09:26:54.163 [34mINFO [0;39m [36m[pool-8-thread-10-ScalaTest-running-MaterialOwnerDrainMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown completed.
+[info] MaterialOwnerDrainMySqlSpec:
+[info] material account drain observation
+[info] - should reject foreign and untagged material sessions before allowing an empty observation *** FAILED ***
+[info]   false was not equal to true (MaterialOwnerDrainMySqlSpec.scala:71)
+[info] CdcPlatformSettingsSpec:
+[info] CDC platform settings
+[info] - should stay disabled unless explicitly enabled
+[info] - should reject configuration that reuses the control account as the exclusive SDK account
+[info] - should reject two capture domains that reuse an exclusive source or state account
+[info] - should reject an empty SDK password and a half-specified observer identity
+[info] - should reject incomplete or reused material accounts instead of silently ignoring them
+[info] - should bind a configured material account to the existing state endpoint and redact it from settings
+[info] SnapshotGuardianSpec:
+[info] production launch configuration
+[info] - should allow ordinary JDBC connections without installing a managed owner
+[info] - should refuse managed launch properties when the worker HA bootstrap is disabled
+[info] - should append control attributes to both legal MySQL URL forms without changing the database
+[info] - should refuse a worker profile with another deployment or scheduling database
+[info] guardian signed evidence
+[info] - should bind a signed worker challenge to its nonce, controller context and owner identity
+[info] - should count a foreign-tagged session that uses an exclusive CDC account
+[info] - should include a dedicated material account in the state endpoint's exclusive drain inventory
+[info] - should reject a modified response or another guardian public key
+[info] - should bind proof to the original worker and operation, not merely a provider string
+[info] Run completed in 706 milliseconds.
+[info] Total number of tests run: 16
+[info] Suites: completed 3, aborted 0
+[info] Tests: succeeded 15, failed 1, canceled 0, ignored 0, pending 0
+[info] *** 1 TEST FAILED ***
+[error] Failed tests:
+[error] 	cn.xuyinyin.magic.workflow.scheduling.MaterialOwnerDrainMySqlSpec
+[error] (Test / testOnly) sbt.TestsFailedException: Tests unsuccessful
+[error] Total time: 6 s, completed 2026年11月8日 上午9:26:54

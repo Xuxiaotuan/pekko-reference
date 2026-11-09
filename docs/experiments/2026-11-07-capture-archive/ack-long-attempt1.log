@@ -1,0 +1,88 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 5 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcBootstrapKernel.scala:3:73: Unused import
+[warn] import cn.xuyinyin.magic.connectors.mysql.source.{DebeziumEngineFactory,MySQLCdcStateConfig}
+[warn]                                                                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcBootstrapKernel.scala:11:57: Unused import
+[warn] import org.apache.pekko.actor.typed.scaladsl.{Behaviors,adapter}
+[warn]                                                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcManagedRecovery.scala:20:15: private method fencePendingB in object CdcManagedRecovery is never used
+[warn]   private def fencePendingB(store:CdcTaskStore,cfg:CdcCaptureSettings,attempt:String,taskId:String,
+[warn]               ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcManagedRecovery.scala:148:15: private method issueFencedPermit in object CdcManagedRecovery is never used
+[warn]   private def issueFencedPermit(store:CdcTaskStore,cfg:CdcCaptureSettings,attempt:String,proof:CdcManagedIsolation.Verified,
+[warn]               ^
+[warn] four warnings found
+[info] done compiling
+[info] compiling 7 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcManagedMatrixWorker.scala:10:57: Unused import
+[warn] import org.apache.pekko.actor.typed.scaladsl.{Behaviors,adapter}
+[warn]                                                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/CaptureLogResourceOwnershipSpec.scala:21:26: Unused import
+[warn] import scala.concurrent.{Await,Future}
+[warn]                          ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcManagedMatrixWorker.scala:19:57: match may not be exhaustive.
+[warn]     val Array(supervisorPath,workerPath,boot,directory)=args
+[warn]                                                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/CdcPlatformMatrixWorker.scala:24:99: match may not be exhaustive.
+[warn]     val Array(schema, captureId, sourceUser, stateUser, sourceLineage, stateLineage, holdStart) = args
+[warn]                                                                                                   ^
+[warn] four warnings found
+[info] done compiling
+20:25:54,230 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+20:25:54,230 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1866c412 - No custom configurators were discovered as a service.
+20:25:54,230 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1866c412 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+20:25:54,230 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1866c412 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+20:25:54,231 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+20:25:54,231 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+20:25:54,232 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1866c412 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+20:25:54,232 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1866c412 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+20:25:54,232 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1866c412 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+20:25:54,232 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+20:25:54,232 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+20:25:54,258 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+20:25:54,258 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+20:25:54,261 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+20:25:54,272 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+20:25:54,272 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+20:25:54,272 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+20:25:54,272 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+20:25:54,273 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+20:25:54,273 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+20:25:54,274 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+20:25:54,274 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+20:25:54,274 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+20:25:54,274 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+20:25:54,274 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+20:25:54,274 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+20:25:54,274 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@7b2d7aa - End of configuration.
+20:25:54,275 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@22e32970 - Registering current configuration as safe fallback point
+20:25:54,275 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1866c412 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 43 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+ACK_LONG schema=pekko_test_ack_long_d48acfd11f head=4103 anchor=2 pages=66 restored=true
+[info] CaptureAckLongMySqlSpec:
+[info] ACK proof paging
+[info] - should resume a chain beyond the old 4096 bound and reject an absent parent
+[info] Run completed in 20 seconds, 576 milliseconds.
+[info] Total number of tests run: 1
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 1, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 27 s, completed 2026年11月7日 下午8:26:14

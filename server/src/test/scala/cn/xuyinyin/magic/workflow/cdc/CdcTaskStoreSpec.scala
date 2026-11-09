@@ -92,7 +92,38 @@ class CdcTaskStoreSpec extends STSpec {
       s.beginOwner("two",12L) shouldBe true
       s.recoverColdPage("two",None,128,13L) shouldBe None
       val recovered=s.claim("two","TAIL",Set("capture"),14L).get
-      s.continuation(recovered) shouldBe None
+      val inherited=s.continuationWithProvenance(recovered)
+      inherited._1 shouldBe Some(progress.copy(revision=2,deltaAfter=1))
+      inherited._2 shouldBe false // cross-owner candidate still needs Journal validation
+    }
+    "carry a released task continuation across successive clean owners" in {
+      val s=store();s.beginOwner("first",1L) shouldBe true
+      s.submit(request("handoff"),2L)
+      val initial=s.claim("first","SNAPSHOT",Set("capture"),3L).get
+      val progress=cn.xuyinyin.magic.workflow.bootstrap.BootstrapProgress(revision=1,phase="SCANNING",definition="definition",executionId="execution")
+      s.finish(initial,progress,None,"ADMISSION_READY",true,true,0L,4L)
+      s.endOwner("first",confirmed=true,5L) shouldBe true
+      s.beginOwner("second",6L) shouldBe true
+      s.endOwner("second",confirmed=true,7L) shouldBe true
+      s.beginOwner("third",8L) shouldBe true
+      val next=s.claim("third","SNAPSHOT",Set("capture"),9L).get
+      s.continuation(next) shouldBe Some(progress)
+    }
+    "reject inherited progress after an uncertain owner even if isolation later permits replacement" in {
+      val url="jdbc:h2:mem:cdc_handoff_"+UUID.randomUUID().toString.replace('-','_')+";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
+      val s=new CdcTaskStore(()=>DriverManager.getConnection(url),CdcPlatformLimits(snapshotSteps=1,tailSteps=1));s.initialize()
+      s.beginOwner("old",1L) shouldBe true;s.submit(request("uncertain"),2L)
+      val grant=s.claim("old","SNAPSHOT",Set("capture"),3L).get
+      val progress=cn.xuyinyin.magic.workflow.bootstrap.BootstrapProgress(revision=1,phase="SCANNING",executionId="execution")
+      s.finish(grant,progress,None,"ADMISSION_READY",true,true,0L,4L)
+      s.endOwner("old",confirmed=false,5L) shouldBe false
+      s.beginOwner("replacement",6L) shouldBe false
+      // Model an independent, already verified isolation transition; this is not isolation evidence.
+      val c=DriverManager.getConnection(url)
+      try {val q=c.createStatement();try q.executeUpdate("UPDATE pekko_cdc_owner_v1 SET status='STOPPED' WHERE platform_id='default'")finally q.close()}finally c.close()
+      s.beginOwner("replacement",7L) shouldBe true
+      val next=s.claim("replacement","SNAPSHOT",Set("capture"),8L).get
+      s.continuation(next) shouldBe None
     }
     "skip terminal and unready capture prefixes when claiming the oldest eligible task" in {
       val s=store();s.beginOwner("owner",0L)

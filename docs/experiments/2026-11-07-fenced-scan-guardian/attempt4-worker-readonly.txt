@@ -1,0 +1,52 @@
+query= SHOW GRANTS exit= 0
+GRANT USAGE ON *.* TO `wc_e8ecd945bab6`@`%`
+GRANT ALL PRIVILEGES ON `pekko_test_cdc_window_e8ecd945bab6`.* TO `wc_e8ecd945bab6`@`%`
+query= SELECT @@server_uuid, DATABASE(), CURRENT_USER() exit= 0
+70b92861-9c8b-471e-ae18-129eb04ea489	pekko_test_cdc_window_e8ecd945bab6	wc_e8ecd945bab6@%
+query= SHOW TABLES exit= 0
+event_journal
+event_tag
+pekko_capture_fences
+pekko_capture_log
+pekko_capture_readers
+pekko_capture_schemas
+pekko_capture_subscriptions
+pekko_cdc_b_budget_v1
+pekko_cdc_b_fence_intent_v2
+pekko_cdc_b_fence_scan_v2
+pekko_cdc_b_fence_v2
+pekko_cdc_b_receipt_v2
+pekko_cdc_b_recovery_v1
+pekko_cdc_b_rejection_v1
+pekko_cdc_dispatch_v1
+pekko_cdc_grants_v1
+pekko_cdc_managed_manifest_v1
+pekko_cdc_managed_owner_v1
+pekko_cdc_owner_v1
+pekko_cdc_tasks_v1
+pekko_snapshot_host_control
+pekko_snapshot_owner_instances
+pekko_snapshot_owner_sessions
+pekko_snapshot_owners
+pekko_snapshot_ownership_audit
+pekko_snapshot_schedule_triggers
+pekko_snapshot_worker_launches
+pekko_snapshot_writer_permissions
+pekko_sync_batch_ledger
+pekko_sync_cdc_group_ledger
+pekko_table_admission_lock
+pekko_table_requests
+pekko_table_tasks
+snapshot
+source_rows
+target_a
+target_audit
+target_rows
+query= SELECT COUNT(*) FROM pekko_cdc_owner_v1 exit= 0
+1
+query= SELECT COUNT(*) FROM pekko_snapshot_owners exit= 0
+1
+query= SELECT COUNT(*) FROM pekko_snapshot_owner_sessions exit= 0
+374
+query= SELECT COUNT(*) FROM pekko_capture_readers exit= 0
+1

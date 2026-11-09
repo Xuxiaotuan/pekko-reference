@@ -1,0 +1,8 @@
+isolated schema=pekko_test_ledger_guard_c7f263cb2c; dedicated local state MySQL; test credentials omitted
+insert: success 
+lock/read: success evidence
+same value update: rejected 
+delete: rejected 
+writer drop trigger: rejected 
+inactive role SHOW GRANTS: success GRANT USAGE ON *.* TO `lg_c7f263cb2c`@`127.0.0.1` | GRANT SELECT, INSERT, UPDATE, DELETE ON `pekko_test_ledger_guard_c7f263cb2c`.`pekko_sync_cdc_group_ledger` TO `lg_c7f263cb2c`@`127.0.0.1` | GRANT `lgr_c7f263cb2c`@`%` TO `lg_c7f263cb2c`@`127.0.0.1`
+admin DROP TRIGGER while reader transaction active: rejected ERROR 1205 (HY000) at line 1: Lock wait timeout exceeded; try restarting transaction

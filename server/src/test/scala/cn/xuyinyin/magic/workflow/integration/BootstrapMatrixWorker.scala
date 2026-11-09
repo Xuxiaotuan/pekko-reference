@@ -32,7 +32,11 @@ object BootstrapMatrixWorker {
     val executor=Executors.newFixedThreadPool(10);val blocking=ExecutionContext.fromExecutorService(executor)
     def event(k:String,v:JsObject):Unit={emit(k,v.fields.toSeq:_*)
       val expected=arm.get()
-      if(expected==k && (filterTable.get().isEmpty || v.fields.get("id").contains(JsString(filterTable.get()))) && arm.compareAndSet(expected,"")){
+      val isGroupJournal=expected=="J_AFTER_GROUP" && k=="J_COMMITTED" && v.fields.get("batchSequence").exists {
+        case JsNumber(n)=>n>0
+        case _=>false
+      }
+      if((expected==k || isGroupJournal) && (filterTable.get().isEmpty || v.fields.get("id").contains(JsString(filterTable.get()))) && arm.compareAndSet(expected,"")){
         emit("CUTPOINT",("window"->JsString(k))+:v.fields.toSeq:_*);latch.get().await()
       }
     }
@@ -103,7 +107,7 @@ object BootstrapMatrixWorker {
             val source=new BootstrapSnapshot(()=>DriverManager.getConnection(settings.url(schema)+"&socketTimeout=30000",settings.user,settings.password),table,codec,10000,8L*1024*1024,observe)
             val node=Node("target","sink","mysql.cdc.apply","real target",Position(0,0),JsObject("host"->JsString(state.host),"port"->JsNumber(state.port),"database"->JsString(schema),"table"->JsString(targetTable),"username"->JsString(state.user),"passwordEnv"->JsString("CDC_WINDOW_MYSQL_PASSWORD")))
             val replaySink=new BootstrapReplaySink(_=>observed(()=>DriverManager.getConnection(state.copy(port=proxy.port).url(schema),state.user,state.password),armReplay,proxy,"REPLAY_TARGET_COMMIT"))
-            val r=new BootstrapRunner(id,table,generation,table+"|"+generation+"|"+targetTable+"|"+codec.schemaId,capture,store,spool,target,access,source,replaySink,node,schema,()=>stateConnection(),admission,BootstrapLimits(groupBatch=batchSize.toInt),observe)(blocking)
+            val r=new BootstrapRunner(id,table,generation,table+"|"+generation+"|"+targetTable+"|"+codec.schemaId,capture,store,spool,target,access,source,replaySink.bind(node),schema,()=>stateConnection(),admission,BootstrapLimits(groupBatch=batchSize.toInt),observe)(blocking)
             runners.put(id,r)
             val f=Future(r.run(()=>stopping.get()))(blocking);futures.put(id,f)
             f.failed.foreach(e=>emit("RUN_FAILED","id"->JsString(id),"error"->JsString(e.toString)))

@@ -1,0 +1,701 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+09:28:50,980 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+09:28:50,981 |-INFO in ch.qos.logback.classic.util.ContextInitializer@254e7a67 - No custom configurators were discovered as a service.
+09:28:50,981 |-INFO in ch.qos.logback.classic.util.ContextInitializer@254e7a67 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+09:28:50,981 |-INFO in ch.qos.logback.classic.util.ContextInitializer@254e7a67 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+09:28:50,981 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+09:28:50,981 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+09:28:50,982 |-INFO in ch.qos.logback.classic.util.ContextInitializer@254e7a67 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+09:28:50,982 |-INFO in ch.qos.logback.classic.util.ContextInitializer@254e7a67 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+09:28:50,982 |-INFO in ch.qos.logback.classic.util.ContextInitializer@254e7a67 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+09:28:50,983 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+09:28:50,983 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+09:28:51,010 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+09:28:51,010 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+09:28:51,013 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+09:28:51,021 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+09:28:51,021 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+09:28:51,021 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+09:28:51,021 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+09:28:51,022 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+09:28:51,022 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+09:28:51,023 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+09:28:51,023 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+09:28:51,024 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+09:28:51,024 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+09:28:51,024 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+09:28:51,024 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+09:28:51,024 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@43a0e9d8 - End of configuration.
+09:28:51,024 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@69f0752d - Registering current configuration as safe fallback point
+09:28:51,024 |-INFO in ch.qos.logback.classic.util.ContextInitializer@254e7a67 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 42 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+09:28:51.336 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+09:28:51.478 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://EventSourcedWorkflowActorSpec@127.0.0.1:60656] with UID [9179896675775656540]
+09:28:51.484 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://EventSourcedWorkflowActorSpec@127.0.0.1:60656] - Starting up, Pekko version [1.1.3] ...
+09:28:51.527 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://EventSourcedWorkflowActorSpec@127.0.0.1:60656] - Registered cluster JMX MBean [pekko:type=Cluster]
+09:28:51.527 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://EventSourcedWorkflowActorSpec@127.0.0.1:60656] - Started up successfully
+09:28:51.542 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-6][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://EventSourcedWorkflowActorSpec@127.0.0.1:60656] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+09:28:51.545 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://EventSourcedWorkflowActorSpec@127.0.0.1:60656#9179896675775656540], selfDc [default].
+09:28:52.278 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.persistence.dispatchers.default-plugin-dispatcher-15][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Starting...
+09:28:52.282 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.persistence.dispatchers.default-plugin-dispatcher-15][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Start completed.
+09:28:52.469 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-16][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.persistence.JournalProtocol$WriteMessagesSuccessful$] from Actor[pekko://EventSourcedWorkflowActorSpec/system/jdbc-journal#-1810376888] to Actor[pekko://EventSourcedWorkflowActorSpec/user/kafka-progress#1496150766] was not delivered. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. If this is not an expected behavior then Actor[pekko://EventSourcedWorkflowActorSpec/user/kafka-progress#1496150766] may have terminated unexpectedly. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+09:28:52.615 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+09:28:52.618 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-6][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://EventSourcedWorkflowActorSpec@127.0.0.1:60656] - Exiting completed
+09:28:52.618 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-6][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://EventSourcedWorkflowActorSpec@127.0.0.1:60656] - Shutting down...
+09:28:52.619 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-6][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://EventSourcedWorkflowActorSpec@127.0.0.1:60656] - Successfully shut down
+09:28:52.627 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+09:28:52.628 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+09:28:52.635 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+09:28:52.640 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-6][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown initiated...
+09:28:52.641 [34mINFO [0;39m [36m[EventSourcedWorkflowActorSpec-pekko.actor.default-dispatcher-6][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown completed.
+[info] EventSourcedWorkflowActorSpec:
+[info] EventSourcedWorkflowActor
+[info] - should round-trip public replies containing small Long option values
+[info] - should round-trip resumable events, checkpoint commands, and deterministic replies
+[info] - should issue a Journal receipt only for a newly persisted checkpoint
+[info] - should persist one immutable boundary and monotonically advance reliable checkpoints
+[info] - should carry an accepted Kafka checkpoint from a failed execution into the next run
+[info] - should keep a MySQL checkpoint scoped to its execution
+[info] - should clear Kafka progress when a new workflow revision is defined
+[info] - should canonicalize recursively sorted workflow JSON and bound schedule watermarks
+[info] - should reject checkpoint sequence wraparound after Long.MaxValue
+[info] - should persist a definition before acknowledging it and reject execution before initialization
+[info] - should reject invalid definitions and conflicting revisions without changing the definition
+[info] - should reject workflow definitions whose canonical event payload exceeds persistence bounds
+[info] - should persist successful and failed engine results as distinct terminal states
+[info] - should retain bounded node attribution and errors in execution history
+[info] - should persist an oversized engine result as a bounded failed execution
+[info] - should deduplicate retained manual requests and reject a concurrent schedule run
+[info] - should deduplicate an equal scheduled watermark after its execution completes
+09:28:52.701 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+09:28:52.737 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-5][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.761 [1;31mERROR[0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-5][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow execution failed: linear after 24ms
+cn.xuyinyin.magic.workflow.engine.CdcExecutionException: explicit refusal
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.cn$xuyinyin$magic$workflow$execution$WorkflowExecutionEngine$$sanitizeRuntimeFailure(WorkflowExecutionEngine.scala:403)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:316)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:310)
+	at scala.util.Failure.recover(Try.scala:233)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:487)
+	at org.apache.pekko.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:73)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:110)
+	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:94)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:110)
+	at org.apache.pekko.dispatch.TaskInvocation.run(AbstractDispatcher.scala:59)
+	at org.apache.pekko.dispatch.ForkJoinExecutorConfigurator$PekkoForkJoinTask.exec(ForkJoinExecutorConfigurator.scala:61)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+Caused by: java.lang.IllegalStateException: explicit refusal
+	... 17 common frames omitted
+09:28:52.765 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-5][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.766 [1;31mERROR[0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-5][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow execution failed: linear after 1ms
+cn.xuyinyin.magic.workflow.engine.CdcExecutionException: checkpoint rejected: reply was not received
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.cn$xuyinyin$magic$workflow$execution$WorkflowExecutionEngine$$sanitizeRuntimeFailure(WorkflowExecutionEngine.scala:403)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:316)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:310)
+	at scala.util.Failure.recover(Try.scala:233)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:487)
+	at org.apache.pekko.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:73)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:110)
+	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:94)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:110)
+	at org.apache.pekko.dispatch.TaskInvocation.run(AbstractDispatcher.scala:59)
+	at org.apache.pekko.dispatch.ForkJoinExecutorConfigurator$PekkoForkJoinTask.exec(ForkJoinExecutorConfigurator.scala:61)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+Caused by: java.lang.IllegalStateException: checkpoint rejected: reply was not received
+	... 17 common frames omitted
+09:28:52.767 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-5][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.768 [1;31mERROR[0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow execution failed: linear after 1ms
+cn.xuyinyin.magic.workflow.engine.CdcExecutionException: checkpoint rejected
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.cn$xuyinyin$magic$workflow$execution$WorkflowExecutionEngine$$sanitizeRuntimeFailure(WorkflowExecutionEngine.scala:403)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:316)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:310)
+	at scala.util.Failure.recover(Try.scala:233)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:487)
+	at org.apache.pekko.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:73)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:110)
+	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:94)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:110)
+	at org.apache.pekko.dispatch.TaskInvocation.run(AbstractDispatcher.scala:59)
+	at org.apache.pekko.dispatch.ForkJoinExecutorConfigurator$PekkoForkJoinTask.exec(ForkJoinExecutorConfigurator.scala:61)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+Caused by: java.lang.IllegalStateException: checkpoint rejected
+	... 17 common frames omitted
+09:28:52.769 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.770 [1;31mERROR[0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-3][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow execution failed: linear after 1ms
+cn.xuyinyin.magic.workflow.engine.CdcExecutionException: explicit refusal
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.cn$xuyinyin$magic$workflow$execution$WorkflowExecutionEngine$$sanitizeRuntimeFailure(WorkflowExecutionEngine.scala:403)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:312)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:310)
+	at scala.util.Failure.recover(Try.scala:233)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:487)
+	at org.apache.pekko.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:73)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:110)
+	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:94)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:110)
+	at org.apache.pekko.dispatch.TaskInvocation.run(AbstractDispatcher.scala:59)
+	at org.apache.pekko.dispatch.ForkJoinExecutorConfigurator$PekkoForkJoinTask.exec(ForkJoinExecutorConfigurator.scala:61)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+Caused by: java.lang.IllegalStateException: explicit refusal
+	... 17 common frames omitted
+09:28:52.771 [34mINFO [0;39m [36m[pool-8-thread-5-ScalaTest-running-WorkflowExecutionEngineSpec][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.774 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-3][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: linear in 3ms
+09:28:52.776 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-3][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: mysql-cdc
+09:28:52.778 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-3][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: mysql-cdc in 2ms
+09:28:52.780 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-3][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: mysql-cdc
+09:28:52.780 [1;31mERROR[0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-3][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow execution failed: mysql-cdc after 0ms
+cn.xuyinyin.magic.workflow.engine.CdcExecutionException: connector failed with <redacted>
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.cn$xuyinyin$magic$workflow$execution$WorkflowExecutionEngine$$sanitizeRuntimeFailure(WorkflowExecutionEngine.scala:403)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:312)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:310)
+	at scala.util.Failure.recover(Try.scala:233)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:487)
+	at org.apache.pekko.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:73)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:110)
+	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:94)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:110)
+	at org.apache.pekko.dispatch.TaskInvocation.run(AbstractDispatcher.scala:59)
+	at org.apache.pekko.dispatch.ForkJoinExecutorConfigurator$PekkoForkJoinTask.exec(ForkJoinExecutorConfigurator.scala:61)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+Caused by: java.lang.IllegalStateException: connector failed with <redacted>
+	... 17 common frames omitted
+09:28:52.781 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-3][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.783 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-3][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: linear in 2ms
+09:28:52.784 [34mINFO [0;39m [36m[pool-8-thread-5-ScalaTest-running-WorkflowExecutionEngineSpec][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: failing-sink
+09:28:52.786 [1;31mERROR[0;39m [36m[pool-8-thread-5-ScalaTest-running-WorkflowExecutionEngineSpec][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow setup failed: failing-sink after 1ms
+java.nio.file.InvalidPathException: Nul character not allowed:  invalid
+	at java.base/sun.nio.fs.UnixPath.checkNotNul(UnixPath.java:90)
+	at java.base/sun.nio.fs.UnixPath.normalizeAndCheck(UnixPath.java:80)
+	at java.base/sun.nio.fs.UnixPath.<init>(UnixPath.java:68)
+	at java.base/sun.nio.fs.UnixFileSystem.getPath(UnixFileSystem.java:279)
+	at java.base/java.nio.file.Path.of(Path.java:147)
+	at java.base/java.nio.file.Paths.get(Paths.java:69)
+	at cn.xuyinyin.magic.connectors.file.FileTextSink.createSink(FileTextSink.scala:28)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.createSink(WorkflowExecutionEngine.scala:475)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.buildExecutionGraph(WorkflowExecutionEngine.scala:461)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.executeRowStream(WorkflowExecutionEngine.scala:180)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.executeInternal(WorkflowExecutionEngine.scala:155)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.execute(WorkflowExecutionEngine.scala:66)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngineSpec.$anonfun$new$37(WorkflowExecutionEngineSpec.scala:261)
+	at org.scalatest.OutcomeOf.outcomeOf(OutcomeOf.scala:85)
+	at org.scalatest.OutcomeOf.outcomeOf$(OutcomeOf.scala:83)
+	at org.scalatest.OutcomeOf$.outcomeOf(OutcomeOf.scala:104)
+	at org.scalatest.Transformer.apply(Transformer.scala:22)
+	at org.scalatest.Transformer.apply(Transformer.scala:20)
+	at org.scalatest.wordspec.AnyWordSpecLike$$anon$3.apply(AnyWordSpecLike.scala:1240)
+	at org.scalatest.TestSuite.withFixture(TestSuite.scala:196)
+	at org.scalatest.TestSuite.withFixture$(TestSuite.scala:195)
+	at org.scalatest.wordspec.AnyWordSpec.withFixture(AnyWordSpec.scala:1880)
+	at org.scalatest.wordspec.AnyWordSpecLike.invokeWithFixture$1(AnyWordSpecLike.scala:1238)
+	at org.scalatest.wordspec.AnyWordSpecLike.$anonfun$runTest$1(AnyWordSpecLike.scala:1250)
+	at org.scalatest.SuperEngine.runTestImpl(Engine.scala:306)
+	at org.scalatest.wordspec.AnyWordSpecLike.runTest(AnyWordSpecLike.scala:1250)
+	at org.scalatest.wordspec.AnyWordSpecLike.runTest$(AnyWordSpecLike.scala:1232)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngineSpec.org$scalatest$BeforeAndAfterEach$$super$runTest(WorkflowExecutionEngineSpec.scala:26)
+	at org.scalatest.BeforeAndAfterEach.runTest(BeforeAndAfterEach.scala:234)
+	at org.scalatest.BeforeAndAfterEach.runTest$(BeforeAndAfterEach.scala:227)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngineSpec.runTest(WorkflowExecutionEngineSpec.scala:26)
+	at org.scalatest.wordspec.AnyWordSpecLike.$anonfun$runTests$1(AnyWordSpecLike.scala:1309)
+	at org.scalatest.SuperEngine.$anonfun$runTestsInBranch$1(Engine.scala:413)
+	at scala.collection.immutable.List.foreach(List.scala:333)
+	at org.scalatest.SuperEngine.traverseSubNodes$1(Engine.scala:401)
+	at org.scalatest.SuperEngine.runTestsInBranch(Engine.scala:390)
+	at org.scalatest.SuperEngine.$anonfun$runTestsInBranch$1(Engine.scala:427)
+	at scala.collection.immutable.List.foreach(List.scala:333)
+	at org.scalatest.SuperEngine.traverseSubNodes$1(Engine.scala:401)
+	at org.scalatest.SuperEngine.runTestsInBranch(Engine.scala:396)
+	at org.scalatest.SuperEngine.runTestsImpl(Engine.scala:475)
+	at org.scalatest.wordspec.AnyWordSpecLike.runTests(AnyWordSpecLike.scala:1309)
+	at org.scalatest.wordspec.AnyWordSpecLike.runTests$(AnyWordSpecLike.scala:1308)
+	at org.scalatest.wordspec.AnyWordSpec.runTests(AnyWordSpec.scala:1880)
+	at org.scalatest.Suite.run(Suite.scala:1114)
+	at org.scalatest.Suite.run$(Suite.scala:1096)
+	at org.scalatest.wordspec.AnyWordSpec.org$scalatest$wordspec$AnyWordSpecLike$$super$run(AnyWordSpec.scala:1880)
+	at org.scalatest.wordspec.AnyWordSpecLike.$anonfun$run$1(AnyWordSpecLike.scala:1354)
+	at org.scalatest.SuperEngine.runImpl(Engine.scala:535)
+	at org.scalatest.wordspec.AnyWordSpecLike.run(AnyWordSpecLike.scala:1354)
+	at org.scalatest.wordspec.AnyWordSpecLike.run$(AnyWordSpecLike.scala:1352)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngineSpec.org$scalatest$BeforeAndAfterAll$$super$run(WorkflowExecutionEngineSpec.scala:26)
+	at org.scalatest.BeforeAndAfterAll.liftedTree1$1(BeforeAndAfterAll.scala:213)
+	at org.scalatest.BeforeAndAfterAll.run(BeforeAndAfterAll.scala:210)
+	at org.scalatest.BeforeAndAfterAll.run$(BeforeAndAfterAll.scala:208)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngineSpec.run(WorkflowExecutionEngineSpec.scala:26)
+	at org.scalatest.tools.Framework.org$scalatest$tools$Framework$$runSuite(Framework.scala:321)
+	at org.scalatest.tools.Framework$ScalaTestTask.execute(Framework.scala:517)
+	at sbt.TestRunner.runTest$1(TestFramework.scala:153)
+	at sbt.TestRunner.run(TestFramework.scala:168)
+	at sbt.TestFramework$$anon$3$$anonfun$$lessinit$greater$1.$anonfun$apply$1(TestFramework.scala:336)
+	at sbt.TestFramework$.sbt$TestFramework$$withContextLoader(TestFramework.scala:296)
+	at sbt.TestFramework$$anon$3$$anonfun$$lessinit$greater$1.apply(TestFramework.scala:336)
+	at sbt.TestFramework$$anon$3$$anonfun$$lessinit$greater$1.apply(TestFramework.scala:336)
+	at sbt.TestFunction.apply(TestFramework.scala:348)
+	at sbt.Tests$.processRunnable$1(Tests.scala:475)
+	at sbt.Tests$.$anonfun$makeSerial$1(Tests.scala:481)
+	at sbt.std.Transform$$anon$3.$anonfun$apply$2(Transform.scala:47)
+	at sbt.std.Transform$$anon$4.work(Transform.scala:69)
+	at sbt.Execute.$anonfun$submit$2(Execute.scala:283)
+	at sbt.internal.util.ErrorHandling$.wideConvert(ErrorHandling.scala:24)
+	at sbt.Execute.work(Execute.scala:292)
+	at sbt.Execute.$anonfun$submit$1(Execute.scala:283)
+	at sbt.ConcurrentRestrictions$$anon$4.$anonfun$submitValid$1(ConcurrentRestrictions.scala:265)
+	at sbt.CompletionService$$anon$2.call(CompletionService.scala:65)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+09:28:52.786 [34mINFO [0;39m [36m[pool-8-thread-5-ScalaTest-running-WorkflowExecutionEngineSpec][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: failing-source
+09:28:52.791 [1;31mERROR[0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-3][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow execution failed: failing-source after 5ms
+java.lang.IllegalStateException: source boom
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngineSpec$FailingSource$.createSource(WorkflowExecutionEngineSpec.scala:1387)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.createSource(WorkflowExecutionEngine.scala:467)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.buildExecutionGraph(WorkflowExecutionEngine.scala:456)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.executeRowStream(WorkflowExecutionEngine.scala:180)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.executeInternal(WorkflowExecutionEngine.scala:155)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.execute(WorkflowExecutionEngine.scala:66)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngineSpec.$anonfun$new$41(WorkflowExecutionEngineSpec.scala:276)
+	at org.scalatest.OutcomeOf.outcomeOf(OutcomeOf.scala:85)
+	at org.scalatest.OutcomeOf.outcomeOf$(OutcomeOf.scala:83)
+	at org.scalatest.OutcomeOf$.outcomeOf(OutcomeOf.scala:104)
+	at org.scalatest.Transformer.apply(Transformer.scala:22)
+	at org.scalatest.Transformer.apply(Transformer.scala:20)
+	at org.scalatest.wordspec.AnyWordSpecLike$$anon$3.apply(AnyWordSpecLike.scala:1240)
+	at org.scalatest.TestSuite.withFixture(TestSuite.scala:196)
+	at org.scalatest.TestSuite.withFixture$(TestSuite.scala:195)
+	at org.scalatest.wordspec.AnyWordSpec.withFixture(AnyWordSpec.scala:1880)
+	at org.scalatest.wordspec.AnyWordSpecLike.invokeWithFixture$1(AnyWordSpecLike.scala:1238)
+	at org.scalatest.wordspec.AnyWordSpecLike.$anonfun$runTest$1(AnyWordSpecLike.scala:1250)
+	at org.scalatest.SuperEngine.runTestImpl(Engine.scala:306)
+	at org.scalatest.wordspec.AnyWordSpecLike.runTest(AnyWordSpecLike.scala:1250)
+	at org.scalatest.wordspec.AnyWordSpecLike.runTest$(AnyWordSpecLike.scala:1232)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngineSpec.org$scalatest$BeforeAndAfterEach$$super$runTest(WorkflowExecutionEngineSpec.scala:26)
+	at org.scalatest.BeforeAndAfterEach.runTest(BeforeAndAfterEach.scala:234)
+	at org.scalatest.BeforeAndAfterEach.runTest$(BeforeAndAfterEach.scala:227)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngineSpec.runTest(WorkflowExecutionEngineSpec.scala:26)
+	at org.scalatest.wordspec.AnyWordSpecLike.$anonfun$runTests$1(AnyWordSpecLike.scala:1309)
+	at org.scalatest.SuperEngine.$anonfun$runTestsInBranch$1(Engine.scala:413)
+	at scala.collection.immutable.List.foreach(List.scala:333)
+	at org.scalatest.SuperEngine.traverseSubNodes$1(Engine.scala:401)
+	at org.scalatest.SuperEngine.runTestsInBranch(Engine.scala:390)
+	at org.scalatest.SuperEngine.$anonfun$runTestsInBranch$1(Engine.scala:427)
+	at scala.collection.immutable.List.foreach(List.scala:333)
+	at org.scalatest.SuperEngine.traverseSubNodes$1(Engine.scala:401)
+	at org.scalatest.SuperEngine.runTestsInBranch(Engine.scala:396)
+	at org.scalatest.SuperEngine.runTestsImpl(Engine.scala:475)
+	at org.scalatest.wordspec.AnyWordSpecLike.runTests(AnyWordSpecLike.scala:1309)
+	at org.scalatest.wordspec.AnyWordSpecLike.runTests$(AnyWordSpecLike.scala:1308)
+	at org.scalatest.wordspec.AnyWordSpec.runTests(AnyWordSpec.scala:1880)
+	at org.scalatest.Suite.run(Suite.scala:1114)
+	at org.scalatest.Suite.run$(Suite.scala:1096)
+	at org.scalatest.wordspec.AnyWordSpec.org$scalatest$wordspec$AnyWordSpecLike$$super$run(AnyWordSpec.scala:1880)
+	at org.scalatest.wordspec.AnyWordSpecLike.$anonfun$run$1(AnyWordSpecLike.scala:1354)
+	at org.scalatest.SuperEngine.runImpl(Engine.scala:535)
+	at org.scalatest.wordspec.AnyWordSpecLike.run(AnyWordSpecLike.scala:1354)
+	at org.scalatest.wordspec.AnyWordSpecLike.run$(AnyWordSpecLike.scala:1352)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngineSpec.org$scalatest$BeforeAndAfterAll$$super$run(WorkflowExecutionEngineSpec.scala:26)
+	at org.scalatest.BeforeAndAfterAll.liftedTree1$1(BeforeAndAfterAll.scala:213)
+	at org.scalatest.BeforeAndAfterAll.run(BeforeAndAfterAll.scala:210)
+	at org.scalatest.BeforeAndAfterAll.run$(BeforeAndAfterAll.scala:208)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngineSpec.run(WorkflowExecutionEngineSpec.scala:26)
+	at org.scalatest.tools.Framework.org$scalatest$tools$Framework$$runSuite(Framework.scala:321)
+	at org.scalatest.tools.Framework$ScalaTestTask.execute(Framework.scala:517)
+	at sbt.TestRunner.runTest$1(TestFramework.scala:153)
+	at sbt.TestRunner.run(TestFramework.scala:168)
+	at sbt.TestFramework$$anon$3$$anonfun$$lessinit$greater$1.$anonfun$apply$1(TestFramework.scala:336)
+	at sbt.TestFramework$.sbt$TestFramework$$withContextLoader(TestFramework.scala:296)
+	at sbt.TestFramework$$anon$3$$anonfun$$lessinit$greater$1.apply(TestFramework.scala:336)
+	at sbt.TestFramework$$anon$3$$anonfun$$lessinit$greater$1.apply(TestFramework.scala:336)
+	at sbt.TestFunction.apply(TestFramework.scala:348)
+	at sbt.Tests$.processRunnable$1(Tests.scala:475)
+	at sbt.Tests$.$anonfun$makeSerial$1(Tests.scala:481)
+	at sbt.std.Transform$$anon$3.$anonfun$apply$2(Transform.scala:47)
+	at sbt.std.Transform$$anon$4.work(Transform.scala:69)
+	at sbt.Execute.$anonfun$submit$2(Execute.scala:283)
+	at sbt.internal.util.ErrorHandling$.wideConvert(ErrorHandling.scala:24)
+	at sbt.Execute.work(Execute.scala:292)
+	at sbt.Execute.$anonfun$submit$1(Execute.scala:283)
+	at sbt.ConcurrentRestrictions$$anon$4.$anonfun$submitValid$1(ConcurrentRestrictions.scala:265)
+	at sbt.CompletionService$$anon$2.call(CompletionService.scala:65)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+09:28:52.792 [34mINFO [0;39m [36m[pool-8-thread-5-ScalaTest-running-WorkflowExecutionEngineSpec][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: branched
+09:28:52.794 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-3][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.795 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: linear in 1ms
+09:28:52.797 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.798 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: linear in 1ms
+09:28:52.799 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.799 [1;31mERROR[0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow execution failed: linear after 0ms
+cn.xuyinyin.magic.workflow.engine.CdcExecutionException: actor checkpoint unavailable
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.cn$xuyinyin$magic$workflow$execution$WorkflowExecutionEngine$$sanitizeRuntimeFailure(WorkflowExecutionEngine.scala:403)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:316)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:310)
+	at scala.util.Failure.recover(Try.scala:233)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:487)
+	at org.apache.pekko.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:73)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:110)
+	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:94)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:110)
+	at org.apache.pekko.dispatch.TaskInvocation.run(AbstractDispatcher.scala:59)
+	at org.apache.pekko.dispatch.ForkJoinExecutorConfigurator$PekkoForkJoinTask.exec(ForkJoinExecutorConfigurator.scala:61)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+Caused by: java.lang.IllegalStateException: actor checkpoint unavailable
+	... 17 common frames omitted
+09:28:52.800 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.801 [1;31mERROR[0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-8][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow execution failed: linear after 1ms
+cn.xuyinyin.magic.workflow.engine.CdcExecutionException: source acknowledgement unavailable
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.cn$xuyinyin$magic$workflow$execution$WorkflowExecutionEngine$$sanitizeRuntimeFailure(WorkflowExecutionEngine.scala:403)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:312)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:310)
+	at scala.util.Failure.recover(Try.scala:233)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:487)
+	at org.apache.pekko.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:73)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:110)
+	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:94)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:110)
+	at org.apache.pekko.dispatch.TaskInvocation.run(AbstractDispatcher.scala:59)
+	at org.apache.pekko.dispatch.ForkJoinExecutorConfigurator$PekkoForkJoinTask.exec(ForkJoinExecutorConfigurator.scala:61)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+Caused by: java.lang.IllegalStateException: source acknowledgement unavailable
+	... 17 common frames omitted
+09:28:52.802 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-8][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.802 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: linear in 0ms
+09:28:52.803 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.803 [1;31mERROR[0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow execution failed: linear after 0ms
+cn.xuyinyin.magic.workflow.engine.CdcExecutionException: source boundary rejected
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.cn$xuyinyin$magic$workflow$execution$WorkflowExecutionEngine$$sanitizeRuntimeFailure(WorkflowExecutionEngine.scala:403)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:312)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:310)
+	at scala.util.Failure.recover(Try.scala:233)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:487)
+	at org.apache.pekko.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:73)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:110)
+	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:94)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:110)
+	at org.apache.pekko.dispatch.TaskInvocation.run(AbstractDispatcher.scala:59)
+	at org.apache.pekko.dispatch.ForkJoinExecutorConfigurator$PekkoForkJoinTask.exec(ForkJoinExecutorConfigurator.scala:61)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+Caused by: java.lang.IllegalStateException: source boundary rejected
+	... 17 common frames omitted
+09:28:52.804 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.804 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: linear in 0ms
+09:28:52.807 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.808 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-7][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: linear in 1ms
+09:28:52.809 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-7][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.810 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-8][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: linear in 1ms
+09:28:52.811 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-8][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.812 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-7][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: linear in 1ms
+09:28:52.815 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-7][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.815 [1;31mERROR[0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-7][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow execution failed: linear after 0ms
+cn.xuyinyin.magic.workflow.engine.CdcExecutionException: ledger unavailable
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.cn$xuyinyin$magic$workflow$execution$WorkflowExecutionEngine$$sanitizeRuntimeFailure(WorkflowExecutionEngine.scala:403)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:312)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:310)
+	at scala.util.Failure.recover(Try.scala:233)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:487)
+	at org.apache.pekko.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:73)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:110)
+	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:94)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:110)
+	at org.apache.pekko.dispatch.TaskInvocation.run(AbstractDispatcher.scala:59)
+	at org.apache.pekko.dispatch.ForkJoinExecutorConfigurator$PekkoForkJoinTask.exec(ForkJoinExecutorConfigurator.scala:61)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+Caused by: java.lang.IllegalStateException: ledger unavailable
+	... 17 common frames omitted
+09:28:52.816 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-7][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.816 [1;31mERROR[0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-7][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow execution failed: linear after 0ms
+cn.xuyinyin.magic.workflow.engine.CdcExecutionException: Map缺少expression配置
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.cn$xuyinyin$magic$workflow$execution$WorkflowExecutionEngine$$sanitizeRuntimeFailure(WorkflowExecutionEngine.scala:403)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:314)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:310)
+	at scala.util.Failure.recover(Try.scala:233)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:487)
+	at org.apache.pekko.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:73)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:110)
+	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:94)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:110)
+	at org.apache.pekko.dispatch.TaskInvocation.run(AbstractDispatcher.scala:59)
+	at org.apache.pekko.dispatch.ForkJoinExecutorConfigurator$PekkoForkJoinTask.exec(ForkJoinExecutorConfigurator.scala:61)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+Caused by: java.lang.IllegalStateException: Map缺少expression配置
+	... 17 common frames omitted
+09:28:52.817 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-7][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.818 [1;31mERROR[0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-7][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow capability validation failed: linear: ReliableRunContext capability loss: sink test.legacy-sink is not a checkpoint-aware sink for source test.checkpoint-source
+09:28:52.818 [34mINFO [0;39m [36m[pool-8-thread-5-ScalaTest-running-WorkflowExecutionEngineSpec][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.819 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-8][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: linear in 1ms
+09:28:52.819 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.819 [1;31mERROR[0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow capability validation failed: linear: ReliableRunContext capability loss: source test.legacy-source is not a checkpoint-aware source for sink test.capable-legacy-sink
+09:28:52.829 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.829 [1;31mERROR[0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow execution failed: linear after 0ms
+cn.xuyinyin.magic.workflow.engine.CdcExecutionException: workflow execution cancelled
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.cn$xuyinyin$magic$workflow$execution$WorkflowExecutionEngine$$sanitizeRuntimeFailure(WorkflowExecutionEngine.scala:403)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:316)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:310)
+	at scala.util.Failure.recover(Try.scala:233)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:487)
+	at org.apache.pekko.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:73)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:110)
+	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:94)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:110)
+	at org.apache.pekko.dispatch.TaskInvocation.run(AbstractDispatcher.scala:59)
+	at org.apache.pekko.dispatch.ForkJoinExecutorConfigurator$PekkoForkJoinTask.exec(ForkJoinExecutorConfigurator.scala:61)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+Caused by: java.lang.IllegalStateException: workflow execution cancelled
+	... 17 common frames omitted
+09:28:52.830 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.831 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: linear in 1ms
+09:28:52.832 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.845 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: linear in 13ms
+09:28:52.845 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.858 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: linear in 12ms
+09:28:52.858 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.861 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: linear in 1ms
+09:28:52.862 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Starting workflow execution: linear
+09:28:52.863 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.e.WorkflowExecutionEngine][0;39m - Workflow executed successfully: linear in 1ms
+09:28:52.864 [34mINFO [0;39m [36m[workflow-execution-engine-spec-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+[info] WorkflowExecutionEngineSpec:
+[info] WorkflowExecutionEngine
+[info] - should preserve explicit progress rejection but keep uncertain outcomes retryable for typed-journal
+[info] - should preserve explicit progress rejection but keep uncertain outcomes retryable for timeout-journal
+[info] - should preserve explicit progress rejection but keep uncertain outcomes retryable for untyped-journal
+[info] - should preserve explicit progress rejection but keep uncertain outcomes retryable for typed-ack
+[info] - should strip presentation fields at actual row connector invocation while preserving configuration and results
+[info] - should register the built-in MySQL CDC source and apply sink
+[info] - should inject MySQL CDC passwords only into runtime nodes without exposing them
+[info] - should redact MySQL CDC runtime passwords from connector logs and failure state
+[info] - should prepare MySQL environment passwords once per reliable execution without exposing them
+[info] - should report the failing Sink node without converting the execution to success
+[info] - should attribute an asynchronous Source failure and preserve all pipeline node results
+[info] - should return ordered conservative results when validation prevents execution
+[info] - should keep a replacement Source registered when cleanup expects the previous instance
+[info] - should keep an equal but distinct replacement Source registered during cleanup
+[info] - should keep an equal but distinct replacement Sink registered during cleanup
+[info] - should run supplied-boundary batches sequentially from the latest checkpoint
+[info] - should acknowledge a source batch only after sink commit and actor checkpoint persistence
+[info] - should not acknowledge the source when actor checkpoint persistence fails
+[info] - should attribute source acknowledgement failure after one sink commit and actor checkpoint
+[info] - should validate the source boundary before creating and committing batches
+[info] - should attribute boundary validation failure to the sink before creating or committing batches
+[info] - should pass the latest source checkpoint to boundary discovery
+[info] - should fail clearly when a checkpoint source omits boundary discovery
+[info] - should report a representable target row count for a new reliable execution
+[info] - should complete with no target row count when durable commits exceed Int range
+[info] - should persist a discovered boundary before committing an empty transformed batch
+[info] - should stop before boundary discovery when reliable sink readiness fails
+[info] - should attribute reliable transform setup failures to the transform node
+[info] - should reject a checkpoint-aware source paired with a legacy sink
+[info] - should keep a legacy source on the row stream when its sink is checkpoint-aware
+[info] - should fail closed when a reliable run context loses its source capability
+[info] - should register mysql.snapshot separately from mysql.query
+[info] - should load a fixed JDBC dispatcher in every runtime profile
+[info] - should cancel a reliable execution before stream materialization without creating its source
+[info] - should cancel a materialized reliable source exactly once and remove its active control
+[info] - should release an old execution before restarting the same durable execution ID
+[info] - should cancel every queued generation while the old execution is still releasing
+[info] - should remove the active execution control after normal completion
+[info] CdcRecoveryFenceStorageSpec:
+[info] a versioned recovery permit
+[info] - should keep an owner unknown when a consumed versioned claim remains during shutdown
+[info] - should still allow a clean owner with only a consumed legacy claim to stop
+[info] - should not admit a replacement for a consumed versioned permit without a grant
+[info] - should refuse to recreate an owner when only a Reader startup token remains
+[info] - should upgrade an existing v1 permit table without changing its data
+[info] - should persist an immutable source binding atomically with grant release
+[info] CdcTaskStoreSpec:
+[info] durable CDC task index
+[info] - should refuse pre-execution cancellation while a B recovery permit is pending
+[info] - should preserve the identity of duplicate requests and reject a changed definition
+[info] - should cancel an unexecuted task without claiming a Journal or source boundary
+[info] - should page cold records without materializing their execution resources
+[info] - should retain unknown grants and refuse a new owner after an unclean stop
+[info] - should fence managed admission as soon as a grant becomes unknown
+[info] - should park idle streaming tasks and wake them from a bounded durable L dispatch
+[info] - should skip terminal and unready capture prefixes when claiming the oldest eligible task
+09:28:53.372 [34mINFO [0;39m [36m[legacy-bootstrap-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+09:28:53.378 [34mINFO [0;39m [36m[legacy-bootstrap-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://legacy-bootstrap-cbor@127.0.0.1:60657] with UID [-7019831618583649892]
+09:28:53.378 [34mINFO [0;39m [36m[legacy-bootstrap-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-bootstrap-cbor@127.0.0.1:60657] - Starting up, Pekko version [1.1.3] ...
+09:28:53.379 [34mINFO [0;39m [36m[legacy-bootstrap-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-bootstrap-cbor@127.0.0.1:60657] - Registered cluster JMX MBean [pekko:type=Cluster]
+09:28:53.379 [34mINFO [0;39m [36m[legacy-bootstrap-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-bootstrap-cbor@127.0.0.1:60657] - Started up successfully
+09:28:53.380 [34mINFO [0;39m [36m[legacy-bootstrap-cbor-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-bootstrap-cbor@127.0.0.1:60657] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+09:28:53.380 [34mINFO [0;39m [36m[legacy-bootstrap-cbor-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://legacy-bootstrap-cbor@127.0.0.1:60657#-7019831618583649892], selfDc [default].
+09:28:53.410 [34mINFO [0;39m [36m[legacy-bootstrap-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+09:28:53.410 [34mINFO [0;39m [36m[legacy-bootstrap-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://legacy-bootstrap-cbor/system/cluster/core/daemon#2007981303] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+09:28:53.410 [34mINFO [0;39m [36m[legacy-bootstrap-cbor-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-bootstrap-cbor@127.0.0.1:60657] - Exiting completed
+09:28:53.410 [34mINFO [0;39m [36m[legacy-bootstrap-cbor-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-bootstrap-cbor@127.0.0.1:60657] - Shutting down...
+09:28:53.410 [34mINFO [0;39m [36m[legacy-bootstrap-cbor-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-bootstrap-cbor@127.0.0.1:60657] - Successfully shut down
+09:28:53.411 [34mINFO [0;39m [36m[legacy-bootstrap-cbor-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+09:28:53.411 [34mINFO [0;39m [36m[legacy-bootstrap-cbor-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+09:28:53.412 [34mINFO [0;39m [36m[legacy-bootstrap-cbor-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+[info] CdcProgressCompatibilitySpec:
+[info] bootstrap progress serialization
+[info] - should read legacy continuation JSON and preserve a new permit binding
+[info] - should deserialize the preserved pre-change real MySQL Journal CBOR payloads
+[info] CaptureGroupTombstoneSpec:
+[info] tombstone compaction
+[info] - should count the stored prefix and UTF-8 bytes when enforcing minimum savings
+09:28:53.438 [34mINFO [0;39m [36m[bootstrap-step-2853966982281541-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+09:28:53.441 [34mINFO [0;39m [36m[bootstrap-step-2853966982281541-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://bootstrap-step-2853966982281541@127.0.0.1:60658] with UID [6285667489143257011]
+09:28:53.441 [34mINFO [0;39m [36m[bootstrap-step-2853966982281541-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853966982281541@127.0.0.1:60658] - Starting up, Pekko version [1.1.3] ...
+09:28:53.442 [34mINFO [0;39m [36m[bootstrap-step-2853966982281541-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853966982281541@127.0.0.1:60658] - Registered cluster JMX MBean [pekko:type=Cluster]
+09:28:53.442 [34mINFO [0;39m [36m[bootstrap-step-2853966982281541-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853966982281541@127.0.0.1:60658] - Started up successfully
+09:28:53.443 [34mINFO [0;39m [36m[bootstrap-step-2853966982281541-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853966982281541@127.0.0.1:60658] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+09:28:53.443 [34mINFO [0;39m [36m[bootstrap-step-2853966982281541-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://bootstrap-step-2853966982281541@127.0.0.1:60658#6285667489143257011], selfDc [default].
+09:28:53.489 [34mINFO [0;39m [36m[bootstrap-step-2853966982281541-pekko.actor.default-dispatcher-14][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+09:28:53.489 [34mINFO [0;39m [36m[bootstrap-step-2853966982281541-pekko.actor.default-dispatcher-14][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://bootstrap-step-2853966982281541/system/cluster/core/daemon#250420772] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+09:28:53.490 [34mINFO [0;39m [36m[bootstrap-step-2853966982281541-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853966982281541@127.0.0.1:60658] - Exiting completed
+09:28:53.490 [34mINFO [0;39m [36m[bootstrap-step-2853966982281541-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853966982281541@127.0.0.1:60658] - Shutting down...
+09:28:53.490 [34mINFO [0;39m [36m[bootstrap-step-2853966982281541-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853966982281541@127.0.0.1:60658] - Successfully shut down
+09:28:53.491 [34mINFO [0;39m [36m[bootstrap-step-2853966982281541-pekko.actor.default-dispatcher-14][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+09:28:53.491 [34mINFO [0;39m [36m[bootstrap-step-2853966982281541-pekko.actor.default-dispatcher-14][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+09:28:53.492 [34mINFO [0;39m [36m[bootstrap-step-2853966982281541-pekko.actor.default-dispatcher-20][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+09:28:53.509 [34mINFO [0;39m [36m[bootstrap-step-2853967050660583-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+09:28:53.513 [34mINFO [0;39m [36m[bootstrap-step-2853967050660583-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://bootstrap-step-2853967050660583@127.0.0.1:60659] with UID [3182567770450987979]
+09:28:53.513 [34mINFO [0;39m [36m[bootstrap-step-2853967050660583-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967050660583@127.0.0.1:60659] - Starting up, Pekko version [1.1.3] ...
+09:28:53.515 [34mINFO [0;39m [36m[bootstrap-step-2853967050660583-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967050660583@127.0.0.1:60659] - Registered cluster JMX MBean [pekko:type=Cluster]
+09:28:53.515 [34mINFO [0;39m [36m[bootstrap-step-2853967050660583-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967050660583@127.0.0.1:60659] - Started up successfully
+09:28:53.516 [34mINFO [0;39m [36m[bootstrap-step-2853967050660583-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967050660583@127.0.0.1:60659] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+09:28:53.517 [34mINFO [0;39m [36m[bootstrap-step-2853967050660583-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://bootstrap-step-2853967050660583@127.0.0.1:60659#3182567770450987979], selfDc [default].
+09:28:53.530 [34mINFO [0;39m [36m[bootstrap-step-2853967050660583-pekko.actor.default-dispatcher-14][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+09:28:53.531 [34mINFO [0;39m [36m[bootstrap-step-2853967050660583-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967050660583@127.0.0.1:60659] - Exiting completed
+09:28:53.531 [34mINFO [0;39m [36m[bootstrap-step-2853967050660583-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967050660583@127.0.0.1:60659] - Shutting down...
+09:28:53.531 [34mINFO [0;39m [36m[bootstrap-step-2853967050660583-pekko.actor.default-dispatcher-14][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://bootstrap-step-2853967050660583/system/cluster/core/daemon#1200149076] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+09:28:53.531 [34mINFO [0;39m [36m[bootstrap-step-2853967050660583-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967050660583@127.0.0.1:60659] - Successfully shut down
+09:28:53.532 [34mINFO [0;39m [36m[bootstrap-step-2853967050660583-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+09:28:53.532 [34mINFO [0;39m [36m[bootstrap-step-2853967050660583-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+09:28:53.532 [34mINFO [0;39m [36m[bootstrap-step-2853967050660583-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+09:28:53.551 [34mINFO [0;39m [36m[bootstrap-step-2853967092187541-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+09:28:53.561 [34mINFO [0;39m [36m[bootstrap-step-2853967092187541-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://bootstrap-step-2853967092187541@127.0.0.1:60660] with UID [1705109249075729909]
+09:28:53.561 [34mINFO [0;39m [36m[bootstrap-step-2853967092187541-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967092187541@127.0.0.1:60660] - Starting up, Pekko version [1.1.3] ...
+09:28:53.562 [34mINFO [0;39m [36m[bootstrap-step-2853967092187541-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967092187541@127.0.0.1:60660] - Registered cluster JMX MBean [pekko:type=Cluster]
+09:28:53.562 [34mINFO [0;39m [36m[bootstrap-step-2853967092187541-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967092187541@127.0.0.1:60660] - Started up successfully
+09:28:53.567 [34mINFO [0;39m [36m[bootstrap-step-2853967092187541-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967092187541@127.0.0.1:60660] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+09:28:53.568 [34mINFO [0;39m [36m[bootstrap-step-2853967092187541-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://bootstrap-step-2853967092187541@127.0.0.1:60660#1705109249075729909], selfDc [default].
+09:28:53.676 [34mINFO [0;39m [36m[bootstrap-step-2853967092187541-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+09:28:53.677 [34mINFO [0;39m [36m[bootstrap-step-2853967092187541-pekko.actor.default-dispatcher-19][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967092187541@127.0.0.1:60660] - Exiting completed
+09:28:53.677 [34mINFO [0;39m [36m[bootstrap-step-2853967092187541-pekko.actor.default-dispatcher-19][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://bootstrap-step-2853967092187541/system/cluster/core/daemon#-2012749152] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+09:28:53.677 [34mINFO [0;39m [36m[bootstrap-step-2853967092187541-pekko.actor.default-dispatcher-19][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967092187541@127.0.0.1:60660] - Shutting down...
+09:28:53.677 [34mINFO [0;39m [36m[bootstrap-step-2853967092187541-pekko.actor.default-dispatcher-19][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967092187541@127.0.0.1:60660] - Successfully shut down
+09:28:53.677 [34mINFO [0;39m [36m[bootstrap-step-2853967092187541-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+09:28:53.677 [34mINFO [0;39m [36m[bootstrap-step-2853967092187541-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+09:28:53.678 [34mINFO [0;39m [36m[bootstrap-step-2853967092187541-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+09:28:53.687 [34mINFO [0;39m [36m[bootstrap-step-2853967232147166-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+09:28:53.691 [34mINFO [0;39m [36m[bootstrap-step-2853967232147166-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://bootstrap-step-2853967232147166@127.0.0.1:60661] with UID [-6449997075301827823]
+09:28:53.691 [34mINFO [0;39m [36m[bootstrap-step-2853967232147166-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967232147166@127.0.0.1:60661] - Starting up, Pekko version [1.1.3] ...
+09:28:53.692 [34mINFO [0;39m [36m[bootstrap-step-2853967232147166-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967232147166@127.0.0.1:60661] - Registered cluster JMX MBean [pekko:type=Cluster]
+09:28:53.692 [34mINFO [0;39m [36m[bootstrap-step-2853967232147166-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967232147166@127.0.0.1:60661] - Started up successfully
+09:28:53.692 [34mINFO [0;39m [36m[bootstrap-step-2853967232147166-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967232147166@127.0.0.1:60661] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+09:28:53.692 [34mINFO [0;39m [36m[bootstrap-step-2853967232147166-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://bootstrap-step-2853967232147166@127.0.0.1:60661#-6449997075301827823], selfDc [default].
+09:28:53.705 [34mINFO [0;39m [36m[bootstrap-step-2853967232147166-pekko.actor.default-dispatcher-19][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+09:28:53.706 [34mINFO [0;39m [36m[bootstrap-step-2853967232147166-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967232147166@127.0.0.1:60661] - Exiting completed
+09:28:53.706 [34mINFO [0;39m [36m[bootstrap-step-2853967232147166-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967232147166@127.0.0.1:60661] - Shutting down...
+09:28:53.706 [34mINFO [0;39m [36m[bootstrap-step-2853967232147166-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://bootstrap-step-2853967232147166@127.0.0.1:60661] - Successfully shut down
+09:28:53.706 [34mINFO [0;39m [36m[bootstrap-step-2853967232147166-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://bootstrap-step-2853967232147166/system/cluster/core/daemon#-687475973] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+09:28:53.706 [34mINFO [0;39m [36m[bootstrap-step-2853967232147166-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+09:28:53.706 [34mINFO [0;39m [36m[bootstrap-step-2853967232147166-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+09:28:53.707 [34mINFO [0;39m [36m[bootstrap-step-2853967232147166-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+[info] BootstrapStepAdmissionSpec:
+[info] the actual bounded Runner admission
+[info] - should yield repeated not-ready attempts without opening JDBC or spending a recovery budget
+[info] - should treat maintenance stop as yield without requesting capture readiness or cancellation
+[info] - should return a durable paused state without claiming it can resume
+[info] - should leave RECOVERY_PENDING untouched without source or sink work
+[info] CdcPlatformSettingsSpec:
+[info] CDC platform settings
+[info] - should stay disabled unless explicitly enabled
+[info] - should reject configuration that reuses the control account as the exclusive SDK account
+[info] - should reject two capture domains that reuse an exclusive source or state account
+[info] - should reject an empty SDK password and a half-specified observer identity
+[info] - should reject incomplete or reused material accounts instead of silently ignoring them
+[info] - should bind a configured material account to the existing state endpoint and redact it from settings
+[info] SnapshotGuardianSpec:
+[info] production launch configuration
+[info] - should allow ordinary JDBC connections without installing a managed owner
+[info] - should refuse managed launch properties when the worker HA bootstrap is disabled
+[info] - should append control attributes to both legal MySQL URL forms without changing the database
+[info] - should refuse a worker profile with another deployment or scheduling database
+[info] guardian signed evidence
+[info] - should bind a signed worker challenge to its nonce, controller context and owner identity
+[info] - should count a foreign-tagged session that uses an exclusive CDC account
+[info] - should include a dedicated material account in the state endpoint's exclusive drain inventory
+[info] - should reject a modified response or another guardian public key
+[info] - should bind proof to the original worker and operation, not merely a provider string
+[info] Run completed in 2 seconds, 937 milliseconds.
+[info] Total number of tests run: 91
+[info] Suites: completed 9, aborted 0
+[info] Tests: succeeded 91, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 5 s, completed 2026年11月8日 上午9:28:53

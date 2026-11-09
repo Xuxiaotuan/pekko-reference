@@ -107,6 +107,9 @@ object EventSourcedWorkflowActor {
   final case class SnapshotInitialized(boundary: SnapshotBoundary) extends Reply
   final case class SnapshotAlreadyInitialized(boundary: SnapshotBoundary) extends Reply
   final case class CheckpointAccepted(checkpoint: BatchCheckpoint) extends Reply
+  final class PersistedCheckpoint private[EventSourcedWorkflowActor] (val persistenceId: String, val sequenceNr: Long,
+    val executionId: String, val checkpoint: BatchCheckpoint)
+  private final case class CheckpointPersisted(receipt: PersistedCheckpoint) extends Reply
   final case class CheckpointAlreadyStored(checkpoint: BatchCheckpoint) extends Reply
   final case class CheckpointRejected(reason: String) extends Reply
   sealed trait Response extends Reply
@@ -368,7 +371,7 @@ object EventSourcedWorkflowActor {
       else initializeSnapshot(state, id, boundary, replyTo)
     case CheckpointFromAttempt(id, token, checkpoint, replyTo) =>
       if (token != activeAttemptId.get()) rejectCheckpoint(replyTo, "stale execution attempt")
-      else advanceCheckpoint(state, id, checkpoint, replyTo)
+      else advanceCheckpoint(state, id, checkpoint, replyTo, Some((workflowId, context)))
     case InitializeSnapshot(_, _, replyTo) if state.currentExecution.exists(_.recovery.nonEmpty) => rejectCheckpoint(replyTo, "execution attempt identity required")
     case AdvanceCheckpoint(_, _, replyTo) if state.currentExecution.exists(_.recovery.nonEmpty) => rejectCheckpoint(replyTo, "execution attempt identity required")
     case InitializeSnapshot(executionId, boundary, replyTo) => initializeSnapshot(state, executionId, boundary, replyTo)
@@ -670,7 +673,8 @@ object EventSourcedWorkflowActor {
       }
     }
 
-  private def advanceCheckpoint(state: WorkflowState, executionId: String, checkpoint: BatchCheckpoint, replyTo: ActorRef[Reply]): Effect[WorkflowEvent, WorkflowState] =
+  private def advanceCheckpoint(state: WorkflowState, executionId: String, checkpoint: BatchCheckpoint, replyTo: ActorRef[Reply],
+    receiptContext: Option[(String, org.apache.pekko.actor.typed.scaladsl.ActorContext[Command])] = None): Effect[WorkflowEvent, WorkflowState] =
     state.currentExecution match {
       case None => rejectCheckpoint(replyTo, "no active execution")
       case Some(current) if current.executionId != executionId => rejectCheckpoint(replyTo, "execution does not match the active execution")
@@ -684,7 +688,13 @@ object EventSourcedWorkflowActor {
           current.checkpoints.find(existing => samePartition(existing, checkpoint)) match {
             case Some(existing) if existing == checkpoint => immediate(replyTo, CheckpointAlreadyStored(existing))
             case latest if isExpectedNextCheckpointSequence(latest.map(_.batchSequence), checkpoint.batchSequence) =>
-              Effect.persist(ExecutionCheckpointAdvanced(executionId, checkpoint, now())).thenReply(replyTo)(_ => CheckpointAccepted(checkpoint))
+              Effect.persist(ExecutionCheckpointAdvanced(executionId, checkpoint, now())).thenReply(replyTo) { _ =>
+                receiptContext match {
+                  case Some((workflowId, ctx)) => CheckpointPersisted(new PersistedCheckpoint(
+                    s"workflow-$workflowId", EventSourcedBehavior.lastSequenceNumber(ctx), executionId, checkpoint))
+                  case None => CheckpointAccepted(checkpoint)
+                }
+              }
             case Some(existing) if checkpoint.batchSequence <= existing.batchSequence => rejectCheckpoint(replyTo, "checkpoint conflicts with a stored sequence")
             case _ => rejectCheckpoint(replyTo, "checkpoint sequence has a gap")
           }
@@ -842,7 +852,7 @@ object EventSourcedWorkflowActor {
         case other => scala.concurrent.Future.failed(new IllegalStateException(s"unexpected snapshot reply: ${other.getClass.getSimpleName}"))
       },
       checkpoint => context.self.ask[Reply](replyTo => CheckpointFromAttempt(execution.executionId, token, checkpoint, replyTo)).flatMap {
-        case CheckpointAccepted(_) | CheckpointAlreadyStored(_) => scala.concurrent.Future.successful(Done)
+        case CheckpointPersisted(_) | CheckpointAccepted(_) | CheckpointAlreadyStored(_) => scala.concurrent.Future.successful(Done)
         case CheckpointRejected(reason) => scala.concurrent.Future.failed(new CdcExecutionException(
           ExecutionFailure(ExecutionFailure.ProtocolConflict,"journal",Some(checkpoint.batchId)),new IllegalStateException(reason)))
         case other => scala.concurrent.Future.failed(new IllegalStateException(s"unexpected checkpoint reply: ${other.getClass.getSimpleName}"))
@@ -857,7 +867,14 @@ object EventSourcedWorkflowActor {
           case CheckpointRejected(_) => scala.concurrent.Future.failed(new CdcExecutionException(ExecutionFailure(ExecutionFailure.ProtocolConflict, "snapshot-journal"), new IllegalStateException("snapshot update explicitly rejected")))
           case _ => scala.concurrent.Future.failed(new IllegalStateException("unexpected snapshot update reply"))
         }
-      ))
+      )),
+      checkpointWithReceipt = Some(checkpoint => context.self.ask[Reply](replyTo => CheckpointFromAttempt(execution.executionId, token, checkpoint, replyTo)).flatMap {
+        case CheckpointPersisted(receipt) => scala.concurrent.Future.successful(Some(receipt))
+        case CheckpointAccepted(_) | CheckpointAlreadyStored(_) => scala.concurrent.Future.successful(None)
+        case CheckpointRejected(reason) => scala.concurrent.Future.failed(new CdcExecutionException(
+          ExecutionFailure(ExecutionFailure.ProtocolConflict,"journal",Some(checkpoint.batchId)),new IllegalStateException(reason)))
+        case other => scala.concurrent.Future.failed(new IllegalStateException(s"unexpected checkpoint reply: ${other.getClass.getSimpleName}"))
+      })
     )
   }
 

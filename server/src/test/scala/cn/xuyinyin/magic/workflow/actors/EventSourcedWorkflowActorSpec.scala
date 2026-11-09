@@ -188,6 +188,38 @@ class EventSourcedWorkflowActorSpec
       serialization.verifySerialization(EventSourcedWorkflowActor.CheckpointRejected("sequence gap")) shouldBe EventSourcedWorkflowActor.CheckpointRejected("sequence gap")
     }
 
+    "issue a Journal receipt only for a newly persisted checkpoint" in {
+      testRegistry.registerSource(TestSnapshotSource)
+      try {
+        val captured = Promise[ReliableRunContext]()
+        val completion = Promise[ExecutionResult]()
+        val pendingEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+          override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = {
+            captured.trySuccess(runContext)
+            completion.future
+          }
+        }
+        val workflowId = "receipt-checkpoint"
+        val entity = spawn(EventSourcedWorkflowActor(workflowId, pendingEngine), workflowId)
+        val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
+        entity ! EventSourcedWorkflowActor.DefineWorkflow(reliableWorkflow, 0L, reply.ref)
+        reply.expectMessage(EventSourcedWorkflowActor.Defined(workflowId, 1L))
+        entity ! EventSourcedWorkflowActor.ExecuteManual("receipt-request", reply.ref)
+        val execution = reply.expectMessageType[EventSourcedWorkflowActor.ExecutionAccepted].executionId
+        val run = scala.concurrent.Await.result(captured.future, 5.seconds)
+        val boundary = SnapshotBoundary("source-1", "pk-range-0", Some("100"))
+        scala.concurrent.Await.result(run.initializeBoundary(boundary), 5.seconds)
+        val checkpoint = BatchCheckpoint("source-1", "pk-range-0", 0L,
+          BatchId.sha256(execution, "source-1", "pk-range-0", 0L), SourceCursor("mysql.numeric-pk", "50", "100"), 1L, 1L)
+        val receipt = scala.concurrent.Await.result(run.checkpointWithReceipt.get(checkpoint), 5.seconds).get
+        receipt.persistenceId shouldBe "workflow-" + workflowId
+        receipt.sequenceNr should be > 0L
+        receipt.executionId shouldBe execution
+        receipt.checkpoint shouldBe checkpoint
+        scala.concurrent.Await.result(run.checkpointWithReceipt.get(checkpoint), 5.seconds) shouldBe None
+      } finally testRegistry.unregister(TestSnapshotSource)
+    }
+
     "persist one immutable boundary and monotonically advance reliable checkpoints" in {
       testRegistry.registerSource(TestSnapshotSource)
       try {

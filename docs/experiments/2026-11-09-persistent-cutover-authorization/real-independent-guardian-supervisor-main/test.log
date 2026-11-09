@@ -1,0 +1,61 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+22:36:38,424 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+22:36:38,424 |-INFO in ch.qos.logback.classic.util.ContextInitializer@e7ae036 - No custom configurators were discovered as a service.
+22:36:38,424 |-INFO in ch.qos.logback.classic.util.ContextInitializer@e7ae036 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:36:38,424 |-INFO in ch.qos.logback.classic.util.ContextInitializer@e7ae036 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:36:38,425 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+22:36:38,425 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+22:36:38,426 |-INFO in ch.qos.logback.classic.util.ContextInitializer@e7ae036 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+22:36:38,426 |-INFO in ch.qos.logback.classic.util.ContextInitializer@e7ae036 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:36:38,426 |-INFO in ch.qos.logback.classic.util.ContextInitializer@e7ae036 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:36:38,426 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+22:36:38,426 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+22:36:38,457 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+22:36:38,457 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:36:38,460 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+22:36:38,469 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+22:36:38,469 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:36:38,469 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+22:36:38,469 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+22:36:38,470 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+22:36:38,470 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+22:36:38,470 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+22:36:38,470 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+22:36:38,471 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+22:36:38,471 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+22:36:38,471 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+22:36:38,471 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+22:36:38,471 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@3a1cf485 - End of configuration.
+22:36:38,471 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@52ba5dfb - Registering current configuration as safe fallback point
+22:36:38,471 |-INFO in ch.qos.logback.classic.util.ContextInitializer@e7ae036 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 45 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+22:36:38.718 [34mINFO [0;39m [36m[pool-8-thread-8-ScalaTest-running-RealMySQLSupervisorMainSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+22:36:38.824 [34mINFO [0;39m [36m[pool-8-thread-8-ScalaTest-running-RealMySQLSupervisorMainSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+22:36:45.404 [34mINFO [0;39m [36m[pool-8-thread-8-ScalaTest-running-RealMySQLSupervisorMainSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown initiated...
+22:36:45.405 [34mINFO [0;39m [36m[pool-8-thread-8-ScalaTest-running-RealMySQLSupervisorMainSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown completed.
+[info] RealMySQLSupervisorMainSpec:
+[info] the installed production entry points
+[info] - should complete a real snapshot and restart its supervisor without rewriting completed rows
+[info] Run completed in 7 seconds, 285 milliseconds.
+[info] Total number of tests run: 1
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 1, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 9 s, completed 2026年11月9日 下午10:36:45

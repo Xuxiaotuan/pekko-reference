@@ -18,13 +18,26 @@ sealed trait SnapshotWindowOutcome { def rows: Long }
 final case class SnapshotWindowCompleted(rows: Long) extends SnapshotWindowOutcome
 final case class SnapshotWindowYielded(rows: Long) extends SnapshotWindowOutcome
 
+/** Persisted plan identity is calculated from the original workflow definition. */
+object SnapshotSplitFingerprint {
+  private def canonical(value: JsValue): String = value match {
+    case JsObject(fields) => fields.toVector.filterNot { case (k, _) => Set("password", "passwordEnv").contains(k) }
+      .sortBy(_._1).map { case (k, v) => JsString(k).compactPrint + ":" + canonical(v) }.mkString("{", ",", "}")
+    case JsArray(values) => values.map(canonical).mkString("[", ",", "]")
+    case other => other.compactPrint
+  }
+  def compute(revision: Long, source: Node, sink: Node): String =
+    SnapshotSplitState.sha256(s"$revision|${source.id}|${canonical(source.config)}|${sink.id}|${canonical(sink.config)}")
+}
+
 /** Single-owner, snapshot-only execution. Recovery ownership stays here; CDC never enters this path. */
 final class SnapshotSplitExecutor(source: CheckpointedNodeSource with SnapshotSplitSource, sink: CheckpointedNodeSink,
   sourceNode: Node, sinkNode: Node, workflowId: String, executionId: String, revision: Long,
   context: SnapshotSplitRunContext, ensureActive: () => Future[Done],
   install: BatchSourceSession => Unit, remove: BatchSourceSession => Unit,
   onLog: String => Unit, blockingEc: ExecutionContext, closeEc: ExecutionContext,
-  cancelled: () => Boolean = () => false, releaseUnconfirmed: Throwable => Unit = _ => ())
+  cancelled: () => Boolean = () => false, releaseUnconfirmed: Throwable => Unit = _ => (),
+  logicalDefinition: Option[(Node, Node)] = None)
   (implicit system: ActorSystem[_], ec: ExecutionContext, materializer: Materializer) {
 
   private val unsafeRelease = new java.util.concurrent.atomic.AtomicBoolean(false)
@@ -39,13 +52,10 @@ final class SnapshotSplitExecutor(source: CheckpointedNodeSource with SnapshotSp
     case Some(JsNumber(n)) if n.isValidInt && n.toInt > 0 && n.toInt <= max => n.toInt
     case _ => throw new IllegalArgumentException(s"invalid split snapshot $name")
   }
-  private def canonical(value: JsValue): String = value match {
-    case JsObject(fields) => fields.toVector.filterNot { case (k, _) => Set("password", "passwordEnv").contains(k) }
-      .sortBy(_._1).map { case (k, v) => JsString(k).compactPrint + ":" + canonical(v) }.mkString("{", ",", "}")
-    case JsArray(values) => values.map(canonical).mkString("[", ",", "]")
-    case other => other.compactPrint
+  private val fingerprint = {
+    val (sourceDefinition, sinkDefinition) = logicalDefinition.getOrElse((sourceNode, sinkNode))
+    SnapshotSplitFingerprint.compute(revision, sourceDefinition, sinkDefinition)
   }
-  private val fingerprint = SnapshotSplitState.sha256(s"$revision|${sourceNode.id}|${canonical(sourceNode.config)}|${sinkNode.id}|${canonical(sinkNode.config)}")
   private def write(update: SnapshotSplitUpdate): Future[SnapshotSplitState] = context.update(update).recoverWith {
     case e: CdcExecutionException => Future.failed(e)
     case NonFatal(e) => Future.failed(new CdcExecutionException(ExecutionFailure(ExecutionFailure.ProgressUnknown, "snapshot-journal"), e))

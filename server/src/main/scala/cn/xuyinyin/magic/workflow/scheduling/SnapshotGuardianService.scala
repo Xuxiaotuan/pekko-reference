@@ -10,24 +10,35 @@ final class SnapshotGuardianService(controlStore:SnapshotSupervisorStore,isolati
   private val binding=controlStore.binding
   controlStore.bindGuardianCapability(isolation.capabilityId)
   private val receipts=scala.collection.mutable.Map.empty[(String,String),String]
-  isolation.bindRegistry(controlStore.store.ownership.get)
+  isolation.bindRegistry(controlStore.ownerRegistry)
   private def find(t:SnapshotWorkerLaunch)=isolation.managed.find(c=>t.identity.contains(c.identity))
   /** Read-only worker challenge: independent of supervisor epoch and sequence. */
   def attest(args:JsObject):JsObject=synchronized {
-    require(args.fields.keySet==Set("nonce","identity","profile"),"invalid worker attestation request")
+    require(args.fields.keySet==Set("nonce","identity","profile") || args.fields.keySet==Set("nonce","identity","profile","context"),"invalid worker attestation request")
     val nonce=text(args,"nonce");require(nonce.matches("[A-Za-z0-9_-]{43}"),"invalid worker nonce")
     val identity=args.fields("identity").convertTo[SnapshotOwnerIdentity]
     val profile=text(args,"profile");require(profile.nonEmpty && profile.length<=128,"invalid worker profile")
     val ticket=controlStore.launch(identity.bootId).getOrElse(throw new IllegalStateException("worker ticket missing"))
     require(ticket.phase=="launched" && ticket.operation.isEmpty && ticket.identity.contains(identity) && ticket.profileHash==profile,
       "worker launch ticket is not active")
-    require(controlStore.store.ownership.get.owner(identity.bootId).exists(o=>o.identity==identity && o.phase=="active"),"worker owner is not active")
+    require(controlStore.ownerRegistry.owner(identity.bootId).exists(o=>o.identity==identity && o.phase=="active"),"worker owner is not active")
     val child=find(ticket).getOrElse(throw new IllegalStateException("original worker process capability unavailable"))
     require(child.identity==identity && child.process.pid()==identity.pid && child.process.isAlive &&
       child.process.info().startInstant().isPresent && child.process.info().startInstant().get().toString==identity.startIdentity,
       "original worker process is not alive")
-    JsObject("nonce"->JsString(nonce),"identity"->identity.toJson,"profile"->JsString(profile),
-      "provider"->JsString("managed-child-jvm"),"alive"->JsBoolean(true))
+    args.fields.get("context").foreach {v=>
+      val ctx=v.convertTo[WorkerAttestationContext]
+      require(ctx.attempt.nonEmpty && ctx.attempt.length<=128 && ctx.permitId.nonEmpty && ctx.permitId.length<=128 &&
+        ctx.manifestDigest.matches("[a-f0-9]{64}") && ctx.bindingDigest.matches("[a-f0-9]{64}") &&
+        ctx.sourceUuid.matches("[a-fA-F0-9-]{36}") && ctx.database.matches("[A-Za-z_][A-Za-z0-9_]*"),"invalid attestation context")
+      val at=ctx.controllerAccount.lastIndexOf('@')
+      require(at>0 && at<ctx.controllerAccount.length-1,"invalid controller account")
+      val ownership=controlStore.ownerRegistry
+      require(ownership.instances(identity.bootId).exists {case(endpoint,uuid,_)=>endpoint==ctx.endpoint && uuid==ctx.sourceUuid} &&
+        ownership.databaseUsers(identity.bootId,ctx.endpoint)(ctx.controllerAccount.substring(0,at)),"controller account not registered to worker")
+    }
+    JsObject(Map[String,JsValue]("nonce"->JsString(nonce),"identity"->identity.toJson,"profile"->JsString(profile),
+      "provider"->JsString("managed-child-jvm"),"alive"->JsBoolean(true))++args.fields.get("context").map(v=>"context"->v))
   }
   def handle(control:SupervisorControl,method:String,args:JsObject):JsObject=synchronized {
     controlStore.fenced(control){()}

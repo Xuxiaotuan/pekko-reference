@@ -12,10 +12,14 @@ final case class SupervisorControl(guardian:GuardianBinding,bootId:String,epoch:
 final case class SnapshotWorkerLaunch(bootId:String,profileHash:String,phase:String,identity:Option[SnapshotOwnerIdentity],operation:Option[String],proof:Option[String])
 
 /** One fixed deployment per host. Unknown tickets retain their slot; no leases or PID adoption. */
-final class SnapshotSupervisorStore(val store:TableSchedulingStore,val binding:GuardianBinding,val maxWorkers:Int) {
-  require(maxWorkers>0 && maxWorkers<=1024 && store.ownership.nonEmpty)
+final class SnapshotSupervisorStore(val store:ManagedControlTransactions,val ownerRegistry:ManagedOwnerRegistry,
+  val binding:GuardianBinding,val maxWorkers:Int) {
+  def this(store:TableSchedulingStore,binding:GuardianBinding,maxWorkers:Int)=
+    this(store,store.ownership.getOrElse(throw new IllegalArgumentException("owner registry is required")),binding,maxWorkers)
+  require(maxWorkers>0 && maxWorkers<=1024 && ownerRegistry!=null)
+  require(ownerRegistry.transactionOwner eq store,"guardian and owner must share the same transaction context")
   import store.{query,update,transaction}
-  private val ha=store.ownership.get
+  private val ha=ownerRegistry
   private val hostArgs=Seq(binding.deploymentId,binding.hostId)
   private def host(c:Connection)=query(c,"SELECT * FROM pekko_snapshot_host_control WHERE deployment_id=? AND host_id=?",hostArgs)(r=>
     (GuardianBinding(r.getString("deployment_id"),r.getString("host_id"),r.getString("guardian_boot"),r.getString("public_key")),Option(r.getString("controller_boot")),r.getLong("controller_epoch"),r.getInt("max_workers"))).headOption
