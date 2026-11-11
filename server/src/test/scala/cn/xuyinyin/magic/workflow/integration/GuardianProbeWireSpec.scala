@@ -4,7 +4,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import spray.json._
 import java.security.KeyPairGenerator
-import cn.xuyinyin.magic.workflow.scheduling.ManagedJvmIsolation
+import cn.xuyinyin.magic.cdc.guardian.ManagedJvmIsolation
 
 class GuardianProbeWireSpec extends AnyWordSpec with Matchers {
   "guardian probe trust boundary" should {

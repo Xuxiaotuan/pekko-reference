@@ -1,10 +1,10 @@
 package cn.xuyinyin.magic.workflow.integration
 
-import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, SnapshotBoundary, SourceCursor}
+import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, SnapshotBoundary, SourceCursor}
 import cn.xuyinyin.magic.workflow.TestNodeRegistry
 import cn.xuyinyin.magic.workflow.engine.{ExecutionResult}
 import cn.xuyinyin.magic.workflow.execution.{ReliableRunContext, WorkflowExecutionEngine}
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Edge, Node, Position, Workflow, WorkflowMetadata}
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.{Edge, Node, Position, Workflow, WorkflowMetadata}
 import cn.xuyinyin.magic.connectors.mysql.source.{MySQLCdcSourceNode, MySQLCdcStateConfig}
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.Done

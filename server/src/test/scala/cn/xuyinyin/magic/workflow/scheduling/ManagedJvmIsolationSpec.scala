@@ -1,5 +1,10 @@
-package cn.xuyinyin.magic.workflow.scheduling
+package cn.xuyinyin.magic.cdc.control
 
+
+import cn.xuyinyin.magic.cdc.guardian.{ManagedJvmIsolation}
+
+
+import cn.xuyinyin.magic.cdc.guardian.{SnapshotOwnerIdentity}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 

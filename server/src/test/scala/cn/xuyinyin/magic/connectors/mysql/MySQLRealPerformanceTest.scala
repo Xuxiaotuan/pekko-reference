@@ -1,6 +1,6 @@
 package cn.xuyinyin.magic.connectors.mysql
 
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine
 import cn.xuyinyin.magic.tags.ExternalIntegration
 import org.apache.pekko.actor.typed.ActorSystem

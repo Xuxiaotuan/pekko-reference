@@ -1,11 +1,11 @@
 package cn.xuyinyin.magic.workflow.integration {
 
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
-import cn.xuyinyin.magic.workflow.checkpoint.{AlreadyCommitted, BatchCheckpoint, BatchCommitResult, Committed, SourceBatch}
+import cn.xuyinyin.magic.cdc.checkpoint.{AlreadyCommitted, BatchCheckpoint, BatchCommitResult, Committed, SourceBatch}
 import cn.xuyinyin.magic.workflow.TestNodeRegistry
 import cn.xuyinyin.magic.workflow.engine.{ExecutionResult}
 import cn.xuyinyin.magic.workflow.execution.{ReliableRunContext, WorkflowExecutionEngine}
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Edge, Node, Position, Workflow, WorkflowMetadata}
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.{Edge, Node, Position, Workflow, WorkflowMetadata}
 import cn.xuyinyin.magic.connectors.mysql.sink.MySQLSinkNode
 import cn.xuyinyin.magic.connectors.mysql.source.MySQLSnapshotSourceNode
 import cn.xuyinyin.magic.infrastructure.cluster.sharding.WorkflowSharding
@@ -239,7 +239,7 @@ class ResumableFullSyncRecoverySpec extends AnyWordSpec with Matchers with Event
       val checkpointCommitted = runContext.checkpointCommitted
       super.execute(
         workflow,
-        runContext.copy(checkpointCommitted = checkpoint => {
+        runContext.copy(checkpointWithReceipt = None, checkpointCommitted = checkpoint => {
           if (checkpoint.batchSequence == 0L && intercepted.compareAndSet(false, true)) {
             signal.trySuccess(checkpoint)
             blocked.future
@@ -268,7 +268,7 @@ class ResumableFullSyncRecoverySpec extends AnyWordSpec with Matchers with Event
       val checkpointCommitted = runContext.checkpointCommitted
       super.execute(
         workflow,
-        runContext.copy(checkpointCommitted = checkpoint => {
+        runContext.copy(checkpointWithReceipt = None, checkpointCommitted = checkpoint => {
           val persisted = checkpointCommitted(checkpoint)
           if (checkpoint.batchSequence == sequence && intercepted.compareAndSet(false, true)) {
             persisted.flatMap { _ =>

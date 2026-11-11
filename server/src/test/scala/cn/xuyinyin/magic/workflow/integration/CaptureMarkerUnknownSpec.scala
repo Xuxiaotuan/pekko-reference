@@ -2,7 +2,7 @@ package cn.xuyinyin.magic.workflow.integration
 
 import cn.xuyinyin.magic.connectors.mysql.source._
 import cn.xuyinyin.magic.connectors.mysql.source.capture._
-import cn.xuyinyin.magic.workflow.engine.{CdcExecutionException,ExecutionFailure}
+import cn.xuyinyin.magic.cdc.recovery.{CdcExecutionException, ExecutionFailure}
 import cn.xuyinyin.magic.tags.ExternalIntegration
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers

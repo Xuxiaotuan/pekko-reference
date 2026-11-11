@@ -1,9 +1,15 @@
 package cn.xuyinyin.magic.workflow.integration
 
+import cn.xuyinyin.magic.cdc.guardian.SnapshotSupervisorSettings
+
+
+
+import cn.xuyinyin.magic.cdc.guardian.{SupervisorControl}
+import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
 import cn.xuyinyin.magic.tags.ExternalIntegration
-import cn.xuyinyin.magic.workflow.cdc.{CdcPlatformLimits,CdcTaskRequest,CdcTaskStore}
+import cn.xuyinyin.magic.cdc.platform.{CdcPlatformLimits,CdcTaskRequest,CdcTaskStore}
 import cn.xuyinyin.magic.connectors.mysql.source.capture.CaptureControlFence
-import cn.xuyinyin.magic.workflow.scheduling._
+import cn.xuyinyin.magic.cdc.control._
 import com.typesafe.config.{ConfigFactory,ConfigRenderOptions}
 import java.io.File
 import java.net.{URI,URLClassLoader}
@@ -230,7 +236,7 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
           if(mode=="FENCE_PROBE")Files.writeString(dir.resolve("block-recovery"),"block")
           dump("01-unknown");coordinator.tick()
           awaitCondition("old worker isolated",40.seconds){coordinator.tick();supervisor.metadata.launch(oldBoot).exists(_.proof.nonEmpty)}
-          val old=supervisor.tableStore.ownership.get.owner(oldBoot).get
+          val old=supervisor.metadata.ownerRegistry.owner(oldBoot).get
           Set("fenced","drain_wait","db_drained") should contain (old.phase)
           dump("02-isolated")
           if(cutMode.startsWith("LATE_")){
@@ -338,7 +344,7 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
           val drained=if(client!=null && guardianWasAlive)Try {
             supervisor.metadata.pending.foreach {t=>
               if(t.identity.nonEmpty){
-                val op=supervisor.metadata.operation(control,t.bootId);val ha=supervisor.tableStore.ownership.get
+                val op=supervisor.metadata.operation(control,t.bootId);val ha=supervisor.metadata.ownerRegistry
                 ha.owner(t.bootId).foreach(_=>ha.beginRevocation(t.bootId,op))
                 val raw=text(client.request("STOP",JsObject("boot"->JsString(t.bootId),"identity"->t.identity.get.toJson,"operation"->JsString(op))),"proof")
                 val receipt=verifyReceipt(raw,supervisor.binding,t.identity.get,op)

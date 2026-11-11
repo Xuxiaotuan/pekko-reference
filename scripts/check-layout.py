@@ -3,15 +3,28 @@
 from pathlib import Path
 import re
 root=Path(__file__).resolve().parents[1]
-required=['server/src/main/scala','console/src','deploy/local','deploy/kubernetes','docs/architecture','docs/guides','docs/articles','docs/development','docs/archive','docs/experiments']
+required=['server/src/main/scala','deploy/local','deploy/kubernetes','docs/architecture','docs/guides','docs/articles','docs/development','docs/archive','docs/experiments']
 for name in required:
     assert (root/name).is_dir(),f'missing canonical directory: {name}'
 assert 'Project(id = "pekko-server", base = file("server"))' in (root/'build.sbt').read_text()
 for path in (root/'server/src/main/scala').rglob('*.scala'):
     match=re.search(r'^package\s+([\w.]+)',path.read_text(),re.M)
     if match:
-        assert path.parent.relative_to(root/'server/src/main/scala').as_posix()==match[1].replace('.','/'),f'package/path mismatch: {path}'
-for old,new in {'pekko-server':'server','xxt-ui':'console','deploy/k8s':'kubernetes'}.items():
+        package_path=match[1].replace('.','/')
+        if path.name=='package.scala':
+            obj=re.search(r'^package\s+object\s+(\w+)',path.read_text(),re.M)
+            if obj:
+                package_path += '/' + obj[1]
+        # Only named compatibility payloads/entry aliases retain historical namespaces.
+        compatibility={
+            'LegacyTableSchedulingModels.scala':'cn/xuyinyin/magic/workflow/scheduling',
+            'LegacySupervisorEntrypoints.scala':'cn/xuyinyin/magic/workflow/scheduling',
+        }
+        if path.parent.name=='compat' and path.name in compatibility:
+            assert package_path==compatibility[path.name],f'compatibility namespace changed: {path}'
+            continue
+        assert path.parent.relative_to(root/'server/src/main/scala').as_posix()==package_path,f'package/path mismatch: {path}'
+for old,new in {'pekko-server':'server','deploy/k8s':'kubernetes'}.items():
     assert (root/old).is_symlink() and (root/old).readlink().as_posix()==new,f'broken command alias: {old}'
 for name in ['docs/README.md','docs/architecture/README.md','docs/guides/README.md','docs/articles/README.md','docs/development/README.md','docs/archive/README.md','deploy/local/README.md','scripts/README.md']:
     assert (root/name).is_file(),f'missing navigation index: {name}'

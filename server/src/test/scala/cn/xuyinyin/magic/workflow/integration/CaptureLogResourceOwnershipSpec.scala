@@ -2,7 +2,7 @@ package cn.xuyinyin.magic.workflow.integration
 
 import cn.xuyinyin.magic.connectors.mysql.source._
 import cn.xuyinyin.magic.connectors.mysql.source.capture._
-import cn.xuyinyin.magic.workflow.cdc._
+import cn.xuyinyin.magic.cdc.platform._
 import cn.xuyinyin.magic.tags.ExternalIntegration
 import com.typesafe.config.ConfigFactory
 import org.apache.kafka.connect.data.Struct

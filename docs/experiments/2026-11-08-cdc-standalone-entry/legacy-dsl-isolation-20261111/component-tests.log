@@ -1,0 +1,219 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 17 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSource.scala:83:15: parameter blockingEc in method batches is never used
+[warn]     (implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
+[warn]               ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala:605:5: private default argument in object EventSourcedWorkflowActor is never used
+[warn]     onDefined: String => Unit = _ => ()): Effect[WorkflowEvent, WorkflowState] =
+[warn]     ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:397:54: private default argument in class WorkflowExecutionEngine is never used
+[warn]   private def prepareRuntimeNode(node: ExecutionNode,workflowId:String="",executionId:String="",definitionHash:String=""): ExecutionNode = {
+[warn]                                                      ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:397:75: private default argument in class WorkflowExecutionEngine is never used
+[warn]   private def prepareRuntimeNode(node: ExecutionNode,workflowId:String="",executionId:String="",definitionHash:String=""): ExecutionNode = {
+[warn]                                                                           ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:397:97: private default argument in class WorkflowExecutionEngine is never used
+[warn]   private def prepareRuntimeNode(node: ExecutionNode,workflowId:String="",executionId:String="",definitionHash:String=""): ExecutionNode = {
+[warn]                                                                                                 ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/executors/NodeExecutor.scala:3:43: Unused import
+[warn] import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
+[warn]                                           ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/executors/NodeExecutor.scala:4:25: Unused import
+[warn] import org.apache.pekko.NotUsed
+[warn]                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/executors/NodeExecutor.scala:5:42: Unused import
+[warn] import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
+[warn]                                          ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/executors/NodeExecutor.scala:5:48: Unused import
+[warn] import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
+[warn]                                                ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/executors/NodeExecutor.scala:5:54: Unused import
+[warn] import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
+[warn]                                                      ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/executors/NodeExecutor.scala:6:25: Unused import
+[warn] import org.apache.pekko.Done
+[warn]                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/executors/NodeExecutor.scala:7:25: Unused import
+[warn] import scala.concurrent.Future
+[warn]                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/executors/TransformExecutor.scala:29:36: parameter system in class TransformExecutor is never used
+[warn] class TransformExecutor()(implicit system: ActorSystem[_], ec: ExecutionContext) extends NodeExecutor {
+[warn]                                    ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/executors/TransformExecutor.scala:29:60: parameter ec in class TransformExecutor is never used
+[warn] class TransformExecutor()(implicit system: ActorSystem[_], ec: ExecutionContext) extends NodeExecutor {
+[warn]                                                            ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala:785:52: return statement uses an exception to pass control to the caller of the enclosing named method activateSnapshot
+[warn]     val runtime = engine.tableScheduling.getOrElse(return Effect.none)
+[warn]                                                    ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSource.scala:168:28: The outer reference in this type test cannot be checked at run time.
+[warn]   private final case class BatchState(nextOffsets: Map[Int, Long], recordsConsumed: Long, sequence: Long)
+[warn]                            ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSource.scala:171:28: The outer reference in this type test cannot be checked at run time.
+[warn]   private final case class KafkaValue(record: KafkaRecord) extends KafkaStreamEvent
+[warn]                            ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSource.scala:172:28: The outer reference in this type test cannot be checked at run time.
+[warn]   private final case class KafkaPartitionCompleted(partition: Int, endOffset: Long) extends KafkaStreamEvent
+[warn]                            ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:190:14: The outer reference in this type test cannot be checked at run time.
+[warn]         case failure: NodeRuntimeFailure => runtimeFailureResult(task, pipeline, failure.node, failure.cause, startTime, onLog)
+[warn]              ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:194:12: The outer reference in this type test cannot be checked at run time.
+[warn]       case failure: NodeSetupFailure => setupFailureResult(task, pipeline, failure, startTime, onLog)
+[warn]            ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:320:14: The outer reference in this type test cannot be checked at run time.
+[warn]         case failure: NodeRuntimeFailure =>
+[warn]              ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:322:14: The outer reference in this type test cannot be checked at run time.
+[warn]         case failure: NodeSetupFailure =>
+[warn]              ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:388:12: The outer reference in this type test cannot be checked at run time.
+[warn]       case failure: NodeRuntimeFailure => Future.failed(failure)
+[warn]            ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:491:12: The outer reference in this type test cannot be checked at run time.
+[warn]       case failure: NodeRuntimeFailure => Future.failed(failure)
+[warn]            ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:497:10: The outer reference in this type test cannot be checked at run time.
+[warn]     case failure: NodeRuntimeFailure => failure
+[warn]          ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:589:28: The outer reference in this type test cannot be checked at run time.
+[warn]   private final case class NodeRuntimeFailure(node: ExecutionNode, cause: Throwable)
+[warn]                            ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:592:28: The outer reference in this type test cannot be checked at run time.
+[warn]   private final case class NodeSetupFailure(node: ExecutionNode, cause: Throwable)
+[warn]                            ^
+[warn] 27 warnings found
+[info] done compiling
+[info] WorkflowPlanCompilerSpec:
+[info] WorkflowPlanCompiler
+[info] - should compile CDC as a distinct checkpointed plan without starting its connectors
+[info] - should remove presentation and historical metadata from the runtime description
+[info] - should classify a checkpointed auxiliary task separately from CDC
+[info] - should bind the current registry instances instead of inferring capabilities from builtin names
+[info] - should reject a checkpoint source with a row-only sink without opening either adapter
+[info] - should keep a row source paired with a checkpoint sink on the existing row path
+[info] - should retain structural validation errors before resolving a runtime plan
+[info] - should reject CDC transforms even when the graph is a valid linear pipeline
+[info] WorkflowValidatorSpec:
+[info] WorkflowValidator
+[info] - should return the only connected Source to Sink path
+[info] - should reject branches and disconnected nodes
+[info] - should reject cycles, merges, and unknown edge endpoints
+[info] - should reject executor-advertised transform types without implementation
+[info] - should return validation errors in a stable order
+[info] - should accept only a direct unscheduled MySQL CDC source-to-apply-sink workflow
+[info] - should leave enabled schedules valid for legacy workflows
+[info] - should reject inline passwords in persisted MySQL CDC definitions
+13:44:42,179 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+13:44:42,180 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7d7533ab - No custom configurators were discovered as a service.
+13:44:42,180 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7d7533ab - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+13:44:42,181 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7d7533ab - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+13:44:42,181 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+13:44:42,181 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+13:44:42,183 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7d7533ab - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+13:44:42,183 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7d7533ab - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+13:44:42,183 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7d7533ab - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+13:44:42,183 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+13:44:42,183 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+13:44:42,221 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+13:44:42,221 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+13:44:42,225 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+13:44:42,235 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+13:44:42,235 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+13:44:42,235 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+13:44:42,235 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+13:44:42,237 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+13:44:42,237 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+13:44:42,237 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+13:44:42,237 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+13:44:42,238 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+13:44:42,238 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+13:44:42,238 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+13:44:42,238 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+13:44:42,238 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@57f0f024 - End of configuration.
+13:44:42,238 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@59855ed0 - Registering current configuration as safe fallback point
+13:44:42,238 |-INFO in ch.qos.logback.classic.util.ContextInitializer@7d7533ab - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 55 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+SLF4J(W): A number (1) of logging calls during the initialization phase have been intercepted and are
+SLF4J(W): now being replayed. These are subject to the filtering rules of the underlying logging system.
+SLF4J(W): See also https://www.slf4j.org/codes.html#replay
+13:44:42.240 [34mINFO [0;39m [36m[split-target-drain-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+13:44:43.066 [34mINFO [0;39m [36m[split-target-drain-pekko.actor.default-dispatcher-8][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+13:44:43.093 [34mINFO [0;39m [36m[split-release-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+13:44:43.115 [34mINFO [0;39m [36m[split-release-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+[info] SnapshotSplitExecutorSpec:
+[info] split release accounting
+[info] - should drain an admitted target commit before reacting to an upstream failure
+[info] - should stop opening new readers after an unconfirmed release while draining an admitted sibling
+13:44:43.136 [34mINFO [0;39m [36m[split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+13:44:43.307 [34mINFO [0;39m [36m[split-cbor-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+[info] SnapshotSplitSerializationSpec:
+[info] snapshot split persistence
+[info] - should round-trip a nonempty entity snapshot and polymorphic split events through actual CBOR
+13:44:43.345 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+13:44:43.455 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://legacy-workflow-event-migration@127.0.0.1:59568] with UID [6190543996708388242]
+13:44:43.460 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-6][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-workflow-event-migration@127.0.0.1:59568] - Starting up, Pekko version [1.1.3] ...
+13:44:43.486 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-6][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-workflow-event-migration@127.0.0.1:59568] - Registered cluster JMX MBean [pekko:type=Cluster]
+13:44:43.486 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-6][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-workflow-event-migration@127.0.0.1:59568] - Started up successfully
+13:44:43.497 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-workflow-event-migration@127.0.0.1:59568] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+13:44:43.499 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://legacy-workflow-event-migration@127.0.0.1:59568#6190543996708388242], selfDc [default].
+13:44:43.527 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+13:44:43.529 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-workflow-event-migration@127.0.0.1:59568] - Exiting completed
+13:44:43.530 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-workflow-event-migration@127.0.0.1:59568] - Shutting down...
+13:44:43.530 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-workflow-event-migration@127.0.0.1:59568] - Successfully shut down
+13:44:43.532 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-17][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://legacy-workflow-event-migration/system/cluster/core/daemon#648554032] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+13:44:43.533 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-17][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+13:44:43.533 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-17][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+13:44:43.537 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-17][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+13:44:43.562 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+13:44:43.566 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://actual-workflow-event-migration@127.0.0.1:59569] with UID [123063015940545431]
+13:44:43.567 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://actual-workflow-event-migration@127.0.0.1:59569] - Starting up, Pekko version [1.1.3] ...
+13:44:43.568 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://actual-workflow-event-migration@127.0.0.1:59569] - Registered cluster JMX MBean [pekko:type=Cluster]
+13:44:43.568 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://actual-workflow-event-migration@127.0.0.1:59569] - Started up successfully
+13:44:43.568 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://actual-workflow-event-migration@127.0.0.1:59569] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+13:44:43.568 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-14][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://actual-workflow-event-migration@127.0.0.1:59569#123063015940545431], selfDc [default].
+13:44:43.589 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+13:44:43.590 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://actual-workflow-event-migration/system/cluster/core/daemon#1424864489] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+13:44:43.590 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://actual-workflow-event-migration@127.0.0.1:59569] - Exiting completed
+13:44:43.590 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://actual-workflow-event-migration@127.0.0.1:59569] - Shutting down...
+13:44:43.590 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-4][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://actual-workflow-event-migration@127.0.0.1:59569] - Successfully shut down
+13:44:43.591 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-15][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+13:44:43.591 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-15][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+13:44:43.592 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-15][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+[info] LegacyWorkflowEventMigrationSpec:
+[info] legacy workflow event migration
+[info] - should read every pre-move event fixture, including a versioned split update
+[info] - should read all events from a preserved real MySQL Journal sequence
+[info] - should reject an unrecognized legacy class name
+[info] MySQLCdcSourceConfigSpec:
+[info] MySQLCdcSourceConfig
+[info] - should reject group mode without an explicit trusted streaming baseline
+[info] - should parse a complete CDC source node
+[info] - should reject a missing connector ID without exposing the resolved password
+[info] - should reject unsafe SQL identifiers without exposing the resolved password
+[info] - should reject an invalid connector ID without exposing the resolved password
+[info] - should reject an absent password environment value without exposing the resolved password
+[info] - should reject an inline password without exposing it
+[info] - should reject simultaneous password sources without exposing the resolved password
+[info] - should parse an engine-prepared password only through the trusted runtime entry point
+[info] - should reject server IDs outside the MySQL unsigned integer range without exposing the resolved password
+[info] - should reject non-positive batch size without exposing the resolved password
+[info] - should reject non-positive poll interval without exposing the resolved password
+[info] Run completed in 1 second, 934 milliseconds.
+[info] Total number of tests run: 34
+[info] Suites: completed 6, aborted 0
+[info] Tests: succeeded 34, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 9 s, completed 2026年11月11日 下午1:44:43

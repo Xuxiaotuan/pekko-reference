@@ -1,5 +1,12 @@
-package cn.xuyinyin.magic.workflow.scheduling
+package cn.xuyinyin.magic.cdc.control
 
+import cn.xuyinyin.magic.workflow.scheduling.{TableResourceDemand, ScheduledTableDefinition}
+
+
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
+
+
+import cn.xuyinyin.magic.cdc.guardian.{SnapshotOwnerIdentity}
 import java.lang.reflect.{InvocationTargetException,Proxy}
 import java.sql.{Connection,SQLException}
 import java.util.concurrent.atomic.{AtomicBoolean,AtomicReference}
@@ -11,7 +18,7 @@ import scala.concurrent.duration._
 import spray.json._
 
 /** Shared H2/MySQL boundary checks. Only the connection reply is injected; all SQL is real. */
-private[workflow] object ScheduledTriggerCleanupChecks {
+private[magic] object ScheduledTriggerCleanupChecks {
   val scenarios = Vector("reject", "commit_reply_lost", "commit_not_sent", "readback_unavailable", "stale_reject", "stale_release", "yield", "delayed_release")
   def run(ds: DataSource, scenario: String): JsObject = {
     implicit val ec: ExecutionContext = ExecutionContext.global

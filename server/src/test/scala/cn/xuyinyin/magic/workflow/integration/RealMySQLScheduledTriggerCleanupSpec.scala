@@ -1,7 +1,7 @@
 package cn.xuyinyin.magic.workflow.integration
 
 import cn.xuyinyin.magic.tags.ExternalIntegration
-import cn.xuyinyin.magic.workflow.scheduling.ScheduledTriggerCleanupChecks
+import cn.xuyinyin.magic.cdc.control.ScheduledTriggerCleanupChecks
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}
 import org.scalatest.wordspec.AnyWordSpec
 import java.nio.file.{Files,Path}

@@ -1,6 +1,6 @@
 package cn.xuyinyin.magic.workflow.actors
 
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import cn.xuyinyin.magic.workflow.execution.{WorkflowExecutionEngine}
 import cn.xuyinyin.magic.workflow.engine.{ExecutionResult}
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}

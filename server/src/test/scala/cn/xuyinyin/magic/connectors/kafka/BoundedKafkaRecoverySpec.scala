@@ -60,10 +60,10 @@ package cn.xuyinyin.magic.connectors.kafka {
 package cn.xuyinyin.magic.workflow.integration {
 
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
-import cn.xuyinyin.magic.workflow.checkpoint._
+import cn.xuyinyin.magic.cdc.checkpoint._
 import cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine
 import cn.xuyinyin.magic.workflow.TestNodeRegistry
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import cn.xuyinyin.magic.workflow.spi.{CheckpointedNodeSink, CheckpointedNodeSource, NodeSink}
 import cn.xuyinyin.magic.connectors.kafka.InMemoryKafkaFixture
 import cn.xuyinyin.magic.connectors.kafka.{KafkaRecord}

@@ -1,0 +1,137 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[info] done compiling
+[info] compiling 2 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[info] done compiling
+[info] compiling 9 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala:5:68: Unused import
+[warn] import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
+[warn]                                                                    ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala:5:86: Unused import
+[warn] import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
+[warn]                                                                                      ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala:5:99: Unused import
+[warn] import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
+[warn]                                                                                                   ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala:9:40: Unused import
+[warn] import cn.xuyinyin.magic.workflow.spi.{CheckpointedNodeSource, NodeSource}
+[warn]                                        ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala:9:64: Unused import
+[warn] import cn.xuyinyin.magic.workflow.spi.{CheckpointedNodeSource, NodeSource}
+[warn]                                                                ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala:16:25: Unused import
+[warn] import org.apache.pekko.NotUsed
+[warn]                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala:18:41: Unused import
+[warn] import org.apache.pekko.stream.scaladsl.Source
+[warn]                                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/SharedCaptureMatrixWorker.scala:14:25: Unused import
+[warn] import org.apache.pekko.Done
+[warn]                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/SharedCaptureMatrixWorker.scala:22:56: Unused import
+[warn] import scala.concurrent.{Await,ExecutionContext,Future,Promise}
+[warn]                                                        ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/CaptureAdmissionReleaseProbe.scala:237:29: match may not be exhaustive.
+[warn] It would fail on the following inputs: JsArray(_), JsFalse, JsNumber(_), JsString(_), JsTrue
+[warn]               cursor=payload("parent") match {case JsNull=>None;case x:JsObject=>Some(x.fields("sequence").asInstanceOf[JsNumber].value.toLongExact)}
+[warn]                             ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/CaptureStartupRecoveryWorker.scala:30:55: match may not be exhaustive.
+[warn]     val Array(schema,captureId,batchSize,startupGate)=args
+[warn]                                                       ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/SharedCaptureMatrixWorker.scala:32:43: match may not be exhaustive.
+[warn]     val Array(schema,captureId,batchSize)=args
+[warn]                                           ^
+[warn] 12 warnings found
+[info] done compiling
+[success] Total time: 6 s, completed 2026年11月11日 下午2:31:05
+14:31:06,314 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+14:31:06,315 |-INFO in ch.qos.logback.classic.util.ContextInitializer@111e67b1 - No custom configurators were discovered as a service.
+14:31:06,315 |-INFO in ch.qos.logback.classic.util.ContextInitializer@111e67b1 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+14:31:06,315 |-INFO in ch.qos.logback.classic.util.ContextInitializer@111e67b1 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+14:31:06,315 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+14:31:06,315 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+14:31:06,317 |-INFO in ch.qos.logback.classic.util.ContextInitializer@111e67b1 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+14:31:06,317 |-INFO in ch.qos.logback.classic.util.ContextInitializer@111e67b1 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+14:31:06,317 |-INFO in ch.qos.logback.classic.util.ContextInitializer@111e67b1 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+14:31:06,317 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+14:31:06,317 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+14:31:06,342 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+14:31:06,342 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+14:31:06,345 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+14:31:06,352 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+14:31:06,352 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+14:31:06,352 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+14:31:06,352 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+14:31:06,353 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+14:31:06,353 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+14:31:06,354 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+14:31:06,354 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+14:31:06,355 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+14:31:06,355 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+14:31:06,355 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+14:31:06,355 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+14:31:06,355 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@6d2b5977 - End of configuration.
+14:31:06,355 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@3e5996af - Registering current configuration as safe fallback point
+14:31:06,355 |-INFO in ch.qos.logback.classic.util.ContextInitializer@111e67b1 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 38 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+SLF4J(W): A number (1) of logging calls during the initialization phase have been intercepted and are
+SLF4J(W): now being replayed. These are subject to the filtering rules of the underlying logging system.
+SLF4J(W): See also https://www.slf4j.org/codes.html#replay
+14:31:06.358 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+14:31:06.457 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://legacy-workflow-event-migration@127.0.0.1:61751] with UID [5680190788047518159]
+14:31:06.464 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-workflow-event-migration@127.0.0.1:61751] - Starting up, Pekko version [1.1.3] ...
+14:31:06.498 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-workflow-event-migration@127.0.0.1:61751] - Registered cluster JMX MBean [pekko:type=Cluster]
+14:31:06.498 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-workflow-event-migration@127.0.0.1:61751] - Started up successfully
+14:31:06.510 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-workflow-event-migration@127.0.0.1:61751] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+14:31:06.513 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://legacy-workflow-event-migration@127.0.0.1:61751#5680190788047518159], selfDc [default].
+14:31:06.865 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+14:31:06.868 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-workflow-event-migration@127.0.0.1:61751] - Exiting completed
+14:31:06.868 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-workflow-event-migration@127.0.0.1:61751] - Shutting down...
+14:31:06.868 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-5][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-workflow-event-migration@127.0.0.1:61751] - Successfully shut down
+14:31:06.871 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://legacy-workflow-event-migration/system/cluster/core/daemon#-1803129568] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+14:31:06.875 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+14:31:06.875 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+14:31:06.881 [34mINFO [0;39m [36m[legacy-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+14:31:06.911 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+14:31:06.919 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://actual-workflow-event-migration@127.0.0.1:61753] with UID [816471251293448449]
+14:31:06.919 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://actual-workflow-event-migration@127.0.0.1:61753] - Starting up, Pekko version [1.1.3] ...
+14:31:06.921 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://actual-workflow-event-migration@127.0.0.1:61753] - Registered cluster JMX MBean [pekko:type=Cluster]
+14:31:06.922 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://actual-workflow-event-migration@127.0.0.1:61753] - Started up successfully
+14:31:06.922 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://actual-workflow-event-migration@127.0.0.1:61753] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+14:31:06.923 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://actual-workflow-event-migration@127.0.0.1:61753#816471251293448449], selfDc [default].
+14:31:06.945 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-14][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+14:31:06.946 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-14][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://actual-workflow-event-migration/system/cluster/core/daemon#166583752] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+14:31:06.946 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://actual-workflow-event-migration@127.0.0.1:61753] - Exiting completed
+14:31:06.946 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://actual-workflow-event-migration@127.0.0.1:61753] - Shutting down...
+14:31:06.946 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://actual-workflow-event-migration@127.0.0.1:61753] - Successfully shut down
+14:31:06.947 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-14][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+14:31:06.947 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-14][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+14:31:06.947 [34mINFO [0;39m [36m[actual-workflow-event-migration-pekko.actor.default-dispatcher-14][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+[info] LegacyWorkflowEventMigrationSpec:
+[info] legacy workflow event migration
+[info] - should read every pre-move event fixture, including a versioned split update
+[info] - should read all events from a preserved real MySQL Journal sequence
+[info] - should reject an unrecognized legacy class name
+[info] CdcCapturedBatchWorkflowAdapterSpec:
+[info] CDC batch compatibility
+[info] - should preserve the original batch identity, cursor bytes, rows and acknowledgement capability
+[info] - should match legacy batch hashes for Unicode and boundary sequence numbers
+[info] Run completed in 972 milliseconds.
+[info] Total number of tests run: 5
+[info] Suites: completed 2, aborted 0
+[info] Tests: succeeded 5, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 1 s, completed 2026年11月11日 下午2:31:07

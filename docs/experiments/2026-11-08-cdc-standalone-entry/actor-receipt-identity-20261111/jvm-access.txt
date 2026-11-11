@@ -1,0 +1,12 @@
+  private static final java.util.WeakHashMap<cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor$PersistedCheckpoint, java.lang.Boolean> issuedCheckpoints;
+  private java.util.WeakHashMap<cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor$PersistedCheckpoint, java.lang.Boolean> issuedCheckpoints();
+  private cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor$PersistedCheckpoint issueCheckpoint(java.lang.String, long, java.lang.String, cn.xuyinyin.magic.cdc.checkpoint.BatchCheckpoint);
+  public boolean isActorIssuedCheckpoint(cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor$PersistedCheckpoint);
+  private static final java.util.WeakHashMap<cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournal$PersistedProgress, java.lang.Boolean> issuedProgress;
+  private static final java.util.WeakHashMap<cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournal$PersistedRecoveryReceipt, java.lang.Boolean> issuedRecovery;
+  private java.util.WeakHashMap<cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournal$PersistedProgress, java.lang.Boolean> issuedProgress();
+  private java.util.WeakHashMap<cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournal$PersistedRecoveryReceipt, java.lang.Boolean> issuedRecovery();
+  private cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournal$PersistedProgress issueProgress(java.lang.String, long, cn.xuyinyin.magic.cdc.bootstrap.BootstrapProgress);
+  private cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournal$PersistedRecoveryReceipt issueRecovery(java.lang.String, long, long, java.lang.String, java.lang.String, java.lang.String, java.lang.String);
+  public boolean isActorIssuedProgress(cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournal$PersistedProgress);
+  public boolean isActorIssuedRecovery(cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournal$PersistedRecoveryReceipt);

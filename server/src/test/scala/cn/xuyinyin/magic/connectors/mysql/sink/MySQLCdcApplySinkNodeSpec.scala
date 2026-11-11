@@ -1,8 +1,8 @@
 package cn.xuyinyin.magic.connectors.mysql.sink
 
 import cn.xuyinyin.magic.testkit.STSpec
-import cn.xuyinyin.magic.workflow.checkpoint.{AlreadyCommitted, BatchId, Committed, SnapshotBoundary, SourceBatch, SourceCursor}
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.checkpoint.{AlreadyCommitted, BatchId, Committed, SnapshotBoundary, SourceBatch, SourceCursor}
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import cn.xuyinyin.magic.cdc.{CdcOperation, MySQLCdcEnvelope, MySQLCdcSourcePosition}
 import org.apache.pekko.Done
 import spray.json._
@@ -34,7 +34,7 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
     }
 
     "resolve only an environment-backed password" in {
-      val parsed = MySQLCdcApplyConfig.parse(
+      val parsed = MySQLCdcApplyNodeConfig.parse(
         sinkNode(passwordEnv = Some("TARGET_PASSWORD")),
         name => Option.when(name == "TARGET_PASSWORD")("runtime-secret")
       )
@@ -47,38 +47,38 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
 
     "reject inline passwords, missing credentials, unsafe identifiers, and unsupported modes" in {
       intercept[IllegalArgumentException] {
-        MySQLCdcApplyConfig.parse(sinkNode(passwordEnv = None, extra = Map("password" -> JsString("secret"))))
+        MySQLCdcApplyNodeConfig.parse(sinkNode(passwordEnv = None, extra = Map("password" -> JsString("secret"))))
       }.getMessage should include("passwordEnv")
       intercept[IllegalArgumentException] {
-        MySQLCdcApplyConfig.parse(sinkNode(passwordEnv = None))
+        MySQLCdcApplyNodeConfig.parse(sinkNode(passwordEnv = None))
       }.getMessage should include("passwordEnv")
 
       Vector("target rows", "target`rows", "target;rows", "id-name").foreach { unsafe =>
         intercept[IllegalArgumentException] {
-          MySQLCdcApplyConfig.parse(sinkNode(table = unsafe), _ => Some("secret"))
+          MySQLCdcApplyNodeConfig.parse(sinkNode(table = unsafe), _ => Some("secret"))
         }.getMessage should include("identifier")
       }
       intercept[IllegalArgumentException] {
-        MySQLCdcApplyConfig.parse(sinkNode(extra = Map("mode" -> JsString("insert"))), _ => Some("secret"))
+        MySQLCdcApplyNodeConfig.parse(sinkNode(extra = Map("mode" -> JsString("insert"))), _ => Some("secret"))
       }.getMessage should include("mode")
     }
 
     "parse an engine-prepared password only through the trusted runtime entry point" in {
       val runtimeNode = sinkNode(passwordEnv = None, extra = Map("password" -> JsString("runtime-secret")))
 
-      MySQLCdcApplyConfig.parseTrustedRuntime(runtimeNode).password shouldBe "runtime-secret"
-      intercept[IllegalArgumentException](MySQLCdcApplyConfig.parse(runtimeNode)).getMessage should include("passwordEnv")
+      MySQLCdcApplyNodeConfig.parseTrustedRuntime(runtimeNode).password shouldBe "runtime-secret"
+      intercept[IllegalArgumentException](MySQLCdcApplyNodeConfig.parse(runtimeNode)).getMessage should include("passwordEnv")
     }
 
     "require non-empty connection fields and a valid port" in {
       intercept[IllegalArgumentException] {
-        MySQLCdcApplyConfig.parse(sinkNode(host = ""), _ => Some("secret"))
+        MySQLCdcApplyNodeConfig.parse(sinkNode(host = ""), _ => Some("secret"))
       }.getMessage should include("host")
       intercept[IllegalArgumentException] {
-        MySQLCdcApplyConfig.parse(sinkNode(username = ""), _ => Some("secret"))
+        MySQLCdcApplyNodeConfig.parse(sinkNode(username = ""), _ => Some("secret"))
       }.getMessage should include("username")
       intercept[IllegalArgumentException] {
-        MySQLCdcApplyConfig.parse(sinkNode(port = 0), _ => Some("secret"))
+        MySQLCdcApplyNodeConfig.parse(sinkNode(port = 0), _ => Some("secret"))
       }.getMessage should include("port")
     }
   }
@@ -94,10 +94,10 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
     "classify a lost commit response while preserving the actual committed group" in withFixture() { f =>
       val batch=f.groupBatch(Vector(f.event(CdcOperation.Create,1,afterStatus=Some("committed"))),0)
       f.loseCommitReply=true
-      val failure=intercept[cn.xuyinyin.magic.workflow.engine.CdcExecutionException] {
+      val failure=intercept[cn.xuyinyin.magic.cdc.recovery.CdcExecutionException] {
         Await.result(f.node.commitBatch(f.sinkNode,"w","e",batch,batch.rows,_=>()),5.seconds)
       }
-      failure.failure.code shouldBe cn.xuyinyin.magic.workflow.engine.ExecutionFailure.CommitUnknown
+      failure.failure.code shouldBe cn.xuyinyin.magic.cdc.recovery.ExecutionFailure.CommitUnknown
       f.selectStatus(1) shouldBe Some("committed")
       Await.result(f.node.commitBatch(f.sinkNode,"w","e",batch,batch.rows,_=>()),5.seconds) shouldBe a[AlreadyCommitted]
     }

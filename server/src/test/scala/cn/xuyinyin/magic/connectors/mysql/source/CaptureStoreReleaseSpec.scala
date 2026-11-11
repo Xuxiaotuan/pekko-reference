@@ -2,7 +2,7 @@ package cn.xuyinyin.magic.connectors.mysql.source
 
 import cn.xuyinyin.magic.connectors.mysql.source.capture.MySQLCaptureStore
 import cn.xuyinyin.magic.testkit.STSpec
-import cn.xuyinyin.magic.workflow.engine.{CdcExecutionException, ExecutionFailure}
+import cn.xuyinyin.magic.cdc.recovery.{CdcExecutionException, ExecutionFailure}
 import java.lang.reflect.{InvocationHandler, InvocationTargetException, Method, Proxy}
 import java.sql.{Connection, DriverManager, SQLException}
 import java.util.UUID

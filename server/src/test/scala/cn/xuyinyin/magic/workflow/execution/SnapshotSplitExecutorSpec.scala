@@ -1,8 +1,12 @@
 package cn.xuyinyin.magic.workflow.execution
 
-import cn.xuyinyin.magic.workflow.snapshot._
-import cn.xuyinyin.magic.workflow.checkpoint._
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.compat.nodes.{SnapshotSplitExecutor, SnapshotSplitFingerprint}
+
+import cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitRunContext
+
+import cn.xuyinyin.magic.cdc.snapshot._
+import cn.xuyinyin.magic.cdc.checkpoint._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
 import cn.xuyinyin.magic.workflow.spi._
 import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit

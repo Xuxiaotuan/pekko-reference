@@ -24,7 +24,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   sourceFenceRequired:Boolean=false,
   sourceFenceObserver:Option[()=>Connection]=None,
   sourceFenceUuid:Option[String]=None,
-  recoveryGate:Option[cn.xuyinyin.magic.workflow.cdc.CdcTaskStore.ReaderRecoveryGate]=None) extends AutoCloseable {
+  recoveryGate:Option[cn.xuyinyin.magic.cdc.platform.CdcTaskStore.ReaderRecoveryGate]=None) extends AutoCloseable {
   require(source.connectorId==store.captureId,"capture namespace mismatch")
   require(recoveryGate.isEmpty || sourceFenceRequired,"recovery gate requires v2 source protection")
   recoveryGate.foreach(g=>require(g!=null && g.captureId==store.captureId,"reader recovery gate capture changed"))
@@ -50,7 +50,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   private val markers=mutable.Map.empty[String,Marker]
   private val commandLock=new AnyRef
   /** Install only after state and source release proof; never replace a gate in flight. */
-  private[magic] def installRecoveryGate(gate:cn.xuyinyin.magic.workflow.cdc.CdcTaskStore.ReaderRecoveryGate):Unit=commandLock.synchronized {
+  private[magic] def installRecoveryGate(gate:cn.xuyinyin.magic.cdc.platform.CdcTaskStore.ReaderRecoveryGate):Unit=commandLock.synchronized {
     require(gate!=null && sourceFenceRequired && !started.get() && !stopping.get() && !closed.get() && installedRecoveryGate.isEmpty,
       "reader recovery gate unavailable or already installed")
     require(gate.captureId==store.captureId,"reader recovery gate capture changed")
@@ -100,9 +100,9 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     if(!started.get())throw new CaptureAdmissionException("CAPTURE_STARTING")
     failure.foreach(throw _)
   }
-  private def releaseUnknown(stage:String,cause:Throwable):cn.xuyinyin.magic.workflow.engine.CdcExecutionException=
-    new cn.xuyinyin.magic.workflow.engine.CdcExecutionException(
-      cn.xuyinyin.magic.workflow.engine.ExecutionFailure(cn.xuyinyin.magic.workflow.engine.ExecutionFailure.ReleaseUnknown,stage,releaseConfirmed=false),cause)
+  private def releaseUnknown(stage:String,cause:Throwable):cn.xuyinyin.magic.cdc.recovery.CdcExecutionException=
+    new cn.xuyinyin.magic.cdc.recovery.CdcExecutionException(
+      cn.xuyinyin.magic.cdc.recovery.ExecutionFailure(cn.xuyinyin.magic.cdc.recovery.ExecutionFailure.ReleaseUnknown,stage,releaseConfirmed=false),cause)
   protected def sourceConnection():Connection=DriverManager.getConnection(
     s"jdbc:mysql://${source.host}:${source.port}/${source.database}?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&connectTimeout=5000&socketTimeout=5000",source.username,source.password)
   private def withSourceConnection[A](f:Connection=>A):A={
@@ -132,7 +132,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   private def readCheckpoint():CaptureCheckpoint={
     val c=stateConnection()
     try {
-      val table=MySQLCdcSourceNode.connectorStateTables(state,store.captureId)._1
+      val table=MySQLDebeziumConnector.connectorStateTables(state,store.captureId)._1
       if(!stateTableExists(c,table))CaptureCheckpoint.missing else {
         val q=c.createStatement();q.setQueryTimeout(5)
         try {val r=q.executeQuery(s"SELECT offset_key,offset_val FROM `$table` WHERE offset_val IS NOT NULL LIMIT 2")
@@ -203,7 +203,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       ownerId=query(owner,"SELECT CONNECTION_ID()").head.toLong
       val (existing,hasEvidence,hasBoundaries,unbound)=store.recoveryInventory
       val checkpoint=readCheckpoint()
-      val (offsetTable,historyTable)=MySQLCdcSourceNode.connectorStateTables(state,store.captureId)
+      val (offsetTable,historyTable)=MySQLDebeziumConnector.connectorStateTables(state,store.captureId)
       val historyPresent=stateTableExists(owner,historyTable) && query(owner,s"SELECT 1 FROM `$historyTable` LIMIT 1").nonEmpty
       val v2RecoveryCandidate=sourceFenceRequired && installedRecoveryGate.nonEmpty && unbound && checkpoint.status=="COMPLETE" && checkpoint.value.nonEmpty
       // A v2 recovery uses the gate's pinned, bounded D/ACK proof. Ordinary startup
@@ -238,7 +238,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
         "offsetTable"->JsString(state.offsetTable),"historyTable"->JsString(state.historyTable),
         "maxLogBytes"->JsNumber(store.maxBytes),"decoder"->JsString("debezium-3.6.1/capture-v1"))
       profileSequence=store.rememberProfile((if(sourceFenceRequired)JsObject(profile.fields+("controlFenceVersion"->JsNumber(2)))else profile).compactPrint)
-      val props=MySQLCdcSourceNode.connectorProperties(source.copy(table="pekko_capture_control",groupProtocol=None),state)
+      val props=MySQLDebeziumConnector.connectorProperties(source.copy(table="pekko_capture_control",groupProtocol=None),state)
       props.setProperty("snapshot.mode","no_data")
       val includedTables=if(sourceFenceRequired)"\\.(?!pekko_capture_control_(?:fence|release)_v1$).*" else "\\..*"
       props.setProperty("table.include.list",java.util.regex.Pattern.quote(source.database)+includedTables)
@@ -306,7 +306,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       require(records.nonEmpty && pending.size<8,"retained callback budget exceeded")
       val bytes=records.iterator.map(r=>Option(r.value()).fold(0L)(_.toString.getBytes(java.nio.charset.StandardCharsets.UTF_8).length.toLong)).sum
       require(pending.map(_.bytes).sum+bytes<=16L*1024*1024,"retained callback bytes exceeded")
-      val p=Pending(nextCallback,MySQLCdcSourceNode.cursorValue(records.last),handle,records.size,bytes,mutable.Set(profileSequence))
+      val p=Pending(nextCallback,MySQLDebeziumConnector.cursorValue(records.last),handle,records.size,bytes,mutable.Set(profileSequence))
       nextCallback+=1;pending.enqueue(p)
       observe("RAW_CALLBACK",JsObject("id"->JsNumber(p.id),"records"->JsNumber(records.size),"offset"->p.offset.parseJson))
       records.foreach(r=>processCallbackRecord(r,p))
@@ -364,10 +364,10 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       val barrier=if(ordinary) {
         val subscription=store.subscription(m.id).getOrElse(throw new IllegalArgumentException("marker without intent"))
         require(subscription.table==m.table && subscription.generation==m.generation,"marker intent conflict")
-        store.bind(m.id,m.point,MySQLCdcSourceNode.cursorValue(r),m.action=="STOP")
+        store.bind(m.id,m.point,MySQLDebeziumConnector.cursorValue(r),m.action=="STOP")
         assemblers.remove(m.table).foreach(_.close())
         store.barrierSequence(m.id,m.action=="STOP")
-      }else Some(store.bindFence(m.id,m.point,MySQLCdcSourceNode.cursorValue(r)))
+      }else Some(store.bindFence(m.id,m.point,MySQLDebeziumConnector.cursorValue(r)))
       barrier.foreach(p.references.add)
       m.done(barrier.getOrElse(0L))
       val event=if(ordinary && barrier.isEmpty)"MARKER_IGNORED_CANCELED"

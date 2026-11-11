@@ -1,7 +1,7 @@
 package cn.xuyinyin.magic.workflow.integration
 
 import cn.xuyinyin.magic.tags.ExternalIntegration
-import cn.xuyinyin.magic.workflow.bootstrap.{BootstrapJournal,BootstrapJournalAccess}
+import cn.xuyinyin.magic.cdc.bootstrap.{BootstrapJournal,BootstrapJournalAccess}
 import com.typesafe.config.ConfigFactory
 import java.nio.file.{Files,Path}
 import java.sql.DriverManager

@@ -1,4 +1,9 @@
-package cn.xuyinyin.magic.workflow.scheduling
+package cn.xuyinyin.magic.cdc.control
+
+import cn.xuyinyin.magic.workflow.scheduling.{TableResourceDemand, ScheduledTableDefinition}
+
+
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
 
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers

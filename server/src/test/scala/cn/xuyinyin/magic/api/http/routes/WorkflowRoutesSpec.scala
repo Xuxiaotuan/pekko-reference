@@ -11,12 +11,12 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import spray.json._
 
 class WorkflowRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRouteTest {
-  import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
+  import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
 
   "Workflow routes" should {
     "expose a paused recovery without dropping the execution context" in {
-      import cn.xuyinyin.magic.workflow.events.WorkflowEvents._
-      import cn.xuyinyin.magic.workflow.engine.ExecutionFailure
+      import cn.xuyinyin.magic.cdc.compat.WorkflowEvents._
+      import cn.xuyinyin.magic.cdc.recovery.ExecutionFailure
       val typedSystem=system.toTyped
       val current=EventSourcedWorkflowActor.ExecutionState("same-execution",ExecutionTrigger("manual"),1L,
         recovery=Some(ExecutionRecoveryState(3,3,"blocked",0L,ExecutionFailure.BudgetExhausted,"target-commit",

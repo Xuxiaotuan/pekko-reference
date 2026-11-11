@@ -1,6 +1,6 @@
 package cn.xuyinyin.magic.workflow
 
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Edge, Node, Position, Workflow, WorkflowMetadata}
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.{Edge, Node, Position, Workflow, WorkflowMetadata}
 import spray.json.{JsNumber, JsObject, JsString}
 
 object WorkflowFixtures {

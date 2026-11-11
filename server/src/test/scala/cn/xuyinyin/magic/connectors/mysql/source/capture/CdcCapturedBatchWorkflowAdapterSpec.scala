@@ -1,7 +1,7 @@
 package cn.xuyinyin.magic.connectors.mysql.source.capture
 
 import cn.xuyinyin.magic.cdc.MySQLCdcGroup
-import cn.xuyinyin.magic.workflow.checkpoint.{BatchId,SourceBatch,SourceCursor}
+import cn.xuyinyin.magic.cdc.checkpoint.{BatchId,SourceBatch,SourceCursor}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

@@ -1,6 +1,8 @@
 package cn.xuyinyin.magic.workflow.integration
 
-import cn.xuyinyin.magic.workflow.scheduling._
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
+
+import cn.xuyinyin.magic.cdc.control._
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}
 import spray.json._
 import CdcJournalWindowSupport._

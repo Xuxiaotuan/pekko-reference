@@ -6,7 +6,7 @@ import cn.xuyinyin.magic.connectors.mysql.sink.MySQLCdcApplySinkNode
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
 import cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine
 import cn.xuyinyin.magic.workflow.execution.registry.NodeRegistry
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import java.lang.management.ManagementFactory

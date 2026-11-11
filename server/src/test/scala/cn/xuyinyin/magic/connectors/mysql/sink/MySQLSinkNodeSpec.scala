@@ -1,8 +1,8 @@
 package cn.xuyinyin.magic.connectors.mysql.sink
 
 import cn.xuyinyin.magic.testkit.STSpec
-import cn.xuyinyin.magic.workflow.checkpoint.{AlreadyCommitted, BatchId, Committed, SourceBatch, SourceCursor}
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.checkpoint.{AlreadyCommitted, BatchId, Committed, SourceBatch, SourceCursor}
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.Done
@@ -45,8 +45,8 @@ class MySQLSinkNodeSpec extends STSpec {
       withFixture { fixture =>
         fixture.initializeLedger(); fixture.initializeSplitEvidence(); fixture.failSplitClose = true
         val batch = sourceBatch(0L, "1", Vector(row(1))).copy(partitionId = "plan:0",
-          cursor = SourceCursor(cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.CursorKind, "1", "10"))
-        val failed = try intercept[cn.xuyinyin.magic.workflow.engine.CdcExecutionException] {
+          cursor = SourceCursor(cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind, "1", "10"))
+        val failed = try intercept[cn.xuyinyin.magic.cdc.recovery.CdcExecutionException] {
           Await.result(fixture.node.commitBatch(sinkNode(100), "w", "e", batch, batch.rows, _ => ()), 5.seconds)
         } finally fixture.failSplitClose = false
         failed.failure.releaseConfirmed shouldBe false
@@ -59,7 +59,7 @@ class MySQLSinkNodeSpec extends STSpec {
         fixture.initializeLedger()
         fixture.initializeSplitEvidence()
         val batch = sourceBatch(0L, "1", Vector(row(1))).copy(partitionId = "plan:0",
-          cursor = SourceCursor(cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.CursorKind, "1", "10"))
+          cursor = SourceCursor(cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind, "1", "10"))
         Await.result(fixture.node.commitBatch(sinkNode(100), "w", "e", batch, batch.rows, _ => ()), 5.seconds)
         val changed = batch.copy(rows = Vector("""{"id":1,"payload":"changed"}"""))
         intercept[IllegalStateException] {
@@ -494,7 +494,7 @@ class MySQLSinkNodeSpec extends STSpec {
     }
   }
 
-  private implicit class BatchCommitResultOps(private val result: cn.xuyinyin.magic.workflow.checkpoint.BatchCommitResult) {
+  private implicit class BatchCommitResultOps(private val result: cn.xuyinyin.magic.cdc.checkpoint.BatchCommitResult) {
     def checkpoint = result match {
       case Committed(value) => value
       case AlreadyCommitted(value) => value

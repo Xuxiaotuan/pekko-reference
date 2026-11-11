@@ -1,4 +1,5 @@
-package cn.xuyinyin.magic.workflow.scheduling
+package cn.xuyinyin.magic.cdc.control
+
 
 /** Test-only entry into the exact-account lock primitive. */
 object LegacyAccountProbeAccess {

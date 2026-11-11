@@ -1,5 +1,8 @@
-package cn.xuyinyin.magic.workflow.scheduling
+package cn.xuyinyin.magic.cdc.control
 
+
+
+import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
 import spray.json._
 
 /** Laboratory acceptance only. Production provider validation is deliberately unchanged. */

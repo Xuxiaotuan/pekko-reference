@@ -2,8 +2,8 @@ package cn.xuyinyin.magic.workflow.integration
 
 import cn.xuyinyin.magic.connectors.mysql.source._
 import cn.xuyinyin.magic.connectors.mysql.source.capture._
-import cn.xuyinyin.magic.workflow.bootstrap._
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.bootstrap._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import org.apache.pekko.actor.typed.scaladsl.adapter._
@@ -105,9 +105,9 @@ object BootstrapMatrixWorker {
             val spool=new BootstrapStore(()=>stateConnection(),id,sys.env.get("BOOTSTRAP_SPOOL_CAPACITY").fold(64L*1024*1024)(_.toLong))
             val target=new BootstrapTarget(()=>observed(()=>stateConnection(proxy.port),armTarget,proxy,"BASELINE_TARGET_COMMIT"),targetTable,codec,id)
             val source=new BootstrapSnapshot(()=>DriverManager.getConnection(settings.url(schema)+"&socketTimeout=30000",settings.user,settings.password),table,codec,10000,8L*1024*1024,observe)
-            val node=Node("target","sink","mysql.cdc.apply","real target",Position(0,0),JsObject("host"->JsString(state.host),"port"->JsNumber(state.port),"database"->JsString(schema),"table"->JsString(targetTable),"username"->JsString(state.user),"passwordEnv"->JsString("CDC_WINDOW_MYSQL_PASSWORD")))
+            val targetConfig=cn.xuyinyin.magic.connectors.mysql.sink.MySQLCdcApplyConfig.trusted(state.host,state.port,schema,targetTable,state.user,state.password)
             val replaySink=new BootstrapReplaySink(_=>observed(()=>DriverManager.getConnection(state.copy(port=proxy.port).url(schema),state.user,state.password),armReplay,proxy,"REPLAY_TARGET_COMMIT"))
-            val r=new BootstrapRunner(id,table,generation,table+"|"+generation+"|"+targetTable+"|"+codec.schemaId,capture,store,spool,target,access,source,replaySink.bind(node),schema,()=>stateConnection(),admission,BootstrapLimits(groupBatch=batchSize.toInt),observe)(blocking)
+            val r=new BootstrapRunner(id,table,generation,table+"|"+generation+"|"+targetTable+"|"+codec.schemaId,capture,store,spool,target,access,source,replaySink.bind(targetConfig),schema,()=>stateConnection(),admission,BootstrapLimits(groupBatch=batchSize.toInt),observe)(blocking)
             runners.put(id,r)
             val f=Future(r.run(()=>stopping.get()))(blocking);futures.put(id,f)
             f.failed.foreach(e=>emit("RUN_FAILED","id"->JsString(id),"error"->JsString(e.toString)))
@@ -142,7 +142,7 @@ object BootstrapMatrixWorker {
                 JsObject(f+("decoded"->JsString(e.toString)))})}finally c.close()
             val d=stateConnection();val offsets=try query(d,s"SELECT offset_key,offset_val FROM `${MySQLCdcSourceNode.connectorStateTables(MySQLCdcStateConfig(state.url(schema),state.user,state.password,"capture_offsets","capture_history",0),captureId)._1}`")finally d.close()
             val spools=JsObject(runners.asScala.keys.toVector.map(id=>id->new BootstrapStore(()=>stateConnection(),id,64L*1024*1024).evidence).toMap)
-            val failure=capture.failure.map(cn.xuyinyin.magic.workflow.engine.ExecutionFailure.from(_,"test-observation"))
+            val failure=capture.failure.map(cn.xuyinyin.magic.cdc.recovery.ExecutionFailure.from(_,"test-observation"))
             emit("STATE","admission"->admission.evidence,"L"->store.evidence,"D"->offsets,"J"->j,"actors"->actorState,"spools"->spools,
               "captureFailure"->capture.failure.map(x=>JsString(x.toString)).getOrElse(JsNull),
               "captureFailureCode"->failure.map(x=>JsString(x.code)).getOrElse(JsNull),

@@ -87,7 +87,7 @@ private[source] final class MySQLCdcGroupAssembler(
       val groups = ready.result()
       if (groups.nonEmpty) {
         // Only complete groups enter Bridge. This returns after the Engine has persisted J.
-        publish(groups.map(_.canonicalJson), MySQLCdcSourceNode.cursorValue(lastComplete.get),
+        publish(groups.map(_.canonicalJson), MySQLDebeziumConnector.cursorValue(lastComplete.get),
           new CdcBatchCommitHandle { override def markProcessedAndFinished(): Unit = () })
         ensureOpen()
         covered ++= groups.map(_.groupId)

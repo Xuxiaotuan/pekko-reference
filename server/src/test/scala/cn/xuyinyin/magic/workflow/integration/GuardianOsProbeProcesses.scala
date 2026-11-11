@@ -1,6 +1,10 @@
 package cn.xuyinyin.magic.workflow.integration
 
-import cn.xuyinyin.magic.workflow.scheduling._
+import cn.xuyinyin.magic.cdc.guardian.{ManagedJvmIsolation}
+
+import cn.xuyinyin.magic.cdc.guardian.MySqlOwnerDrainObserver
+
+import cn.xuyinyin.magic.cdc.control._
 import spray.json._
 import java.nio.file.{Files,Path,StandardOpenOption}
 import java.sql.DriverManager

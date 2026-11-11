@@ -1,7 +1,9 @@
 package cn.xuyinyin.magic.workflow.integration
 
+
+import cn.xuyinyin.magic.cdc.guardian.{SnapshotOwnerIdentity}
 import cn.xuyinyin.magic.tags.ExternalIntegration
-import cn.xuyinyin.magic.workflow.scheduling._
+import cn.xuyinyin.magic.cdc.control._
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import spray.json._

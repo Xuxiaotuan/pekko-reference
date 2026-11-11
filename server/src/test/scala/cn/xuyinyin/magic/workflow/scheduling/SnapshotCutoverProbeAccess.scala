@@ -1,5 +1,8 @@
-package cn.xuyinyin.magic.workflow.scheduling
+package cn.xuyinyin.magic.cdc.control
 
+
+
+import cn.xuyinyin.magic.cdc.control.{CutoverAuthorizationKey}
 /** Test-only operator action for the real MySQL cutover fixture; production uses SnapshotCutoverAuthorizer. */
 object SnapshotCutoverProbeAccess {
   def commitOwner(ownership:ManagedOwnerStore,key:CutoverAuthorizationKey):Unit=commit(ownership.transactionOwner,ownership,key)

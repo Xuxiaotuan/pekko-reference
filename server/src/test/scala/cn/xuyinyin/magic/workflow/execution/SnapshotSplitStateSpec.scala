@@ -1,11 +1,15 @@
 package cn.xuyinyin.magic.workflow.execution
 
+import cn.xuyinyin.magic.cdc.compat.nodes.{SnapshotSplitFingerprint}
+
+
+import cn.xuyinyin.magic.cdc.control.{CredentialBinding}
 import cn.xuyinyin.magic.testkit.STSpec
-import cn.xuyinyin.magic.workflow.checkpoint._
-import cn.xuyinyin.magic.workflow.snapshot._
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Node, Position}
+import cn.xuyinyin.magic.cdc.checkpoint._
+import cn.xuyinyin.magic.cdc.snapshot._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.{Node, Position}
 import spray.json._
-import cn.xuyinyin.magic.workflow.scheduling.{CredentialBinding,SnapshotOwnerJdbc}
+import cn.xuyinyin.magic.cdc.control.{SnapshotOwnerJdbc}
 
 class SnapshotSplitStateSpec extends STSpec {
   private val plan = SnapshotSplitPlanState("p", "s", "fingerprint", Some("20"), 2, 4, 2, 1024)
@@ -31,12 +35,12 @@ class SnapshotSplitStateSpec extends STSpec {
       val node=ExecutionNode("source","source","mysql.snapshot","source",JsObject(
         "host"->JsString("127.0.0.1"),"port"->JsNumber(3306),"database"->JsString("db"),"username"->JsString("old"),"passwordEnv"->JsString("OLD")))
       val binding=CredentialBinding("w","e","source","source","permit","owner","op","127.0.0.1:3306","db","old","new","NEW_PASSWORD","a"*64,"ACTIVE")
-      val rebound=SnapshotOwnerJdbc.rebindRuntimeNode(node,binding)
+      val rebound=WorkflowCredentialBinding.rebindRuntimeNode(node,binding)
       rebound.config.fields("username") shouldBe JsString("new")
       rebound.config.fields("passwordEnv") shouldBe JsString("NEW_PASSWORD")
       rebound.config.fields.contains("password") shouldBe false
       node.config.fields("username") shouldBe JsString("old")
-      intercept[IllegalArgumentException](SnapshotOwnerJdbc.rebindRuntimeNode(node,binding.copy(endpoint="127.0.0.2:3306")))
+      intercept[IllegalArgumentException](WorkflowCredentialBinding.rebindRuntimeNode(node,binding.copy(endpoint="127.0.0.2:3306")))
     }
     "keep independent checkpoints and reject an unknown or gapped split" in {
       val registered = update(SnapshotSplitState(plan), RegisterSnapshotSplit(first))

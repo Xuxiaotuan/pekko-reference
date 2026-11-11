@@ -1,6 +1,6 @@
 package cn.xuyinyin.magic.connectors.mysql.source.capture
 
-import cn.xuyinyin.magic.workflow.checkpoint.{SourceBatch,SourceCursor}
+import cn.xuyinyin.magic.cdc.checkpoint.{SourceBatch,SourceCursor}
 
 /** Keeps the existing workflow wire types at the compatibility boundary. */
 private[magic] object CdcCapturedBatchWorkflowAdapter {

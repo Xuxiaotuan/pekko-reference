@@ -154,8 +154,8 @@ private[source] object RealDebeziumEngineAccess {
 
   def safeFailure(error: Throwable): IllegalStateException = {
     val kind = Option(error).map(_.getClass.getSimpleName).filter(_.nonEmpty).getOrElse("unknown")
-    new cn.xuyinyin.magic.workflow.engine.CdcExecutionException(
-      cn.xuyinyin.magic.workflow.engine.ExecutionFailure.from(error, "source"),
+    new cn.xuyinyin.magic.cdc.recovery.CdcExecutionException(
+      cn.xuyinyin.magic.cdc.recovery.ExecutionFailure.from(error, "source"),
       new IllegalStateException(s"Debezium engine terminated exceptionally ($kind)"))
   }
 

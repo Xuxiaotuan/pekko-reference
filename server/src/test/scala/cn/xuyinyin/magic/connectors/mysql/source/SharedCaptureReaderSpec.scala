@@ -44,7 +44,7 @@ class SharedCaptureReaderSpec extends AnyWordSpec with Matchers {
       }
       failClose.set(true)
       try {
-        val failure=intercept[cn.xuyinyin.magic.workflow.engine.CdcExecutionException](session.start())
+        val failure=intercept[cn.xuyinyin.magic.cdc.recovery.CdcExecutionException](session.start())
         failure.failure.releaseConfirmed shouldBe false
         session.failure should not be empty
         val before=opened.get()

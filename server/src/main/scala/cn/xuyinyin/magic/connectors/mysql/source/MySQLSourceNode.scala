@@ -1,7 +1,8 @@
 package cn.xuyinyin.magic.connectors.mysql.source
 
-import cn.xuyinyin.magic.workflow.spi.NodeSource
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
+
+import cn.xuyinyin.magic.cdc.compat.nodes.NodeSource
 import org.apache.pekko.NotUsed
 import org.apache.pekko.stream.scaladsl.Source
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}

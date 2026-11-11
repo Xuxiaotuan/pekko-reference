@@ -1,8 +1,14 @@
 package cn.xuyinyin.magic.workflow.integration
 
+import cn.xuyinyin.magic.cdc.guardian.SnapshotSupervisorSettings
+
+
+
+import cn.xuyinyin.magic.cdc.guardian.{SupervisorControl}
+import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
 import cn.xuyinyin.magic.tags.ExternalIntegration
-import cn.xuyinyin.magic.workflow.cdc.{CdcPlatformLimits,CdcTaskRequest,CdcTaskStore}
-import cn.xuyinyin.magic.workflow.scheduling._
+import cn.xuyinyin.magic.cdc.platform.{CdcPlatformLimits,CdcTaskRequest,CdcTaskStore}
+import cn.xuyinyin.magic.cdc.control._
 import com.typesafe.config.{ConfigFactory,ConfigRenderOptions}
 import java.io.File
 import java.net.{URI,URLClassLoader}
@@ -25,7 +31,7 @@ class CdcProductionEntryUnknownBSpec extends AnyWordSpec with Matchers {
   import CdcJournalWindowSupport._
   import SnapshotGuardianWire._
   "managed unknown B recovery" should {
-    for(mode<-Vector("C1")) {
+    for(mode<-Vector("C0","C1")) {
       s"preserve isolation and complete field reconciliation for $mode" taggedAs ExternalIntegration in {
         if(!sys.env.get("RUN_CDC_MANAGED_B_MATRIX").contains("1"))cancel("dedicated dual MySQL fixture required")
         require(sys.env.get("CDC_LAB_EXCLUSIVE_LEASE").exists(_.nonEmpty))
@@ -49,7 +55,7 @@ class CdcProductionEntryUnknownBSpec extends AnyWordSpec with Matchers {
         write(dir,"environment.json",JsObject("mode"->JsString(mode),"schema"->JsString(schema),"capture"->JsString(capture),
           "sourceUuid"->JsString(sourceUuid),"stateUuid"->JsString(stateUuid),"sourcePort"->JsNumber(source.port),"statePort"->JsNumber(state.port),
           "sourceAccount"->JsString(srcUser),"sdkAccount"->JsString(sdkUser),"java"->JsString(System.getProperty("java.version")),
-          "scope"->JsString("production guardian, supervisor, PekkoServer and CdcPlatformExtension; no raw callback observer")))
+          "scope"->JsString("production guardian, supervisor, managed CdcRuntimeMain and CdcPlatformExtension; no raw callback observer")))
         val anchor=Files.createTempDirectory("mb-",PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")))
         val events=new ConcurrentLinkedQueue[JsObject]()
         val proxy=new MySQLCommitResponseProxy(source.host,source.port,(kind,value)=>events.add(JsObject(value.fields+("kind"->JsString(kind)))),advertisePlaintextOnly=true)
@@ -102,6 +108,8 @@ class CdcProductionEntryUnknownBSpec extends AnyWordSpec with Matchers {
         require(httpPort!=arteryPort)
         val systemName=ConfigFactory.load("application-test").getString("pekko.pekko-sys")
         val workerSettings=common++Map[String,AnyRef]("pekko.actor.provider"->"cluster",
+          "pekko.cdc-standalone.managed-worker"->java.lang.Boolean.TRUE,
+          "pekko.cdc-standalone.http.host"->"127.0.0.1","pekko.cdc-standalone.http.port"->Int.box(httpPort),
           "pekko.remote.artery.canonical.hostname"->"127.0.0.1","pekko.remote.artery.canonical.port"->Int.box(arteryPort),
           "pekko.cluster.seed-nodes"->Vector(s"pekko://$systemName@127.0.0.1:$arteryPort").asJava,
           "pekko.cluster.roles"->Vector("worker","coordinator","api-gateway").asJava,
@@ -125,7 +133,10 @@ class CdcProductionEntryUnknownBSpec extends AnyWordSpec with Matchers {
         val config=anchor.resolve("supervisor.conf");Files.writeString(config,ConfigFactory.parseMap(supervisorSettings.asJava).root.render(ConfigRenderOptions.concise()))
         Vector("worker.conf","supervisor.conf","auth.key","sign.key").foreach(n=>Files.setPosixFilePermissions(anchor.resolve(n),PosixFilePermissions.fromString("rw-------")))
         val loaders=Iterator.iterate(Option(getClass.getClassLoader))(_.flatMap(l=>Option(l.getParent))).takeWhile(_.nonEmpty).flatten.collect{case l:URLClassLoader=>l.getURLs.iterator}.flatten.filter(_.getProtocol=="file").map(u=>Path.of(u.toURI).toString)
-        val cp=(loaders++System.getProperty("java.class.path").split(File.pathSeparator).iterator).toVector.distinct.mkString(File.pathSeparator)
+        val productionClasspath=(loaders++System.getProperty("java.class.path").split(File.pathSeparator).iterator).toVector.distinct
+          .filterNot(p=>p.contains("/test-classes") || p.endsWith("/src/test/resources"))
+        val cp=productionClasspath.mkString(File.pathSeparator)
+        Files.writeString(dir.resolve("child-classpath.txt"),productionClasspath.mkString("\n")+"\n")
         val process=new ProcessBuilder(Path.of(System.getProperty("java.home"),"bin","java").toString,"-Xmx256m","-cp",cp,
           SnapshotGuardianMain.getClass.getName.stripSuffix("$"),config.toString).redirectErrorStream(true).start()
         val guardian=new Child(process,anchor.resolve("guardian.private.log"))
@@ -184,10 +195,38 @@ class CdcProductionEntryUnknownBSpec extends AnyWordSpec with Matchers {
           val oldPort=httpPort
           awaitCondition("shared capture admission ready",120.seconds){Try(request(oldPort,"GET","cdc-captures")._2.toString.contains("ADMISSION_READY")).getOrElse(false)}
           val cutMode=if(mode.startsWith("GUARDIAN_"))"LATE_COMMIT"else mode
-          proxy.arm(cutMode,JsObject("stage"->JsString("B")))
+          if(mode!="C0")proxy.arm(cutMode,JsObject("stage"->JsString("B")))
           val submitted=request(oldPort,"POST","cdc-tasks",Some(JsObject("requestId"->JsString("a"),"captureId"->JsString(capture),"table"->JsString("a"),"generation"->JsString("g1"),"targetTable"->JsString("target_a"))))
           submitted._1 shouldBe 202
           val task=CdcTaskRequest("a",capture,"a","g1","target_a").taskId
+          if(mode=="C0") {
+            awaitCondition("initial task enters STREAMING",180.seconds){Try(request(oldPort,"GET","cdc-tasks/"+task)._2.asJsObject.fields("phase")==JsString("STREAMING")).getOrElse(false)}
+            dump("01-streaming")
+            val original=Files.readString(dir.resolve("01-streaming.json")).parseJson.asJsObject
+            original.fields("equal") shouldBe JsBoolean(true)
+            original.fields("fieldsCompared") shouldBe JsNumber(384)
+            val oldIdentity=supervisor.metadata.launch(oldBoot).flatMap(_.identity).get
+            val handle=ProcessHandle.of(oldIdentity.pid).orElseThrow()
+            require(handle.info().startInstant().isPresent && handle.info().startInstant().get().toString==oldIdentity.startIdentity,
+              "old worker process incarnation changed")
+            require(handle.destroyForcibly(),"old worker termination was not accepted")
+            awaitCondition("old owner drained and replacement forked",180.seconds){
+              supervisor.metadata.launch(oldBoot).exists(_.phase=="retired") &&
+                supervisor.metadata.pending.exists(t=>t.bootId!=oldBoot && t.identity.nonEmpty && t.phase=="launched")
+            }
+            val replacementBoot=supervisor.metadata.pending.find(t=>t.bootId!=oldBoot && t.identity.nonEmpty && t.phase=="launched").get.bootId
+            awaitCondition("replacement task returns to STREAMING",180.seconds){Try(request(httpPort,"GET","cdc-tasks/"+task)._2.asJsObject.fields("phase")==JsString("STREAMING")).getOrElse(false)}
+            sql(source,"UPDATE a SET label='after-guardian-takeover', revision=revision+1 WHERE id=1")
+            awaitCondition("replacement applies a new source change",90.seconds){
+              Try(db(state,"SELECT label FROM target_a WHERE id=1").elements.head.asJsObject.fields("label")==JsString("after-guardian-takeover")).getOrElse(false)
+            }
+            dump("02-recovered")
+            val result=Files.readString(dir.resolve("02-recovered.json")).parseJson.asJsObject
+            result.fields("equal") shouldBe JsBoolean(true)
+            result.fields("fieldsCompared") shouldBe JsNumber(384)
+            result.fields("missing") shouldBe JsArray();result.fields("extra") shouldBe JsArray();result.fields("fieldDifferences") shouldBe JsArray()
+            succeeded=true;write(dir,"result.json",JsObject("mode"->JsString(mode),"status"->JsString("DATA_CONVERGED_CLEANUP_PENDING"),"oldBoot"->JsString(oldBoot),"replacementBoot"->JsString(replacementBoot),"taskId"->JsString(task)))
+          } else {
           awaitCondition("source marker transaction cut",90.seconds)(events.asScala.exists(_.fields.get("kind").contains(JsString("CUTPOINT"))))
           awaitCondition("durable UNKNOWN grant",90.seconds)(store.counts.getOrElse("UNKNOWN",0L)==1L)
           val pending=db(state,s"SELECT request_id,status FROM pekko_capture_subscriptions WHERE request_id='$task'")
@@ -206,7 +245,7 @@ class CdcProductionEntryUnknownBSpec extends AnyWordSpec with Matchers {
           dump("01-unknown")
           awaitCondition("old worker isolated",90.seconds){supervisor.metadata.launch(oldBoot).exists(_.proof.nonEmpty) || !supervisorProcess.alive}
           require(supervisorProcess.alive,"production supervisor failed during isolation")
-          val old=supervisor.tableStore.ownership.get.owner(oldBoot).get
+          val old=supervisor.metadata.ownerRegistry.owner(oldBoot).get
           Set("fenced","drain_wait","db_drained") should contain (old.phase)
           dump("02-isolated")
           if(cutMode.startsWith("LATE_")){
@@ -225,6 +264,7 @@ class CdcProductionEntryUnknownBSpec extends AnyWordSpec with Matchers {
           result.fields("equal") shouldBe JsBoolean(true);result.fields("fieldsCompared") shouldBe JsNumber(384)
           result.fields("missing") shouldBe JsArray();result.fields("extra") shouldBe JsArray();result.fields("fieldDifferences") shouldBe JsArray()
           succeeded=true;write(dir,"result.json",JsObject("mode"->JsString(mode),"status"->JsString("DATA_CONVERGED_CLEANUP_PENDING"),"oldBoot"->JsString(oldBoot),"replacementBoot"->JsString(replacementBoot),"taskId"->JsString(task)))
+          }
         } catch {case e:Throwable=>
           Try(dump("failure-state"))
           write(dir,"failure.json",JsObject("mode"->JsString(mode),"class"->JsString(e.getClass.getName),"message"->JsString(Option(e.getMessage).getOrElse("").replace(source.password,"[REDACTED]")),"proxy"->eventFile()))
@@ -242,7 +282,7 @@ class CdcProductionEntryUnknownBSpec extends AnyWordSpec with Matchers {
           val drained=if(client!=null && guardianWasAlive)Try {
             supervisor.metadata.pending.foreach {t=>
               if(t.identity.nonEmpty){
-                val op=supervisor.metadata.operation(control,t.bootId);val ha=supervisor.tableStore.ownership.get
+                val op=supervisor.metadata.operation(control,t.bootId);val ha=supervisor.metadata.ownerRegistry
                 ha.owner(t.bootId).foreach(_=>ha.beginRevocation(t.bootId,op))
                 val raw=text(client.request("STOP",JsObject("boot"->JsString(t.bootId),"identity"->t.identity.get.toJson,"operation"->JsString(op))),"proof")
                 val receipt=verifyReceipt(raw,supervisor.binding,t.identity.get,op)

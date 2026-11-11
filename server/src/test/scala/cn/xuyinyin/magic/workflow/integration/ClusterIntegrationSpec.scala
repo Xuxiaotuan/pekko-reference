@@ -3,7 +3,7 @@ package cn.xuyinyin.magic.workflow.integration
 import cn.xuyinyin.magic.workflow.WorkflowFixtures
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
 import cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
 import cn.xuyinyin.magic.infrastructure.cluster.sharding.WorkflowSharding
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.actor.testkit.typed.scaladsl.{ActorTestKit, ScalaTestWithActorTestKit}

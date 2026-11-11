@@ -5,7 +5,7 @@ import cn.xuyinyin.magic.testkit.STSpec
 class DebeziumDependencySpec extends STSpec {
   "the CDC runtime" should {
     "preserve safe transient classification through the real completion adapter" in {
-      import cn.xuyinyin.magic.workflow.engine.{CdcExecutionException, ExecutionFailure}
+      import cn.xuyinyin.magic.cdc.recovery.{CdcExecutionException, ExecutionFailure}
       import scala.concurrent.Await
       import scala.concurrent.duration._
       val access=new RealDebeziumEngineAccess(new java.util.Properties(), (_,callback) =>

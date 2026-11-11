@@ -1,12 +1,12 @@
 package cn.xuyinyin.magic.workflow.actors {
 
 import cn.xuyinyin.magic.workflow.WorkflowFixtures
-import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
+import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
 import cn.xuyinyin.magic.workflow.engine.{ExecutionResult, NodeExecutionResult}
 import cn.xuyinyin.magic.workflow.execution.{ReliableRunContext, WorkflowExecutionEngine}
 import cn.xuyinyin.magic.workflow.TestNodeRegistry
-import cn.xuyinyin.magic.workflow.events.WorkflowEvents._
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.compat.WorkflowEvents._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import cn.xuyinyin.magic.workflow.spi.{CheckpointedNodeSource, NodeSource}
 import cn.xuyinyin.magic.connectors.kafka.KafkaCheckpointCodec
 import com.typesafe.config.{Config, ConfigFactory}
@@ -99,7 +99,7 @@ class EventSourcedWorkflowActorSpec
   )
 
   private def engineReturning(result: ExecutionResult): WorkflowExecutionEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
-    override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
+    override def execute(workflow: cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
       Future.successful(result)
   }
 
@@ -137,8 +137,8 @@ class EventSourcedWorkflowActorSpec
       val define = serialization.verifySerialization(
         EventSourcedWorkflowActor.DefineWorkflow(WorkflowFixtures.linearWorkflow, 0L, commandReply.ref)
       )
-      import cn.xuyinyin.magic.workflow.model.WorkflowDSL.workflowFormat
-      define.workflowJson.parseJson.convertTo[cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow] shouldBe WorkflowFixtures.linearWorkflow
+      import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.workflowFormat
+      define.workflowJson.parseJson.convertTo[cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.Workflow] shouldBe WorkflowFixtures.linearWorkflow
 
       val summary = serialization.verifySerialization(EventSourcedWorkflowActor.ExecutionSummary("execution", 1L, Some(2L), "completed", Some(1L)))
       summary.endTime shouldBe Some(2L)
@@ -600,7 +600,7 @@ class EventSourcedWorkflowActorSpec
     "deduplicate retained manual requests and reject a concurrent schedule run" in {
       val completion = Promise[ExecutionResult]()
       lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
-        override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] = completion.future
+        override def execute(workflow: cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] = completion.future
       }
       val workflowId = "idempotency"
       val entity = spawn(EventSourcedWorkflowActor(workflowId, engine), workflowId)

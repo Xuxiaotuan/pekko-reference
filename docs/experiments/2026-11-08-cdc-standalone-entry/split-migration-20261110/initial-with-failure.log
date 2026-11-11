@@ -1,0 +1,186 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[info] done compiling
+23:12:10,555 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+23:12:10,556 |-INFO in ch.qos.logback.classic.util.ContextInitializer@535136f6 - No custom configurators were discovered as a service.
+23:12:10,556 |-INFO in ch.qos.logback.classic.util.ContextInitializer@535136f6 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+23:12:10,556 |-INFO in ch.qos.logback.classic.util.ContextInitializer@535136f6 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+23:12:10,556 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+23:12:10,556 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+23:12:10,557 |-INFO in ch.qos.logback.classic.util.ContextInitializer@535136f6 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+23:12:10,557 |-INFO in ch.qos.logback.classic.util.ContextInitializer@535136f6 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+23:12:10,558 |-INFO in ch.qos.logback.classic.util.ContextInitializer@535136f6 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+23:12:10,558 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+23:12:10,558 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+23:12:10,581 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+23:12:10,581 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+23:12:10,584 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+23:12:10,592 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+23:12:10,592 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+23:12:10,592 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+23:12:10,592 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+23:12:10,593 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+23:12:10,593 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+23:12:10,593 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+23:12:10,593 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+23:12:10,594 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+23:12:10,594 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+23:12:10,594 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+23:12:10,594 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+23:12:10,594 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@30d6f6f5 - End of configuration.
+23:12:10,594 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@4ef322ee - Registering current configuration as safe fallback point
+23:12:10,594 |-INFO in ch.qos.logback.classic.util.ContextInitializer@535136f6 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 36 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+SLF4J(W): A number (1) of logging calls during the initialization phase have been intercepted and are
+SLF4J(W): now being replayed. These are subject to the filtering rules of the underlying logging system.
+SLF4J(W): See also https://www.slf4j.org/codes.html#replay
+23:12:10.596 [34mINFO [0;39m [36m[current-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+23:12:10.689 [34mINFO [0;39m [36m[current-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://current-split-cbor@127.0.0.1:57321] with UID [-4604483298005237728]
+23:12:10.695 [34mINFO [0;39m [36m[current-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://current-split-cbor@127.0.0.1:57321] - Starting up, Pekko version [1.1.3] ...
+23:12:10.735 [34mINFO [0;39m [36m[current-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://current-split-cbor@127.0.0.1:57321] - Registered cluster JMX MBean [pekko:type=Cluster]
+23:12:10.735 [34mINFO [0;39m [36m[current-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://current-split-cbor@127.0.0.1:57321] - Started up successfully
+23:12:10.746 [34mINFO [0;39m [36m[current-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://current-split-cbor@127.0.0.1:57321] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+23:12:10.747 [34mINFO [0;39m [36m[current-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://current-split-cbor@127.0.0.1:57321#-4604483298005237728], selfDc [default].
+23:12:11.094 [34mINFO [0;39m [36m[current-split-cbor-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+23:12:11.097 [34mINFO [0;39m [36m[current-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://current-split-cbor@127.0.0.1:57321] - Exiting completed
+23:12:11.097 [34mINFO [0;39m [36m[current-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://current-split-cbor@127.0.0.1:57321] - Shutting down...
+23:12:11.098 [34mINFO [0;39m [36m[current-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://current-split-cbor@127.0.0.1:57321] - Successfully shut down
+23:12:11.100 [34mINFO [0;39m [36m[current-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://current-split-cbor/system/cluster/core/daemon#-1637172247] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+23:12:11.103 [34mINFO [0;39m [36m[current-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+23:12:11.104 [34mINFO [0;39m [36m[current-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+23:12:11.109 [34mINFO [0;39m [36m[current-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+23:12:11.130 [34mINFO [0;39m [36m[legacy-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+23:12:11.135 [34mINFO [0;39m [36m[legacy-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.remote.artery.ArteryTransport][0;39m - Remoting started with transport [Artery tcp]; listening on address [pekko://legacy-split-cbor@127.0.0.1:57326] with UID [-5498942334759797114]
+23:12:11.136 [34mINFO [0;39m [36m[legacy-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-split-cbor@127.0.0.1:57326] - Starting up, Pekko version [1.1.3] ...
+23:12:11.137 [34mINFO [0;39m [36m[legacy-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-split-cbor@127.0.0.1:57326] - Registered cluster JMX MBean [pekko:type=Cluster]
+23:12:11.137 [34mINFO [0;39m [36m[legacy-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-split-cbor@127.0.0.1:57326] - Started up successfully
+23:12:11.138 [34mINFO [0;39m [36m[legacy-split-cbor-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-split-cbor@127.0.0.1:57326] - No seed nodes found in configuration, relying on Cluster Bootstrap for joining
+23:12:11.138 [34mINFO [0;39m [36m[legacy-split-cbor-pekko.actor.default-dispatcher-14][0;39m [1;35m[o.a.p.cluster.sbr.SplitBrainResolver][0;39m - SBR started. Config: strategy [KeepMajority], stable-after [20 seconds], down-all-when-unstable [15 seconds], selfUniqueAddress [pekko://legacy-split-cbor@127.0.0.1:57326#-5498942334759797114], selfDc [default].
+23:12:11.190 [34mINFO [0;39m [36m[legacy-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+23:12:11.191 [34mINFO [0;39m [36m[legacy-split-cbor-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-split-cbor@127.0.0.1:57326] - Exiting completed
+23:12:11.191 [34mINFO [0;39m [36m[legacy-split-cbor-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-split-cbor@127.0.0.1:57326] - Shutting down...
+23:12:11.191 [34mINFO [0;39m [36m[legacy-split-cbor-pekko.actor.default-dispatcher-14][0;39m [1;35m[o.apache.pekko.actor.LocalActorRef][0;39m - Message [org.apache.pekko.cluster.ClusterUserAction$Leave] to Actor[pekko://legacy-split-cbor/system/cluster/core/daemon#-953106392] was unhandled. [1] dead letters encountered, no more dead letters will be logged in next [25.00 min]. This logging can be turned off or adjusted with configuration settings 'pekko.log-dead-letters' and 'pekko.log-dead-letters-during-shutdown'.
+23:12:11.191 [34mINFO [0;39m [36m[legacy-split-cbor-pekko.actor.default-dispatcher-14][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://legacy-split-cbor@127.0.0.1:57326] - Successfully shut down
+23:12:11.193 [34mINFO [0;39m [36m[legacy-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Shutting down remote daemon.
+23:12:11.193 [34mINFO [0;39m [36m[legacy-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remote daemon shut down; proceeding with flushing remote transports.
+23:12:11.194 [34mINFO [0;39m [36m[legacy-split-cbor-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.RemoteActorRefProvider$RemotingTerminator][0;39m - Remoting shut down.
+[info] LegacySplitMigrationSpec:
+[info] split migration
+[info] - should round trip a newly written event after the schema version change
+[info] - should read old states, updates and events with embedded polymorphic type names
+[info] Run completed in 971 milliseconds.
+[info] Total number of tests run: 2
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 2, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 4 s, completed 2026年11月10日 下午11:12:11
+23:12:11,442 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+23:12:11,443 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3a01e359 - No custom configurators were discovered as a service.
+23:12:11,443 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3a01e359 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+23:12:11,443 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3a01e359 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+23:12:11,443 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+23:12:11,443 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+23:12:11,443 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3a01e359 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+23:12:11,443 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3a01e359 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+23:12:11,443 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3a01e359 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+23:12:11,443 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+23:12:11,444 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+23:12:11,467 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+23:12:11,467 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+23:12:11,470 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+23:12:11,477 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+23:12:11,477 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+23:12:11,478 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+23:12:11,478 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+23:12:11,478 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+23:12:11,478 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+23:12:11,479 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+23:12:11,479 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+23:12:11,479 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+23:12:11,479 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+23:12:11,479 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+23:12:11,479 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+23:12:11,479 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@4b2067 - End of configuration.
+23:12:11,479 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@14ce86ae - Registering current configuration as safe fallback point
+23:12:11,479 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3a01e359 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 36 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+[info] RealMySQLSnapshotSplitSpec:
+[info] single-table snapshot splits with a real MySQL Journal and Sink
+[info] - should preserve fault and full-field evidence for SNAPSHOT_RECOVERY
+[info] Run completed in 5 seconds, 309 milliseconds.
+[info] Total number of tests run: 1
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 1, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 5 s, completed 2026年11月10日 下午11:12:16
+23:12:16,870 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+23:12:16,871 |-INFO in ch.qos.logback.classic.util.ContextInitializer@4a2f47f4 - No custom configurators were discovered as a service.
+23:12:16,871 |-INFO in ch.qos.logback.classic.util.ContextInitializer@4a2f47f4 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+23:12:16,871 |-INFO in ch.qos.logback.classic.util.ContextInitializer@4a2f47f4 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+23:12:16,871 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+23:12:16,872 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+23:12:16,872 |-INFO in ch.qos.logback.classic.util.ContextInitializer@4a2f47f4 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+23:12:16,872 |-INFO in ch.qos.logback.classic.util.ContextInitializer@4a2f47f4 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+23:12:16,872 |-INFO in ch.qos.logback.classic.util.ContextInitializer@4a2f47f4 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+23:12:16,872 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+23:12:16,872 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+23:12:16,895 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+23:12:16,895 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+23:12:16,897 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+23:12:16,904 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+23:12:16,904 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+23:12:16,904 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+23:12:16,904 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+23:12:16,905 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+23:12:16,905 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+23:12:16,905 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+23:12:16,905 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+23:12:16,905 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+23:12:16,905 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+23:12:16,905 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+23:12:16,905 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+23:12:16,906 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@6e110c2a - End of configuration.
+23:12:16,906 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@77b5cfbc - Registering current configuration as safe fallback point
+23:12:16,906 |-INFO in ch.qos.logback.classic.util.ContextInitializer@4a2f47f4 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 34 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+[info] RealMySQLSnapshotSplitSpec:
+[info] single-table snapshot splits with a real MySQL Journal and Sink
+[info] - should preserve fault and full-field evidence for BASELINE *** FAILED ***
+[info]   java.sql.SQLException: No suitable driver found for jdbc:mysql://127.0.0.1:25822/?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8
+[info]   at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:706)
+[info]   at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:229)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcJournalWindowSupport$.withConnection(RealMySQLCdcJournalWindowSpec.scala:185)
+[info]   at cn.xuyinyin.magic.workflow.integration.CdcJournalWindowSupport$.initialize(RealMySQLCdcJournalWindowSpec.scala:206)
+[info]   at cn.xuyinyin.magic.workflow.integration.RealMySQLSnapshotSplitSpec.$anonfun$new$3(RealMySQLSnapshotSplitSpec.scala:25)
+[info]   at org.scalatest.OutcomeOf.outcomeOf(OutcomeOf.scala:85)
+[info]   at org.scalatest.OutcomeOf.outcomeOf$(OutcomeOf.scala:83)
+[info]   at org.scalatest.OutcomeOf$.outcomeOf(OutcomeOf.scala:104)
+[info]   at org.scalatest.Transformer.apply(Transformer.scala:22)
+[info]   at org.scalatest.Transformer.apply(Transformer.scala:20)
+[info]   ...
+[info] Run completed in 116 milliseconds.
+[info] Total number of tests run: 1
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 0, failed 1, canceled 0, ignored 0, pending 0
+[info] *** 1 TEST FAILED ***
+[error] Failed tests:
+[error] 	cn.xuyinyin.magic.workflow.integration.RealMySQLSnapshotSplitSpec
+[error] (Test / testOnly) sbt.TestsFailedException: Tests unsuccessful
+[error] Total time: 0 s, completed 2026年11月10日 下午11:12:16

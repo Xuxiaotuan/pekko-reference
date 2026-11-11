@@ -1,7 +1,11 @@
 package cn.xuyinyin.magic.workflow.integration
 
+import cn.xuyinyin.magic.cdc.guardian.SnapshotSupervisorSettings
+
+
+import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
 import cn.xuyinyin.magic.tags.ExternalIntegration
-import cn.xuyinyin.magic.workflow.scheduling._
+import cn.xuyinyin.magic.cdc.control._
 import com.typesafe.config.{ConfigFactory,ConfigRenderOptions}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
@@ -56,7 +60,7 @@ class RealMySQLSupervisorMainSpec extends AnyWordSpec with Matchers {
         val in=getClass.getClassLoader.getResourceAsStream(path);val sql=try scala.io.Source.fromInputStream(in).mkString finally in.close();sql.split(";").map(_.trim).filter(_.nonEmpty).foreach(executeSql(c,_))
       }}
       val settings=new SnapshotSupervisorSettings(config);implicit val ec:ExecutionContext=ExecutionContext.global
-      val execution=Await.result(new TableSchedulingRuntime(settings.tableStore,"harness").submit(OwnerIsolationProbeSupport.workflow(s,schema),"takeover-one"),10.seconds).executionId.get
+      val execution=Await.result(new TableSchedulingRuntime(cn.xuyinyin.magic.cdc.control.LegacySupervisorHarness.tableStore(settings),"harness").submit(OwnerIsolationProbeSupport.workflow(s,schema),"takeover-one"),10.seconds).executionId.get
       val urls=Iterator.iterate(Option(getClass.getClassLoader))(_.flatMap(l=>Option(l.getParent))).takeWhile(_.nonEmpty).flatten.collect{case l:URLClassLoader=>l.getURLs.iterator}.flatten.filter(_.getProtocol=="file").map(u=>Path.of(u.toURI).toString)
       val cp=(urls++System.getProperty("java.class.path").split(java.io.File.pathSeparator)).toVector.distinct.mkString(java.io.File.pathSeparator)
       val children=scala.collection.mutable.ArrayBuffer.empty[(String,Child)]
@@ -75,14 +79,14 @@ class RealMySQLSupervisorMainSpec extends AnyWordSpec with Matchers {
         guardian=start("guardian",SnapshotGuardianMain.getClass.getName.stripSuffix("$"))
         awaitCondition("real guardian RPC socket",20.seconds){Files.exists(settings.socket)}
         val a=start("A",SnapshotSupervisorMain.getClass.getName.stripSuffix("$"))
-        awaitCondition("fixed production PekkoServer completed the original snapshot",70.seconds){settings.tableStore.get("table-00").exists(_.state=="completed")}
+        awaitCondition("fixed production PekkoServer completed the original snapshot",70.seconds){cn.xuyinyin.magic.cdc.control.LegacySupervisorHarness.tableStore(settings).get("table-00").exists(_.state=="completed")}
         val old=settings.metadata.pending.head.bootId;write(dir,"before-restart.json",SupervisorRecoveryTest.capture(settings,schema));a.kill()
         val b=start("B",SnapshotSupervisorMain.getClass.getName.stripSuffix("$"))
         awaitCondition("production supervisor replacement retired old worker and started successor",40.seconds){settings.metadata.launch(old).exists(_.phase=="retired") && settings.metadata.pending.exists(_.bootId!=old)}
         val after=SupervisorRecoveryTest.capture(settings,schema);write(dir,"final.json",after)
         val data=after.fields("data").asJsObject;data.fields("comparison").asJsObject.fields("equal") shouldBe JsBoolean(true)
         data.fields("T").asInstanceOf[JsArray].elements.size shouldBe 5;data.fields("audit").asInstanceOf[JsArray].elements.size shouldBe 10
-        settings.tableStore.get("table-00").get.executionId shouldBe Some(execution)
+        cn.xuyinyin.magic.cdc.control.LegacySupervisorHarness.tableStore(settings).get("table-00").get.executionId shouldBe Some(execution)
         write(dir,"result.json",JsObject("scenario"->JsString("ACTUAL_MAIN_STARTUP_RESTART"),"schema"->JsString(schema),"outcome"->JsString("CONVERGED"),"D"->JsString("N/A"),"originalExecution"->JsString(execution),"fixedProductionWorkerMain"->JsString("cn.xuyinyin.magic.PekkoServer")))
         success=true
       }catch{case e:Throwable=>write(dir,"failure.json",JsObject("errorClass"->JsString(e.getClass.getName),"state"->SupervisorRecoveryTest.capture(settings,schema)));throw e}
@@ -95,7 +99,7 @@ class RealMySQLSupervisorMainSpec extends AnyWordSpec with Matchers {
               val control=settings.metadata.claimController(UUID.randomUUID().toString);val client=new SnapshotGuardianWire.Client(settings.socket,secret,control,frame=>SupervisorRecoveryTest.append(dir.resolve("cleanup-wire.jsonl"),frame));client.request("BIND")
               settings.metadata.pending.foreach { t=>
                 if(t.identity.nonEmpty) {
-                  val op=settings.metadata.operation(control,t.bootId);val ha=settings.tableStore.ownership.get
+                  val op=settings.metadata.operation(control,t.bootId);val ha=cn.xuyinyin.magic.cdc.control.LegacySupervisorHarness.tableStore(settings).ownership.get
                   ha.owner(t.bootId).foreach(_=>ha.beginRevocation(t.bootId,op))
                   val raw=text(client.request("STOP",JsObject("boot"->JsString(t.bootId),"identity"->t.identity.get.toJson,"operation"->JsString(op))),"proof")
                   val receipt=verifyReceipt(raw,settings.binding,t.identity.get,op)

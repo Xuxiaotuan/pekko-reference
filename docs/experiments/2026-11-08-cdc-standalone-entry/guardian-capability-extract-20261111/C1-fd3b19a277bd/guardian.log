@@ -1,0 +1,1161 @@
+13:08:34,535 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+13:08:34,536 |-INFO in ch.qos.logback.classic.util.ContextInitializer@2ce6c6ec - No custom configurators were discovered as a service.
+13:08:34,536 |-INFO in ch.qos.logback.classic.util.ContextInitializer@2ce6c6ec - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+13:08:34,536 |-INFO in ch.qos.logback.classic.util.ContextInitializer@2ce6c6ec - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+13:08:34,539 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+13:08:34,539 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+13:08:34,543 |-INFO in ch.qos.logback.classic.util.ContextInitializer@2ce6c6ec - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 3 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+13:08:34,543 |-INFO in ch.qos.logback.classic.util.ContextInitializer@2ce6c6ec - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+13:08:34,543 |-INFO in ch.qos.logback.classic.util.ContextInitializer@2ce6c6ec - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+13:08:34,543 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+13:08:34,544 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+13:08:34,582 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+13:08:34,582 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+13:08:34,584 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+13:08:34,591 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+13:08:34,591 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+13:08:34,591 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+13:08:34,591 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+13:08:34,592 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+13:08:34,592 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+13:08:34,593 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+13:08:34,593 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+13:08:34,594 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+13:08:34,594 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+13:08:34,595 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+13:08:34,595 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+13:08:34,595 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@1bae316d - End of configuration.
+13:08:34,595 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@147a5d08 - Registering current configuration as safe fallback point
+13:08:34,595 |-INFO in ch.qos.logback.classic.util.ContextInitializer@2ce6c6ec - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 52 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+13:08:34.602 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+13:08:34.688 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+13:08:35,584 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+13:08:35,584 |-INFO in ch.qos.logback.classic.util.ContextInitializer@192c3f1e - No custom configurators were discovered as a service.
+13:08:35,584 |-INFO in ch.qos.logback.classic.util.ContextInitializer@192c3f1e - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+13:08:35,585 |-INFO in ch.qos.logback.classic.util.ContextInitializer@192c3f1e - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+13:08:35,588 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+13:08:35,588 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+13:08:35,592 |-INFO in ch.qos.logback.classic.util.ContextInitializer@192c3f1e - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 3 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+13:08:35,592 |-INFO in ch.qos.logback.classic.util.ContextInitializer@192c3f1e - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+13:08:35,593 |-INFO in ch.qos.logback.classic.util.ContextInitializer@192c3f1e - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+13:08:35,593 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+13:08:35,594 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+13:08:35,635 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+13:08:35,635 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+13:08:35,638 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+13:08:35,647 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+13:08:35,647 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+13:08:35,647 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+13:08:35,647 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+13:08:35,648 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+13:08:35,648 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+13:08:35,649 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+13:08:35,649 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+13:08:35,650 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+13:08:35,650 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+13:08:35,650 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+13:08:35,650 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+13:08:35,650 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@26b3fd41 - End of configuration.
+13:08:35,650 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@7494f96a - Registering current configuration as safe fallback point
+13:08:35,650 |-INFO in ch.qos.logback.classic.util.ContextInitializer@192c3f1e - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 57 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+13:08:35.808 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+13:08:35.895 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+13:08:35.919 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown initiated...
+13:08:35.920 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown completed.
+13:08:35.921 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Starting...
+13:08:35.925 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Start completed.
+13:08:36.077 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-4][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+13:08:36.306 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Starting...
+13:08:36.312 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Start completed.
+13:08:36.318 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown initiated...
+13:08:36.326 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown completed.
+13:08:36.594 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.magic.cdc.runtime.CdcRuntime$][0;39m - CDC standalone API bound at /127.0.0.1:63723; runtime status is available at /api/v1/cdc-status
+13:08:36.860 [34mINFO [0;39m [36m[cdc-platform-control-a3865471][0;39m [1;35m[o.a.k.common.config.AbstractConfig][0;39m - EmbeddedWorkerConfig values: 
+	access.control.allow.methods = 
+	access.control.allow.origin = 
+	admin.listeners = null
+	bootstrap.servers = [localhost:9092]
+	client.dns.lookup = use_all_dns_ips
+	config.providers = []
+	connector.client.config.override.policy = All
+	header.converter = class org.apache.kafka.connect.storage.SimpleHeaderConverter
+	header.converter.plugin.version = null
+	key.converter = class org.apache.kafka.connect.json.JsonConverter
+	key.converter.plugin.version = null
+	listeners = [http://:8083]
+	metric.reporters = [org.apache.kafka.common.metrics.JmxReporter]
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	offset.flush.interval.ms = 0
+	offset.flush.timeout.ms = 2000
+	offset.storage.file.filename = 
+	offset.storage.partitions = null
+	offset.storage.replication.factor = null
+	offset.storage.topic = 
+	plugin.discovery = hybrid_warn
+	plugin.path = null
+	response.http.headers.config = 
+	rest.advertised.host.name = null
+	rest.advertised.listener = null
+	rest.advertised.port = null
+	rest.extension.classes = []
+	ssl.cipher.suites = []
+	ssl.client.auth = none
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	task.shutdown.graceful.timeout.ms = 5000
+	topic.creation.enable = true
+	topic.tracking.allow.reset = true
+	topic.tracking.enable = true
+	value.converter = class org.apache.kafka.connect.json.JsonConverter
+	value.converter.plugin.version = null
+
+13:08:36.867 [34mINFO [0;39m [36m[cdc-platform-control-a3865471][0;39m [1;35m[o.a.k.common.config.AbstractConfig][0;39m - JsonConverterConfig values: 
+	converter.type = key
+	decimal.format = BASE64
+	replace.null.with.default = true
+	schema.content = null
+	schemas.cache.size = 1000
+	schemas.enable = false
+
+13:08:36.868 [34mINFO [0;39m [36m[cdc-platform-control-a3865471][0;39m [1;35m[o.a.k.common.config.AbstractConfig][0;39m - JsonConverterConfig values: 
+	converter.type = value
+	decimal.format = BASE64
+	replace.null.with.default = true
+	schema.content = null
+	schemas.cache.size = 1000
+	schemas.enable = false
+
+13:08:36.869 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'CREATING' to 'INITIALIZING'
+13:08:36.882 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom source info struct maker plugin: io.debezium.connector.mysql.MySqlSourceInfoStructMaker
+13:08:36.892 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = managed_fd3b19a277bd named = connection-validation
+13:08:36.892 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-managed_fd3b19a277bd-connection-validation
+13:08:36.901 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-connection-validation][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Using 'SHOW BINARY LOG STATUS' to get binary log status
+13:08:36.902 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-connection-validation][0;39m [1;35m[i.d.connector.binlog.BinlogConnector][0;39m - Successfully tested connection for jdbc:mysql://127.0.0.1:63712/?useInformationSchema=true&nullCatalogMeansCurrent=false&useUnicode=true&characterEncoding=UTF-8&characterSetResults=UTF-8&zeroDateTimeBehavior=CONVERT_TO_NULL&connectTimeout=30000 with user 'cs_fd3b19a277bd'
+13:08:36.902 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-connection-validation][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component JdbcConnection, id = JdbcConnection named = jdbc-connection-close
+13:08:36.902 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-connection-validation][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-jdbcconnection-JdbcConnection-jdbc-connection-close
+13:08:36.902 [34mINFO [0;39m [36m[debezium-jdbcconnection-JdbcConnection-jdbc-connection-close][0;39m [1;35m[io.debezium.jdbc.JdbcConnection][0;39m - Connection gracefully closed
+13:08:36.909 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.storage.jdbc.JdbcCommonConfig][0;39m - Configuration for 'JdbcOffsetBackingStoreConfig' with prefix 'offset.storage.': {jdbc.table.name=capture_offsets_b531754830c6ca8b3f0bef567bcf9275, jdbc.connection.user=ds_fd3b19a277bd, jdbc.connection.url=jdbc:mysql://127.0.0.1:25822/pekko_test_cdc_window_fd3b19a277bd?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=5000, jdbc.connection.password=********, jdbc.table.ddl=CREATE TABLE %s (id VARCHAR(36) NOT NULL, offset_key VARCHAR(1255), offset_val VARCHAR(1255), record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id)), file.filename=}
+13:08:36.912 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.s.j.o.JdbcOffsetBackingStore][0;39m - Starting JdbcOffsetBackingStore db 'jdbc:mysql://127.0.0.1:25822/pekko_test_cdc_window_fd3b19a277bd?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=5000'
+13:08:36.916 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.s.j.o.JdbcOffsetBackingStore][0;39m - Creating table capture_offsets_b531754830c6ca8b3f0bef567bcf9275 to store offset
+13:08:36.919 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'INITIALIZING' to 'CREATING_TASKS'
+13:08:36.922 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'CREATING_TASKS' to 'STARTING_TASKS'
+13:08:36.923 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Waiting max. for 40000 ms for individual source tasks to start.
+13:08:36.923 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom source info struct maker plugin: io.debezium.connector.mysql.MySqlSourceInfoStructMaker
+13:08:36.925 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.o.emitter.NoOpLineageEmitter][0;39m - You are using a no-op lineage emitter. If you want to emit open lineage event, please set 'openlineage.integration.enabled=true'
+13:08:36.926 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - Starting MySqlConnectorTask with configuration:
+   connector.class = io.debezium.connector.mysql.MySqlConnector
+   snapshot.locking.mode = none
+   bootstrap.servers = localhost:9092
+   driver.forceConnectionTimeZoneToSession = true
+   include.schema.changes = true
+   schema.history.internal.jdbc.connection.url = jdbc:mysql://127.0.0.1:25822/pekko_test_cdc_window_fd3b19a277bd?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=5000
+   poll.interval.ms = 100
+   record.processing.threads = 1
+   errors.retry.delay.initial.ms = 300
+   driver.allowPublicKeyRetrieval = true
+   key.converter = org.apache.kafka.connect.json.JsonConverter
+   database.user = cs_fd3b19a277bd
+   offset.storage = io.debezium.storage.jdbc.offset.JdbcOffsetBackingStore
+   heartbeat.interval.ms = 1000
+   offset.storage.jdbc.table.name = capture_offsets_b531754830c6ca8b3f0bef567bcf9275
+   internal.task.management.timeout.ms = 40000
+   errors.max.retries = -1
+   database.password = ********
+   name = managed_fd3b19a277bd
+   offset.storage.jdbc.connection.password = ********
+   offset.storage.jdbc.table.ddl = CREATE TABLE %s (id VARCHAR(36) NOT NULL, offset_key VARCHAR(1255), offset_val VARCHAR(1255), record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id))
+   max.batch.size = 128
+   skipped.operations = none
+   snapshot.mode = no_data
+   schema.history.internal.jdbc.connection.password = ********
+   record.processing.shutdown.timeout.ms = 1000
+   provide.transaction.metadata = true
+   schema.history.internal.store.only.captured.databases.ddl = true
+   record.processing.order = ORDERED
+   tombstones.on.delete = false
+   topic.prefix = managed_fd3b19a277bd
+   decimal.handling.mode = string
+   offset.storage.file.filename = 
+   schema.history.internal.jdbc.table.ddl = CREATE TABLE %s (id VARCHAR(36) NOT NULL, history_data LONGTEXT, history_data_seq INT, record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id, history_data_seq))
+   value.converter = org.apache.kafka.connect.json.JsonConverter
+   offset.storage.jdbc.connection.url = jdbc:mysql://127.0.0.1:25822/pekko_test_cdc_window_fd3b19a277bd?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=5000
+   database.server.id = 2024988184
+   max.queue.size.in.bytes = 16777216
+   schema.history.internal.jdbc.table.name = capture_history_b531754830c6ca8b3f0bef567bcf9275
+   offset.flush.timeout.ms = 2000
+   errors.retry.delay.max.ms = 10000
+   offset.storage.jdbc.connection.user = ds_fd3b19a277bd
+   database.port = 63712
+   offset.flush.interval.ms = 0
+   schema.history.internal = io.debezium.storage.jdbc.history.JdbcSchemaHistory
+   record.processing.with.serial.consumer = false
+   database.hostname = 127.0.0.1
+   database.connectionTimeZone = UTC
+   schema.history.internal.jdbc.connection.user = ds_fd3b19a277bd
+   connect.keep.alive.interval.ms = 5000
+   table.include.list = \Qpekko_test_cdc_window_fd3b19a277bd\E\..*
+   database.include.list = pekko_test_cdc_window_fd3b19a277bd
+
+13:08:36.926 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom topic naming strategy plugin: io.debezium.schema.DefaultTopicNamingStrategy
+13:08:36.935 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Using 'SHOW BINARY LOG STATUS' to get binary log status
+13:08:36.942 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - No previous offsets found
+13:08:36.959 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.storage.jdbc.JdbcCommonConfig][0;39m - Configuration for 'JdbcSchemaHistoryConfig' with prefix 'schema.history.internal.': {connector.class=io.debezium.connector.mysql.MySqlConnector, jdbc.table.name=capture_history_b531754830c6ca8b3f0bef567bcf9275, jdbc.connection.user=ds_fd3b19a277bd, name=managed_fd3b19a277bd-schemahistory, jdbc.connection.url=jdbc:mysql://127.0.0.1:25822/pekko_test_cdc_window_fd3b19a277bd?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=5000, jdbc.connection.password=********, connector.id=managed_fd3b19a277bd, jdbc.table.ddl=CREATE TABLE %s (id VARCHAR(36) NOT NULL, history_data LONGTEXT, history_data_seq INT, record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id, history_data_seq)), store.only.captured.databases.ddl=true}
+13:08:36.965 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.s.jdbc.history.JdbcSchemaHistory][0;39m - Creating table capture_history_b531754830c6ca8b3f0bef567bcf9275 to store database history
+13:08:36.967 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.s.jdbc.history.JdbcSchemaHistory][0;39m - Created table in given database...
+13:08:36.968 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlDatabaseSchema][0;39m - Using MySql DdlParserType DEFAULT
+13:08:36.988 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Using 'SHOW BINARY LOG STATUS' to get binary log status
+13:08:36.993 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - Checking all known binlogs from the database
+13:08:36.996 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - Guardrail validation skipped
+13:08:36.996 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - Closing connection before starting schema recovery
+13:08:36.996 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component JdbcConnection, id = JdbcConnection named = jdbc-connection-close
+13:08:36.996 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-jdbcconnection-JdbcConnection-jdbc-connection-close
+13:08:36.997 [34mINFO [0;39m [36m[debezium-jdbcconnection-JdbcConnection-jdbc-connection-close][0;39m [1;35m[io.debezium.jdbc.JdbcConnection][0;39m - Connection gracefully closed
+13:08:36.998 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - Connector started with no previous offset for partition 'BinlogPartition{serverName='managed_fd3b19a277bd'} io.debezium.connector.mysql.MySqlPartition@7fb60247'
+13:08:36.999 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - Database schema history storage was found. Connector will use the pre-existing storage. Checking settings for the same.
+13:08:36.999 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - Reconnecting after validating schema recovery
+13:08:37.004 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - No previous offset found
+13:08:37.005 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.b.QueueProviderServiceProvider][0;39m - Using QueueProvider io.debezium.connector.base.DefaultQueueProvider
+13:08:37.008 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = managed_fd3b19a277bd named = SignalProcessor
+13:08:37.010 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom topic naming strategy plugin: io.debezium.schema.SchemaTopicNamingStrategy
+13:08:37.033 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = managed_fd3b19a277bd named = change-event-source-coordinator
+13:08:37.033 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = managed_fd3b19a277bd named = blocking-snapshot
+13:08:37.034 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator
+13:08:37.035 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - All tasks have started successfully.
+13:08:37.035 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'STARTING_TASKS' to 'POLLING_TASKS'
+13:08:37.035 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Using io.debezium.embedded.async.ParallelSmtAndConvertBatchProcessor processor
+13:08:37.037 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Metrics registered
+13:08:37.037 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Context created
+13:08:37.042 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - According to the connector configuration only schema will be snapshot.
+13:08:37.043 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Snapshot step 1 - Preparing
+13:08:37.044 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Snapshot step 2 - Determining captured tables
+13:08:37.044 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - Read list of available databases
+13:08:37.045 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - 	 list of available databases is: [information_schema, mysql, pekko_test_cdc_window_26df33417433, pekko_test_cdc_window_819f0a71dc06, pekko_test_cdc_window_c9ffa92d1069, pekko_test_cdc_window_fa9688864b06, pekko_test_cdc_window_fd3b19a277bd, pekko_test_managed_source_20261111, performance_schema, sys]
+13:08:37.045 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - Read list of available tables in each database
+13:08:37.053 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogSnapshotChangeEventSource][0;39m - 	snapshot continuing with database(s): [pekko_test_cdc_window_fd3b19a277bd]
+13:08:37.054 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Adding table pekko_test_cdc_window_fd3b19a277bd.a to the list of capture schema tables
+13:08:37.054 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Adding table pekko_test_cdc_window_fd3b19a277bd.target_rows to the list of capture schema tables
+13:08:37.054 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Adding table pekko_test_cdc_window_fd3b19a277bd.pekko_sync_batch_ledger to the list of capture schema tables
+13:08:37.054 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Adding table pekko_test_cdc_window_fd3b19a277bd.source_rows to the list of capture schema tables
+13:08:37.054 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Adding table pekko_test_cdc_window_fd3b19a277bd.pekko_capture_control to the list of capture schema tables
+13:08:37.054 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Adding table pekko_test_cdc_window_fd3b19a277bd.event_tag to the list of capture schema tables
+13:08:37.054 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Adding table pekko_test_cdc_window_fd3b19a277bd.event_journal to the list of capture schema tables
+13:08:37.054 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Adding table pekko_test_cdc_window_fd3b19a277bd.target_audit to the list of capture schema tables
+13:08:37.054 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Adding table pekko_test_cdc_window_fd3b19a277bd.snapshot to the list of capture schema tables
+13:08:37.056 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Created connection pool with 1 threads
+13:08:37.056 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Snapshot step 3 - Locking captured tables [pekko_test_cdc_window_fd3b19a277bd.a, pekko_test_cdc_window_fd3b19a277bd.event_journal, pekko_test_cdc_window_fd3b19a277bd.event_tag, pekko_test_cdc_window_fd3b19a277bd.pekko_capture_control, pekko_test_cdc_window_fd3b19a277bd.pekko_sync_batch_ledger, pekko_test_cdc_window_fd3b19a277bd.snapshot, pekko_test_cdc_window_fd3b19a277bd.source_rows, pekko_test_cdc_window_fd3b19a277bd.target_audit, pekko_test_cdc_window_fd3b19a277bd.target_rows]
+13:08:37.056 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Snapshot step 4 - Determining snapshot offset
+13:08:37.058 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.m.MySqlSnapshotChangeEventSource][0;39m - Read binlog position of MySQL primary server
+13:08:37.058 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.m.MySqlSnapshotChangeEventSource][0;39m - 	 using binlog 'binlog.000006' at position '37780' and gtid 'a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-461'
+13:08:37.058 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Snapshot step 5 - Reading structure of captured tables
+13:08:37.058 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogSnapshotChangeEventSource][0;39m - All eligible tables schema should be captured, capturing: [pekko_test_cdc_window_fd3b19a277bd.a, pekko_test_cdc_window_fd3b19a277bd.event_journal, pekko_test_cdc_window_fd3b19a277bd.event_tag, pekko_test_cdc_window_fd3b19a277bd.pekko_capture_control, pekko_test_cdc_window_fd3b19a277bd.pekko_sync_batch_ledger, pekko_test_cdc_window_fd3b19a277bd.snapshot, pekko_test_cdc_window_fd3b19a277bd.source_rows, pekko_test_cdc_window_fd3b19a277bd.target_audit, pekko_test_cdc_window_fd3b19a277bd.target_rows]
+13:08:37.273 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogSnapshotChangeEventSource][0;39m - Creating schema snapshot worker pool with 1 worker thread(s)
+13:08:37.273 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogSnapshotChangeEventSource][0;39m - Reading structure of database 'pekko_test_cdc_window_fd3b19a277bd'
+13:08:37.325 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Snapshot step 6 - Persisting schema history
+13:08:37.376 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - Snapshot step 7 - Skipping snapshotting of data
+13:08:37.376 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.p.s.AbstractSnapshotChangeEventSource][0;39m - Snapshot - Final stage
+13:08:37.376 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.p.s.AbstractSnapshotChangeEventSource][0;39m - Snapshot completed
+13:08:37.385 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Snapshot ended with SnapshotResult [status=COMPLETED, offset=BinlogOffsetContext{sourceInfoSchema=Schema{io.debezium.connector.mysql.Source:STRUCT}, sourceInfo=BinlogSourceInfo{currentGtid='null', currentBinlogFilename='binlog.000006', currentBinlogPosition=37780, currentRowNumber=0, serverId=0, sourceTime=2026-11-11T05:08:37.374Z, threadId=-1, currentQuery='null', tableIds=[pekko_test_cdc_window_fd3b19a277bd.event_tag], databaseName='pekko_test_cdc_window_fd3b19a277bd'}, snapshotCompleted=true, transactionContext=TransactionContext [currentTransactionId=null, perTableEventCount={}, totalEventCount=0], restartGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-461', currentGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-461', restartBinlogFilename='binlog.000006', restartBinlogPosition=37780, restartRowsToSkip=0, restartEventsToSkip=0, currentEventLengthInBytes=0, inTransaction=false, transactionId='null', incrementalSnapshotContext=IncrementalSnapshotContext [windowOpened=false, chunkEndPosition=null, dataCollectionsToSnapshot=[], lastEventKeySent=null, maximumKey=null]}]
+13:08:37.387 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = managed_fd3b19a277bd named = binlog-client
+13:08:37.392 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.pipeline.signal.SignalProcessor][0;39m - SignalProcessor started. Scheduling it every 5000ms
+13:08:37.393 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-managed_fd3b19a277bd-SignalProcessor
+13:08:37.393 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Starting streaming
+13:08:37.397 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - GTID set purged on server: ''
+13:08:37.397 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Attempting to generate a filtered GTID set
+13:08:37.397 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - GTID set from previous recorded offset: a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-461
+13:08:37.398 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - GTID set available on server: a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-461
+13:08:37.398 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Using first available positions for new GTID channels
+13:08:37.398 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Relevant GTID set available on server: a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-461
+13:08:37.398 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Final merged GTID set to use when connecting to MySQL: a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-461
+13:08:37.399 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Registering binlog reader with GTID set: 'a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-461'
+11月 11, 2026 1:08:37 下午 com.github.shyiko.mysql.binlog.BinaryLogClient setGtidSet
+信息: Enabling GTID
+13:08:37.401 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Skip 0 events on streaming start
+13:08:37.401 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Skip 0 rows on streaming start
+13:08:37.402 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-managed_fd3b19a277bd-binlog-client
+13:08:37.403 [34mINFO [0;39m [36m[blc-127.0.0.1:63712][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-managed_fd3b19a277bd-binlog-client
+11月 11, 2026 1:08:37 下午 com.github.shyiko.mysql.binlog.BinaryLogClient resolveDatabaseVersion
+信息: Database version: 9.5.0 (major=9, minor=5, mariadb=false)
+11月 11, 2026 1:08:37 下午 com.github.shyiko.mysql.binlog.BinaryLogClient requestBinaryLogStreamMysql
+信息: Requesting streaming from position filename: , position: 4, GTID set: a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-461
+11月 11, 2026 1:08:37 下午 com.github.shyiko.mysql.binlog.BinaryLogClient connect
+信息: Connected to 127.0.0.1:63712 at a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-461 (sid:2024988184, cid:27)
+13:08:37.408 [34mINFO [0;39m [36m[blc-127.0.0.1:63712][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Connected to binlog at 127.0.0.1:63712, starting at BinlogOffsetContext{sourceInfoSchema=Schema{io.debezium.connector.mysql.Source:STRUCT}, sourceInfo=BinlogSourceInfo{currentGtid='null', currentBinlogFilename='binlog.000006', currentBinlogPosition=37780, currentRowNumber=0, serverId=0, sourceTime=2026-11-11T05:08:37.374Z, threadId=-1, currentQuery='null', tableIds=[pekko_test_cdc_window_fd3b19a277bd.event_tag], databaseName='pekko_test_cdc_window_fd3b19a277bd'}, snapshotCompleted=true, transactionContext=TransactionContext [currentTransactionId=null, perTableEventCount={}, totalEventCount=0], restartGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-461', currentGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-461', restartBinlogFilename='binlog.000006', restartBinlogPosition=37780, restartRowsToSkip=0, restartEventsToSkip=0, currentEventLengthInBytes=0, inTransaction=false, transactionId='null', incrementalSnapshotContext=IncrementalSnapshotContext [windowOpened=false, chunkEndPosition=null, dataCollectionsToSnapshot=[], lastEventKeySent=null, maximumKey=null]}
+13:08:37.408 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Waiting for keepalive thread to start
+13:08:37.408 [34mINFO [0;39m [36m[blc-127.0.0.1:63712][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-managed_fd3b19a277bd-binlog-client
+13:08:37.408 [34mINFO [0;39m [36m[debezium-mysqlconnector-managed_fd3b19a277bd-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Keepalive thread is running
+13:08:38.121 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.persistence.dispatchers.default-plugin-dispatcher-10][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Starting...
+13:08:38.122 [31mWARN [0;39m [36m[pekko-cluster-system-test-pekko.persistence.dispatchers.default-plugin-dispatcher-10][0;39m [1;35m[c.z.hikari.util.DriverDataSource][0;39m - Registered driver with driverClassName=cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbcDriver was not found, trying direct instantiation.
+13:08:38.122 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.persistence.dispatchers.default-plugin-dispatcher-10][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Start completed.
+13:08:42.503 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - 28 records sent during previous 00:00:05.581, last recorded offset of {server=managed_fd3b19a277bd} partition is {ts_sec=1794373718, file=binlog.000006, pos=38222, gtids=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-462, server_id=852821}
+13:08:44,582 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+13:08:44,582 |-INFO in ch.qos.logback.classic.util.ContextInitializer@192c3f1e - No custom configurators were discovered as a service.
+13:08:44,583 |-INFO in ch.qos.logback.classic.util.ContextInitializer@192c3f1e - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+13:08:44,583 |-INFO in ch.qos.logback.classic.util.ContextInitializer@192c3f1e - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+13:08:44,586 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+13:08:44,586 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+13:08:44,591 |-INFO in ch.qos.logback.classic.util.ContextInitializer@192c3f1e - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 3 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+13:08:44,591 |-INFO in ch.qos.logback.classic.util.ContextInitializer@192c3f1e - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+13:08:44,591 |-INFO in ch.qos.logback.classic.util.ContextInitializer@192c3f1e - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+13:08:44,591 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+13:08:44,593 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+13:08:44,633 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+13:08:44,633 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+13:08:44,636 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+13:08:44,645 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+13:08:44,645 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+13:08:44,645 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+13:08:44,645 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+13:08:44,646 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+13:08:44,646 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+13:08:44,647 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+13:08:44,647 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+13:08:44,648 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+13:08:44,648 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+13:08:44,648 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+13:08:44,648 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+13:08:44,648 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@26b3fd41 - End of configuration.
+13:08:44,648 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@7494f96a - Registering current configuration as safe fallback point
+13:08:44,648 |-INFO in ch.qos.logback.classic.util.ContextInitializer@192c3f1e - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 57 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+13:08:44.794 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+13:08:44.882 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+13:08:44.908 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown initiated...
+13:08:44.909 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown completed.
+13:08:44.910 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Starting...
+13:08:44.916 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Start completed.
+13:08:45.056 [34mINFO [0;39m [36m[pekko-cluster-system-test-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+13:08:45.270 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Starting...
+13:08:45.274 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Start completed.
+13:08:45.281 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown initiated...
+13:08:45.294 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown completed.
+13:08:45.441 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-4 - Starting...
+13:08:45.445 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-4 - Start completed.
+13:08:45.487 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-4 - Shutdown initiated...
+13:08:45.487 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-4 - Shutdown completed.
+13:08:45.487 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:08:45.544 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.magic.cdc.runtime.CdcRuntime$][0;39m - CDC standalone API bound at /127.0.0.1:63723; runtime status is available at /api/v1/cdc-status
+13:08:46.566 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-5 - Starting...
+13:08:46.570 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-5 - Start completed.
+13:08:46.602 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-5 - Shutdown initiated...
+13:08:46.602 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-5 - Shutdown completed.
+13:08:46.602 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:08:47.688 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-6 - Starting...
+13:08:47.691 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-6 - Start completed.
+13:08:47.715 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-6 - Shutdown initiated...
+13:08:47.715 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-6 - Shutdown completed.
+13:08:47.715 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:08:48.775 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-7 - Starting...
+13:08:48.779 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-7 - Start completed.
+13:08:48.814 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-7 - Shutdown initiated...
+13:08:48.814 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-7 - Shutdown completed.
+13:08:48.814 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:08:49.922 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-8 - Starting...
+13:08:49.925 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-8 - Start completed.
+13:08:49.955 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-8 - Shutdown initiated...
+13:08:49.955 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-8 - Shutdown completed.
+13:08:49.955 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:08:51.016 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-9 - Starting...
+13:08:51.020 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-9 - Start completed.
+13:08:51.051 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-9 - Shutdown initiated...
+13:08:51.052 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-9 - Shutdown completed.
+13:08:51.052 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:08:52.119 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-10 - Starting...
+13:08:52.122 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-10 - Start completed.
+13:08:52.150 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-10 - Shutdown initiated...
+13:08:52.150 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-10 - Shutdown completed.
+13:08:52.150 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:08:53.218 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-11 - Starting...
+13:08:53.222 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-11 - Start completed.
+13:08:53.250 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-11 - Shutdown initiated...
+13:08:53.251 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-11 - Shutdown completed.
+13:08:53.251 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:08:54.308 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-12 - Starting...
+13:08:54.311 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-12 - Start completed.
+13:08:54.339 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-12 - Shutdown initiated...
+13:08:54.339 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-12 - Shutdown completed.
+13:08:54.339 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:08:55.396 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-13 - Starting...
+13:08:55.400 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-13 - Start completed.
+13:08:55.425 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-13 - Shutdown initiated...
+13:08:55.425 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-13 - Shutdown completed.
+13:08:55.425 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:08:56.522 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-14 - Starting...
+13:08:56.525 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-14 - Start completed.
+13:08:56.553 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-14 - Shutdown initiated...
+13:08:56.553 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-14 - Shutdown completed.
+13:08:56.553 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:08:57.645 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-15 - Starting...
+13:08:57.649 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-15 - Start completed.
+13:08:57.678 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-15 - Shutdown initiated...
+13:08:57.678 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-15 - Shutdown completed.
+13:08:57.678 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:08:58.767 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-16 - Starting...
+13:08:58.772 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-16 - Start completed.
+13:08:58.798 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-16 - Shutdown initiated...
+13:08:58.799 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-16 - Shutdown completed.
+13:08:58.799 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:08:59.918 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-17 - Starting...
+13:08:59.922 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-17 - Start completed.
+13:08:59.987 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-17 - Shutdown initiated...
+13:08:59.987 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-17 - Shutdown completed.
+13:08:59.987 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:01.078 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-18 - Starting...
+13:09:01.082 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-18 - Start completed.
+13:09:01.109 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-18 - Shutdown initiated...
+13:09:01.109 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-18 - Shutdown completed.
+13:09:01.109 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:02.201 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-19 - Starting...
+13:09:02.205 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-19 - Start completed.
+13:09:02.235 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-19 - Shutdown initiated...
+13:09:02.236 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-19 - Shutdown completed.
+13:09:02.236 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:03.344 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-20 - Starting...
+13:09:03.348 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-20 - Start completed.
+13:09:03.384 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-20 - Shutdown initiated...
+13:09:03.385 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-20 - Shutdown completed.
+13:09:03.385 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:04.467 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-21 - Starting...
+13:09:04.470 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-21 - Start completed.
+13:09:04.494 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-21 - Shutdown initiated...
+13:09:04.494 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-21 - Shutdown completed.
+13:09:04.494 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:05.566 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-22 - Starting...
+13:09:05.571 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-22 - Start completed.
+13:09:05.602 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-22 - Shutdown initiated...
+13:09:05.602 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-22 - Shutdown completed.
+13:09:05.602 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:06.681 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-23 - Starting...
+13:09:06.686 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-23 - Start completed.
+13:09:06.713 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-23 - Shutdown initiated...
+13:09:06.713 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-23 - Shutdown completed.
+13:09:06.713 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:07.799 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-24 - Starting...
+13:09:07.803 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-24 - Start completed.
+13:09:07.826 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-24 - Shutdown initiated...
+13:09:07.826 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-24 - Shutdown completed.
+13:09:07.826 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:08.937 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-25 - Starting...
+13:09:08.941 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-25 - Start completed.
+13:09:08.975 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-25 - Shutdown initiated...
+13:09:08.975 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-25 - Shutdown completed.
+13:09:08.975 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:10.088 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-26 - Starting...
+13:09:10.092 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-26 - Start completed.
+13:09:10.121 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-26 - Shutdown initiated...
+13:09:10.121 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-26 - Shutdown completed.
+13:09:10.121 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:11.192 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-27 - Starting...
+13:09:11.197 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-27 - Start completed.
+13:09:11.226 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-27 - Shutdown initiated...
+13:09:11.226 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-27 - Shutdown completed.
+13:09:11.226 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:12.299 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-28 - Starting...
+13:09:12.305 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-28 - Start completed.
+13:09:12.343 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-28 - Shutdown initiated...
+13:09:12.344 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-28 - Shutdown completed.
+13:09:12.344 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:13.422 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-29 - Starting...
+13:09:13.426 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-29 - Start completed.
+13:09:13.455 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-29 - Shutdown initiated...
+13:09:13.455 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-29 - Shutdown completed.
+13:09:13.455 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:14.499 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-30 - Starting...
+13:09:14.504 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-30 - Start completed.
+13:09:14.530 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-30 - Shutdown initiated...
+13:09:14.530 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-30 - Shutdown completed.
+13:09:14.530 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:15.631 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-31 - Starting...
+13:09:15.635 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-31 - Start completed.
+13:09:15.659 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-31 - Shutdown initiated...
+13:09:15.659 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-31 - Shutdown completed.
+13:09:15.659 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:16.734 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-32 - Starting...
+13:09:16.738 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-32 - Start completed.
+13:09:16.773 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-32 - Shutdown initiated...
+13:09:16.773 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-32 - Shutdown completed.
+13:09:16.773 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:17.877 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-33 - Starting...
+13:09:17.882 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-33 - Start completed.
+13:09:17.916 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-33 - Shutdown initiated...
+13:09:17.916 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-33 - Shutdown completed.
+13:09:17.916 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:18.978 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-34 - Starting...
+13:09:18.983 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-34 - Start completed.
+13:09:19.011 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-34 - Shutdown initiated...
+13:09:19.012 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-34 - Shutdown completed.
+13:09:19.012 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:20.117 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-35 - Starting...
+13:09:20.122 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-35 - Start completed.
+13:09:20.153 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-35 - Shutdown initiated...
+13:09:20.153 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-35 - Shutdown completed.
+13:09:20.153 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:21.240 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-36 - Starting...
+13:09:21.244 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-36 - Start completed.
+13:09:21.271 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-36 - Shutdown initiated...
+13:09:21.272 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-36 - Shutdown completed.
+13:09:21.272 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:22.359 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-37 - Starting...
+13:09:22.363 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-37 - Start completed.
+13:09:22.389 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-37 - Shutdown initiated...
+13:09:22.389 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-37 - Shutdown completed.
+13:09:22.389 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:23.494 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-38 - Starting...
+13:09:23.497 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-38 - Start completed.
+13:09:23.522 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-38 - Shutdown initiated...
+13:09:23.522 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-38 - Shutdown completed.
+13:09:23.522 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:24.616 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-39 - Starting...
+13:09:24.619 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-39 - Start completed.
+13:09:24.644 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-39 - Shutdown initiated...
+13:09:24.644 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-39 - Shutdown completed.
+13:09:24.644 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:25.767 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-40 - Starting...
+13:09:25.770 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-40 - Start completed.
+13:09:25.796 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-40 - Shutdown initiated...
+13:09:25.796 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-40 - Shutdown completed.
+13:09:25.796 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:26.848 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-41 - Starting...
+13:09:26.851 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-41 - Start completed.
+13:09:26.875 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-41 - Shutdown initiated...
+13:09:26.876 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-41 - Shutdown completed.
+13:09:26.876 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:27.986 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-42 - Starting...
+13:09:27.989 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-42 - Start completed.
+13:09:28.023 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-42 - Shutdown initiated...
+13:09:28.023 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-42 - Shutdown completed.
+13:09:28.023 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:29.087 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-43 - Starting...
+13:09:29.090 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-43 - Start completed.
+13:09:29.116 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-43 - Shutdown initiated...
+13:09:29.116 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-43 - Shutdown completed.
+13:09:29.116 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:30.217 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-44 - Starting...
+13:09:30.221 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-44 - Start completed.
+13:09:30.246 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-44 - Shutdown initiated...
+13:09:30.247 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-44 - Shutdown completed.
+13:09:30.247 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:31.338 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-45 - Starting...
+13:09:31.342 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-45 - Start completed.
+13:09:31.367 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-45 - Shutdown initiated...
+13:09:31.368 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-45 - Shutdown completed.
+13:09:31.368 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:32.426 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-46 - Starting...
+13:09:32.429 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-46 - Start completed.
+13:09:32.451 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-46 - Shutdown initiated...
+13:09:32.452 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-46 - Shutdown completed.
+13:09:32.452 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:33.521 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-47 - Starting...
+13:09:33.523 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-47 - Start completed.
+13:09:33.551 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-47 - Shutdown initiated...
+13:09:33.551 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-47 - Shutdown completed.
+13:09:33.551 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:34.614 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-48 - Starting...
+13:09:34.618 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-48 - Start completed.
+13:09:34.649 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-48 - Shutdown initiated...
+13:09:34.649 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-48 - Shutdown completed.
+13:09:34.649 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:35.738 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-49 - Starting...
+13:09:35.742 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-49 - Start completed.
+13:09:35.768 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-49 - Shutdown initiated...
+13:09:35.768 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-49 - Shutdown completed.
+13:09:35.768 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:36.818 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-50 - Starting...
+13:09:36.821 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-50 - Start completed.
+13:09:36.844 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-50 - Shutdown initiated...
+13:09:36.844 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-50 - Shutdown completed.
+13:09:36.844 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:37.946 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-51 - Starting...
+13:09:37.950 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-51 - Start completed.
+13:09:37.978 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-51 - Shutdown initiated...
+13:09:37.978 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-51 - Shutdown completed.
+13:09:37.978 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:39.043 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-52 - Starting...
+13:09:39.048 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-52 - Start completed.
+13:09:39.077 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-52 - Shutdown initiated...
+13:09:39.077 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-52 - Shutdown completed.
+13:09:39.077 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:40.145 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-53 - Starting...
+13:09:40.150 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-53 - Start completed.
+13:09:40.176 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-53 - Shutdown initiated...
+13:09:40.177 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-53 - Shutdown completed.
+13:09:40.177 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:41.244 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-54 - Starting...
+13:09:41.247 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-54 - Start completed.
+13:09:41.272 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-54 - Shutdown initiated...
+13:09:41.273 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-54 - Shutdown completed.
+13:09:41.273 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:42.370 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-55 - Starting...
+13:09:42.373 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-55 - Start completed.
+13:09:42.398 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-55 - Shutdown initiated...
+13:09:42.399 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-55 - Shutdown completed.
+13:09:42.399 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:43.453 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-56 - Starting...
+13:09:43.458 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-56 - Start completed.
+13:09:43.486 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-56 - Shutdown initiated...
+13:09:43.486 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-56 - Shutdown completed.
+13:09:43.486 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:44.573 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-57 - Starting...
+13:09:44.576 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-57 - Start completed.
+13:09:44.601 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-57 - Shutdown initiated...
+13:09:44.601 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-57 - Shutdown completed.
+13:09:44.601 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:45.688 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-58 - Starting...
+13:09:45.692 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-58 - Start completed.
+13:09:45.726 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-58 - Shutdown initiated...
+13:09:45.726 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-58 - Shutdown completed.
+13:09:45.726 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:46.810 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-59 - Starting...
+13:09:46.813 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-59 - Start completed.
+13:09:46.839 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-59 - Shutdown initiated...
+13:09:46.839 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-59 - Shutdown completed.
+13:09:46.839 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:47.911 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-60 - Starting...
+13:09:47.915 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-60 - Start completed.
+13:09:47.945 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-60 - Shutdown initiated...
+13:09:47.946 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-60 - Shutdown completed.
+13:09:47.946 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:49.028 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-61 - Starting...
+13:09:49.031 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-61 - Start completed.
+13:09:49.056 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-61 - Shutdown initiated...
+13:09:49.056 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-61 - Shutdown completed.
+13:09:49.056 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:50.156 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-62 - Starting...
+13:09:50.159 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-62 - Start completed.
+13:09:50.182 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-62 - Shutdown initiated...
+13:09:50.183 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-62 - Shutdown completed.
+13:09:50.183 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:51.281 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-63 - Starting...
+13:09:51.285 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-63 - Start completed.
+13:09:51.307 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-63 - Shutdown initiated...
+13:09:51.308 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-63 - Shutdown completed.
+13:09:51.308 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:52.356 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-64 - Starting...
+13:09:52.360 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-64 - Start completed.
+13:09:52.385 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-64 - Shutdown initiated...
+13:09:52.385 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-64 - Shutdown completed.
+13:09:52.385 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:53.465 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-65 - Starting...
+13:09:53.469 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-65 - Start completed.
+13:09:53.495 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-65 - Shutdown initiated...
+13:09:53.495 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-65 - Shutdown completed.
+13:09:53.495 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:54.554 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-66 - Starting...
+13:09:54.559 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-66 - Start completed.
+13:09:54.584 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-66 - Shutdown initiated...
+13:09:54.584 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-66 - Shutdown completed.
+13:09:54.584 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:55.680 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-67 - Starting...
+13:09:55.683 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-67 - Start completed.
+13:09:55.707 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-67 - Shutdown initiated...
+13:09:55.707 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-67 - Shutdown completed.
+13:09:55.707 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:56.795 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-68 - Starting...
+13:09:56.799 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-68 - Start completed.
+13:09:56.825 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-68 - Shutdown initiated...
+13:09:56.825 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-68 - Shutdown completed.
+13:09:56.825 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:57.925 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-69 - Starting...
+13:09:57.928 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-69 - Start completed.
+13:09:57.955 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-69 - Shutdown initiated...
+13:09:57.955 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-69 - Shutdown completed.
+13:09:57.955 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:09:59.003 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-70 - Starting...
+13:09:59.007 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-70 - Start completed.
+13:09:59.033 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-70 - Shutdown initiated...
+13:09:59.033 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-70 - Shutdown completed.
+13:09:59.033 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:00.103 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-71 - Starting...
+13:10:00.108 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-71 - Start completed.
+13:10:00.140 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-71 - Shutdown initiated...
+13:10:00.140 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-71 - Shutdown completed.
+13:10:00.140 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:01.195 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-72 - Starting...
+13:10:01.199 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-72 - Start completed.
+13:10:01.227 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-72 - Shutdown initiated...
+13:10:01.227 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-72 - Shutdown completed.
+13:10:01.227 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:02.302 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-73 - Starting...
+13:10:02.306 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-73 - Start completed.
+13:10:02.332 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-73 - Shutdown initiated...
+13:10:02.333 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-73 - Shutdown completed.
+13:10:02.333 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:03.376 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-74 - Starting...
+13:10:03.381 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-74 - Start completed.
+13:10:03.403 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-74 - Shutdown initiated...
+13:10:03.404 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-74 - Shutdown completed.
+13:10:03.404 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:04.461 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-75 - Starting...
+13:10:04.465 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-75 - Start completed.
+13:10:04.492 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-75 - Shutdown initiated...
+13:10:04.492 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-75 - Shutdown completed.
+13:10:04.492 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:05.577 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-76 - Starting...
+13:10:05.581 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-76 - Start completed.
+13:10:05.604 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-76 - Shutdown initiated...
+13:10:05.605 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-76 - Shutdown completed.
+13:10:05.605 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:06.656 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-77 - Starting...
+13:10:06.659 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-77 - Start completed.
+13:10:06.686 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-77 - Shutdown initiated...
+13:10:06.686 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-77 - Shutdown completed.
+13:10:06.686 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:07.762 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-78 - Starting...
+13:10:07.766 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-78 - Start completed.
+13:10:07.791 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-78 - Shutdown initiated...
+13:10:07.791 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-78 - Shutdown completed.
+13:10:07.791 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:08.855 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-79 - Starting...
+13:10:08.859 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-79 - Start completed.
+13:10:08.885 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-79 - Shutdown initiated...
+13:10:08.885 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-79 - Shutdown completed.
+13:10:08.885 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:09.940 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-80 - Starting...
+13:10:09.945 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-80 - Start completed.
+13:10:09.968 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-80 - Shutdown initiated...
+13:10:09.969 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-80 - Shutdown completed.
+13:10:09.969 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:11.025 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-81 - Starting...
+13:10:11.029 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-81 - Start completed.
+13:10:11.053 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-81 - Shutdown initiated...
+13:10:11.053 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-81 - Shutdown completed.
+13:10:11.053 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:12.149 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-82 - Starting...
+13:10:12.152 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-82 - Start completed.
+13:10:12.179 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-82 - Shutdown initiated...
+13:10:12.179 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-82 - Shutdown completed.
+13:10:12.179 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:13.283 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-83 - Starting...
+13:10:13.288 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-83 - Start completed.
+13:10:13.318 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-83 - Shutdown initiated...
+13:10:13.318 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-83 - Shutdown completed.
+13:10:13.318 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:14.392 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-84 - Starting...
+13:10:14.395 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-84 - Start completed.
+13:10:14.420 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-84 - Shutdown initiated...
+13:10:14.420 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-84 - Shutdown completed.
+13:10:14.420 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:15.485 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-85 - Starting...
+13:10:15.489 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-85 - Start completed.
+13:10:15.516 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-85 - Shutdown initiated...
+13:10:15.516 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-85 - Shutdown completed.
+13:10:15.516 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:16.594 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-86 - Starting...
+13:10:16.597 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-86 - Start completed.
+13:10:16.616 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-86 - Shutdown initiated...
+13:10:16.616 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-86 - Shutdown completed.
+13:10:16.616 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:17.690 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-87 - Starting...
+13:10:17.694 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-87 - Start completed.
+13:10:17.716 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-87 - Shutdown initiated...
+13:10:17.716 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-87 - Shutdown completed.
+13:10:17.716 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:18.774 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-88 - Starting...
+13:10:18.778 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-88 - Start completed.
+13:10:18.803 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-88 - Shutdown initiated...
+13:10:18.803 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-88 - Shutdown completed.
+13:10:18.803 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:19.877 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-89 - Starting...
+13:10:19.880 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-89 - Start completed.
+13:10:19.905 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-89 - Shutdown initiated...
+13:10:19.906 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-89 - Shutdown completed.
+13:10:19.906 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:20.966 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-90 - Starting...
+13:10:20.970 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-90 - Start completed.
+13:10:20.993 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-90 - Shutdown initiated...
+13:10:20.993 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-90 - Shutdown completed.
+13:10:20.993 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:22.109 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-91 - Starting...
+13:10:22.112 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-91 - Start completed.
+13:10:22.139 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-91 - Shutdown initiated...
+13:10:22.139 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-91 - Shutdown completed.
+13:10:22.139 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:23.237 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-92 - Starting...
+13:10:23.240 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-92 - Start completed.
+13:10:23.262 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-92 - Shutdown initiated...
+13:10:23.262 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-92 - Shutdown completed.
+13:10:23.262 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:24.350 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-93 - Starting...
+13:10:24.353 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-93 - Start completed.
+13:10:24.378 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-93 - Shutdown initiated...
+13:10:24.379 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-93 - Shutdown completed.
+13:10:24.379 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:25.479 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-94 - Starting...
+13:10:25.483 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-94 - Start completed.
+13:10:25.510 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-94 - Shutdown initiated...
+13:10:25.510 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-94 - Shutdown completed.
+13:10:25.510 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:26.597 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-95 - Starting...
+13:10:26.601 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-95 - Start completed.
+13:10:26.626 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-95 - Shutdown initiated...
+13:10:26.626 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-95 - Shutdown completed.
+13:10:26.626 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:27.680 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-96 - Starting...
+13:10:27.684 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-96 - Start completed.
+13:10:27.709 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-96 - Shutdown initiated...
+13:10:27.710 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-96 - Shutdown completed.
+13:10:27.710 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:28.803 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-97 - Starting...
+13:10:28.808 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-97 - Start completed.
+13:10:28.833 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-97 - Shutdown initiated...
+13:10:28.834 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-97 - Shutdown completed.
+13:10:28.834 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:29.901 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-98 - Starting...
+13:10:29.906 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-98 - Start completed.
+13:10:29.936 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-98 - Shutdown initiated...
+13:10:29.936 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-98 - Shutdown completed.
+13:10:29.936 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:31.005 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-99 - Starting...
+13:10:31.010 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-99 - Start completed.
+13:10:31.039 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-99 - Shutdown initiated...
+13:10:31.039 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-99 - Shutdown completed.
+13:10:31.039 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:32.147 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-100 - Starting...
+13:10:32.151 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-100 - Start completed.
+13:10:32.175 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-100 - Shutdown initiated...
+13:10:32.176 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-100 - Shutdown completed.
+13:10:32.176 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:33.254 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-101 - Starting...
+13:10:33.258 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-101 - Start completed.
+13:10:33.285 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-101 - Shutdown initiated...
+13:10:33.285 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-101 - Shutdown completed.
+13:10:33.285 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:34.362 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-102 - Starting...
+13:10:34.367 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-102 - Start completed.
+13:10:34.393 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-102 - Shutdown initiated...
+13:10:34.393 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-102 - Shutdown completed.
+13:10:34.393 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:35.490 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-103 - Starting...
+13:10:35.493 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-103 - Start completed.
+13:10:35.522 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-103 - Shutdown initiated...
+13:10:35.522 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-103 - Shutdown completed.
+13:10:35.522 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:36.610 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-104 - Starting...
+13:10:36.613 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-104 - Start completed.
+13:10:36.644 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-104 - Shutdown initiated...
+13:10:36.645 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-104 - Shutdown completed.
+13:10:36.645 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:37.708 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-105 - Starting...
+13:10:37.712 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-105 - Start completed.
+13:10:37.740 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-105 - Shutdown initiated...
+13:10:37.740 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-105 - Shutdown completed.
+13:10:37.740 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:38.817 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-106 - Starting...
+13:10:38.820 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-106 - Start completed.
+13:10:38.841 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-106 - Shutdown initiated...
+13:10:38.841 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-106 - Shutdown completed.
+13:10:38.841 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:39.904 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-107 - Starting...
+13:10:39.908 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-107 - Start completed.
+13:10:39.936 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-107 - Shutdown initiated...
+13:10:39.937 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-107 - Shutdown completed.
+13:10:39.937 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:40.991 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-108 - Starting...
+13:10:40.995 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-108 - Start completed.
+13:10:41.020 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-108 - Shutdown initiated...
+13:10:41.020 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-108 - Shutdown completed.
+13:10:41.020 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:42.064 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-109 - Starting...
+13:10:42.068 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-109 - Start completed.
+13:10:42.091 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-109 - Shutdown initiated...
+13:10:42.091 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-109 - Shutdown completed.
+13:10:42.091 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:43.141 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-110 - Starting...
+13:10:43.144 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-110 - Start completed.
+13:10:43.167 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-110 - Shutdown initiated...
+13:10:43.167 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-110 - Shutdown completed.
+13:10:43.167 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:44.274 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-111 - Starting...
+13:10:44.278 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-111 - Start completed.
+13:10:44.303 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-111 - Shutdown initiated...
+13:10:44.303 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-111 - Shutdown completed.
+13:10:44.303 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:45.395 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-112 - Starting...
+13:10:45.399 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-112 - Start completed.
+13:10:45.423 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-112 - Shutdown initiated...
+13:10:45.424 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-112 - Shutdown completed.
+13:10:45.424 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:46.517 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-113 - Starting...
+13:10:46.521 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-113 - Start completed.
+13:10:46.546 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-113 - Shutdown initiated...
+13:10:46.546 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-113 - Shutdown completed.
+13:10:46.546 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:47.645 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-114 - Starting...
+13:10:47.651 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-114 - Start completed.
+13:10:47.678 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-114 - Shutdown initiated...
+13:10:47.678 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-114 - Shutdown completed.
+13:10:47.678 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:48.762 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-115 - Starting...
+13:10:48.766 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-115 - Start completed.
+13:10:48.791 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-115 - Shutdown initiated...
+13:10:48.791 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-115 - Shutdown completed.
+13:10:48.791 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:49.861 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-116 - Starting...
+13:10:49.864 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-116 - Start completed.
+13:10:49.887 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-116 - Shutdown initiated...
+13:10:49.887 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-116 - Shutdown completed.
+13:10:49.887 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:50.993 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-117 - Starting...
+13:10:50.997 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-117 - Start completed.
+13:10:51.024 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-117 - Shutdown initiated...
+13:10:51.024 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-117 - Shutdown completed.
+13:10:51.024 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:52.069 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-118 - Starting...
+13:10:52.073 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-118 - Start completed.
+13:10:52.097 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-118 - Shutdown initiated...
+13:10:52.097 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-118 - Shutdown completed.
+13:10:52.097 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:53.157 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-119 - Starting...
+13:10:53.161 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-119 - Start completed.
+13:10:53.191 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-119 - Shutdown initiated...
+13:10:53.192 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-119 - Shutdown completed.
+13:10:53.192 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:54.271 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-120 - Starting...
+13:10:54.275 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-120 - Start completed.
+13:10:54.301 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-120 - Shutdown initiated...
+13:10:54.301 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-120 - Shutdown completed.
+13:10:54.301 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:55.399 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-121 - Starting...
+13:10:55.403 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-121 - Start completed.
+13:10:55.427 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-121 - Shutdown initiated...
+13:10:55.427 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-121 - Shutdown completed.
+13:10:55.427 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:56.494 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-122 - Starting...
+13:10:56.498 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-122 - Start completed.
+13:10:56.527 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-122 - Shutdown initiated...
+13:10:56.527 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-122 - Shutdown completed.
+13:10:56.527 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:57.579 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-123 - Starting...
+13:10:57.582 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-123 - Start completed.
+13:10:57.608 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-123 - Shutdown initiated...
+13:10:57.608 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-123 - Shutdown completed.
+13:10:57.608 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:58.684 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-124 - Starting...
+13:10:58.689 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-124 - Start completed.
+13:10:58.717 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-124 - Shutdown initiated...
+13:10:58.717 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-124 - Shutdown completed.
+13:10:58.717 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:10:59.811 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-125 - Starting...
+13:10:59.814 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-125 - Start completed.
+13:10:59.838 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-125 - Shutdown initiated...
+13:10:59.838 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-125 - Shutdown completed.
+13:10:59.838 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:00.917 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-126 - Starting...
+13:11:00.921 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-126 - Start completed.
+13:11:00.947 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-126 - Shutdown initiated...
+13:11:00.947 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-126 - Shutdown completed.
+13:11:00.947 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:02.024 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-127 - Starting...
+13:11:02.028 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-127 - Start completed.
+13:11:02.055 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-127 - Shutdown initiated...
+13:11:02.055 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-127 - Shutdown completed.
+13:11:02.055 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:03.120 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-128 - Starting...
+13:11:03.124 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-128 - Start completed.
+13:11:03.150 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-128 - Shutdown initiated...
+13:11:03.150 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-128 - Shutdown completed.
+13:11:03.150 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:04.240 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-129 - Starting...
+13:11:04.244 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-129 - Start completed.
+13:11:04.266 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-129 - Shutdown initiated...
+13:11:04.267 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-129 - Shutdown completed.
+13:11:04.267 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:05.368 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-130 - Starting...
+13:11:05.372 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-130 - Start completed.
+13:11:05.400 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-130 - Shutdown initiated...
+13:11:05.400 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-130 - Shutdown completed.
+13:11:05.400 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:06.497 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-131 - Starting...
+13:11:06.503 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-131 - Start completed.
+13:11:06.529 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-131 - Shutdown initiated...
+13:11:06.529 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-131 - Shutdown completed.
+13:11:06.529 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:07.580 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-132 - Starting...
+13:11:07.583 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-132 - Start completed.
+13:11:07.608 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-132 - Shutdown initiated...
+13:11:07.608 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-132 - Shutdown completed.
+13:11:07.608 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:08.722 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-133 - Starting...
+13:11:08.725 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-133 - Start completed.
+13:11:08.748 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-133 - Shutdown initiated...
+13:11:08.749 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-133 - Shutdown completed.
+13:11:08.749 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:09.818 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-134 - Starting...
+13:11:09.824 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-134 - Start completed.
+13:11:09.853 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-134 - Shutdown initiated...
+13:11:09.853 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-134 - Shutdown completed.
+13:11:09.853 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:10.952 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-135 - Starting...
+13:11:10.955 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-135 - Start completed.
+13:11:10.979 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-135 - Shutdown initiated...
+13:11:10.980 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-135 - Shutdown completed.
+13:11:10.980 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:12.045 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-136 - Starting...
+13:11:12.049 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-136 - Start completed.
+13:11:12.078 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-136 - Shutdown initiated...
+13:11:12.078 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-136 - Shutdown completed.
+13:11:12.078 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:13.131 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-137 - Starting...
+13:11:13.135 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-137 - Start completed.
+13:11:13.167 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-137 - Shutdown initiated...
+13:11:13.167 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-137 - Shutdown completed.
+13:11:13.167 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:14.241 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-138 - Starting...
+13:11:14.245 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-138 - Start completed.
+13:11:14.272 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-138 - Shutdown initiated...
+13:11:14.272 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-138 - Shutdown completed.
+13:11:14.272 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:15.377 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-139 - Starting...
+13:11:15.383 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-139 - Start completed.
+13:11:15.410 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-139 - Shutdown initiated...
+13:11:15.410 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-139 - Shutdown completed.
+13:11:15.410 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:16.507 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-140 - Starting...
+13:11:16.511 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-140 - Start completed.
+13:11:16.538 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-140 - Shutdown initiated...
+13:11:16.538 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-140 - Shutdown completed.
+13:11:16.538 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:17.599 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-141 - Starting...
+13:11:17.602 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-141 - Start completed.
+13:11:17.630 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-141 - Shutdown initiated...
+13:11:17.630 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-141 - Shutdown completed.
+13:11:17.631 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:18.721 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-142 - Starting...
+13:11:18.725 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-142 - Start completed.
+13:11:18.755 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-142 - Shutdown initiated...
+13:11:18.755 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-142 - Shutdown completed.
+13:11:18.755 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:19.842 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-143 - Starting...
+13:11:19.845 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-143 - Start completed.
+13:11:19.867 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-143 - Shutdown initiated...
+13:11:19.867 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-143 - Shutdown completed.
+13:11:19.867 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:20.927 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-144 - Starting...
+13:11:20.932 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-144 - Start completed.
+13:11:20.963 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-144 - Shutdown initiated...
+13:11:20.964 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-144 - Shutdown completed.
+13:11:20.964 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:22.042 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-145 - Starting...
+13:11:22.045 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-145 - Start completed.
+13:11:22.074 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-145 - Shutdown initiated...
+13:11:22.074 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-145 - Shutdown completed.
+13:11:22.074 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:23.131 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-146 - Starting...
+13:11:23.136 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-146 - Start completed.
+13:11:23.163 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-146 - Shutdown initiated...
+13:11:23.163 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-146 - Shutdown completed.
+13:11:23.163 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:24.254 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-147 - Starting...
+13:11:24.257 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-147 - Start completed.
+13:11:24.286 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-147 - Shutdown initiated...
+13:11:24.286 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-147 - Shutdown completed.
+13:11:24.286 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:25.363 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-148 - Starting...
+13:11:25.367 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-148 - Start completed.
+13:11:25.391 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-148 - Shutdown initiated...
+13:11:25.391 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-148 - Shutdown completed.
+13:11:25.391 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:26.448 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-149 - Starting...
+13:11:26.451 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-149 - Start completed.
+13:11:26.479 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-149 - Shutdown initiated...
+13:11:26.479 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-149 - Shutdown completed.
+13:11:26.479 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:27.578 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-150 - Starting...
+13:11:27.582 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-150 - Start completed.
+13:11:27.609 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-150 - Shutdown initiated...
+13:11:27.609 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-150 - Shutdown completed.
+13:11:27.609 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:28.692 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-151 - Starting...
+13:11:28.696 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-151 - Start completed.
+13:11:28.724 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-151 - Shutdown initiated...
+13:11:28.724 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-151 - Shutdown completed.
+13:11:28.724 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:29.782 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-152 - Starting...
+13:11:29.786 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-152 - Start completed.
+13:11:29.811 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-152 - Shutdown initiated...
+13:11:29.811 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-152 - Shutdown completed.
+13:11:29.811 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:30.909 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-153 - Starting...
+13:11:30.914 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-153 - Start completed.
+13:11:30.938 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-153 - Shutdown initiated...
+13:11:30.938 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-153 - Shutdown completed.
+13:11:30.938 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:32.001 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-154 - Starting...
+13:11:32.004 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-154 - Start completed.
+13:11:32.028 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-154 - Shutdown initiated...
+13:11:32.029 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-154 - Shutdown completed.
+13:11:32.029 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:33.093 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-155 - Starting...
+13:11:33.096 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-155 - Start completed.
+13:11:33.120 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-155 - Shutdown initiated...
+13:11:33.120 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-155 - Shutdown completed.
+13:11:33.120 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:34.225 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-156 - Starting...
+13:11:34.229 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-156 - Start completed.
+13:11:34.254 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-156 - Shutdown initiated...
+13:11:34.254 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-156 - Shutdown completed.
+13:11:34.254 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:35.310 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-157 - Starting...
+13:11:35.314 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-157 - Start completed.
+13:11:35.339 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-157 - Shutdown initiated...
+13:11:35.339 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-157 - Shutdown completed.
+13:11:35.339 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:36.412 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-158 - Starting...
+13:11:36.415 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-158 - Start completed.
+13:11:36.439 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-158 - Shutdown initiated...
+13:11:36.439 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-158 - Shutdown completed.
+13:11:36.439 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:37.502 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-159 - Starting...
+13:11:37.506 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-159 - Start completed.
+13:11:37.530 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-159 - Shutdown initiated...
+13:11:37.530 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-159 - Shutdown completed.
+13:11:37.530 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:38.608 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-160 - Starting...
+13:11:38.612 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-160 - Start completed.
+13:11:38.649 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-160 - Shutdown initiated...
+13:11:38.649 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-160 - Shutdown completed.
+13:11:38.649 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:39.706 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-161 - Starting...
+13:11:39.709 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-161 - Start completed.
+13:11:39.732 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-161 - Shutdown initiated...
+13:11:39.732 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-161 - Shutdown completed.
+13:11:39.732 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:40.803 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-162 - Starting...
+13:11:40.806 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-162 - Start completed.
+13:11:40.829 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-162 - Shutdown initiated...
+13:11:40.830 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-162 - Shutdown completed.
+13:11:40.830 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:41.934 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-163 - Starting...
+13:11:41.939 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-163 - Start completed.
+13:11:41.969 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-163 - Shutdown initiated...
+13:11:41.969 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-163 - Shutdown completed.
+13:11:41.969 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:43.051 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-164 - Starting...
+13:11:43.053 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-164 - Start completed.
+13:11:43.077 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-164 - Shutdown initiated...
+13:11:43.078 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-164 - Shutdown completed.
+13:11:43.078 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)
+13:11:44.142 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-165 - Starting...
+13:11:44.145 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-165 - Start completed.
+13:11:44.169 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-165 - Shutdown initiated...
+13:11:44.169 [34mINFO [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-165 - Shutdown completed.
+13:11:44.169 [31mWARN [0;39m [36m[cdc-platform-control-6c8db7b5][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC managed recovery remains paused (java.lang.IllegalArgumentException)

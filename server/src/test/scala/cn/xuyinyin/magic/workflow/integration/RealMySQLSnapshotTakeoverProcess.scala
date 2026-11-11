@@ -1,17 +1,21 @@
 package cn.xuyinyin.magic.workflow.integration
 
+import cn.xuyinyin.magic.workflow.scheduling.{TableGrant}
+
+import cn.xuyinyin.magic.cdc.guardian.SnapshotOwnerBootstrap
+
 import CdcJournalWindowSupport._
 import TakeoverTestWire.grantFormat
 import cn.xuyinyin.magic.connectors.mysql.source.MySQLSnapshotSourceNode
 import cn.xuyinyin.magic.connectors.mysql.sink.MySQLSinkNode
 import cn.xuyinyin.magic.infrastructure.cluster.sharding.WorkflowSharding
-import cn.xuyinyin.magic.workflow.checkpoint._
+import cn.xuyinyin.magic.cdc.checkpoint._
 import cn.xuyinyin.magic.workflow.execution._
 import cn.xuyinyin.magic.workflow.execution.registry.NodeRegistry
 import cn.xuyinyin.magic.workflow.engine.ExecutionResult
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
-import cn.xuyinyin.magic.workflow.scheduling._
-import cn.xuyinyin.magic.workflow.snapshot._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.control._
+import cn.xuyinyin.magic.cdc.snapshot._
 import cn.xuyinyin.magic.workflow.spi.BatchSourceSession
 import com.typesafe.config.ConfigFactory
 import com.zaxxer.hikari.HikariDataSource

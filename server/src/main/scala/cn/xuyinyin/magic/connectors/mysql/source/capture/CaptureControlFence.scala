@@ -224,7 +224,7 @@ object CaptureControlFence {
     }
     def acquire(binding:CaptureFenceBinding):CaptureFenceBinding={check();acquireChecked(controller,binding)}
     private def writePrimitive(binding:CaptureFenceBinding):CaptureFenceReceipt={check();writeMarker(controller,binding)}
-    def write(binding:CaptureFenceBinding,markerPresent:Boolean,proof:cn.xuyinyin.magic.workflow.cdc.CdcTaskStore.MarkerWritePermit):CaptureFenceReceipt={
+    def write(binding:CaptureFenceBinding,markerPresent:Boolean,proof:cn.xuyinyin.magic.cdc.platform.CdcTaskStore.MarkerWritePermit):CaptureFenceReceipt={
       require(proof!=null,"marker write permit required");proof.assertBinding(binding,markerPresent);check()
       val receipt=writeMarker(controller,binding)
       require(receipt.markerCreated!=markerPresent,"marker write does not match prior state")
@@ -265,7 +265,7 @@ object CaptureControlFence {
       try f(proof) finally active.set(false)
     }
     /** Source mutation is authorized only while the state/Journal permit locks remain held. */
-    def release(receipt:CaptureFenceReceipt,proof:cn.xuyinyin.magic.workflow.cdc.CdcTaskStore.ConsumedPermit):Unit={
+    def release(receipt:CaptureFenceReceipt,proof:cn.xuyinyin.magic.cdc.platform.CdcTaskStore.ConsumedPermit):Unit={
       require(proof!=null,"consumed permit required");proof.assertReceipt(receipt);check()
       releaseChecked(controller,receipt,proof.permitId,proof.receiptDigest)
       proof.assertReceipt(receipt)

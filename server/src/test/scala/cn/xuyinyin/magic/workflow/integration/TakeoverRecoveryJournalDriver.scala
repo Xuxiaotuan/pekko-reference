@@ -2,7 +2,7 @@ package cn.xuyinyin.magic.workflow.integration
 
 import java.sql.{Connection,Driver,DriverPropertyInfo}
 import java.util.Properties
-import cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbcDriver
+import cn.xuyinyin.magic.cdc.control.SnapshotOwnerJdbcDriver
 
 /** Test-only fixed window after RECOVERING committed but before Journal recovery can read any business event. */
 final class TakeoverRecoveryJournalDriver extends Driver {

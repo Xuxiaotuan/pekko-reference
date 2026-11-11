@@ -1,7 +1,7 @@
 package cn.xuyinyin.magic.workflow.integration
 
 import cn.xuyinyin.magic.tags.ExternalIntegration
-import cn.xuyinyin.magic.workflow.cdc.{CdcPlatformLimits, CdcTaskRequest, CdcTaskStore}
+import cn.xuyinyin.magic.cdc.platform.{CdcPlatformLimits, CdcTaskRequest, CdcTaskStore}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import java.lang.management.ManagementFactory

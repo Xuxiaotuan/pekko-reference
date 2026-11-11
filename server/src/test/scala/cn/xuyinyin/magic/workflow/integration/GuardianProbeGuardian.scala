@@ -1,6 +1,12 @@
 package cn.xuyinyin.magic.workflow.integration
 
-import cn.xuyinyin.magic.workflow.scheduling._
+import cn.xuyinyin.magic.cdc.guardian.{ManagedJvmIsolation, SnapshotTakeoverCoordinator}
+
+import cn.xuyinyin.magic.cdc.guardian.MySqlOwnerDrainObserver
+
+
+import cn.xuyinyin.magic.cdc.guardian.{SnapshotOwnerIdentity, SnapshotIsolationReceipt}
+import cn.xuyinyin.magic.cdc.control._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import java.net.{StandardProtocolFamily,UnixDomainSocketAddress}

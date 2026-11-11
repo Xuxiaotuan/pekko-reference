@@ -1,5 +1,16 @@
-package cn.xuyinyin.magic.workflow.scheduling
+package cn.xuyinyin.magic.cdc.control
 
+import cn.xuyinyin.magic.workflow.scheduling.{TableResourceDemand, ScheduledTableDefinition}
+
+
+import cn.xuyinyin.magic.cdc.guardian.{ManagedJvmIsolation, SnapshotTakeoverCoordinator}
+
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
+
+
+
+import cn.xuyinyin.magic.cdc.guardian.{SnapshotDatabaseObservation}
+import cn.xuyinyin.magic.cdc.guardian.{SnapshotOwnerIdentity, SnapshotIsolationReceipt}
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers

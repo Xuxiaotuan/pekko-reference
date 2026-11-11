@@ -1,8 +1,8 @@
 package cn.xuyinyin.magic.workflow.execution
 
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor.WorkflowState
-import cn.xuyinyin.magic.workflow.events.WorkflowEvents._
-import cn.xuyinyin.magic.workflow.snapshot._
+import cn.xuyinyin.magic.cdc.compat.WorkflowEvents._
+import cn.xuyinyin.magic.cdc.snapshot._
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import org.apache.pekko.serialization.{SerializationExtension, Serializers}

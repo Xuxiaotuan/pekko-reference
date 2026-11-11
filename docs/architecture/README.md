@@ -1,63 +1,24 @@
-# CDC 平台的运行边界
+# 独立 CDC Runtime 的模块边界
 
-项目保留一个 SBT 服务、一个静态管理界面和独立部署目录。完整目录和兼容面见[目录迁移说明](../development/directory-layout.md)。按职责拆实现，不通过重命名持久化类型制造模块。当前证据不等同于生产 HA、可用性百分比、固定 RTO 或 70 万表容量证明。
+目标是单 MySQL 实例按需订阅：已有表持续同步，新增表先全量再追实时，取消表不停止其他表。70 万是源目录背景，不是已经验收的活跃复制规模。
 
-## 目录与依赖
-
-| 目录 | 责任 |
+| 生产模块 | 职责 |
 |---|---|
-| `server/.../bootstrap` | Guardian、服务启动、HTTP 协调关闭 |
-| `.../api/http/routes` | HTTP 输入、错误和 DTO |
-| `.../workflow/actors` | entity 命令、持久化、恢复/停止及纯辅助 |
-| `.../workflow/execution`、`spi` | 运行计划、会话、执行与连接器接口 |
-| `.../workflow/query`、`scheduler` | 有界查询、持久化触发 |
-| `.../cdc` | 信封、事件身份、完整组协议 |
-| `.../connectors` | 按 MySQL/Kafka/file/builtin/JDBC 归组的实现 |
-| `.../infrastructure` | 集群、Sharding、配置、监控、SQL 与工具 |
-| `console/src/features`、`shared`、`app` | 业务页面、HTTP client、布局 |
-| `deploy/local`、`kubernetes` | 本地与集群环境模板 |
-| `docs/experiments` | 不可变源码、结果与原始实验材料 |
+| `cdc/runtime` | 独立启动、HTTP 及有界关闭 |
+| `cdc/platform` | 持久任务索引、资源预算、动态订阅和步骤调度 |
+| `connectors/mysql/source/capture` | 共享 Reader、Schema、B/K、持久日志 L、原始 ACK 与 D |
+| `cdc/bootstrap` | LOW/HIGH 分页、回填封存、B→F 追赶、激活和持续应用 |
+| `cdc/guardian` | 进程身份、控制会话与隔离/排空观察 |
+| `cdc/control` | 受管 owner、切换授权、事务锁、配额及 supervisor 状态 |
+| `cdc/compat` | 历史持久化模型、manifest 迁移和旧启动命令转发 |
+| `src/test/.../workflow` | 旧执行器、Actor、查询、Cron 与历史实验；不进入生产包 |
 
-公开 `EventSourcedWorkflowActor`、`WorkflowEvents`、`WorkflowDSL`、Checkpoint、`ExecutionFailure` 和 Scheduler nested 模型的 FQN/字段不因本轮拆分迁移。新增的纯 helper 不进入 Journal。Calcite 和 Executor 类保留，普通实现包随目录整理迁移；没有生产 imports 不能单独证明其可删。原持久化 FQN 和用户命令保持，普通实现的旧 import 不作为兼容承诺。
+生产入口不启动通用 Workflow、Cron 或前端。部分配置键、SQL 表名与历史模型仍带 workflow 字样；它们是兼容接口，不代表仍有 Workflow 执行服务。
 
-## 所有权与进度
+持久意图经预算准入后启动共享捕获；新增订阅准备 Schema、绑定 B，再依次执行 LOW→RR 分页→HIGH→窗口回填→目标 T/Journal J，从 B 完整追到 F 后激活，继续处理 L 的完整组。采集侧原始回调按持久 L 前缀确认，SDK 的实际 D 与消费者 T/J 分别取证。
 
-API/Singleton 调度器 → Sharding → Event Sourced entity → Engine → Source/Sink。entity 运行在 worker 角色，Scheduler Singleton 位于 coordinator。执行计划绑定实例级注册表；旧 `mysql.cdc` 路径直连目标 Sink，新增共享捕获通过持久化 L 解耦源确认和表级应用。
+受管 worker 接管必须核实进程身份、隔离证明和旧连接/事务排空；未确认释放时保留配额。未知 B 仍安全暂停，不能伪造捕获就绪。L 当前只具备归档和保留位置投影，没有生产安全删除路径。
 
-T 是目标事务效果与完整组账本，J 是 entity 的交付 Checkpoint，D 是 Source 实际持久化 offset。顺序为 T 提交 → J 确认 → 原始回调前缀 ACK；恢复从 D 读取，J 延续交付序号，T 仲裁组重放。当前 C2 同一 execution 最多三次持久化恢复；明确拒绝、冲突、释放不能确认或额度耗尽保留上下文暂停。
+本轮证据包括干净编译、历史序列化样本及 Journal 字节读取、真实 MySQL 固定 C0 接管和 64 行/384 字段对账；不证明 guardian 自身重启、未知 B 自动恢复、全历史数据库升级或 70 万真实表容量。
 
-新增共享路径使用 `L → 原始回调前缀 ACK → D`，各表消费者独立执行 `T → J`。B/K 和封存 Schema 描述捕获区间；J 的 `mysql.capture.groups.v1` cursor 指向保留的 L GROUP。共享服务显式管理并注入 NodeRegistry，未增加全局自动启动/接管。源和 L/Offset/History 状态库必须为不同物理 MySQL 实例；L 的实际 UUID/数据库与 owner 状态连接一致。
-
-捕获就绪不等于初始化完成；当前表级消费要求可信目标基线，没有 LOW/HIGH 在线初始化。实现与真实边界见[共享捕获阶段一报告](../experiments/2026-10-25-shared-capture/README.md)。
-
-## 优雅停止
-
-Stop 在恢复 gate 之前处理，关闭新的执行接纳、取消后续恢复启动，但允许当前 attempt 已接纳的初始化/J 回调完成。新调度请求明确拒绝，不用 AlreadyRunning 冒充可 ACK 的投递结果。
-
-可靠执行等待 `engine.cancel` 的实际释放 Future，再终止 entity。等待期间的流正常结束/失败不产生新的终态，保留 durable currentExecution 给替代 owner。普通行流不在可靠会话目录中，等待实际 Engine 结果，并持久化其真实成功/失败后停止。同步取消异常或失败不会被当成释放。
-
-关闭观测超时只是观测，不能打开会话 fence。优雅退出仍受 Pekko Sharding handoff 和外部进程预算约束：本项目所用 Pekko 1.1.3 默认 handoff-timeout=60s，内部约 55s 后可能强制停止未结束 entity。阻塞 JDBC、强杀、分区/SBR 后的跨 owner fencing 尚未证明。延迟 Effect.stop 不会消除这一风险。
-
-恢复继续沿用累计三次预算，包括中断后的接管；多次滚动重启也可能耗尽后暂停。当前没有人工审核后的继续/放弃 API，不承诺无限自动恢复。
-
-## HTTP 与探测
-
-HTTP binding 注册 CoordinatedShutdown 的 service-unbind 和 service-requests-done。默认 `http.shutdown-grace=5s`，外围 phase timeout=10s；配置必须满足 0 < grace < phase timeout。进程使用 Pekko 自带的协调关闭 hook；不再额外注册一个竞争 terminate hook。
-
-`/health/live` 仅说明进程响应。`/health` 与 `/health/ready` 共用成员 Up、Sharding 和 JDBC 的实际探测；无条件 HEALTHY 文本撤下。`/api/v1/status` 保持独立 API 状态资源，不能替代就绪检查。
-
-同一 Route 生命周期只允许一次实际 readiness 探测。响应预算默认 `pekko.workflow.readiness-timeout=2s`；挂起时返回未确认就绪，底层仍占用探测 slot，重复请求不会继续堆积 SQL。实际工作结束才允许下一次。没有声称响应超时已取消 JDBC；永久挂起仍需数据库超时/运维处理。
-
-## 分片与部署
-
-Guardian 使用 `pekko.cluster.sharding.number-of-shards`，默认 100，非正数提前拒绝。此前非默认生产配置曾被忽略；现在会真正改变 hash 映射。已有集群不得直接滚动修改 shard count，须按停机/迁移策略统一确认；本轮只提交代码和模板，不对现网执行迁移。
-
-Docker EXPOSE 与默认 HTTP 8080 对齐。环境变量、角色、JDBC schema、端口和 K8s 模板仍需按部署指南准备。Pod 的总退出预算必须覆盖 preStop、HTTP、Sharding 和后续协调阶段；当前 lab 模板不是生产 HA 认证。
-
-## 验证级别
-
-纯函数/Actor/路由测试证明其局部契约；H2 两节点接管不替代真实 MySQL。真实 MySQL 实验保留 SourceRecord、ACK、T/J/D、Journal、SQL dump、审计和六字段对账。安全暂停保留实际差异，不计为同步收敛。
-
-优雅退出改造记录见[架构与退出实验](../experiments/2026-10-21-architecture-ha/README.md)。历史目录、源码快照和旧 C2 失败全部原样保留。DDL 演进、共享 Reader 自动接管、多 owner fencing、新 LOW/HIGH 快照算法、生产服务端掉电、长分区、日志清理/重置和容量测试仍在证据范围之外。新增共享 Reader 仅有上述阶段一范围的验证，不继承静态快照接管结论。
-
-当前目录迁移及恢复回归见[目录整理记录](../experiments/2026-10-21-directory-layout/README.md)，该记录对应新实现包；历史材料保留原始源码路径。
+[当前实验与失败边界](../experiments/2026-11-08-cdc-standalone-entry/retire-workflow-runtime-20261111/README.md) · [五篇文章与验证汇总](../articles/cdc-design/README.md)。旧架构描述见[历史文档](../archive/pre-standalone-architecture.md)。

@@ -1,6 +1,7 @@
 package cn.xuyinyin.magic.connectors.kafka
 
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
+
 import java.net.URI
 import scala.concurrent.duration._
 import spray.json._

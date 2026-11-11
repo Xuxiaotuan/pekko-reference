@@ -1,7 +1,7 @@
 package cn.xuyinyin.magic.connectors.kafka
 
 import com.typesafe.config.ConfigFactory
-import cn.xuyinyin.magic.workflow.spi.{SourceAcquisitionCleanupFailed, SourceResourceScope}
+import cn.xuyinyin.magic.cdc.compat.nodes.{SourceAcquisitionCleanupFailed, SourceResourceScope}
 import org.apache.pekko.Done
 import scala.concurrent.Promise
 import scala.util.control.NonFatal

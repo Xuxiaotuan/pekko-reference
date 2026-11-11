@@ -1,8 +1,9 @@
 package cn.xuyinyin.magic.connectors.kafka
 
-import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
-import cn.xuyinyin.magic.workflow.spi.{BatchSourceSession, SourceResourceScope, CheckpointedNodeSource, NodeSource}
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
+
+import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
+import cn.xuyinyin.magic.cdc.compat.nodes.{BatchSourceSession, SourceResourceScope, CheckpointedNodeSource, NodeSource}
 import org.apache.kafka.clients.consumer.OffsetOutOfRangeException
 import org.apache.pekko.NotUsed
 import org.apache.pekko.stream.{Attributes, FlowShape, Inlet, Outlet}

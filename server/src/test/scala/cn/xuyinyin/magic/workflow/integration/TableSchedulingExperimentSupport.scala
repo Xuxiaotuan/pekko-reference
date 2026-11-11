@@ -1,7 +1,7 @@
 package cn.xuyinyin.magic.workflow.integration
 
 import CdcJournalWindowSupport._
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
 import spray.json._
 import java.sql.Connection
 import java.nio.file.Path

@@ -1,0 +1,73 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 2 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorProcesses.scala:80:43: match may not be exhaustive.
+[warn] It would fail on the following input: (x: cn.xuyinyin.magic.workflow.scheduling.ManagedControlTransactions forSome x not in (cn.xuyinyin.magic.workflow.scheduling.CdcManagedControlStore, cn.xuyinyin.magic.workflow.scheduling.TableSchedulingStore))
+[warn]   private val ownership:ManagedOwnerStore=controlStore match {
+[warn]                                           ^
+[warn] one warning found
+[info] done compiling
+10:50:32,046 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+10:50:32,047 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3a3e1f33 - No custom configurators were discovered as a service.
+10:50:32,047 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3a3e1f33 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+10:50:32,048 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3a3e1f33 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+10:50:32,048 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+10:50:32,048 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+10:50:32,049 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3a3e1f33 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+10:50:32,049 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3a3e1f33 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+10:50:32,049 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3a3e1f33 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+10:50:32,049 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+10:50:32,050 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+10:50:32,080 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+10:50:32,080 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+10:50:32,083 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+10:50:32,091 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+10:50:32,091 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+10:50:32,091 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+10:50:32,091 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+10:50:32,092 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+10:50:32,092 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+10:50:32,093 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+10:50:32,093 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+10:50:32,093 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+10:50:32,093 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+10:50:32,093 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+10:50:32,093 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+10:50:32,093 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@101ae801 - End of configuration.
+10:50:32,094 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@1d992eb0 - Registering current configuration as safe fallback point
+10:50:32,094 |-INFO in ch.qos.logback.classic.util.ContextInitializer@3a3e1f33 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 45 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+10:50:32.202 [34mINFO [0;39m [36m[pool-8-thread-5-ScalaTest-running-MaterialOwnerDrainMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+10:50:32.213 [34mINFO [0;39m [36m[pool-8-thread-5-ScalaTest-running-MaterialOwnerDrainMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@8457993
+10:50:32.213 [34mINFO [0;39m [36m[pool-8-thread-5-ScalaTest-running-MaterialOwnerDrainMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+10:50:37.387 [34mINFO [0;39m [36m[pool-8-thread-5-ScalaTest-running-MaterialOwnerDrainMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown initiated...
+10:50:37.388 [34mINFO [0;39m [36m[pool-8-thread-5-ScalaTest-running-MaterialOwnerDrainMySqlSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown completed.
+[info] MaterialOwnerDrainMySqlSpec:
+[info] material account drain observation
+[info] - should reject foreign and untagged material sessions before allowing an empty observation *** FAILED ***
+[info]   {"instance":"127.0.0.1:25822","knownIds":[10],"observedAt":1794365437361,"owner":"old-2b72029f9a","serverStarted":1794365424369,"sessions":[],"transactions":[],"unassignedTransactions":[{"trx_id":"3693","trx_state":"RUNNING","trx_mysql_thread_id":"11","trx_query":null}],"unattributed":[]} false was not equal to true (MaterialOwnerDrainMySqlSpec.scala:87)
+[info] Run completed in 5 seconds, 505 milliseconds.
+[info] Total number of tests run: 1
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 0, failed 1, canceled 0, ignored 0, pending 0
+[info] *** 1 TEST FAILED ***
+[error] Failed tests:
+[error] 	cn.xuyinyin.magic.workflow.scheduling.MaterialOwnerDrainMySqlSpec
+[error] (Test / testOnly) sbt.TestsFailedException: Tests unsuccessful
+[error] Total time: 9 s, completed 2026年11月11日 上午10:50:37

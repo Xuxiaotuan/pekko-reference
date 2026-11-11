@@ -1,8 +1,9 @@
 package cn.xuyinyin.magic.connectors.mysql.sink
 
-import cn.xuyinyin.magic.workflow.checkpoint.{AlreadyCommitted, BatchCheckpoint, BatchCommitResult, Committed, SourceBatch}
-import cn.xuyinyin.magic.workflow.spi.{CheckpointedNodeSink, NodeSink}
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
+
+import cn.xuyinyin.magic.cdc.checkpoint.{AlreadyCommitted, BatchCheckpoint, BatchCommitResult, Committed, SourceBatch}
+import cn.xuyinyin.magic.cdc.compat.nodes.{CheckpointedNodeSink, NodeSink}
 import org.apache.pekko.Done
 import org.apache.pekko.stream.NeverMaterializedException
 import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink}
@@ -22,7 +23,7 @@ import scala.util.{Failure, Success}
  * @author : Xuxiaotuan
  * @since : 2024-11-15
  */
-class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.magic.workflow.spi.SnapshotSplitSink {
+class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.magic.cdc.compat.nodes.SnapshotSplitSink {
 
   private val LedgerTable = "pekko_sync_batch_ledger"
 
@@ -95,7 +96,7 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
     var connection: Connection = null
     try {
       connection = ds.getConnection
-      if(cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbc.context.nonEmpty) {
+      if(cn.xuyinyin.magic.cdc.control.SnapshotOwnerJdbc.context.nonEmpty) {
         Vector(config.table,"pekko_sync_batch_ledger","pekko_snapshot_batch_evidence").foreach { table=>
           val statement=connection.prepareStatement("SELECT ENGINE FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=?")
           try {statement.setString(1,table);val rows=statement.executeQuery();try require(rows.next() && rows.getString(1)=="InnoDB","managed snapshot target and ledgers must be InnoDB")finally rows.close()}finally statement.close()
@@ -120,7 +121,7 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
     config.setJdbcUrl(s"jdbc:mysql://$host:$port/$database?rewriteBatchedStatements=true&useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&socketTimeout=10000&connectTimeout=5000")
     config.setUsername(username); config.setPassword(password); config.setDriverClassName("com.mysql.cj.jdbc.Driver")
     config.setMaximumPoolSize(1); config.setMinimumIdle(0); config.setConnectionTimeout(10000)
-    cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbc.configure(config,"target")
+    cn.xuyinyin.magic.cdc.control.SnapshotOwnerJdbc.configure(config,"target")
     new HikariDataSource(config)
   }
 
@@ -133,7 +134,7 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
     onLog: String => Unit
   )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = Future {
     val config = MySQLSinkConfig.parse(node, getenv)
-    val dataSource = if (batch.cursor.kind == cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.CursorKind)
+    val dataSource = if (batch.cursor.kind == cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind)
       createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
     else createDataSource(config.host, config.port, config.database, config.username, config.password)
     try {
@@ -142,7 +143,7 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
       catch { case NonFatal(_) => () }
       result
     } finally {
-      if (batch.cursor.kind == cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.CursorKind) closeSplitResource(dataSource, batch.batchId)
+      if (batch.cursor.kind == cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind) closeSplitResource(dataSource, batch.batchId)
       else closeDataSource(dataSource)
     }
   }
@@ -194,12 +195,12 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
       transformedRows.size.toLong
     )
     val expected = LedgerRecord(batch.batchId, workflowId, executionId, checkpoint)
-    val split = batch.cursor.kind == cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.CursorKind
+    val split = batch.cursor.kind == cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind
     var commitStarted = false
     var connection: Connection = null
     def evidence(c: Connection, insert: Boolean): Unit = if (split) {
-      val sourceHash = cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.rowsDigest(batch.rows)
-      val targetHash = cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.rowsDigest(transformedRows)
+      val sourceHash = cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.rowsDigest(batch.rows)
+      val targetHash = cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.rowsDigest(transformedRows)
       val statement = c.prepareStatement(if (insert)
         "INSERT INTO pekko_snapshot_batch_evidence (batch_id,source_sha256,target_sha256) VALUES (?,?,?)"
         else "SELECT source_sha256,target_sha256 FROM pekko_snapshot_batch_evidence WHERE batch_id=?")
@@ -210,8 +211,8 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
           val rs = statement.executeQuery()
           try {
             if (!rs.next() || rs.getString(1) != sourceHash || rs.getString(2) != targetHash)
-              throw new cn.xuyinyin.magic.workflow.engine.CdcExecutionException(
-                cn.xuyinyin.magic.workflow.engine.ExecutionFailure("protocol_conflict", "snapshot-evidence", Some(batch.batchId)),
+              throw new cn.xuyinyin.magic.cdc.recovery.CdcExecutionException(
+                cn.xuyinyin.magic.cdc.recovery.ExecutionFailure("protocol_conflict", "snapshot-evidence", Some(batch.batchId)),
                 new IllegalStateException("snapshot batch content conflicts with committed evidence"))
           } finally rs.close()
         }
@@ -254,8 +255,8 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
     } catch {
       case exception: Exception if split && commitStarted =>
         rollback(connection)
-        throw new cn.xuyinyin.magic.workflow.engine.CdcExecutionException(
-          cn.xuyinyin.magic.workflow.engine.ExecutionFailure("commit_outcome_unknown", "snapshot-commit", Some(batch.batchId)), exception)
+        throw new cn.xuyinyin.magic.cdc.recovery.CdcExecutionException(
+          cn.xuyinyin.magic.cdc.recovery.ExecutionFailure("commit_outcome_unknown", "snapshot-commit", Some(batch.batchId)), exception)
       case exception: IllegalStateException =>
         rollback(connection)
         throw exception
@@ -267,8 +268,8 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
 
   private def closeSplitResource(resource: AutoCloseable, batchId: String): Unit = if (resource != null) {
     try resource.close()
-    catch { case NonFatal(error) => throw new cn.xuyinyin.magic.workflow.engine.CdcExecutionException(
-      cn.xuyinyin.magic.workflow.engine.ExecutionFailure("local_release_unconfirmed", "snapshot-target-close", Some(batchId), releaseConfirmed = false), error) }
+    catch { case NonFatal(error) => throw new cn.xuyinyin.magic.cdc.recovery.CdcExecutionException(
+      cn.xuyinyin.magic.cdc.recovery.ExecutionFailure("local_release_unconfirmed", "snapshot-target-close", Some(batchId), releaseConfirmed = false), error) }
   }
 
   private def findLedger(connection: Connection, batchId: String): Option[LedgerRecord] = {
@@ -287,7 +288,7 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
           resultSet.getString("partition_id"),
           resultSet.getLong("batch_sequence"),
           batchId,
-          cn.xuyinyin.magic.workflow.checkpoint.SourceCursor(
+          cn.xuyinyin.magic.cdc.checkpoint.SourceCursor(
             resultSet.getString("cursor_kind"),
             resultSet.getString("cursor_value"),
             resultSet.getString("upper_bound")
@@ -395,7 +396,7 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
     config.setMinimumIdle(2)
     config.setConnectionTimeout(30000)
     
-    cn.xuyinyin.magic.workflow.scheduling.SnapshotOwnerJdbc.configure(config,"target")
+    cn.xuyinyin.magic.cdc.control.SnapshotOwnerJdbc.configure(config,"target")
     new HikariDataSource(config)
   }
   

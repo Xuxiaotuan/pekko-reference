@@ -1,8 +1,12 @@
 package cn.xuyinyin.magic.workflow.integration
 
+import cn.xuyinyin.magic.workflow.scheduling.{TableGrant}
+
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
+
 import CdcJournalWindowSupport._
-import cn.xuyinyin.magic.workflow.scheduling._
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.control._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}
 import spray.json._
 import java.nio.file.Path

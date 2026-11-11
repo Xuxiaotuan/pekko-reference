@@ -1,8 +1,8 @@
 package cn.xuyinyin.magic.connectors.kafka
 
 import cn.xuyinyin.magic.testkit.STSpec
-import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceCursor}
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceCursor}
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import com.typesafe.config.ConfigFactory
 import org.apache.kafka.clients.consumer.{ConsumerConfig, OffsetOutOfRangeException}
 import org.apache.kafka.common.TopicPartition

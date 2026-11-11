@@ -1,8 +1,8 @@
 package cn.xuyinyin.magic.connectors.mysql.source
 
 import cn.xuyinyin.magic.testkit.STSpec
-import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import cn.xuyinyin.magic.cdc.{CdcOperation, MySQLCdcEnvelope}
 import ch.qos.logback.classic.{Logger => LogbackLogger}
 import ch.qos.logback.classic.spi.{ILoggingEvent, ThrowableProxyUtil}
@@ -303,7 +303,7 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
 
     for (halfOnly <- Vector(false, true)) {
       s"release safely when cancellation meets ${if (halfOnly) "a PK half" else "a claimed raw ACK"}" in {
-        import cn.xuyinyin.magic.workflow.checkpoint.{BatchCommitResult, Committed}
+        import cn.xuyinyin.magic.cdc.checkpoint.{BatchCommitResult, Committed}
         import cn.xuyinyin.magic.workflow.execution.{ReliableRunContext, WorkflowExecutionEngine}
         import cn.xuyinyin.magic.workflow.execution.registry.NodeRegistry
         import cn.xuyinyin.magic.workflow.spi.{CheckpointedNodeSink, NodeSink}

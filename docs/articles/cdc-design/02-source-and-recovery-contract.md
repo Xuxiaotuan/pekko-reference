@@ -2,6 +2,8 @@
 
 [系列导读与验证范围](README.md) · [1：目标架构](01-why-pekko-for-resident-cdc.md) · [2：批转流源码](02-source-and-recovery-contract.md) · [3：真实实验](03-real-mysql-journal-failure.md) · [4：恢复协议](04-protocol-and-validation.md) · [5：自建与复用](05-pekko-vs-flink-cdc.md) · [Flink CDC 深入系列](https://xuyinyin.cn/flink-cdc-series/)
 
+> **2026-11-11 当前源码与证据：** 当前批转流主线使用 BootstrapJournal 的进度凭据，不需要旧 Workflow Actor 的 receipt。LOW/HIGH、窗口回填和 B→F 的算法未因目录调整改写；生产 MySQLCaptureStore 已去掉仅供旧执行器测试使用的 Workflow 投影接口。历史执行和投影实验被整体保留在测试源集中，因此旧实验仍可复现，但不再是生产 Runtime 的调用路径。生产故障恢复的具体覆盖以本轮 C0 材料为准，未知 B 仍暂停。 [拆分与验证记录](../../experiments/2026-11-08-cdc-standalone-entry/retire-workflow-runtime-20261111/README.md)。
+
 [A/B 补测](../../experiments/2026-10-27-ab-followup/README.md)保留了静默源的 ACK 与实际 D、旧 B/INITIAL 的安全暂停，以及 D 滞后和原始 ACK 切点；A05 尚不能仅从现有持久状态证明源写从未发生。
 
 > **文章修订：2026-10-27。** 当前源码使用仓库相对入口，版本与新平台组合实测见[平台报告](../../experiments/2026-10-27-cdc-platform/README.md)；历史 LOW/HIGH 矩阵与旧失败保留原版本。新增源码行为不预填为实验通过。

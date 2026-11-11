@@ -1,4 +1,5 @@
-package cn.xuyinyin.magic.workflow.scheduling
+package cn.xuyinyin.magic.cdc.control
+
 
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}
 import org.scalatest.wordspec.AnyWordSpec

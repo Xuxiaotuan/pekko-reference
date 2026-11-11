@@ -3,7 +3,7 @@ package cn.xuyinyin.magic.workflow.execution
 import cn.xuyinyin.magic.testkit.STSpec
 import cn.xuyinyin.magic.workflow.WorkflowFixtures
 import cn.xuyinyin.magic.workflow.execution.registry.NodeRegistry
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
 import cn.xuyinyin.magic.workflow.spi.{NodeSink, NodeSource}
 import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.stream.scaladsl.{Sink, Source}

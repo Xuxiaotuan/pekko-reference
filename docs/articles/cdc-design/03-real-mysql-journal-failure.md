@@ -2,6 +2,8 @@
 
 [系列导读与验证范围](README.md) · [1：目标架构](01-why-pekko-for-resident-cdc.md) · [2：批转流源码](02-source-and-recovery-contract.md) · [3：真实实验](03-real-mysql-journal-failure.md) · [4：恢复协议](04-protocol-and-validation.md) · [5：自建与复用](05-pekko-vs-flink-cdc.md) · [Flink CDC 深入系列](https://xuyinyin.cn/flink-cdc-series/)
 
+> **2026-11-11 当前源码与证据：** 本轮把 guardian、supervisor、worker 的子 JVM 类路径中的测试类移除，再验证单表进入实时后硬停 worker、隔离、接管和后续更新：源与目标 64 行、384 字段相等，缺行、额外行、字段差异均为空，结束后会话释放。另有真实 MySQL 的历史 Journal 重放和 Bootstrap 跨 JVM receipt 重签测试；这是不同层次的证据，不能相加为任意故障可恢复。旧 C1 自动恢复断言超时的失败材料保留；当前承诺仍是未知 B 安全暂停。 [拆分与验证记录](../../experiments/2026-11-08-cdc-standalone-entry/retire-workflow-runtime-20261111/README.md)。
+
 [A/B 补测材料](../../experiments/2026-10-27-ab-followup/README.md)记录了 R06、R09、R10-mid 的真实恢复和逐字段复算，也记录预复制基线、停止订阅后的预期差异以及安全暂停；不能把这些样本称为整个矩阵通过。
 
 > **文章修订：2026-10-27。** I08/I11/I16/I21 与 E0 保留原冻结版本；启动准入的已提交实现和新定点实验对应 [`74b6d9a`](https://github.com/Xuxiaotuan/pekko-reference/tree/74b6d9ad1ebcfe19a786f4e1869aed276a63bb52)。本轮有界执行、资源释放和平台调度候选的源码版本、运行摘要及实际结果另见[平台实验报告](../../experiments/2026-10-27-cdc-platform/README.md)，不把不同版本的通过项相加。

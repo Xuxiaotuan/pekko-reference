@@ -1,6 +1,7 @@
 package cn.xuyinyin.magic.connectors.mysql.sink
 
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
+
 import cn.xuyinyin.magic.connectors.jdbc.JdbcPasswordResolver
 import spray.json._
 

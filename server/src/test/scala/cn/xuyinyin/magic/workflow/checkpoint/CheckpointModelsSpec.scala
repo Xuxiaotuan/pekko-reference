@@ -1,6 +1,8 @@
 package cn.xuyinyin.magic.workflow.checkpoint
 
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.checkpoint._
+
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import cn.xuyinyin.magic.workflow.spi.{CheckpointedNodeSink, NodeSink}
 import org.apache.pekko.Done
 import org.apache.pekko.actor.testkit.typed.scaladsl.{ScalaTestWithActorTestKit, SerializationTestKit}

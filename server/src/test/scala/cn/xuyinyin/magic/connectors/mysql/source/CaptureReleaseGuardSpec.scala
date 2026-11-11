@@ -106,7 +106,7 @@ class CaptureReleaseGuardSpec extends STSpec with org.scalatest.concurrent.Event
         closeBudget=CaptureCloseBudget(50,50))
       try {
         held.foreach {f=>f.block=true;f.server.set(true);f.guard.request();f.entered.await(1,TimeUnit.SECONDS) shouldBe true}
-        intercept[cn.xuyinyin.magic.workflow.engine.CdcExecutionException](capture.close()).failure.releaseConfirmed shouldBe false
+        intercept[cn.xuyinyin.magic.cdc.recovery.CdcExecutionException](capture.close()).failure.releaseConfirmed shouldBe false
         val operation=capture.releaseEvidence.operationId
         held.foreach(_.leave.countDown())
         eventually {held.forall(_.guard.evidence.reusable) shouldBe true}

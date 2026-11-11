@@ -1,5 +1,22 @@
-package cn.xuyinyin.magic.workflow.scheduling
+package cn.xuyinyin.magic.cdc.control
 
+
+import cn.xuyinyin.magic.cdc.control.CdcManagedControlStore
+
+import cn.xuyinyin.magic.cdc.guardian.SnapshotOwnerBootstrap
+
+import cn.xuyinyin.magic.cdc.guardian.{ManagedJvmIsolation}
+
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
+
+
+
+
+
+import cn.xuyinyin.magic.cdc.control.{CutoverAuthorizationKey, CredentialBinding}
+import cn.xuyinyin.magic.cdc.guardian.{SnapshotDatabaseObservation, SnapshotWorkerLaunch}
+import cn.xuyinyin.magic.cdc.guardian.{GuardianBinding, SnapshotOwnerIdentity, SnapshotIsolationReceipt}
+import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
@@ -21,6 +38,9 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
     }finally ds.close()
   }
   "supervisor control transactions" should {
+    "reject an arbitrary transaction implementation at the CDC owner factory boundary" in {
+      assertDoesNotCompile("""ManagedCdcOwnerStore.forCdc(new ManagedControlTransactions(null, "untrusted") {})""")
+    }
     "parse explicit cutover binding plans without secrets" in {
       val config=ConfigFactory.parseString("""
         pekko.workflow.snapshot-ha.credential-bindings=[
@@ -137,7 +157,7 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
         } finally c.close()
         val limits=SchedulingLimits(2,1,8,1,1048576,8)
         val legacy=new TableSchedulingStore(ds,limits)
-        val control=new ManagedControlTransactions(ds,cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.sha256(limits.toString)) {}
+        val control=new ManagedControlTransactions(ds,cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.sha256(limits.toString)) {}
         val old=executor.submit(new Runnable {def run():Unit=legacy.transaction { _=>
           entered.countDown();require(release.await(5,java.util.concurrent.TimeUnit.SECONDS))
         }})
@@ -162,6 +182,8 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
         } finally c.close()
         val limits=SchedulingLimits(2,1,8,1,1048576,8)
         val id=CdcManagedControlStore.CutoverIdentity("deployment","host","operation")
+        // The durable policy is keyed by the pre-move SchedulingLimits rendering.
+        id.policyHash(limits) shouldBe "fd66904215de442aaab08438ee7d8b1ca5896787d3790ebc9d985f60828810be"
         val migrated=new CdcManagedControlStore(ds,limits,Some(id))
         intercept[IllegalStateException](migrated.transaction(_=>()))
         val old=new TableSchedulingStore(ds,limits,ownershipEnabled=true)
@@ -182,7 +204,7 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
       }finally ds.close()
     }
     "reject an owner registry from another transaction context" in fixture { s=>
-      val other=new ManagedControlTransactions(null,cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitState.sha256(s.limits.toString)) {}
+      val other=new ManagedControlTransactions(null,cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.sha256(s.limits.toString)) {}
       val binding=GuardianBinding("d","h","g","key")
       intercept[IllegalArgumentException](new SnapshotSupervisorStore(other,s.ownership.get,binding,1))
       noException should be thrownBy new SnapshotSupervisorStore(s,s.ownership.get,binding,1)
@@ -195,7 +217,7 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
       val binding=GuardianBinding("d","host","guardian",java.util.Base64.getEncoder.encodeToString(keys.getPublic.getEncoded))
       val metadata=new SnapshotSupervisorStore(s,binding,2);metadata.enroll();val control=metadata.claimController("supervisor")
       val manager=new ManagedJvmIsolation("d",2)
-      val service=new SnapshotGuardianService(metadata,manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
+      val service=metadata.guardianService(manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
       metadata.prepare(control,"worker","profile")
       val identity=service.handle(control,"LAUNCH",JsObject("boot"->JsString("worker"))).fields("identity").convertTo[SnapshotOwnerIdentity]
       s.ownership.get.registerOwner(identity)
@@ -243,7 +265,7 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
       val g=GuardianBinding("d","host","guardian",java.util.Base64.getEncoder.encodeToString(keys.getPublic.getEncoded))
       val h=new SnapshotSupervisorStore(s,g,1);h.enroll();val control=h.claimController("supervisor")
       val manager=new ManagedJvmIsolation("d",1)
-      val service=new SnapshotGuardianService(h,manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
+      val service=h.guardianService(manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
       val socket=java.nio.file.Path.of("/tmp","sg-"+java.util.UUID.randomUUID().toString.take(12));val secret=Array.fill[Byte](32)(1)
       val server=new SnapshotGuardianWire.Server(socket,secret,g,keys.getPrivate,service.handle)
       val thread=new Thread(()=>try server.run()catch{case _:java.nio.channels.AsynchronousCloseException=>()},"cdc-isolation-test");thread.setDaemon(true);thread.start()
@@ -266,7 +288,7 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
       val g=GuardianBinding("d","host","guardian",java.util.Base64.getEncoder.encodeToString(keys.getPublic.getEncoded))
       val h=new SnapshotSupervisorStore(s,g,1);h.enroll();val a=h.claimController("a")
       val manager=new ManagedJvmIsolation("d",1)
-      val service=new SnapshotGuardianService(h,manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
+      val service=h.guardianService(manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
       h.prepare(a,"identity-unknown","profile")
       val previous=System.getSecurityManager
       val caller=Thread.currentThread()
@@ -299,7 +321,7 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
       val g=GuardianBinding("d","host","guardian",java.util.Base64.getEncoder.encodeToString(keys.getPublic.getEncoded))
       val h=new SnapshotSupervisorStore(s,g,1);h.enroll();val a=h.claimController("a")
       val manager=new ManagedJvmIsolation("d",1)
-      val service=new SnapshotGuardianService(h,manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
+      val service=h.guardianService(manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
       val socket=java.nio.file.Path.of("/tmp","sg-"+java.util.UUID.randomUUID().toString.take(12));val secret=Array.fill[Byte](32)(1)
       val server=new SnapshotGuardianWire.Server(socket,secret,g,keys.getPrivate,service.handle)
       val thread=new Thread(()=>try server.run()catch{case _:java.nio.channels.AsynchronousCloseException=>()},"guardian-prune-server");thread.setDaemon(true);thread.start()
@@ -327,7 +349,7 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
       val g=GuardianBinding("d","host","guardian",java.util.Base64.getEncoder.encodeToString(keys.getPublic.getEncoded))
       val h=new SnapshotSupervisorStore(s,g,1);h.enroll();val a=h.claimController("a")
       val manager=new ManagedJvmIsolation("d",1)
-      val service=new SnapshotGuardianService(h,manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
+      val service=h.guardianService(manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
       h.prepare(a,"old","profile")
       val id=service.handle(a,"LAUNCH",JsObject("boot"->JsString("old"))).fields("identity").convertTo[SnapshotOwnerIdentity]
       val ha=s.ownership.get;ha.registerOwner(id);ha.registerInstance("old","mysql","uuid",10)
@@ -358,7 +380,7 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
       val g=GuardianBinding("d","host","guardian",java.util.Base64.getEncoder.encodeToString(keys.getPublic.getEncoded))
       val h=new SnapshotSupervisorStore(s,g,1);h.enroll();val a=h.claimController("a")
       val manager=new ManagedJvmIsolation("d",1)
-      val service=new SnapshotGuardianService(h,manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
+      val service=h.guardianService(manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
       h.prepare(a,"old","profile")
       val id=service.handle(a,"LAUNCH",JsObject("boot"->JsString("old"))).fields("identity").convertTo[SnapshotOwnerIdentity]
       s.ownership.get.registerOwner(id);s.ownership.get.registerInstance("old","mysql","uuid",10)
@@ -379,9 +401,9 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
       val keys=java.security.KeyPairGenerator.getInstance("Ed25519").generateKeyPair()
       val g=GuardianBinding("d","host","guardian",java.util.Base64.getEncoder.encodeToString(keys.getPublic.getEncoded))
       val h=new SnapshotSupervisorStore(s,g,1);h.enroll();val a=h.claimController("a")
-      new SnapshotGuardianService(h,new ManagedJvmIsolation("d",1),_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
+      h.guardianService(new ManagedJvmIsolation("d",1),_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
       h.prepare(a,"pending","profile");h.dispatch(a,"pending")
-      intercept[IllegalArgumentException](new SnapshotGuardianService(h,new ManagedJvmIsolation("d",1),_=>new ProcessBuilder("/bin/cat"),keys.getPrivate))
+      intercept[IllegalArgumentException](h.guardianService(new ManagedJvmIsolation("d",1),_=>new ProcessBuilder("/bin/cat"),keys.getPrivate))
       h.launch("pending").get.phase shouldBe "dispatching"
     }
     "keep nested ownership reads on the admission transaction connection" in fixture { s=>
@@ -438,7 +460,7 @@ class SnapshotSupervisorStoreSpec extends AnyWordSpec with Matchers {
       val g=GuardianBinding("d","host","guardian",java.util.Base64.getEncoder.encodeToString(keys.getPublic.getEncoded))
       val h=new SnapshotSupervisorStore(s,g,1);h.enroll();val a=h.claimController("a")
       val manager=new ManagedJvmIsolation("d",1)
-      val service=new SnapshotGuardianService(h,manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
+      val service=h.guardianService(manager,_=>new ProcessBuilder("/bin/cat"),keys.getPrivate)
       h.prepare(a,"old","profile")
       val id=service.handle(a,"LAUNCH",JsObject("boot"->JsString("old"))).fields("identity").convertTo[SnapshotOwnerIdentity]
       try {

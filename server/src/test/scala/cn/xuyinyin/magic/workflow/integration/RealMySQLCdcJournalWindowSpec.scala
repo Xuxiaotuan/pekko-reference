@@ -1,7 +1,7 @@
 package cn.xuyinyin.magic.workflow.integration
 
 import cn.xuyinyin.magic.tags.ExternalIntegration
-import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, SourceBatch}
+import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, SourceBatch}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
@@ -182,6 +182,8 @@ private[integration] object CdcJournalWindowSupport extends DefaultJsonProtocol 
   def validateSchema(schema: String): Unit = require(schema.matches("pekko_test_cdc_window_[a-f0-9]{12}"))
   def withConnection[A](settings: Settings, schema: String)(body: Connection => A): A = {
     if (schema.nonEmpty) validateSchema(schema)
+    // SBT may use a fresh test classloader for each testOnly invocation.
+    Class.forName("com.mysql.cj.jdbc.Driver")
     val connection = DriverManager.getConnection(settings.url(schema), settings.user, settings.password)
     try body(connection) finally connection.close()
   }

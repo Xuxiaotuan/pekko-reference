@@ -1,0 +1,106 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala:7:68: Unused import
+[warn] import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
+[warn]                                                                    ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala:7:86: Unused import
+[warn] import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
+[warn]                                                                                      ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala:7:99: Unused import
+[warn] import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
+[warn]                                                                                                   ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala:11:40: Unused import
+[warn] import cn.xuyinyin.magic.workflow.spi.{CheckpointedNodeSource, NodeSource}
+[warn]                                        ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala:11:64: Unused import
+[warn] import cn.xuyinyin.magic.workflow.spi.{CheckpointedNodeSource, NodeSource}
+[warn]                                                                ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala:18:25: Unused import
+[warn] import org.apache.pekko.NotUsed
+[warn]                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala:20:41: Unused import
+[warn] import org.apache.pekko.stream.scaladsl.Source
+[warn]                                         ^
+[warn] 7 warnings found
+[info] done compiling
+22:17:25,334 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+22:17:25,334 |-INFO in ch.qos.logback.classic.util.ContextInitializer@ad2a421 - No custom configurators were discovered as a service.
+22:17:25,334 |-INFO in ch.qos.logback.classic.util.ContextInitializer@ad2a421 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:17:25,335 |-INFO in ch.qos.logback.classic.util.ContextInitializer@ad2a421 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:17:25,335 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+22:17:25,335 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+22:17:25,337 |-INFO in ch.qos.logback.classic.util.ContextInitializer@ad2a421 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+22:17:25,337 |-INFO in ch.qos.logback.classic.util.ContextInitializer@ad2a421 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:17:25,337 |-INFO in ch.qos.logback.classic.util.ContextInitializer@ad2a421 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:17:25,337 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+22:17:25,337 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+22:17:25,364 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+22:17:25,364 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:17:25,368 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+22:17:25,376 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+22:17:25,376 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:17:25,376 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+22:17:25,376 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+22:17:25,377 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+22:17:25,377 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+22:17:25,378 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+22:17:25,378 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+22:17:25,379 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+22:17:25,379 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+22:17:25,379 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+22:17:25,379 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+22:17:25,379 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@4a665ee6 - End of configuration.
+22:17:25,380 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@40dfd203 - Registering current configuration as safe fallback point
+22:17:25,380 |-INFO in ch.qos.logback.classic.util.ContextInitializer@ad2a421 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 43 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+22:17:25.681 [34mINFO [0;39m [36m[wreplay-36361f12c1-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+22:17:26.129 [34mINFO [0;39m [36m[wreplay-36361f12c1-pekko.persistence.dispatchers.default-plugin-dispatcher-7][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Starting...
+22:17:26.135 [34mINFO [0;39m [36m[wreplay-36361f12c1-pekko.persistence.dispatchers.default-plugin-dispatcher-7][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Start completed.
+WORKFLOW_OLD_JOURNAL_REPLAY schema=pekko_test_wreplay_36361f12c1 historicalEvents=4 checkpointRestored=true
+22:17:26.370 [34mINFO [0;39m [36m[wreplay-36361f12c1-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+22:17:26.378 [34mINFO [0;39m [36m[wreplay-36361f12c1-pekko.actor.default-dispatcher-3][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown initiated...
+22:17:26.378 [34mINFO [0;39m [36m[wreplay-36361f12c1-pekko.actor.default-dispatcher-3][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown completed.
+22:17:26.510 [34mINFO [0;39m [36m[wfloor-9cd349b616-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+22:17:26.525 [34mINFO [0;39m [36m[wfloor-9cd349b616-pekko.persistence.dispatchers.default-plugin-dispatcher-7][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Starting...
+22:17:26.525 [34mINFO [0;39m [36m[wfloor-9cd349b616-pekko.persistence.dispatchers.default-plugin-dispatcher-7][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Start completed.
+WORKFLOW_JOURNAL_PROOF schema=pekko_test_wfloor_9cd349b616 firstSeq=4 secondSeq=5 duplicateNoReceipt=true javaForgedRejected=true wrongIdentityRejected=true staleRejected=true deletedRejected=true nextWriterBlocked=true
+22:17:27.014 [34mINFO [0;39m [36m[wfloor-9cd349b616-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+22:17:27.015 [34mINFO [0;39m [36m[wfloor-9cd349b616-pekko.actor.default-dispatcher-6][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown initiated...
+22:17:27.016 [34mINFO [0;39m [36m[wfloor-9cd349b616-pekko.actor.default-dispatcher-6][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown completed.
+[info] WorkflowJournalFloorMySqlSpec:
+[info] workflow Journal proof
+[info] - should replay preserved old MySQL Journal bytes into the current actor
+[info] - should bind the actual checkpoint event and reject stale or deleted evidence
+22:17:27.116 [34mINFO [0;39m [36m[jfloor-479b19f664-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+22:17:27.130 [34mINFO [0;39m [36m[jfloor-479b19f664-pekko.persistence.dispatchers.default-plugin-dispatcher-6][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Starting...
+22:17:27.130 [34mINFO [0;39m [36m[jfloor-479b19f664-pekko.persistence.dispatchers.default-plugin-dispatcher-6][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Start completed.
+BOOTSTRAP_JOURNAL_FLOOR schema=pekko_test_jfloor_479b19f664 actualSequence=2 javaForgedRejected=true staleRejected=true deletedRejected=true nextWriterBlocked=true finalFloor=2 auditFloor=0
+22:17:28.518 [34mINFO [0;39m [36m[jfloor-479b19f664-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+22:17:28.519 [34mINFO [0;39m [36m[jfloor-479b19f664-pekko.actor.default-dispatcher-5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown initiated...
+22:17:28.519 [34mINFO [0;39m [36m[jfloor-479b19f664-pekko.actor.default-dispatcher-5][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown completed.
+[info] BootstrapJournalFloorMySqlSpec:
+[info] bootstrap Journal floor
+[info] - should advance only from the latest durable actor event and reject stale or deleted evidence
+[info] Run completed in 3 seconds, 329 milliseconds.
+[info] Total number of tests run: 3
+[info] Suites: completed 2, aborted 0
+[info] Tests: succeeded 3, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 7 s, completed 2026年11月11日 下午10:17:28

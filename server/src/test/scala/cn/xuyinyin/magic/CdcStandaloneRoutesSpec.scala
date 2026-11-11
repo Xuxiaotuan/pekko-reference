@@ -1,6 +1,6 @@
 package cn.xuyinyin.magic
 
-import cn.xuyinyin.magic.workflow.cdc._
+import cn.xuyinyin.magic.cdc.platform._
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest

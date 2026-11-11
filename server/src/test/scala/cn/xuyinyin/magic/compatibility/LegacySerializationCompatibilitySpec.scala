@@ -25,7 +25,12 @@ class LegacySerializationCompatibilitySpec extends AnyWordSpec with Matchers {
           def text(name: String) = fields(name).convertTo[String]
           val bytes = Base64.getDecoder.decode(text("payloadBase64"))
           val value = serialization.deserialize(bytes, fields("serializerId").convertTo[Int], text("manifest")).get
-          value.getClass.getName shouldBe text("className")
+          val expected=text("className").replace("cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor$",
+            "cn.xuyinyin.magic.cdc.compat.LegacyWorkflowState$")
+            .replace("cn.xuyinyin.magic.workflow.checkpoint.","cn.xuyinyin.magic.cdc.checkpoint.")
+            .replace("cn.xuyinyin.magic.workflow.engine.ExecutionFailure","cn.xuyinyin.magic.cdc.recovery.ExecutionFailure")
+            .replace("cn.xuyinyin.magic.workflow.events.WorkflowEvents$","cn.xuyinyin.magic.cdc.compat.WorkflowEvents$")
+          value.getClass.getName shouldBe expected
           serialization.serialize(value).get.toVector shouldBe bytes.toVector
         }
       } finally kit.shutdownTestKit()

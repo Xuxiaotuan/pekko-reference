@@ -1,9 +1,9 @@
 package cn.xuyinyin.magic.workflow.execution
 
 import cn.xuyinyin.magic.tags.ExternalIntegration
-import cn.xuyinyin.magic.workflow.checkpoint.{AlreadyCommitted, BatchCheckpoint, BatchCommitResult, Committed, SnapshotBoundary, SourceBatch}
+import cn.xuyinyin.magic.cdc.checkpoint.{AlreadyCommitted, BatchCheckpoint, BatchCommitResult, Committed, SnapshotBoundary, SourceBatch}
 import cn.xuyinyin.magic.workflow.TestNodeRegistry
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Edge, Node, Position, Workflow, WorkflowMetadata}
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.{Edge, Node, Position, Workflow, WorkflowMetadata}
 import cn.xuyinyin.magic.connectors.mysql.sink.MySQLSinkNode
 import org.apache.pekko.Done
 import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit

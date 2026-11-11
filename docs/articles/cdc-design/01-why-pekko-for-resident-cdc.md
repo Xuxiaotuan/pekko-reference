@@ -2,6 +2,8 @@
 
 [系列导读与验证范围](README.md) · [1：目标架构](01-why-pekko-for-resident-cdc.md) · [2：批转流源码](02-source-and-recovery-contract.md) · [3：真实实验](03-real-mysql-journal-failure.md) · [4：恢复协议](04-protocol-and-validation.md) · [5：自建与复用](05-pekko-vs-flink-cdc.md) · [Flink CDC 深入系列](https://xuyinyin.cn/flink-cdc-series/)
 
+> **2026-11-11 当前源码与证据：** 生产入口已经收敛为 CDC Runtime：共享捕获与 L、BootstrapJournal、窗口初始化和目标应用构成数据路径；guardian 的身份、隔离、排空和配额通过 `cdc.control` 保存。通用 Workflow Actor、执行引擎、节点注册表和 Cron 的执行实现属于历史测试设施，不进入生产包。历史表结构和状态解码器仍保留，不能把“无 Workflow 执行器”误解为可以删除历史数据库。独立子 JVM 在排除测试类的类路径上完成 C0 接管；70 万物理表及其资源上限仍未验证。 [拆分与验证记录](../../experiments/2026-11-08-cdc-standalone-entry/retire-workflow-runtime-20261111/README.md)。
+
 启动和资源释放的新补测见[A/B 故障记录](../../experiments/2026-10-27-ab-followup/README.md)。其中包含真实 MySQL 观察器故障，但尚未覆盖完整矩阵，也没有 70 万真实源表的资源结论。
 
 > **文章修订：2026-10-27。** 当前平台路径按仓库源码说明，最终源码版本与本轮运行结果统一见[平台报告](../../experiments/2026-10-27-cdc-platform/README.md)。已提交 `74b6d9a` 的启动准入实测另见[A1/A2 报告](../../experiments/2026-10-27-capture-admission/README.md)。历史版本和失败材料保留，不把新增代码直接写成端到端验收通过。

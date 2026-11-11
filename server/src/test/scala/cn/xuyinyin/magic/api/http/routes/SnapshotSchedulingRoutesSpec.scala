@@ -1,8 +1,10 @@
 package cn.xuyinyin.magic.api.http.routes
 
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
+
 import cn.xuyinyin.magic.workflow.WorkflowFixtures
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
-import cn.xuyinyin.magic.workflow.scheduling._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.control._
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}
 import org.apache.pekko.http.scaladsl.model.{ContentTypes,HttpEntity,StatusCodes}
 import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest

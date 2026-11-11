@@ -1,5 +1,10 @@
-package cn.xuyinyin.magic.workflow.scheduling
+package cn.xuyinyin.magic.cdc.control
 
+
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
+
+
+import cn.xuyinyin.magic.cdc.guardian.{GuardianBinding}
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}
 
 /** Test-only fixed window: exit after account DDL and before recording its observation. */

@@ -1,12 +1,12 @@
 package cn.xuyinyin.magic.workflow.integration
 
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
-import cn.xuyinyin.magic.workflow.checkpoint.{BatchId, BatchCheckpoint, BatchCommitResult, SnapshotBoundary, SourceBatch}
+import cn.xuyinyin.magic.cdc.checkpoint.{BatchId, BatchCheckpoint, BatchCommitResult, SnapshotBoundary, SourceBatch}
 import cn.xuyinyin.magic.workflow.execution.{WorkflowExecutionEngine, ReliableRunContext}
 import cn.xuyinyin.magic.workflow.engine.{ExecutionResult}
 import cn.xuyinyin.magic.workflow.TestNodeRegistry
-import cn.xuyinyin.magic.workflow.events.WorkflowEvents._
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.compat.WorkflowEvents._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
 import cn.xuyinyin.magic.connectors.mysql.sink.{MySQLCdcApplySinkNode, MySQLCdcApplyConfig}
 import cn.xuyinyin.magic.connectors.mysql.source.{DebeziumEngineAccess, DebeziumEngineFactory, MySQLCdcSourceNode, MySQLCdcStateConfig}
 import com.typesafe.config.ConfigFactory
@@ -207,7 +207,7 @@ object RealMySQLCdcGroupRecoveryProcess {
             emit("J_REJECTION_READY", "checkpoint"->checkpointJson(cp), "proposed"->checkpointJson(proposed), "launch"->JsNumber(launch))
             rejectionGate.future.flatMap(_=>c.checkpointCommitted(proposed))(ec).andThen {
               case Failure(error) =>
-                val failure=cn.xuyinyin.magic.workflow.engine.ExecutionFailure.from(error,"journal")
+                val failure=cn.xuyinyin.magic.cdc.recovery.ExecutionFailure.from(error,"journal")
                 emit("J_EXPLICIT_REJECTION", "code"->JsString(failure.code), "stage"->JsString(failure.stage),
                   "proposed"->checkpointJson(proposed))
               case Success(_) => emit("J_UNEXPECTED_ACCEPTANCE")

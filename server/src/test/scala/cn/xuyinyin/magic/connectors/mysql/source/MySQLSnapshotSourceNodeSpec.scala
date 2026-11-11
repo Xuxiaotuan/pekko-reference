@@ -1,8 +1,8 @@
 package cn.xuyinyin.magic.connectors.mysql.source
 
 import cn.xuyinyin.magic.testkit.STSpec
-import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, SnapshotBoundary, SourceCursor}
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, SnapshotBoundary, SourceCursor}
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import cn.xuyinyin.magic.connectors.jdbc.JdbcPasswordResolver
 import com.typesafe.config.ConfigFactory
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
@@ -190,7 +190,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
         f.failClose = true
         val base = f.snapshotNode()
         val n = base.copy(config = JsObject(base.config.fields + ("splitRows" -> JsNumber(4))))
-        val error = intercept[cn.xuyinyin.magic.workflow.engine.CdcExecutionException] {
+        val error = intercept[cn.xuyinyin.magic.cdc.recovery.CdcExecutionException] {
           Await.result(f.node.discoverBoundary(n, None, _ => ()), 5.seconds)
         }
         error.failure.releaseConfirmed shouldBe false
@@ -198,7 +198,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
     }
 
     "discover real-key splits and resume pages independently inside their fixed ranges" in {
-      import cn.xuyinyin.magic.workflow.snapshot._
+      import cn.xuyinyin.magic.cdc.snapshot._
       withFixture() { f =>
         val node = f.snapshotNode()
         val plan = SnapshotSplitPlanState("p", node.id, "fixed", Some("12"), 2, 3, 2, 4096)

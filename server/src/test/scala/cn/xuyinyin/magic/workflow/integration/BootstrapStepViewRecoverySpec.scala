@@ -2,8 +2,8 @@ package cn.xuyinyin.magic.workflow.integration
 
 import cn.xuyinyin.magic.connectors.mysql.source._
 import cn.xuyinyin.magic.connectors.mysql.source.capture._
-import cn.xuyinyin.magic.workflow.bootstrap._
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.bootstrap._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
 import cn.xuyinyin.magic.tags.ExternalIntegration
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
@@ -98,11 +98,10 @@ class BootstrapStepViewRecoverySpec extends AnyWordSpec with Matchers {
         awaitCondition("actual capture admission", 90.seconds)(capture.startupEvidence.phase == "ADMISSION_READY")
         val codec = new BootstrapRowCodec(log.schema("a").get.definition)
         val target = new BootstrapTarget(() => stateOpen(), "target_a", codec, id)
-        val node = Node("target", "sink", "mysql.cdc.apply", "real target", Position(0, 0), JsObject("host" -> JsString(state.host),
-          "port" -> JsNumber(state.port), "database" -> JsString(schema), "table" -> JsString("target_a"), "username" -> JsString(state.user), "passwordEnv" -> JsString("CDC_WINDOW_MYSQL_PASSWORD")))
+        val targetConfig = cn.xuyinyin.magic.connectors.mysql.sink.MySQLCdcApplyConfig.trusted(state.host,state.port,schema,"target_a",state.user,state.password)
         def runner(access: BootstrapJournalAccess) = new BootstrapRunner(id, "a", "g1", "same-owner-view-recovery", capture, log, spool, target,
           access, new BootstrapSnapshot(() => sourceOpen(), "a", codec, 10000, 8L * 1024 * 1024, event),
-          new BootstrapReplaySink(_ => stateOpen()).bind(node), schema, () => stateOpen(), admission, BootstrapLimits(chunkRows = 16, pageRows = 4), event)(ExecutionContext.parasitic)
+          new BootstrapReplaySink(_ => stateOpen()).bind(targetConfig), schema, () => stateOpen(), admission, BootstrapLimits(chunkRows = 16, pageRows = 4), event)(ExecutionContext.parasitic)
         firstJournal = kit.spawn(BootstrapJournal(captureId + "-" + id), "first")
         val first = runner(new BootstrapJournalAccess(firstJournal)); var cut: BootstrapStepResult = null
         awaitCondition("actual RAW page failure returned a clean step", 90.seconds) { cut = first.step(); cut.progress.recoveryAttempts == 1 }

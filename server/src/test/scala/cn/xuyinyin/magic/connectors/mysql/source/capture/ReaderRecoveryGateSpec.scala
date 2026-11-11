@@ -1,7 +1,7 @@
 package cn.xuyinyin.magic.connectors.mysql.source.capture
 
 import cn.xuyinyin.magic.connectors.mysql.source.{MySQLCdcSourceConfig,MySQLCdcStateConfig}
-import cn.xuyinyin.magic.workflow.cdc.CdcTaskStore
+import cn.xuyinyin.magic.cdc.platform.CdcTaskStore
 import java.sql.Connection
 import java.util.concurrent.{CountDownLatch,Executors,TimeUnit}
 import org.scalatest.matchers.should.Matchers

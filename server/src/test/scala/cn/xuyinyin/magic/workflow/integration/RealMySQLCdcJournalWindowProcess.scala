@@ -1,11 +1,11 @@
 package cn.xuyinyin.magic.workflow.integration
 
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
-import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchCommitResult, SnapshotBoundary, SourceBatch}
+import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, BatchCommitResult, SnapshotBoundary, SourceBatch}
 import cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine
 import cn.xuyinyin.magic.workflow.TestNodeRegistry
-import cn.xuyinyin.magic.workflow.events.WorkflowEvents.ExecutionCheckpointAdvanced
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.compat.WorkflowEvents.ExecutionCheckpointAdvanced
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
 import cn.xuyinyin.magic.connectors.mysql.sink.MySQLCdcApplySinkNode
 import cn.xuyinyin.magic.connectors.mysql.source.{DebeziumEngineAccess, DebeziumEngineFactory, MySQLCdcSourceNode, MySQLCdcStateConfig}
 import com.typesafe.config.ConfigFactory

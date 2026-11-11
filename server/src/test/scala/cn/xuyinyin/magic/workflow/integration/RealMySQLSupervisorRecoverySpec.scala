@@ -1,7 +1,13 @@
 package cn.xuyinyin.magic.workflow.integration
 
+import cn.xuyinyin.magic.cdc.guardian.SnapshotSupervisorSettings
+
+
+
+import cn.xuyinyin.magic.cdc.guardian.{GuardianBinding, SupervisorControl}
+import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
 import cn.xuyinyin.magic.tags.ExternalIntegration
-import cn.xuyinyin.magic.workflow.scheduling._
+import cn.xuyinyin.magic.cdc.control._
 import com.typesafe.config.{ConfigFactory,ConfigRenderOptions}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
@@ -110,7 +116,7 @@ class RealMySQLSupervisorRecoverySpec extends AnyWordSpec with Matchers {
         proxy.foreach(p=>Files.writeString(dir.resolve("proxy-port"),p.port.toString))
         val settings=new SnapshotSupervisorSettings(config);implicit val ec:ExecutionContext=ExecutionContext.global
         val proxyRole=if(scenario=="S10_TARGET_RESIDUAL")"target" else if(scenario=="S10_SOURCE_RESIDUAL")"source" else "journal"
-        val execution=Await.result(new TableSchedulingRuntime(settings.tableStore,"harness").submit(SupervisorRecoveryTest.workflow(s,schema,proxy.map(_.port),proxyRole),"takeover-one"),10.seconds).executionId.get
+        val execution=Await.result(new TableSchedulingRuntime(cn.xuyinyin.magic.cdc.control.LegacySupervisorHarness.tableStore(settings),"harness").submit(SupervisorRecoveryTest.workflow(s,schema,proxy.map(_.port),proxyRole),"takeover-one"),10.seconds).executionId.get
         val children=scala.collection.mutable.ArrayBuffer.empty[(String,Child)]
         def start(name:String,main:String,args:String*):Child={
           val p=new ProcessBuilder((Vector(Path.of(System.getProperty("java.home"),"bin","java").toString,"-Xmx256m","-Duser.timezone=UTC","-cp",cp,main)++args).toArray:_*).redirectErrorStream(true).start()
@@ -200,9 +206,9 @@ class RealMySQLSupervisorRecoverySpec extends AnyWordSpec with Matchers {
               first.fields("instances").asInstanceOf[JsArray].elements.filter(_.asJsObject.fields("owner_id")==JsString(oldBoot)).foreach(_.asJsObject.fields("empty_rounds") shouldBe JsString("1"))
               b.kill();finalSupervisor=supervisor("C")
             }else if(residual || scenario=="S10_OBSERVER_DENIED") {
-              awaitCondition("proof recorded but old quota still charged",30.seconds){settings.tableStore.ownership.get.owner(oldBoot).exists(o=>Set("fenced","drain_wait").contains(o.phase))}
+              awaitCondition("proof recorded but old quota still charged",30.seconds){cn.xuyinyin.magic.cdc.control.LegacySupervisorHarness.tableStore(settings).ownership.get.owner(oldBoot).exists(o=>Set("fenced","drain_wait").contains(o.phase))}
               Thread.sleep(350);val waiting=state;write(dir,"blocked-before-database-release.json",waiting)
-              settings.tableStore.get("table-00").get.grantId shouldBe cut.fields("data").asJsObject.fields("control").asInstanceOf[JsArray].elements.head.asJsObject.fields.get("grant_id").filter(_!=JsNull).map(_.convertTo[String])
+              cn.xuyinyin.magic.cdc.control.LegacySupervisorHarness.tableStore(settings).get("table-00").get.grantId shouldBe cut.fields("data").asJsObject.fields("control").asInstanceOf[JsArray].elements.head.asJsObject.fields.get("grant_id").filter(_!=JsNull).map(_.convertTo[String])
               settings.metadata.pending.map(_.bootId) shouldBe Vector(oldBoot)
               if(residual){
                 val afterExit=database;write(dir,"database-after-worker-exit.json",afterExit)
@@ -215,11 +221,11 @@ class RealMySQLSupervisorRecoverySpec extends AnyWordSpec with Matchers {
               workerEvent(dir,second,if(scenario=="S11_PERMIT_REPLY_LOST")"PERMIT_READBACK_WAIT" else if(scenario=="S12_RECOVERY_JOURNAL")"RECOVERY_JOURNAL_WAIT" else "CUTPOINT")
               write(dir,"before-second-restart.json",state);b.kill();finalSupervisor=supervisor("C")
               if(scenario=="S12_RECOVERY_JOURNAL") {
-                awaitCondition("second owner fenced before releasing old Journal server request",30.seconds){settings.tableStore.ownership.get.owner(second).exists(o=>Set("fenced","drain_wait").contains(o.phase))}
+                awaitCondition("second owner fenced before releasing old Journal server request",30.seconds){cn.xuyinyin.magic.cdc.control.LegacySupervisorHarness.tableStore(settings).ownership.get.owner(second).exists(o=>Set("fenced","drain_wait").contains(o.phase))}
                 write(dir,"second-owner-drain-wait.json",state);query(holder,s"SELECT RELEASE_LOCK('${gate}-recovery')")
               }
             }
-            awaitCondition("original execution completed automatically",90.seconds){settings.tableStore.get("table-00").exists(_.state=="completed")}
+            awaitCondition("original execution completed automatically",90.seconds){cn.xuyinyin.magic.cdc.control.LegacySupervisorHarness.tableStore(settings).get("table-00").exists(_.state=="completed")}
             val after=state;write(dir,"final.json",after)
             val data=after.fields("data").asJsObject;data.fields("comparison").asJsObject.fields("equal") shouldBe JsBoolean(true)
             data.fields("comparison").asJsObject.fields("sourceCount") shouldBe JsNumber(10)
@@ -234,7 +240,7 @@ class RealMySQLSupervisorRecoverySpec extends AnyWordSpec with Matchers {
               cp.fields("cursor").asJsObject.fields("upperBound") shouldBe row.fields("upper_bound")
               page.fields("executionId") shouldBe JsString(execution)
             }
-            settings.tableStore.get("table-00").get.executionId shouldBe Some(execution)
+            cn.xuyinyin.magic.cdc.control.LegacySupervisorHarness.tableStore(settings).get("table-00").get.executionId shouldBe Some(execution)
             val audit=after.fields("audit").asInstanceOf[JsArray].elements.map(_.asJsObject)
             val writes=withConnection(s,schema)(query(_,"SELECT * FROM supervisor_journal_writes ORDER BY sequence_number"));write(dir,"journal-writer-permits.json",writes)
             writes.elements should not be empty
@@ -243,7 +249,7 @@ class RealMySQLSupervisorRecoverySpec extends AnyWordSpec with Matchers {
               f("admission_sequence").convertTo[String].toLong should be >= permission.fields("event_sequence").convertTo[String].toLong
               f("generation").convertTo[String].toLong shouldBe permission.fields("details").convertTo[String].parseJson.asJsObject.fields("generation").convertTo[Long]
             }
-            val finalPermit=settings.tableStore.ownership.get.permit("table-00").get
+            val finalPermit=cn.xuyinyin.magic.cdc.control.LegacySupervisorHarness.tableStore(settings).ownership.get.permit("table-00").get
             if(scenario=="S11_PERMIT_REPLY_LOST" || scenario.startsWith("S12_")) {
               val controller=event(finalSupervisor,"CONTROLLER_BOUND").fields("controller").asJsObject
               after.fields("controller").asInstanceOf[JsArray].elements.head.asJsObject.fields("controller_boot") shouldBe controller.fields("bootId")

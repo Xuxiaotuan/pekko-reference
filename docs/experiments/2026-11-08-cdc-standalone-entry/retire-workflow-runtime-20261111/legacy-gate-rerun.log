@@ -1,0 +1,153 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[info] done compiling
+22:40:46,705 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+22:40:46,705 |-INFO in ch.qos.logback.classic.util.ContextInitializer@63acfdb5 - No custom configurators were discovered as a service.
+22:40:46,705 |-INFO in ch.qos.logback.classic.util.ContextInitializer@63acfdb5 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:40:46,706 |-INFO in ch.qos.logback.classic.util.ContextInitializer@63acfdb5 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+22:40:46,706 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+22:40:46,706 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+22:40:46,707 |-INFO in ch.qos.logback.classic.util.ContextInitializer@63acfdb5 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+22:40:46,707 |-INFO in ch.qos.logback.classic.util.ContextInitializer@63acfdb5 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:40:46,707 |-INFO in ch.qos.logback.classic.util.ContextInitializer@63acfdb5 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+22:40:46,707 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+22:40:46,707 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+22:40:46,734 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+22:40:46,734 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:40:46,737 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+22:40:46,745 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+22:40:46,745 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+22:40:46,745 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+22:40:46,745 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+22:40:46,746 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+22:40:46,746 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+22:40:46,746 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+22:40:46,747 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+22:40:46,747 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+22:40:46,747 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+22:40:46,747 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+22:40:46,747 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+22:40:46,747 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@43318235 - End of configuration.
+22:40:46,747 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@2b27c393 - Registering current configuration as safe fallback point
+22:40:46,747 |-INFO in ch.qos.logback.classic.util.ContextInitializer@63acfdb5 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 40 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+22:40:47.073 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+22:40:47.608 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.cluster.sharding.ShardRegion][0;39m - The `pekko.cluster.sharding.passivate-idle-entity-after` setting and associated methods are deprecated. Use the `pekko.cluster.sharding.passivation.default-idle-strategy.idle-entity.timeout` setting instead. See the documentation and reference config for more information on automatic passivation strategies.
+22:40:47.668 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.persistence.dispatchers.default-plugin-dispatcher-17][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Starting...
+22:40:47.672 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.persistence.dispatchers.default-plugin-dispatcher-17][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Start completed.
+22:40:47.979 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.i.ResumableFullSyncRecoverySpec$BeforeCheckpointGateEngine][0;39m - Starting workflow execution: full-sync-e204c678-f3ed-4399-bcc3-ac7f78590309
+22:40:47.986 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-18][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+22:40:47.993 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-18][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+22:40:47.996 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-18][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown initiated...
+22:40:48.054 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-18][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown completed.
+22:40:48.055 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-19][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Starting...
+22:40:48.060 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-19][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Start completed.
+22:40:48.067 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-19][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Shutdown initiated...
+22:40:48.120 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-19][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Shutdown completed.
+22:40:48.135 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-18][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Starting...
+22:40:48.154 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-18][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Start completed.
+22:40:48.161 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-18][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-4 - Starting...
+22:40:48.378 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-18][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-4 - Start completed.
+22:40:48.383 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-18][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-4 - Shutdown initiated...
+22:40:48.432 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-18][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-4 - Shutdown completed.
+22:40:48.568 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+22:40:49.625 [1;31mERROR[0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-6][0;39m [1;35m[c.x.m.w.i.ResumableFullSyncRecoverySpec$BeforeCheckpointGateEngine][0;39m - Workflow execution failed: full-sync-e204c678-f3ed-4399-bcc3-ac7f78590309 after 1646ms
+cn.xuyinyin.magic.cdc.recovery.CdcExecutionException: <redacted> owner stopped before checkpoint confirmation
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine.cn$xuyinyin$magic$workflow$execution$WorkflowExecutionEngine$$sanitizeRuntimeFailure(WorkflowExecutionEngine.scala:418)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:325)
+	at cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine$$anonfun$executeReliable$39.applyOrElse(WorkflowExecutionEngine.scala:319)
+	at scala.util.Failure.recover(Try.scala:233)
+	at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:487)
+	at org.apache.pekko.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:73)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:110)
+	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:94)
+	at org.apache.pekko.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:110)
+	at org.apache.pekko.dispatch.TaskInvocation.run(AbstractDispatcher.scala:59)
+	at org.apache.pekko.dispatch.ForkJoinExecutorConfigurator$PekkoForkJoinTask.exec(ForkJoinExecutorConfigurator.scala:61)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+Caused by: java.lang.IllegalStateException: <redacted> owner stopped before checkpoint confirmation
+	... 17 common frames omitted
+22:40:49.627 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.session-close-dispatcher-37][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown initiated...
+22:40:49.631 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.session-close-dispatcher-37][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown completed.
+22:40:50.608 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63610: 1008 millis
+22:40:50.706 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-13][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63602: 1023 millis
+22:40:51.623 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63610: 1018 millis
+22:40:51.725 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-21][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63602: 1019 millis
+22:40:52.646 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63610: 1024 millis
+22:40:52.747 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-13][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63602: 1022 millis
+22:40:53.668 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63610: 1021 millis
+22:40:53.768 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-21][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63602: 1021 millis
+22:40:54.653 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.c.s.DDataShardCoordinator][0;39m - Workflow: The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': 5000 millis (retrying). Attempt 1. Perhaps the ShardRegion has not started on all active nodes yet? event=ShardHomeDeallocated(89)
+22:40:54.688 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63610: 1020 millis
+22:40:54.784 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-13][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63602: 1016 millis
+22:40:55.708 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63610: 1020 millis
+22:40:55.804 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-21][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63602: 1020 millis
+22:40:56.727 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63610: 1019 millis
+22:40:56.823 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-13][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63602: 1019 millis
+22:40:57.747 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63610: 1020 millis
+22:40:57.846 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-21][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63602: 1023 millis
+22:40:58.768 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63610: 1021 millis
+22:40:58.862 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-13][0;39m [1;35m[o.a.p.r.PhiAccrualFailureDetector][0;39m - heartbeat interval is growing too large for address pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63602: 1016 millis
+22:40:59.653 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-6][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Coordinated shutdown phase [cluster-exiting] timed out after 10000 milliseconds
+22:40:59.685 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.apache.pekko.stream.Materializer][0;39m - [outbound connection to [pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63610], message stream] Upstream failed, cause: StreamTcpException: The connection has been aborted
+22:40:59.685 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.apache.pekko.stream.Materializer][0;39m - [outbound connection to [pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63610], control stream] Upstream failed, cause: StreamTcpException: The connection has been aborted
+22:40:59.691 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-6][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown initiated...
+22:40:59.734 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-6][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown completed.
+22:41:01.835 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-21][0;39m [1;35m[org.apache.pekko.cluster.Cluster][0;39m - Cluster Node [pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63610] - Marking node as UNREACHABLE [Member(pekko://resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48@127.0.0.1:63602, Down)].
+22:41:03.109 [31mWARN [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-21][0;39m [1;35m[o.a.p.cluster.sharding.ShardRegion][0;39m - The `pekko.cluster.sharding.passivate-idle-entity-after` setting and associated methods are deprecated. Use the `pekko.cluster.sharding.passivation.default-idle-strategy.idle-entity.timeout` setting instead. See the documentation and reference config for more information on automatic passivation strategies.
+22:41:03.120 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.persistence.dispatchers.default-plugin-dispatcher-28][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Starting...
+22:41:03.120 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.persistence.dispatchers.default-plugin-dispatcher-28][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Start completed.
+22:41:03.421 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-21][0;39m [1;35m[c.x.m.w.i.ResumableFullSyncRecoverySpec$AfterCheckpointGateEngine][0;39m - Starting workflow execution: full-sync-e204c678-f3ed-4399-bcc3-ac7f78590309
+22:41:03.422 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-29][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-5 - Starting...
+22:41:03.430 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-29][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-5 - Start completed.
+22:41:03.435 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-29][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-5 - Shutdown initiated...
+22:41:03.450 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-29][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-5 - Shutdown completed.
+22:41:03.451 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-32][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-6 - Starting...
+22:41:03.499 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-32][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-6 - Start completed.
+22:41:03.502 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-29][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-7 - Starting...
+22:41:03.507 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-29][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-7 - Start completed.
+22:41:03.509 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-29][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-7 - Shutdown initiated...
+22:41:03.562 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-29][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-7 - Shutdown completed.
+22:41:03.574 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-32][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-8 - Starting...
+22:41:03.631 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-32][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-8 - Start completed.
+22:41:03.634 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-32][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-8 - Shutdown initiated...
+22:41:03.651 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-32][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-8 - Shutdown completed.
+22:41:03.653 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-29][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-9 - Starting...
+22:41:03.695 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-29][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-9 - Start completed.
+22:41:03.697 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-29][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-9 - Shutdown initiated...
+22:41:03.713 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.jdbc-dispatcher-29][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-9 - Shutdown completed.
+22:41:03.715 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-21][0;39m [1;35m[c.x.m.w.i.ResumableFullSyncRecoverySpec$AfterCheckpointGateEngine][0;39m - Workflow executed successfully: full-sync-e204c678-f3ed-4399-bcc3-ac7f78590309 in 294ms
+22:41:03.716 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.session-close-dispatcher-38][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-6 - Shutdown initiated...
+22:41:03.731 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.workflow.session-close-dispatcher-38][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-6 - Shutdown completed.
+22:41:04.945 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-21][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown initiated...
+22:41:05.028 [34mINFO [0;39m [36m[resumable-full-sync-991e876a-64e7-4d54-ad6d-d788321fcc48-pekko.actor.default-dispatcher-21][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown completed.
+[info] ResumableFullSyncRecoverySpec:
+[info] a resumable mysql.snapshot workflow
+[info] - should replay a target-committed batch on a second node before completing the original execution
+[info]   + allocated local resources: ports=63602,63610 persistence=jdbc:h2:file:/var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/two-node-workflow-resumable-full-sync-5684057219818124630/persistence;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE;LOCK_TIMEOUT=10000 source=jdbc:h2:file:/var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/two-node-workflow-resumable-full-sync-5684057219818124630/source;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE;LOCK_TIMEOUT=10000 target=jdbc:h2:file:/var/folders/c0/wzxnynsn36vf746bn4vcx_9r0000gn/T/two-node-workflow-resumable-full-sync-5684057219818124630/target;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE;LOCK_TIMEOUT=10000 
+[info]   + released local resources: ports=63602,63610 databases=deleted actorSystems=terminated 
+[info] Run completed in 18 seconds, 610 milliseconds.
+[info] Total number of tests run: 1
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 1, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 22 s, completed 2026年11月11日 下午10:41:05
+[success] Total time: 0 s, completed 2026年11月11日 下午10:41:05

@@ -1,8 +1,23 @@
 package cn.xuyinyin.magic.workflow.integration
 
+import cn.xuyinyin.magic.workflow.scheduling.{TableGrant}
+
+import cn.xuyinyin.magic.cdc.control.CdcManagedControlStore
+
+import cn.xuyinyin.magic.cdc.guardian.{ManagedJvmIsolation, SnapshotTakeoverCoordinator, ManagedSnapshotChild}
+
+import cn.xuyinyin.magic.cdc.guardian.MySqlOwnerDrainObserver
+
+
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
+
+
+
+import cn.xuyinyin.magic.cdc.control.{CutoverAuthorizationKey}
+import cn.xuyinyin.magic.cdc.guardian.{SnapshotIsolationReceipt}
 import cn.xuyinyin.magic.tags.ExternalIntegration
-import cn.xuyinyin.magic.workflow.scheduling._
-import cn.xuyinyin.magic.workflow.snapshot.SnapshotSplitFingerprint
+import cn.xuyinyin.magic.cdc.control._
+import cn.xuyinyin.magic.cdc.compat.nodes.SnapshotSplitFingerprint
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers

@@ -30,8 +30,8 @@ class RealMySQLCdcGroupRecoverySpec extends AnyWordSpec with Matchers {
       }
       val connection = Map[String, JsValue]("host" -> JsString(settings.host), "port" -> JsNumber(settings.port),
         "database" -> JsString(schema), "username" -> JsString(settings.user), "passwordEnv" -> JsString("CDC_WINDOW_MYSQL_PASSWORD"))
-      val source = cn.xuyinyin.magic.workflow.model.WorkflowDSL.Node("source", "source", "mysql.cdc", "source",
-        cn.xuyinyin.magic.workflow.model.WorkflowDSL.Position(0,0), JsObject(connection ++ Map("table" -> JsString("source_rows"),
+      val source = cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.Node("source", "source", "mysql.cdc", "source",
+        cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.Position(0,0), JsObject(connection ++ Map("table" -> JsString("source_rows"),
           "connectorId" -> JsString("groups_" + suffix), "serverId" -> JsNumber(54321), "maxBatchSize" -> JsNumber(16),
           "pollIntervalMillis" -> JsNumber(1000), "groupProtocol" -> JsObject("replicationId" -> JsString("groups_" + suffix),
             "generation" -> JsString("g1"), "sourceLineage" -> JsString(lineage), "initializedTarget" -> JsBoolean(true)))))

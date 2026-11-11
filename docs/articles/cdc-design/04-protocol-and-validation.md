@@ -2,6 +2,8 @@
 
 [系列导读与验证范围](README.md) · [1：目标架构](01-why-pekko-for-resident-cdc.md) · [2：批转流源码](02-source-and-recovery-contract.md) · [3：真实实验](03-real-mysql-journal-failure.md) · [4：恢复协议](04-protocol-and-validation.md) · [5：自建与复用](05-pekko-vs-flink-cdc.md) · [Flink CDC 深入系列](https://xuyinyin.cn/flink-cdc-series/)
 
+> **2026-11-11 当前源码与证据：** 生产证明链保留 BootstrapJournal 实际签发的进程内对象身份，并在投影事务中核验对应 Journal 的精确内容、最新序列和删除标记。进程内登记不能跨 JVM 搬运；恢复后的 Actor 必须从持久 Journal 重新签发。独立 JVM 实测拒绝同字段伪造对象，真实重签后才推进 journal_floor。同一 JVM 持有的旧对象在 Journal 未变化时仍可能有效，它不是随 Actor 停止自动撤销的能力。旧 Workflow receipt、兼容适配器及投影只留在历史测试设施。当前 L 没有生产删除路径，归档校验和 floor 推进不等于安全 GC 已实现；不能据此声称已经闭合保留期、容量或清理证明。 [拆分与验证记录](../../experiments/2026-11-08-cdc-standalone-entry/retire-workflow-runtime-20261111/README.md)。
+
 [A/B 补测](../../experiments/2026-10-27-ab-followup/README.md)中，源 marker 回复不确定时保留原身份并暂停；观察连接断开与权限缺失单列为真实 MySQL 组件结果。取消先于 marker 绑定的样本中，订阅未复活，但代码仍可能发出 `B_BOUND` 观察事件；判断持久绑定须读取实际屏障。尚缺的固定门、旧状态证明和跨 JVM 资源准入仍为 `evidence_incomplete`。
 
 > **文章修订：2026-10-27。** G1—G4 的原实验链接保留原冻结版本；启动门已提交于 [`74b6d9a`](https://github.com/Xuxiaotuan/pekko-reference/tree/74b6d9ad1ebcfe19a786f4e1869aed276a63bb52)。有界 step、SQL owner/grant 与受管释放按本轮候选源码论证；其冻结版本及真实验证结果见[平台实验报告](../../experiments/2026-10-27-cdc-platform/README.md)。源码分支不是自动恢复的实验结果。

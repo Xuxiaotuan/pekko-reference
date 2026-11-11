@@ -4,6 +4,21 @@
 
 2026-10-27 的修订把持久任务索引、有界步骤和平台入口接回原来的五篇主线：目标与执行资源 → 分页/LOW/HIGH/B→F 源码 → 真实实验与反例 → 恢复状态与确认协议 → 与 Flink CDC 的具体取舍。源码变化、当前实测和历史材料分别标识；Actor 机制、旧 T/J/D 推导及失败仍保留在独立[技术附录](appendices/README.md)。文章更新不自动改变旧实验的版本或结果。
 
+## 独立 Runtime 的当前边界（2026-11-11）
+
+生产 `workflow` 目录已移除；历史执行器、Actor 和旧 receipt 投影保留为测试设施。生产包保留历史状态模型及旧 manifest 迁移，数据路径使用 BootstrapJournal。guardian 与控制存储实现位于 `cdc.guardian` / `cdc.control`。历史表结构、锁行和配额没有随目录清理删除。
+
+| 事项 | 当前依据 | 结论边界 |
+|---|---|---|
+| 生产执行器拆分 | 干净编译、生产 JAR 类清单 | 无旧 Actor/执行器类；不等于历史数据库整体升级验收 |
+| 历史持久化读取 | 18 个冻结序列化样本；真实旧 Journal 字节重放 | 类迁移与字节内容检查通过；完整数据库升级未验证 |
+| worker 隔离接管 | 排除测试类的独立 guardian/supervisor/worker；真实 MySQL、Journal、Sink | C0 的 64 行、384 字段一致；不覆盖 guardian JVM 重启 |
+| receipt 重启 | Bootstrap 独立 JVM 从 Journal 恢复并重签；伪造副本拒绝 | 证明重签及投影；不证明 L 实际删除或任意字节码攻击防护 |
+| 未知 B | C1 的 PAUSED、UNKNOWN grant 及失败日志保留 | 安全暂停；自动恢复未通过 |
+| L 的 GC | 源码仅有归档和保留位置投影，没有生产删除路径 | 尚未实现，不能以 floor 推进替代 GC 验收 |
+
+[本轮源码与实验材料](../../experiments/2026-11-08-cdc-standalone-entry/retire-workflow-runtime-20261111/README.md)固定运行范围。以下各历史报告仍按原版本解释，不因目录调整重标通过。
+
 ## 阅读顺序
 
 | 篇目 | 本篇要讲透的问题 |

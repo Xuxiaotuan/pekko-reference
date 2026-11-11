@@ -1,5 +1,12 @@
-package cn.xuyinyin.magic.workflow.scheduling
+package cn.xuyinyin.magic.cdc.control
 
+
+import cn.xuyinyin.magic.cdc.control.CdcManagedControlStore
+
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
+
+
+import cn.xuyinyin.magic.cdc.guardian.{SnapshotOwnerIdentity}
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
@@ -15,9 +22,15 @@ class CdcControlStoreMySqlSpec extends AnyWordSpec with Matchers {
       val entered=new CountDownLatch(1);val attempting=new CountDownLatch(1);val acquired=new CountDownLatch(1);val release=new CountDownLatch(1)
       try {
         val c=ds.getConnection
-        try Vector("db/mysql/pekko-table-scheduling-schema.sql","db/mysql/pekko-snapshot-ownership-schema.sql","db/mysql/pekko-snapshot-supervisor-schema.sql").foreach { name=>
+        try {
+          val check=c.createStatement()
+          try {val r=check.executeQuery("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE()")
+            try {require(r.next() && r.getLong(1)==0,"control-store probe requires a fresh empty schema; retained evidence must not be reused")}finally r.close()
+          }finally check.close()
+          Vector("db/mysql/pekko-table-scheduling-schema.sql","db/mysql/pekko-snapshot-ownership-schema.sql","db/mysql/pekko-snapshot-supervisor-schema.sql").foreach { name=>
           val in=getClass.getClassLoader.getResourceAsStream(name);val sql=try scala.io.Source.fromInputStream(in).mkString finally in.close()
           sql.split(";").map(_.trim).filter(_.nonEmpty).foreach { text=>val q=c.createStatement();try q.execute(text) finally q.close() }
+          }
         } finally c.close()
         val limits=SchedulingLimits(2,1,8,1,1048576,8)
         val legacy=new TableSchedulingStore(ds,limits,ownershipEnabled=true);val cdc=new CdcManagedControlStore(ds,limits)

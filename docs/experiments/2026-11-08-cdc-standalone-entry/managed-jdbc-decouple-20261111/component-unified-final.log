@@ -1,0 +1,229 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[info] done compiling
+[success] Total time: 3 s, completed 2026年11月11日 下午12:57:48
+12:57:49,278 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+12:57:49,279 |-INFO in ch.qos.logback.classic.util.ContextInitializer@4a48e7d0 - No custom configurators were discovered as a service.
+12:57:49,279 |-INFO in ch.qos.logback.classic.util.ContextInitializer@4a48e7d0 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+12:57:49,279 |-INFO in ch.qos.logback.classic.util.ContextInitializer@4a48e7d0 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+12:57:49,280 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+12:57:49,280 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+12:57:49,281 |-INFO in ch.qos.logback.classic.util.ContextInitializer@4a48e7d0 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+12:57:49,281 |-INFO in ch.qos.logback.classic.util.ContextInitializer@4a48e7d0 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+12:57:49,282 |-INFO in ch.qos.logback.classic.util.ContextInitializer@4a48e7d0 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+12:57:49,282 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+12:57:49,282 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+12:57:49,309 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+12:57:49,309 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+12:57:49,312 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+12:57:49,319 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+12:57:49,319 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+12:57:49,320 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+12:57:49,320 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+12:57:49,320 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+12:57:49,320 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+12:57:49,321 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+12:57:49,321 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+12:57:49,322 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+12:57:49,322 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+12:57:49,322 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+12:57:49,322 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+12:57:49,322 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@27299153 - End of configuration.
+12:57:49,322 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@7d513ab9 - Registering current configuration as safe fallback point
+12:57:49,322 |-INFO in ch.qos.logback.classic.util.ContextInitializer@4a48e7d0 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 40 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+[info] SnapshotGuardianSpec:
+[info] production launch configuration
+[info] - should reject a legacy worker before opening its control connection pool
+[info] - should allow ordinary JDBC connections without installing a managed owner
+[info] - should refuse managed launch properties when the worker HA bootstrap is disabled
+[info] - should select the independent CDC entry and allow its worker to disable workflow dispatch
+[info] - should append control attributes to both legal MySQL URL forms without changing the database
+[info] - should refuse a worker profile with another deployment or scheduling database
+[info] guardian signed evidence
+[info] - should verify an isolation receipt saved before control identities were moved
+[info] - should reject legacy grants that could modify account or proxy authority
+[info] - should bind a signed worker challenge to its nonce, controller context and owner identity
+[info] - should count a foreign-tagged session that uses an exclusive CDC account
+[info] - should require directly granted global process visibility
+[info] - should reject disabled or missing observer connection attributes
+[info] - should include a dedicated material account in the state endpoint's exclusive drain inventory
+[info] - should reject a modified response or another guardian public key
+[info] - should bind proof to the original worker and operation, not merely a provider string
+12:57:49.521 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+12:57:49.530 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-1 - Added connection conn1: url=jdbc:h2:mem:7b906882-98a7-4e75-a4d4-7ad98a4c5547 user=SA
+12:57:49.531 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+12:57:49.573 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown initiated...
+12:57:49.573 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Shutdown completed.
+12:57:49.574 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Starting...
+12:57:49.575 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-2 - Added connection conn2: url=jdbc:h2:mem:24fb70f0-173f-45cd-93a4-6531d3cf2550 user=SA
+12:57:49.575 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Start completed.
+12:57:49.590 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Shutdown initiated...
+12:57:49.591 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-2 - Shutdown completed.
+12:57:49.591 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Starting...
+12:57:49.592 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-3 - Added connection conn3: url=jdbc:h2:mem:cbfbb159-3563-44a3-9377-315f826f86b9 user=SA
+12:57:49.592 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Start completed.
+12:57:49.870 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown initiated...
+12:57:49.870 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-3 - Shutdown completed.
+12:57:49.872 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-4 - Starting...
+12:57:49.877 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-4 - Added connection conn7: url=jdbc:h2:mem:44c24a40-efc1-4229-8574-a2d0d6aa31bb user=SA
+12:57:49.878 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-4 - Start completed.
+12:57:49.907 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-4 - Shutdown initiated...
+12:57:49.907 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-4 - Shutdown completed.
+12:57:49.908 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-5 - Starting...
+12:57:49.909 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-5 - Added connection conn8: url=jdbc:h2:mem:079c011d-9886-44bb-9a5e-951844224455 user=SA
+12:57:49.909 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-5 - Start completed.
+12:57:49.916 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-5 - Shutdown initiated...
+12:57:49.917 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-5 - Shutdown completed.
+12:57:49.917 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-6 - Starting...
+12:57:49.918 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-6 - Added connection conn9: url=jdbc:h2:mem:bd1d343d-e453-4a20-a1f8-7f49c2245dce user=SA
+12:57:49.918 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-6 - Start completed.
+12:57:49.941 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-6 - Shutdown initiated...
+12:57:49.941 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-6 - Shutdown completed.
+12:57:49.942 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-7 - Starting...
+12:57:49.942 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-7 - Added connection conn10: url=jdbc:h2:mem:81560d39-3ba1-4be8-a78c-4111eb8725e7 user=SA
+12:57:49.942 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-7 - Start completed.
+12:57:50.207 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-7 - Shutdown initiated...
+12:57:50.208 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-7 - Shutdown completed.
+12:57:50.210 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-8 - Starting...
+12:57:50.214 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-8 - Added connection conn13: url=jdbc:h2:mem:e61a4b74-6f20-4d93-b426-111edbba6b42 user=SA
+12:57:50.214 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-8 - Start completed.
+12:57:50.237 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-8 - Shutdown initiated...
+12:57:50.237 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-8 - Shutdown completed.
+12:57:50.238 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-9 - Starting...
+12:57:50.239 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-9 - Added connection conn14: url=jdbc:h2:mem:5c551cbf-b39f-49c1-9581-0b53d6ad9414 user=SA
+12:57:50.239 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-9 - Start completed.
+12:57:50.245 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-9 - Shutdown initiated...
+12:57:50.246 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-9 - Shutdown completed.
+12:57:50.246 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-10 - Starting...
+12:57:50.247 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-10 - Added connection conn15: url=jdbc:h2:mem:4a318c8e-eb35-41f2-8051-88d9472c7d40 user=SA
+12:57:50.247 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-10 - Start completed.
+12:57:50.503 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-10 - Shutdown initiated...
+12:57:50.503 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-10 - Shutdown completed.
+12:57:50.504 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-11 - Starting...
+12:57:50.505 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-11 - Added connection conn19: url=jdbc:h2:mem:3994adf0-6d26-47b4-be90-30c1c81416bf user=SA
+12:57:50.505 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-11 - Start completed.
+12:57:50.889 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-11 - Shutdown initiated...
+12:57:50.890 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-11 - Shutdown completed.
+12:57:50.890 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-12 - Starting...
+12:57:50.891 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-12 - Added connection conn23: url=jdbc:h2:mem:e65c393c-3188-49ad-b7cd-ccdbe3bd5cb3 user=SA
+12:57:50.891 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-12 - Start completed.
+WARNING: A terminally deprecated method in java.lang.System has been called
+WARNING: System::setSecurityManager has been called by cn.xuyinyin.magic.workflow.scheduling.SnapshotSupervisorStoreSpec (file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes/)
+WARNING: Please consider reporting this to the maintainers of cn.xuyinyin.magic.workflow.scheduling.SnapshotSupervisorStoreSpec
+WARNING: System::setSecurityManager will be removed in a future release
+12:57:50.904 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-12 - Shutdown initiated...
+12:57:50.904 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-12 - Shutdown completed.
+12:57:50.905 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-13 - Starting...
+12:57:50.905 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-13 - Added connection conn24: url=jdbc:h2:mem:26ac888f-fc9d-4a26-ad44-d2146b5fc936 user=SA
+12:57:50.905 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-13 - Start completed.
+12:57:51.150 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-13 - Shutdown initiated...
+12:57:51.150 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-13 - Shutdown completed.
+12:57:51.151 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-14 - Starting...
+12:57:51.152 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-14 - Added connection conn28: url=jdbc:h2:mem:f332477f-19be-48de-b529-f565c7da3a68 user=SA
+12:57:51.152 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-14 - Start completed.
+12:57:51.307 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-14 - Shutdown initiated...
+12:57:51.307 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-14 - Shutdown completed.
+12:57:51.307 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-15 - Starting...
+12:57:51.308 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-15 - Added connection conn32: url=jdbc:h2:mem:06ec67c0-33b7-4d10-a259-57e36bca1973 user=SA
+12:57:51.308 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-15 - Start completed.
+12:57:51.349 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-15 - Shutdown initiated...
+12:57:51.350 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-15 - Shutdown completed.
+12:57:51.350 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-16 - Starting...
+12:57:51.350 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-16 - Added connection conn33: url=jdbc:h2:mem:388f78f9-4677-4707-9163-de556407b5a9 user=SA
+12:57:51.351 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-16 - Start completed.
+12:57:51.354 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-16 - Shutdown initiated...
+12:57:51.354 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-16 - Shutdown completed.
+12:57:51.354 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-17 - Starting...
+12:57:51.355 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-17 - Added connection conn34: url=jdbc:h2:mem:8bb29a1a-a15a-4ff6-9e6d-bf235501946b user=SA
+12:57:51.355 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-17 - Start completed.
+12:57:51.357 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-17 - Shutdown initiated...
+12:57:51.357 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-17 - Shutdown completed.
+12:57:51.357 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-18 - Starting...
+12:57:51.357 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-18 - Added connection conn35: url=jdbc:h2:mem:2182a8d3-66f4-4c09-8971-f74eb284fccf user=SA
+12:57:51.357 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-18 - Start completed.
+12:57:51.359 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-18 - Shutdown initiated...
+12:57:51.359 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-18 - Shutdown completed.
+12:57:51.361 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-19 - Starting...
+12:57:51.362 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-19 - Added connection conn36: url=jdbc:h2:mem:21de271d-1300-4e24-b73e-4e08a40dc4c9 user=SA
+12:57:51.362 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-19 - Start completed.
+12:57:51.364 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-19 - Shutdown initiated...
+12:57:51.364 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-19 - Shutdown completed.
+12:57:51.365 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-20 - Starting...
+12:57:51.365 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-20 - Added connection conn37: url=jdbc:h2:mem:692fa966-d0e5-4a5b-9d09-f9b9bd1af405 user=SA
+12:57:51.365 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-20 - Start completed.
+12:57:51.368 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-20 - Shutdown initiated...
+12:57:51.368 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-20 - Shutdown completed.
+12:57:51.368 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-21 - Starting...
+12:57:51.369 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-21 - Added connection conn38: url=jdbc:h2:mem:6e0d77d6-4a84-445b-971d-98c870833a3a user=SA
+12:57:51.369 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-21 - Start completed.
+12:57:51.371 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-21 - Shutdown initiated...
+12:57:51.371 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-21 - Shutdown completed.
+12:57:51.372 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-22 - Starting...
+12:57:51.372 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-22 - Added connection conn39: url=jdbc:h2:mem:fb467e5c-204b-4a75-9c34-3f86aeb03f96 user=SA
+12:57:51.372 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-22 - Start completed.
+12:57:51.376 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-22 - Shutdown initiated...
+12:57:51.376 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-22 - Shutdown completed.
+12:57:51.377 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-23 - Starting...
+12:57:51.377 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.pool.HikariPool][0;39m - HikariPool-23 - Added connection conn40: url=jdbc:h2:mem:24dff252-840b-4e82-a0f3-66db908ce90f user=SA
+12:57:51.377 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-23 - Start completed.
+12:57:51.387 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-23 - Shutdown initiated...
+12:57:51.387 [34mINFO [0;39m [36m[pool-8-thread-2-ScalaTest-running-SnapshotSupervisorStoreSpec][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-23 - Shutdown completed.
+[info] SnapshotSupervisorStoreSpec:
+[info] supervisor control transactions
+[info] - should parse explicit cutover binding plans without secrets
+[info] - should refuse cutover before a guardian-signed isolation proof
+[info] - should persist an idempotent cutover authorization and credential binding without a secret
+[info] - should serialize controller replacement with a fenced cutover side effect
+[info] - should persist an immutable legacy account lock intent across controller replacement
+[info] - should refuse legacy admission after the durable policy changes
+[info] - should retain legacy quota until the owner is drained when using CDC control storage
+[info] - should serialize distinct control and legacy scheduling transaction instances on the same lock
+[info] - should open a migrated control policy only after an explicit durable switch
+[info] - should reject an owner registry from another transaction context
+[info] - should attest only the original live worker independently of supervisor sequence
+[info] - should isolate a live worker when its managed CDC owner needs recovery
+[info] - should keep a fork with failed identity lookup unknown instead of cancelling it as never started
+[info] - should prune only proven ended active-owner sessions so a healthy worker can keep opening pages
+[info] - should continue drain observation after the wake budget is exhausted
+[info] - should pause before drain transitions when guardian control disappears after receiving its proof
+[info] - should reject replacing the original capability even when a pending fork has no recorded PID
+[info] - should keep nested ownership reads on the admission transaction connection
+[info] - should roll back nested owner changes when the enclosing controller transaction fails
+[info] - should retain launch quota and reject stale controller writes after restart
+[info] - should bind cancelled tickets permanently and never reuse a boot
+[info] - should not rebind a live deployment to a new guardian or change its worker policy
+[info] - should freeze the original isolation operation and require complete drain before retirement
+[info] - should recover the guardian process slot when SQL retirement committed but RETIRE RPC never arrived
+12:57:51.471 [34mINFO [0;39m [36m[standalone-close-wait-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+12:57:51.947 [34mINFO [0;39m [36m[standalone-close-wait-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+12:57:51.966 [34mINFO [0;39m [36m[standalone-close-unknown-pekko.actor.default-dispatcher-5][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+12:57:52.334 [34mINFO [0;39m [36m[standalone-close-unknown-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [ActorSystemTerminateReason]
+12:57:52.349 [34mINFO [0;39m [36m[standalone-close-hook-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+12:57:52.364 [34mINFO [0;39m [36m[standalone-close-hook-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.actor.CoordinatedShutdown][0;39m - Running CoordinatedShutdown with reason [UnknownReason]
+[info] CdcStandaloneShutdownSpec:
+[info] standalone CDC shutdown
+[info] - should wait for a later confirmed STOPPED without starting another close operation
+[info] - should time out instead of treating UNKNOWN as released
+[info] - should keep its wait inside the configured coordinated shutdown phase
+[info] - should use a standalone phase budget while respecting an explicit phase override
+[info] - should wait for the confirmed status when invoked by coordinated shutdown
+[info] Run completed in 3 seconds, 549 milliseconds.
+[info] Total number of tests run: 44
+[info] Suites: completed 3, aborted 0
+[info] Tests: succeeded 44, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 4 s, completed 2026年11月11日 下午12:57:52

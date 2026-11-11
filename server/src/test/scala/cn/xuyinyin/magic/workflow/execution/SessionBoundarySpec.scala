@@ -2,9 +2,9 @@ package cn.xuyinyin.magic.workflow.execution
 
 import cn.xuyinyin.magic.testkit.STSpec
 import cn.xuyinyin.magic.workflow.WorkflowFixtures
-import cn.xuyinyin.magic.workflow.checkpoint._
+import cn.xuyinyin.magic.cdc.checkpoint._
 import cn.xuyinyin.magic.workflow.execution.registry.NodeRegistry
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import cn.xuyinyin.magic.workflow.spi._
 import cn.xuyinyin.magic.connectors.mysql.source.DebeziumBatchBridge
 import com.typesafe.config.ConfigFactory

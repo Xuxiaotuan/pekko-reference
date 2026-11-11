@@ -1,13 +1,13 @@
 package cn.xuyinyin.magic.workflow.execution
 
-import cn.xuyinyin.magic.workflow.engine.CdcExecutionException
-import cn.xuyinyin.magic.workflow.engine.ExecutionFailure
+import cn.xuyinyin.magic.cdc.recovery.CdcExecutionException
+import cn.xuyinyin.magic.cdc.recovery.ExecutionFailure
 
 import cn.xuyinyin.magic.testkit.STSpec
 import cn.xuyinyin.magic.workflow.WorkflowFixtures
-import cn.xuyinyin.magic.workflow.checkpoint._
+import cn.xuyinyin.magic.cdc.checkpoint._
 import cn.xuyinyin.magic.workflow.TestNodeRegistry
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import cn.xuyinyin.magic.workflow.spi.{CheckpointedNodeSink, CheckpointedNodeSource, NodeSink, NodeSource}
 import cn.xuyinyin.magic.connectors.mysql.sink.MySQLCdcApplySinkNode
 import cn.xuyinyin.magic.connectors.mysql.source.MySQLCdcSourceNode
@@ -382,6 +382,30 @@ class WorkflowExecutionEngineSpec extends STSpec {
 
       result.success shouldBe true
       order.synchronized(order.toVector) shouldBe Vector("sink", "actor", "source")
+    }
+
+    "dispatch a legacy receipt-aware source only after checkpoint persistence" in {
+      val order=ListBuffer.empty[String]
+      val legacy=new NodeSource with CheckpointedNodeSource with WorkflowCheckpointReceiptSource {
+        override val nodeType: String=ReliableSource.nodeType
+        override def createSource(node:WorkflowDSL.Node,log:String=>Unit):Source[String,NotUsed]=ReliableSource.createSource(node,log)
+        override def createBatches(node:WorkflowDSL.Node,execution:String,boundary:SnapshotBoundary,
+          resume:Option[BatchCheckpoint],log:String=>Unit)(implicit ec:ExecutionContext):Source[SourceBatch,NotUsed]=
+          ReliableSource.createBatches(node,execution,boundary,resume,log)
+        override def acknowledgeCommittedBatch(node:WorkflowDSL.Node,batch:SourceBatch,log:String=>Unit)
+          (implicit ec:ExecutionContext):Future[Done]=Future.failed(new AssertionError("receipt-aware source took ordinary ACK path"))
+        override def acknowledgeCommittedBatchWithReceipt(node:WorkflowDSL.Node,batch:SourceBatch,
+          receipt:Option[cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor.PersistedCheckpoint],log:String=>Unit)
+          (implicit ec:ExecutionContext):Future[Done]={order.synchronized(order += "receipt-ack");Future.successful(Done)}
+      }
+      register(legacy);testRegistry.registerSink(ReliableSink)
+      ReliableSource.batches=Vector(batch("exec-receipt-order",0L,"9",Vector("one")))
+      ReliableSink.onCommit=_=>order.synchronized(order += "sink")
+      val context=ReliableRunContext("exec-receipt-order",1L,Some(SnapshotBoundary("source-1","pk-range-0",Some("9"))),
+        Vector.empty,_=>Future.successful(Done),_=>{order.synchronized(order += "actor");Future.successful(Done)})
+      val result=Await.result(new WorkflowExecutionEngine(nodeRegistry=testRegistry.snapshot).execute(reliableWorkflow(),context,_=>()),5.seconds)
+      result.success shouldBe true
+      order.synchronized(order.toVector) shouldBe Vector("sink","actor","receipt-ack")
     }
 
     "not acknowledge the source when actor checkpoint persistence fails" in {

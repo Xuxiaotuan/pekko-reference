@@ -1,7 +1,14 @@
-package cn.xuyinyin.magic.workflow.scheduling
+package cn.xuyinyin.magic.cdc.control
 
+import cn.xuyinyin.magic.workflow.scheduling.{TableResourceDemand, ScheduledTableDefinition}
+
+
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
+
+
+import cn.xuyinyin.magic.cdc.guardian.{SnapshotOwnerIdentity}
 import cn.xuyinyin.magic.workflow.WorkflowFixtures
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
 import com.typesafe.config.ConfigFactory
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}

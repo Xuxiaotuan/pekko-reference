@@ -1,5 +1,12 @@
-package cn.xuyinyin.magic.workflow.scheduling
+package cn.xuyinyin.magic.cdc.control
 
+
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
+
+
+
+import cn.xuyinyin.magic.cdc.guardian.{SnapshotDatabaseObservation}
+import cn.xuyinyin.magic.cdc.guardian.{SnapshotOwnerIdentity, SnapshotIsolationReceipt}
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
 import cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngine
 import com.typesafe.config.ConfigFactory
@@ -10,7 +17,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Seconds,Span}
 import scala.concurrent.{ExecutionContext,Future,Promise}
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
 import cn.xuyinyin.magic.workflow.execution.ReliableRunContext
 import cn.xuyinyin.magic.workflow.engine.ExecutionResult
 import spray.json._

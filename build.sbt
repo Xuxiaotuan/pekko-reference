@@ -1,5 +1,5 @@
-/* Pekko CDC/workflow service: Typed, Sharding, JDBC persistence, Streams and HTTP.
- * Production main: cn.xuyinyin.magic.PekkoServer; Scala 2.13 / Java 17.
+/* Pekko CDC runtime: Source, snapshot, Journal, checkpoint, guardian and HTTP.
+ * Production main: cn.xuyinyin.magic.cdc.runtime.CdcRuntimeMain; Scala 2.13 / Java 17.
  * Historical Actor/CDC/CRDT examples live in Test and are excluded from release JARs.
  * Commands: runServer, testAll, dockerBuild, checkDeps.
  */
@@ -147,7 +147,9 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("server"))
       // ================================
       // 应用程序配置
       // ================================
-      Compile / mainClass := Some("cn.xuyinyin.magic.PekkoServer"),
+      // The distributable is CDC-only. PekkoServer remains a compatibility
+      // launcher for legacy Workflow experiments and is no longer the default.
+      Compile / mainClass := Some("cn.xuyinyin.magic.cdc.runtime.CdcRuntimeMain"),
       
       // ================================
       // Universal JVM memory defaults
@@ -205,7 +207,7 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("server"))
       "org.apache.pekko" %% "pekko-persistence-typed"  % pekkoVersion,
       "org.apache.pekko" %% "pekko-persistence-query"  % pekkoVersion,
       "org.apache.pekko" %% "pekko-persistence-jdbc"   % pekkoPersistenceJdbcVersion,
-      "com.github.alonsodomin.cron4s" %% "cron4s-core" % "0.8.2",
+      "com.github.alonsodomin.cron4s" %% "cron4s-core" % "0.8.2" % Test,
       
       // ================================
       // Pekko HTTP - REST API
@@ -286,7 +288,8 @@ lazy val root = (project in file("."))
     // 自定义任务别名 - 提供便捷命令
     // ================================
     addCommandAlias("runServer", "pekko-server/run"),
-    addCommandAlias("runCdcStandalone", "pekko-server/runMain cn.xuyinyin.magic.CdcStandalone"),
+    addCommandAlias("runCdcRuntime", "pekko-server/run"),
+    addCommandAlias("runCdcStandalone", "pekko-server/runMain cn.xuyinyin.magic.cdc.runtime.CdcRuntimeMain"),
     addCommandAlias("testAll", "test"),
     addCommandAlias("dockerBuild", "pekko-server/Docker/publishLocal"),
     addCommandAlias("dockerPublish", "pekko-server/Docker/publish"),

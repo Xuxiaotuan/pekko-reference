@@ -1,10 +1,11 @@
 package cn.xuyinyin.magic.workflow.actors
 
 import cn.xuyinyin.magic.workflow.{TestNodeRegistry, WorkflowFixtures}
-import cn.xuyinyin.magic.workflow.checkpoint._
+import cn.xuyinyin.magic.cdc.checkpoint._
 import cn.xuyinyin.magic.workflow.engine._
+import cn.xuyinyin.magic.cdc.recovery.{CdcExecutionException, ExecutionFailure}
 import cn.xuyinyin.magic.workflow.execution._
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import cn.xuyinyin.magic.workflow.spi._
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.{Done, NotUsed}

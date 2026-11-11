@@ -1,8 +1,12 @@
 package cn.xuyinyin.magic.workflow.integration
 
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
+
+
+import cn.xuyinyin.magic.cdc.guardian.{ManagedCdcJdbc, SnapshotOwnerIdentity}
 import cn.xuyinyin.magic.tags.ExternalIntegration
-import cn.xuyinyin.magic.workflow.scheduling._
-import cn.xuyinyin.magic.workflow.cdc.{CdcBootstrapKernel,CdcCaptureSettings,CdcPlatformLimits,CdcPlatformSettings}
+import cn.xuyinyin.magic.cdc.control._
+import cn.xuyinyin.magic.cdc.platform.{CdcBootstrapKernel,CdcCaptureSettings,CdcPlatformLimits,CdcPlatformSettings}
 import cn.xuyinyin.magic.connectors.mysql.source.{MySQLCdcSourceConfig,MySQLCdcStateConfig}
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}
 import com.typesafe.config.ConfigFactory
@@ -53,6 +57,13 @@ class ManagedCdcConnectionSpec extends AnyWordSpec with Matchers {
           val q=direct.createStatement();try q.execute("CREATE TABLE IF NOT EXISTS managed_connection_probe(id INT PRIMARY KEY)") finally q.close()
           observed
         } finally direct.close()
+        val cdcDirect=ManagedCdcJdbc.open(url,user,password,"source",managed=true)
+        try {
+          val observed=ManagedCdcJdbc.databaseIdentity(cdcDirect)._3
+          store.ownership.get.knownSessions(owner.bootId,endpoint) should contain (observed)
+          store.ownership.get.databaseUsers(owner.bootId,endpoint) should contain (user)
+        } finally cdcDirect.close()
+        intercept[IllegalArgumentException](ManagedCdcJdbc.open("jdbc:mysql://127.0.0.1:25823/db",user,password,"source",managed=true))
         val actorConfig=ConfigFactory.parseMap(Map[String,AnyRef](
           "pekko.actor.provider"->"local","pekko-persistence-jdbc.shared-databases.slick.db.url"->url,
           "pekko-persistence-jdbc.shared-databases.slick.db.user"->user,
@@ -71,6 +82,7 @@ class ManagedCdcConnectionSpec extends AnyWordSpec with Matchers {
         Set[JsValue](JsString(user),JsString("cdc_sdk"),JsString("cdc_src")).subsetOf(accounts) shouldBe true
         store.ownership.get.beginRevocation(owner.bootId,"test-operation")
         intercept[IllegalStateException](SnapshotOwnerJdbc.open(url,user,password,"source",managed=true))
+        intercept[IllegalStateException](ManagedCdcJdbc.open(url,user,password,"source",managed=true))
         val result=JsObject("status"->JsString("PASS"),"scope"->JsString("real MySQL registered direct connection; no guardian, Journal or Sink"),
           "serverUuid"->JsString(actual._1),"owner"->JsString(owner.bootId),"connectionId"->JsNumber(id),
           "registeredUsers"->JsArray(store.ownership.get.databaseUsers(owner.bootId,endpoint).toVector.sorted.map(JsString(_))),

@@ -1,7 +1,7 @@
 package cn.xuyinyin.magic.connectors.mysql.source
 
 import cn.xuyinyin.magic.testkit.STSpec
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import spray.json._
 
 class MySQLCdcSourceConfigSpec extends STSpec {
@@ -30,7 +30,7 @@ class MySQLCdcSourceConfigSpec extends STSpec {
     )
 
   private def parse(entries: (String, JsValue)*): MySQLCdcSourceConfig =
-    MySQLCdcSourceConfig.parse(node(entries: _*), name => Option.when(name == "MYSQL_CDC_PASSWORD")(secret))
+    MySQLCdcWorkflowConfig.parse(node(entries: _*), name => Option.when(name == "MYSQL_CDC_PASSWORD")(secret))
 
   private def assertRedacted(entries: (String, JsValue)*): IllegalArgumentException = {
     val exception = intercept[IllegalArgumentException](parse(entries: _*))
@@ -76,7 +76,7 @@ class MySQLCdcSourceConfigSpec extends STSpec {
 
     "reject an absent password environment value without exposing the resolved password" in {
       val exception = intercept[IllegalArgumentException](
-        MySQLCdcSourceConfig.parse(node(), _ => None)
+        MySQLCdcWorkflowConfig.parse(node(), _ => None)
       )
       exception.getMessage should include("passwordEnv")
       exception.getMessage should not include secret
@@ -94,7 +94,7 @@ class MySQLCdcSourceConfigSpec extends STSpec {
       )
 
       val exception = intercept[IllegalArgumentException](
-        MySQLCdcSourceConfig.parse(inlineOnlyNode, _ => Some(secret))
+        MySQLCdcWorkflowConfig.parse(inlineOnlyNode, _ => Some(secret))
       )
       exception.getMessage should include("passwordEnv")
       exception.getMessage should not include inlineSecret
@@ -110,10 +110,10 @@ class MySQLCdcSourceConfigSpec extends STSpec {
         (node().config.fields - "passwordEnv") + ("password" -> JsString(secret))
       ))
 
-      val parsed = MySQLCdcSourceConfig.parseTrustedRuntime(runtimeNode)
+      val parsed = MySQLCdcWorkflowConfig.parseTrustedRuntime(runtimeNode)
 
       parsed.password shouldBe secret
-      intercept[IllegalArgumentException](MySQLCdcSourceConfig.parse(runtimeNode)).getMessage should include("passwordEnv")
+      intercept[IllegalArgumentException](MySQLCdcWorkflowConfig.parse(runtimeNode)).getMessage should include("passwordEnv")
     }
 
     "reject server IDs outside the MySQL unsigned integer range without exposing the resolved password" in {

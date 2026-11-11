@@ -1,8 +1,17 @@
-package cn.xuyinyin.magic.workflow.scheduling
+package cn.xuyinyin.magic.cdc.control
 
+
+import cn.xuyinyin.magic.cdc.guardian.SnapshotSupervisorSettings
+
+import cn.xuyinyin.magic.cdc.guardian.MySqlOwnerDrainObserver
+
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
+
+
+import cn.xuyinyin.magic.cdc.guardian.{SnapshotOwnerIdentity}
 import cn.xuyinyin.magic.connectors.mysql.source.{MySQLCdcSourceConfig,MySQLCdcStateConfig}
 import cn.xuyinyin.magic.tags.ExternalIntegration
-import cn.xuyinyin.magic.workflow.cdc.{CdcCaptureSettings,CdcPlatformLimits,CdcPlatformSettings}
+import cn.xuyinyin.magic.cdc.platform.{CdcCaptureSettings,CdcPlatformLimits,CdcPlatformSettings}
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}
 import java.sql.{Connection,DriverManager}
 import java.util.UUID
@@ -15,6 +24,7 @@ class MaterialOwnerDrainMySqlSpec extends AnyWordSpec with Matchers {
     "reject foreign and untagged material sessions before allowing an empty observation" taggedAs ExternalIntegration in {
       if(!sys.env.get("RUN_CAPTURE_ARCHIVE_PROBE").contains("1"))cancel("isolated MySQL required")
       require(sys.env.get("CDC_LAB_EXCLUSIVE_LEASE").contains("capture-archive"))
+      Class.forName("com.mysql.cj.jdbc.Driver") // SBT may use a fresh test classloader between suites.
       val base=sys.env("CAPTURE_STATE_URL")
       require(base.contains(":25822/") && base.contains("pekko_test_shared_state"))
       val adminUser=sys.env("CDC_WINDOW_MYSQL_USER");val adminPassword=sys.env("CDC_WINDOW_MYSQL_PASSWORD")
@@ -24,7 +34,13 @@ class MaterialOwnerDrainMySqlSpec extends AnyWordSpec with Matchers {
       val admin=DriverManager.getConnection(base,adminUser,adminPassword)
       try {
         exec(admin,s"CREATE DATABASE `$schema`")
-        Vector("localhost","127.0.0.1").foreach {host=>
+        val actualHost={
+          val q=admin.createStatement()
+          try {val r=q.executeQuery("SELECT SUBSTRING_INDEX(USER(),'@',-1)")
+            try {require(r.next());val host=r.getString(1);require(host.matches("[A-Za-z0-9_.:-]+"));host} finally r.close()
+          } finally q.close()
+        }
+        Vector("localhost","127.0.0.1",actualHost).distinct.foreach {host=>
           exec(admin,s"CREATE USER '$materialUser'@'$host' IDENTIFIED BY '$password'")
           exec(admin,s"GRANT SELECT,UPDATE ON `$schema`.* TO '$materialUser'@'$host'")
         }
@@ -63,16 +79,42 @@ class MaterialOwnerDrainMySqlSpec extends AnyWordSpec with Matchers {
           SnapshotSupervisorSettings.appendParameters(url,"connectionAttributes=pekko_owner:observer,pekko_role:observer"),adminUser,adminPassword),exclusiveAccounts=exclusive)
         def observe()=observer.observe(owner.bootId,instance)
         val foreign=DriverManager.getConnection(url+"&connectionAttributes=pekko_owner:foreign,pekko_role:control",materialUser,password)
+        val foreignId=SnapshotOwnerJdbc.databaseIdentity(foreign)._3
+        println(s"DRAIN_PROBE foreign_connection=$foreignId event=transaction_open at_ms=${System.currentTimeMillis()}")
         try {
           foreign.setAutoCommit(false);val q=foreign.createStatement();try {val r=q.executeQuery("SELECT * FROM material_probe FOR UPDATE");try while(r.next())() finally r.close()}finally q.close()
           val found=observe();found.complete shouldBe true;found.empty shouldBe false;found.unattributed should be >= 1
-        }finally {foreign.rollback();foreign.close()}
+        }finally {
+          println(s"DRAIN_PROBE foreign_connection=$foreignId event=rollback_start at_ms=${System.currentTimeMillis()}")
+          foreign.rollback()
+          println(s"DRAIN_PROBE foreign_connection=$foreignId event=rollback_return at_ms=${System.currentTimeMillis()}")
+          foreign.close()
+          println(s"DRAIN_PROBE foreign_connection=$foreignId event=close_return at_ms=${System.currentTimeMillis()}")
+        }
+        val lockProbe=DriverManager.getConnection(url,adminUser,adminPassword)
+        try {
+          lockProbe.setAutoCommit(false)
+          val q=lockProbe.createStatement();q.setQueryTimeout(2)
+          try {val r=q.executeQuery("SELECT * FROM material_probe WHERE id=1 FOR UPDATE NOWAIT");try while(r.next())() finally r.close()} finally q.close()
+          println(s"DRAIN_PROBE foreign_connection=$foreignId event=independent_lock_acquired at_ms=${System.currentTimeMillis()}")
+          lockProbe.rollback()
+        } finally lockProbe.close()
         val untagged=DriverManager.getConnection(url,materialUser,password)
         try {val found=observe();found.complete shouldBe true;found.empty shouldBe false;found.unattributed should be >= 1}finally untagged.close()
         val deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(5)
         var drained=observe()
-        while(drained.complete && !drained.empty && System.nanoTime()<deadline){Thread.sleep(50);drained=observe()}
-        withClue(drained.evidence){drained.complete shouldBe true;drained.empty shouldBe true}
+        println(s"DRAIN_PROBE foreign_connection=$foreignId event=observe at_ms=${System.currentTimeMillis()} evidence=${drained.evidence}")
+        while(drained.complete && !drained.empty && System.nanoTime()<deadline){
+          Thread.sleep(50);drained=observe()
+          println(s"DRAIN_PROBE foreign_connection=$foreignId event=observe at_ms=${System.currentTimeMillis()} evidence=${drained.evidence}")
+        }
+        val atDeadline=drained
+        if(drained.complete && !drained.empty){
+          val diagnosticDeadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(30)
+          while(drained.complete && !drained.empty && System.nanoTime()<diagnosticDeadline){Thread.sleep(200);drained=observe()}
+          println(s"DRAIN_PROBE foreign_connection=$foreignId event=diagnostic_end at_ms=${System.currentTimeMillis()} evidence=${drained.evidence}")
+        }
+        withClue(atDeadline.evidence){atDeadline.complete shouldBe true;atDeadline.empty shouldBe true}
         info(s"schema=$schema materialUser=$materialUser endpoint=$endpoint uuid=${instance._2} foreignAndUntaggedRejected=true afterCloseEmpty=true")
       }finally ds.close()
     }

@@ -2,6 +2,8 @@
 
 [系列导读与验证范围](README.md) · [1：目标架构](01-why-pekko-for-resident-cdc.md) · [2：批转流源码](02-source-and-recovery-contract.md) · [3：真实实验](03-real-mysql-journal-failure.md) · [4：恢复协议](04-protocol-and-validation.md) · [5：自建与复用](05-pekko-vs-flink-cdc.md) · [Flink CDC 深入系列](https://xuyinyin.cn/flink-cdc-series/)
 
+> **2026-11-11 当前源码与证据：** 当前工程的产品范围是独立 CDC Runtime，而不是工作流平台。生产包已排除旧 Actor、旧执行器与旧 receipt 适配器；保留兼容状态模型、旧表互斥锁和配额迁移，是维护历史状态的成本。C0 的实际证据支持一个指定 worker 故障窗口中的隔离、接管和逐字段追平，不支持 guardian 自身重启、未知 B 自动恢复或 70 万活跃表的容量承诺。L 自动安全删除尚未实现，也没有 Pekko/Flink 同负载基准，因此不能把目录收敛或局部恢复成功写成与 Flink CDC 等价。 [拆分与验证记录](../../experiments/2026-11-08-cdc-standalone-entry/retire-workflow-runtime-20261111/README.md)。
+
 [A/B 补测](../../experiments/2026-10-27-ab-followup/README.md)支持对具体准入与资源释放边界的分析，但矩阵仍未完成；这些数据不是 Pekko/Flink 吞吐、资源占用或高可用能力的同负载比较。
 
 > **文章修订：2026-10-27。** 已提交的启动准入与五个 Bootstrap 定点结果见 [`74b6d9a`](https://github.com/Xuxiaotuan/pekko-reference/tree/74b6d9ad1ebcfe19a786f4e1869aed276a63bb52)及[A1/A2 报告](../../experiments/2026-10-27-capture-admission/README.md)；本轮平台候选的源码版本、实测与未验证项见[平台实验报告](../../experiments/2026-10-27-cdc-platform/README.md)。没有 Pekko/Flink 同负载 benchmark，也没有 70 万真实源表容量结果。
@@ -34,7 +36,7 @@ Flink CDC 的 MySQL Pipeline 可以选择多表，表与 Job、slot、子任务�
 
 一张表的控制状态不只是 RUNNING。新增请求可能尚未获得 B，初始化可能已封存但未激活，实时可能已暂停，取消可能已受理但资源尚未排空。Actor 可以按身份串行接受命令，Event Sourcing 可以保存接受事实；但这不要求把所有冷身份实例化成 Actor。
 
-本轮平台的[实际装配](https://github.com/Xuxiaotuan/pekko-reference/blob/2fd592f0c7e43af9b15f68801b7ac8f242da696b/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcBootstrapKernel.scala)是：SQL 保存定义、期望状态、候选索引、owner 与 grant；少量活动任务创建 `BootstrapJournal` Actor；阻塞 JDBC/Sink 工作在受预算限制的 step worker 上执行。一个共享 Reader 继续捕获源变化，L 解耦采集与每表应用。控制台从持久投影分页查询，不遍历所有 Actor 发 ask。
+本轮平台的[实际装配](https://github.com/Xuxiaotuan/pekko-reference/blob/2fd592f0c7e43af9b15f68801b7ac8f242da696b/server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcBootstrapKernel.scala)是：SQL 保存定义、期望状态、候选索引、owner 与 grant；少量活动任务创建 `BootstrapJournal` Actor；阻塞 JDBC/Sink 工作在受预算限制的 step worker 上执行。一个共享 Reader 继续捕获源变化，L 解耦采集与每表应用。任务查询读取持久投影，不遍历所有 Actor 发 ask。
 
 ```mermaid
 flowchart LR

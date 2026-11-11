@@ -1,11 +1,14 @@
-package cn.xuyinyin.magic.workflow.scheduling
+package cn.xuyinyin.magic.cdc.control
+
+
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
 
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
-import cn.xuyinyin.magic.workflow.checkpoint._
+import cn.xuyinyin.magic.cdc.checkpoint._
 import cn.xuyinyin.magic.workflow.execution._
 import cn.xuyinyin.magic.workflow.execution.registry.NodeRegistry
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
-import cn.xuyinyin.magic.workflow.snapshot._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.snapshot._
 import cn.xuyinyin.magic.workflow.spi._
 import com.typesafe.config.ConfigFactory
 import com.zaxxer.hikari.{HikariConfig,HikariDataSource}

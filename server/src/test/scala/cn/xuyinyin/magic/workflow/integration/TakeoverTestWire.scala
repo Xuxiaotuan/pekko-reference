@@ -1,6 +1,8 @@
 package cn.xuyinyin.magic.workflow.integration
 
-import cn.xuyinyin.magic.workflow.scheduling._
+import cn.xuyinyin.magic.workflow.scheduling.{TableResourceDemand, ScheduledTableDefinition, ScheduledTable, TableGrant}
+
+import cn.xuyinyin.magic.cdc.control._
 import spray.json.DefaultJsonProtocol
 
 /** Laboratory command transport only; production persisted case classes are unchanged. */

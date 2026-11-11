@@ -1,6 +1,16 @@
 package cn.xuyinyin.magic.workflow.integration
 
-import cn.xuyinyin.magic.workflow.scheduling._
+import cn.xuyinyin.magic.cdc.guardian.SnapshotSupervisorSettings
+
+import cn.xuyinyin.magic.cdc.guardian.{ManagedJvmIsolation}
+
+import cn.xuyinyin.magic.cdc.guardian.MySqlOwnerDrainObserver
+
+
+
+import cn.xuyinyin.magic.cdc.guardian.{SnapshotWorkerLaunch}
+import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
+import cn.xuyinyin.magic.cdc.control._
 import java.nio.file.{Files,Path}
 import java.sql.{Connection,Driver,DriverManager,DriverPropertyInfo,SQLException}
 import java.util.{Properties,UUID}
@@ -14,7 +24,7 @@ private[integration] object SupervisorRecoveryTest {
   import CdcJournalWindowSupport._
   def gate(dir:Path,name:String):Unit={emit(name);awaitCondition("test timing gate "+name,60.seconds)(Files.exists(dir.resolve(name+".release")))}
   def append(p:Path,value:JsObject):Unit=Files.writeString(p,value.compactPrint+"\n",java.nio.file.StandardOpenOption.CREATE,java.nio.file.StandardOpenOption.APPEND)
-  def workflow(s:Settings,schema:String,port:Option[Int],role:String):cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow={
+  def workflow(s:Settings,schema:String,port:Option[Int],role:String):cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.Workflow={
     val w=OwnerIsolationProbeSupport.workflow(s,schema)
     w.copy(nodes=w.nodes.map { n=>
       if(port.nonEmpty && ((role=="target" && n.nodeType=="mysql.write") || (role=="source" && n.nodeType=="mysql.snapshot")))
@@ -80,12 +90,12 @@ object SupervisorRecoveryGuardian {
         }
         emit("WORKER_FORK","boot"->JsString(t.bootId),"index"->JsNumber(index));b
       }
-      var service=Option(new SnapshotGuardianService(settings.metadata,new ManagedJvmIsolation(settings.binding.deploymentId,settings.maxWorkers),builder,key))
+      var service=Option(settings.metadata.guardianService(new ManagedJvmIsolation(settings.binding.deploymentId,settings.maxWorkers),builder,key))
       val server=new SnapshotGuardianWire.Server(settings.socket,settings.secret,settings.binding,key,(control,method,a)=>{
         if(Files.exists(dir.resolve("lose-capability"))) {
           Files.delete(dir.resolve("lose-capability"))
           service=None
-          service=Some(new SnapshotGuardianService(settings.metadata,new ManagedJvmIsolation(settings.binding.deploymentId,settings.maxWorkers),builder,key))
+          service=Some(settings.metadata.guardianService(new ManagedJvmIsolation(settings.binding.deploymentId,settings.maxWorkers),builder,key))
         }
         service.getOrElse(throw new IllegalStateException("original guardian capability lost")).handle(control,method,a)
       },frame=>{

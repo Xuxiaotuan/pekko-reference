@@ -3,12 +3,12 @@ package cn.xuyinyin.magic.workflow.integration
 import cn.xuyinyin.magic.connectors.mysql.source.MySQLSnapshotSourceNode
 import cn.xuyinyin.magic.connectors.mysql.sink.MySQLSinkNode
 import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
-import cn.xuyinyin.magic.workflow.checkpoint._
-import cn.xuyinyin.magic.workflow.events.WorkflowEvents._
+import cn.xuyinyin.magic.cdc.checkpoint._
+import cn.xuyinyin.magic.cdc.compat.WorkflowEvents._
 import cn.xuyinyin.magic.workflow.execution._
 import cn.xuyinyin.magic.workflow.execution.registry.NodeRegistry
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
-import cn.xuyinyin.magic.workflow.snapshot._
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
+import cn.xuyinyin.magic.cdc.snapshot._
 import cn.xuyinyin.magic.workflow.spi.BatchSourceSession
 import cn.xuyinyin.magic.workflow.engine.ExecutionResult
 import com.typesafe.config.ConfigFactory

@@ -2,7 +2,7 @@ package cn.xuyinyin.magic.workflow.execution
 
 import cn.xuyinyin.magic.testkit.STSpec
 import cn.xuyinyin.magic.workflow.WorkflowFixtures
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Edge, ScheduleConfig}
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.{Edge, ScheduleConfig}
 import spray.json.JsObject
 
 class WorkflowValidatorSpec extends STSpec {
@@ -86,6 +86,6 @@ class WorkflowValidatorSpec extends STSpec {
     }
   }
 
-  private def errors(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow): Vector[String] =
+  private def errors(workflow: cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.Workflow): Vector[String] =
     WorkflowValidator.validate(workflow).fold(_.map(_.code), _ => fail("Expected validation failure"))
 }

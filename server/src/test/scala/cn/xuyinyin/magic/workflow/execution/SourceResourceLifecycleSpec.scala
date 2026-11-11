@@ -1,12 +1,12 @@
 package cn.xuyinyin.magic.workflow.execution
 
-import cn.xuyinyin.magic.workflow.engine.CdcExecutionException
+import cn.xuyinyin.magic.cdc.recovery.CdcExecutionException
 
 import cn.xuyinyin.magic.testkit.STSpec
 import cn.xuyinyin.magic.workflow.WorkflowFixtures
-import cn.xuyinyin.magic.workflow.checkpoint._
+import cn.xuyinyin.magic.cdc.checkpoint._
 import cn.xuyinyin.magic.workflow.TestNodeRegistry
-import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import cn.xuyinyin.magic.workflow.spi._
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.{Done, NotUsed}

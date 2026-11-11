@@ -1,0 +1,66 @@
+23:58:05,540 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+23:58:05,541 |-INFO in ch.qos.logback.classic.util.ContextInitializer@b978d10 - No custom configurators were discovered as a service.
+23:58:05,541 |-INFO in ch.qos.logback.classic.util.ContextInitializer@b978d10 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+23:58:05,541 |-INFO in ch.qos.logback.classic.util.ContextInitializer@b978d10 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+23:58:05,544 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+23:58:05,544 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+23:58:05,548 |-INFO in ch.qos.logback.classic.util.ContextInitializer@b978d10 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 3 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+23:58:05,548 |-INFO in ch.qos.logback.classic.util.ContextInitializer@b978d10 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+23:58:05,548 |-INFO in ch.qos.logback.classic.util.ContextInitializer@b978d10 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+23:58:05,548 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+23:58:05,550 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+23:58:05,590 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+23:58:05,590 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+23:58:05,593 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+23:58:05,604 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+23:58:05,604 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+23:58:05,605 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+23:58:05,605 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+23:58:05,606 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+23:58:05,606 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+23:58:05,607 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+23:58:05,607 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+23:58:05,608 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+23:58:05,608 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+23:58:05,608 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+23:58:05,608 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+23:58:05,608 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@5b7a8434 - End of configuration.
+23:58:05,609 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@5c45d770 - Registering current configuration as safe fallback point
+23:58:05,609 |-INFO in ch.qos.logback.classic.util.ContextInitializer@b978d10 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 61 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+23:58:05.620 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Starting...
+23:58:05.720 [34mINFO [0;39m [36m[main][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - HikariPool-1 - Start completed.
+23:58:05.971 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor LAUNCH_PREPARED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:06.041 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor WORKER_STARTED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:06.398 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor SAFE_PAUSE (java.sql.SQLSyntaxErrorException)
+23:58:06.761 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor SAFE_PAUSE (java.sql.SQLSyntaxErrorException)
+23:58:07.061 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor SAFE_PAUSE (java.sql.SQLSyntaxErrorException)
+23:58:16.683 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor CDC_OWNER_ISOLATION_REQUESTED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:16.741 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor PROOF_RECEIVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:16.750 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor PROOF_RECORDED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:16.792 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor DATABASE_OBSERVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:16.858 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor DATABASE_OBSERVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:17.245 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor PROOF_RECEIVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:17.261 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor PROOF_RECORDED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:17.303 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor DATABASE_OBSERVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:17.351 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor DATABASE_OBSERVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:17.681 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor PROOF_RECEIVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:17.693 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor PROOF_RECORDED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:17.771 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor DATABASE_OBSERVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:17.853 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor DATABASE_OBSERVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:18.161 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor PROOF_RECEIVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:18.168 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor PROOF_RECORDED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:18.237 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor DATABASE_OBSERVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:18.317 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor DATABASE_OBSERVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:18.656 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor PROOF_RECEIVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:18.669 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor PROOF_RECORDED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:18.753 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor DATABASE_OBSERVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:18.814 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor DATABASE_OBSERVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:19.135 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor PROOF_RECEIVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:19.144 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor PROOF_RECORDED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:19.219 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor DATABASE_OBSERVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:19.274 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor DATABASE_OBSERVED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:19.294 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor QUOTA_RETURNED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:19.316 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor WORKER_RETIRED (9d60ebe9-d77e-4cd8-96f1-4fd68a4b64d1)
+23:58:19.348 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor LAUNCH_PREPARED (fb4bc751-80a9-4f4a-b2f2-14004ee33a7c)
+23:58:19.404 [34mINFO [0;39m [36m[main][0;39m [1;35m[c.x.m.w.s.SnapshotSupervisorMain$][0;39m - Snapshot supervisor WORKER_STARTED (fb4bc751-80a9-4f4a-b2f2-14004ee33a7c)

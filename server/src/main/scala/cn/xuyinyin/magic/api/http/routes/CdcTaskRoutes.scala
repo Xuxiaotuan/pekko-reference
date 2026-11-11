@@ -1,6 +1,6 @@
 package cn.xuyinyin.magic.api.http.routes
 
-import cn.xuyinyin.magic.workflow.cdc._
+import cn.xuyinyin.magic.cdc.platform._
 import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import org.apache.pekko.http.scaladsl.model.{StatusCode, StatusCodes}
 import org.apache.pekko.http.scaladsl.server.{Directives, ExceptionHandler, Route}
