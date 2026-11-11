@@ -1,5 +1,9 @@
 # 独立 CDC Runtime 移除旧执行器
 
+发布核对：生产代码提交 `f6313c0`，网站提交 `1b66566`。GitHub Jekyll 检查与 Pages 部署均成功；五篇正文及系列页直连均返回 200，分别核对版本/证据段和新验证表。见 `publication-verification.json`。本机 Jekyll 首次缺少匹配的 Ruby/Bundler，切换已安装 Ruby 后又遇到代理 TLS 与未认证 GitHub metadata 请求限额；本机构建未完成，已终止该次本机任务，实际构建结论来自远端成功任务。原错误日志保留。
+
+最终版本检查发现，提交前仅移除了两个生产文件的末尾空行，导致先前生成的清单与发布字节不同。原清单保留为 `precommit-production-manifest.json`，`final-production-manifest.json` 重新按已提交的生产文件计算；各实验的原始 source-sha256 清单保持不变。
+
 ## 生产代码与兼容边界
 
 生产 `workflow` 目录已移除。旧 Actor、Engine、注册表、执行计划、可靠会话、旧表调度 Runtime 和旧 Workflow receipt 投影移入测试源集，以保留历史尝试；不再随生产 JAR 分发。原来的旧 receipt 投影从 MySQLCaptureStore 移入测试类 LegacyWorkflowProjection，继续调用 Store 的同事务 proofFrame 校验；该测试类不能被解释为当前生产 API。
