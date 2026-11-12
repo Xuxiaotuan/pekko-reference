@@ -47,6 +47,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
   private val workerEc=ExecutionContext.fromExecutorService(workers)
   private val active=new AtomicInteger();private val pending=new AtomicInteger();private val ticking=new AtomicBoolean()
   private val stopping=new AtomicBoolean();private val stopped=new AtomicBoolean();private val closingCheck=new AtomicBoolean()
+  private val logger=org.slf4j.LoggerFactory.getLogger(getClass)
   private val markingStartupFailure=new AtomicBoolean()
   private val startupFailedFlag=new AtomicBoolean()
   private val guardianLost=new AtomicBoolean()
@@ -91,6 +92,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
     }
   }catch{case NonFatal(_)=>()}finally markingStartupFailure.set(false)
   private def startupFailed(e:Throwable):Unit={
+    logger.warn("CDC runtime startup failed; release status will remain conservative",e)
     startupFailedFlag.set(true)
     recoveryPending=false;startupFailurePending=managedOwner.nonEmpty
     ownerState=if(startupFailurePending)"UNKNOWN"else"FAILED";reason=Some(if(startupFailurePending)"RELEASE_UNKNOWN"else"STORAGE_UNAVAILABLE")

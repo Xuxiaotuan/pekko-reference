@@ -24,6 +24,16 @@ spec:
           env:
             - name: JAVA_OPTS
               value: "-Dconfig.file=/opt/docker/conf/application-cdc-runtime.conf"
+            - name: DB_HOST
+              value: "state-mysql.cdc-runtime-acceptance.svc.cluster.local"
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_NAME
+              value: "cdc_runtime"
+            - name: DB_USER
+              valueFrom: {secretKeyRef: {name: pekko-cdc-runtime-config, key: CDC_STATE_USER}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: pekko-cdc-runtime-config, key: CDC_STATE_PASSWORD}}
           ports:
             - {name: http, containerPort: 8080}
           volumeMounts:
@@ -37,12 +47,17 @@ spec:
           # The runtime deliberately binds its management API to loopback.
           # Keep probes inside the container; exposing it through the Service
           # requires a separate authenticated management proxy.
+          # The API intentionally binds loopback. Pod-IP probes cannot reach it;
+          # these probes certify process lifetime only. API readiness is checked
+          # through a local port-forward in the acceptance procedure.
           livenessProbe:
-            tcpSocket: {port: http}
+            exec:
+              command: ["/bin/sh", "-c", "test -r /proc/1/cmdline"]
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
-            tcpSocket: {port: http}
+            exec:
+              command: ["/bin/sh", "-c", "test -r /proc/1/cmdline"]
             initialDelaySeconds: 15
             periodSeconds: 5
       volumes:
