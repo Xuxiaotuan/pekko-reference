@@ -52,8 +52,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - run: sbt 'project pekko-server' dockerBuild
       - run: |
-          docker tag pekko-reference:0.1 ghcr.io/${{ github.repository }}/cdc-runtime:${{ github.sha }}
-          docker push ghcr.io/${{ github.repository }}/cdc-runtime:${{ github.sha }}
+          image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-runtime:${GITHUB_SHA}"
+          docker tag pekko-reference:0.1 "$image"
+          docker push "$image"
 
   deploy:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy }}
@@ -73,9 +74,15 @@ jobs:
           chmod 600 "$RUNNER_TEMP/kube/config"
           echo "KUBECONFIG=$RUNNER_TEMP/kube/config" >> "$GITHUB_ENV"
       - name: Validate isolated manifest
-        run: kubectl kustomize deploy/kubernetes/bigdata-lab/cdc-runtime | kubectl apply --dry-run=server -f -
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-runtime:${GITHUB_SHA}"
+          kubectl kustomize deploy/kubernetes/bigdata-lab/cdc-runtime \
+            | sed "s#ghcr.io/xuxiaotuan/pekko-reference/cdc-runtime:dev#$image#g" \
+            | kubectl apply --dry-run=server -f -
       - name: Apply isolated CDC Runtime only
         run: |
-          kubectl -n bigdata-lab apply -k deploy/kubernetes/bigdata-lab/cdc-runtime \
-            --server-side --field-manager=cdc-runtime-pipeline
+          image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-runtime:${GITHUB_SHA}"
+          kubectl kustomize deploy/kubernetes/bigdata-lab/cdc-runtime \
+            | sed "s#ghcr.io/xuxiaotuan/pekko-reference/cdc-runtime:dev#$image#g" \
+            | kubectl apply --server-side --field-manager=cdc-runtime-pipeline -f -
           kubectl -n bigdata-lab rollout status deployment/pekko-cdc-runtime --timeout=180s
