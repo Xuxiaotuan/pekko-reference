@@ -20,3 +20,5 @@
 - 本轮没有验证 DDL、多 owner 自动接管、源侧 fencing v2、70 万张活跃物理表、跨实例共享 Reader，也没有把当前单表真实运行结果扩大为容量承诺。
 
 `runtime.log` 保存最终运行日志，`state.sql.txt` 保存 owner、task、namespace、GC proof、L/Journal 的最终状态，`row-reconciliation.txt` 保存逐字段对账输出。
+
+完整后端回归在本轮工作区为 726 项：721 成功、5 失败、411 因专用外部环境而取消；失败套件是既有 `MySQLBatchSyncIntegrationTest`、`CommonSpec`、`MySQLCdcApplySinkNodeSpec`、`CdcJdbcSpec`、`CdcPlatformRuntimeSpec`，摘要见 `full-regression-summary.txt`。这解释了远端 `cdc-runtime` workflow 的 verify 失败；本轮 acceptance 的真实 MySQL 证据和针对性 Runtime/Schema/Sink 测试仍单独列示，不能升级成全套绿灯。

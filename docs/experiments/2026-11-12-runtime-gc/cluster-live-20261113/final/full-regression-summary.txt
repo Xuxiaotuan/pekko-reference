@@ -1,0 +1,14 @@
+命令：sbt -batch 'project pekko-server' 'set Test / testOptions := Seq()' test
+时间：2026-11-13（本机 JDK 17.0.14）
+总测试：726
+成功：721
+失败：5
+取消：411（专用 MySQL/Kafka 或其他 external_blocked 条件）
+失败套件：
+- cn.xuyinyin.magic.connectors.mysql.MySQLBatchSyncIntegrationTest
+- cn.xuyinyin.magic.infrastructure.util.CommonSpec
+- cn.xuyinyin.magic.connectors.mysql.sink.MySQLCdcApplySinkNodeSpec
+- cn.xuyinyin.magic.cdc.platform.CdcJdbcSpec
+- cn.xuyinyin.magic.cdc.platform.CdcPlatformRuntimeSpec
+远端 GitHub Actions verify 同样失败，image/deploy 阶段按 needs 规则跳过。
+针对本次改动的 Compile/compile、BootstrapSchemaCompatibilitySpec、CdcGcSettingsSpec、TEXT sink targeted test、CdcPlatformRuntimeSpec（11 项）均单独通过。
