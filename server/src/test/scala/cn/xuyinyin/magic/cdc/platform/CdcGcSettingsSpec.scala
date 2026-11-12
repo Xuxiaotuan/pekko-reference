@@ -14,7 +14,8 @@ class CdcGcSettingsSpec extends STSpec {
       val value=CdcGcSettings.load(root).get
       value.enableLegacy shouldBe false
       value.toString should not include "secret-should-stay-private"
-      intercept[IllegalArgumentException](value.copy(accountHost="%"))
+      value.copy(accountHost="%").account shouldBe "gc_writer@%"
+      intercept[IllegalArgumentException](value.copy(accountHost="$"))
       intercept[IllegalArgumentException](value.copy(batchFrames=129))
       intercept[IllegalArgumentException](value.copy(trustedAdmins=value.trustedAdmins+value.account))
     }

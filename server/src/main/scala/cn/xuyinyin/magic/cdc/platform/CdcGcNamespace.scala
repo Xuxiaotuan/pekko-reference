@@ -12,8 +12,26 @@ import spray.json._
 /** Startup-only inventory. Partial inventories are rescanned; they never authorize deletion. */
 private[cdc] object CdcGcNamespace {
   def initialize(c:Connection):Unit={
-    val q=c.createStatement();q.setQueryTimeout(30)
-    try q.executeUpdate("CREATE TABLE IF NOT EXISTS pekko_capture_gc_namespace_v1(capture_id VARCHAR(64) PRIMARY KEY,config_json LONGTEXT NOT NULL,config_digest CHAR(64) NOT NULL,phase VARCHAR(24) NOT NULL,owner_attempt VARCHAR(128) NOT NULL,inventory_root CHAR(64) NOT NULL,inventory_count BIGINT NOT NULL,reason VARCHAR(128) NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin")finally q.close()
+    val ddl=getClass.getClassLoader.getResourceAsStream("db/mysql/pekko-persistence-schema.sql")
+    require(ddl!=null,"JDBC persistence schema resource missing")
+    val statements=try scala.io.Source.fromInputStream(ddl).mkString.split(";").map(_.trim).filter(_.nonEmpty).toVector
+    finally ddl.close()
+    def tableExists(name:String):Boolean={
+      val q=c.prepareStatement("SELECT 1 FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=? LIMIT 1")
+      q.setQueryTimeout(30);q.setString(1,name)
+      try {val r=q.executeQuery();try r.next()finally r.close()}finally q.close()
+    }
+    def indexExists(name:String):Boolean={
+      val q=c.prepareStatement("SELECT 1 FROM information_schema.statistics WHERE table_schema=DATABASE() AND index_name=? LIMIT 1")
+      q.setQueryTimeout(30);q.setString(1,name)
+      try {val r=q.executeQuery();try r.next()finally r.close()}finally q.close()
+    }
+    def exec(sql:String):Unit={val q=c.createStatement();q.setQueryTimeout(30);try q.executeUpdate(sql)finally q.close()}
+    if(!tableExists("event_journal"))exec(statements(0))
+    if(!indexExists("event_journal_ordering_idx"))exec(statements(1))
+    if(!tableExists("event_tag"))exec(statements(2))
+    if(!tableExists("snapshot"))exec(statements(3))
+    exec("CREATE TABLE IF NOT EXISTS pekko_capture_gc_namespace_v1(capture_id VARCHAR(64) PRIMARY KEY,config_json LONGTEXT NOT NULL,config_digest CHAR(64) NOT NULL,phase VARCHAR(24) NOT NULL,owner_attempt VARCHAR(128) NOT NULL,inventory_root CHAR(64) NOT NULL,inventory_count BIGINT NOT NULL,reason VARCHAR(128) NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin")
   }
   def configuration(store:MySQLCaptureStore,g:CdcGcSettings,captures:Set[String]):String={
     val (uuid,db)=store.location

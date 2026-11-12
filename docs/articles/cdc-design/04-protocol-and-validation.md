@@ -266,3 +266,9 @@ MySQL 属性采集关闭时，丢失计数为零并不能证明属性可见。�
 真实入口 RG01—RG07 共 7 项通过，其中未知 B 和异常重启按预期 SAFE_PAUSED；L GC 的 LG01—LG16 加容量补测共 17 项通过。LG15 首次身份修复后未重启 Reader，保留失败材料；按重启边界重跑后通过。相关回归 53 项通过；固定 RG01 负载又连续完成 10 轮、约 12 分钟的生命周期 soak，逐字段对账和最终资源采样均通过。
 
 源码结论、真实结果和远端 amd64 acceptance 已验证镜像、Deployment Ready、API port-forward 和 Source binlog 启动；State 复查连接失败后按协议安全暂停，完整集群 Sink 对账仍未收敛。 未验证范围见 [Runtime GC 实验报告](https://github.com/Xuxiaotuan/pekko-reference/blob/1ab1acf/docs/experiments/2026-11-12-runtime-gc/README.md)。这组结果不代表 70 万真实活跃表、DDL、多 owner guardian 接管、自动扩容或 InnoDB 文件缩容已经验收。
+
+## 最终验证范围补充（2026-11-13）
+
+本轮把协议验证落到真实部署：owner、Journal、offset、L、T 和 GC proof 都在同一个 State MySQL 中可查询，目标逐字段对账覆盖全量、实时三种变更和一次正常停止/重启。PID1 修复解决了“Pod 已删但 Binlog Dump 仍在”的部署边界；固定 writer host/definer 和性能表权限解决了 ledger guard 的实际准入边界。
+
+未验证范围保持明确：未知 B 自动恢复、DDL、多 owner guardian 接管、70 万活跃物理表、跨实例共享 Reader 和长期吞吐。GC 在重启后的 no-worthwhile-space-saving 情形安全 BLOCKED，证明了保护性暂停，而不是删除成功。

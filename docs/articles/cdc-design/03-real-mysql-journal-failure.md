@@ -277,3 +277,9 @@ A14 在源 COMMIT 未知时的取消测试失败；B05 的启动与关闭竞争�
 真实入口 RG01—RG07 共 7 项通过，其中未知 B 和异常重启按预期 SAFE_PAUSED；L GC 的 LG01—LG16 加容量补测共 17 项通过。LG15 首次身份修复后未重启 Reader，保留失败材料；按重启边界重跑后通过。相关回归 53 项通过；固定 RG01 负载又连续完成 10 轮、约 12 分钟的生命周期 soak，逐字段对账和最终资源采样均通过。
 
 源码结论、真实结果和远端 amd64 acceptance 已验证镜像、Deployment Ready、API port-forward 和 Source binlog 启动；State 复查连接失败后按协议安全暂停，完整集群 Sink 对账仍未收敛。 未验证范围见 [Runtime GC 实验报告](https://github.com/Xuxiaotuan/pekko-reference/blob/1ab1acf/docs/experiments/2026-11-12-runtime-gc/README.md)。这组结果不代表 70 万真实活跃表、DDL、多 owner guardian 接管、自动扩容或 InnoDB 文件缩容已经验收。
+
+## 最终真实故障材料补充（2026-11-13）
+
+最终集群材料保留了两类失败和一条通过路径：旧 ClusterIP Journal 连接 20/20 失败；旧 shell launcher 不是 PID1，停止后留下 ACTIVE owner 和 Binlog Dump；`cdc_gc@%`、旧 namespace 摘要和性能表权限又分别触发了 guard/namespace/权限拒绝。修正为 State NodePort、固定 `cdc_gc@192.168.31.115`、`cdc_control@%` definer 及直接 JVM PID1 后，干净运行完成 B/F、实时变更、GC proof ACTIVE 和 STOPPED→ACTIVE 重启。
+
+Source 与目标最终逐字段一致的证据位于 `docs/experiments/2026-11-12-runtime-gc/cluster-live-20261113/final/`。重启后删除计划因小帧节省不足 BLOCKED，属于保留原始 L 的失败证据；不能用前一轮 GC proof ACTIVE 抹掉这一边界。

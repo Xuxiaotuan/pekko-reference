@@ -20,7 +20,11 @@ final class BootstrapSnapshot(open:()=>Connection,val table:String,val codec:Boo
     require(query(c,"SELECT engine FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='pekko_capture_control'").headOption.exists(_("engine")=="InnoDB"),"bootstrap control markers require InnoDB")
     val columns=c.getMetaData.getColumns(c.getCatalog,null,table,null);val b=Vector.newBuilder[(String,Int)]
     try while(columns.next())if(columns.getString("TABLE_NAME")==table)b+=columns.getString("COLUMN_NAME")->columns.getInt("DATA_TYPE") finally columns.close()
-    require(b.result()==codec.columns,"source schema differs from sealed schema");codec.validateTable(c,table)
+    val expected=codec.schema.parseJson.asJsObject.fields("columns").asInstanceOf[JsArray].elements.map {x=>
+      val f=x.asJsObject.fields
+      (f("name").asInstanceOf[JsString].value,f("jdbcType").asInstanceOf[JsNumber].value.toInt,f.get("typeName").collect{case JsString(v)=>v}.getOrElse(""))
+    }
+    require(BootstrapSchemaCompatibility.columnsCompatible(expected,b.result()),"source schema differs from sealed schema");codec.validateTable(c,table)
   }
   def maximum():Option[String]=connection(c=>Option(query(c,s"SELECT MAX($key) AS n FROM `$table`").head("n")))
   def nextUpper(lower:Option[String],upper:String,rows:Int):String=connection {c=>

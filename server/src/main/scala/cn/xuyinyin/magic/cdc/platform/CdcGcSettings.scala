@@ -7,7 +7,7 @@ import scala.jdk.CollectionConverters._
 final case class CdcGcSettings(username:String,password:String,accountHost:String,ledgerDefiner:String,
   trustedAdmins:Set[String],producerAccounts:Set[String],enableLegacy:Boolean=false,
   intervalMillis:Long=60000L,batchFrames:Int=32,pageSize:Int=16,inventoryLimit:Int=10000) {
-  require(username.matches("[A-Za-z0-9_]+") && password.nonEmpty && accountHost.matches("[A-Za-z0-9.:-]+") &&
+  require(username.matches("[A-Za-z0-9_]+") && password.nonEmpty && accountHost.matches("[A-Za-z0-9_.%:-]+") &&
     ledgerDefiner.matches("[A-Za-z0-9_]+@[A-Za-z0-9_.%:-]+") && trustedAdmins.nonEmpty &&
     (trustedAdmins++producerAccounts).forall(_.matches("[A-Za-z0-9_]+@[A-Za-z0-9_.%:-]+")) &&
     !trustedAdmins(account) && !producerAccounts(account) && (trustedAdmins intersect producerAccounts).isEmpty &&

@@ -189,3 +189,9 @@ C0、C1、迟提交和迟回滚四项在接管后进入 STREAMING，各自源与
 真实入口 RG01—RG07 共 7 项通过，其中未知 B 和异常重启按预期 SAFE_PAUSED；L GC 的 LG01—LG16 加容量补测共 17 项通过。LG15 首次身份修复后未重启 Reader，保留失败材料；按重启边界重跑后通过。相关回归 53 项通过；固定 RG01 负载又连续完成 10 轮、约 12 分钟的生命周期 soak，逐字段对账和最终资源采样均通过。
 
 源码结论、真实结果和远端 amd64 acceptance 已验证镜像、Deployment Ready、API port-forward 和 Source binlog 启动；State 复查连接失败后按协议安全暂停，完整集群 Sink 对账仍未收敛。 未验证范围见 [Runtime GC 实验报告](https://github.com/Xuxiaotuan/pekko-reference/blob/1ab1acf/docs/experiments/2026-11-12-runtime-gc/README.md)。这组结果不代表 70 万真实活跃表、DDL、多 owner guardian 接管、自动扩容或 InnoDB 文件缩容已经验收。
+
+## 本轮最终 acceptance 补充（2026-11-13）
+
+独立 CDC Runtime 在单实例专用 acceptance 环境跑通了一条可复核主线：共享 Reader 捕获 `source_rows`，任务经 B/F 初始化后进入持续消费；真实更新、插入、删除与目标逐字段对账一致。GC namespace 经过账号、Journal、目标账本和 namespace permit 校验后进入 READY，GC proof 进入 ACTIVE。Kubernetes 部署改为让 JVM 直接作为 PID 1，停止时 owner 为 STOPPED、grant 为 0、源端连接为空，重新启动后原任务仍为 STREAMING/HEALTHY。
+
+这只证明单表真实链路、受保护 GC 和一次重启窗口；70 万物理表、长期吞吐、DDL、多 owner 自动接管和跨实例共享 Reader 仍未验证。重启后的 GC 小批量删除因节省空间不足而安全 BLOCKED，原始 L 保留，这一边界也属于最终结果。

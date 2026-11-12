@@ -6,6 +6,8 @@ metadata:
   labels: {app: pekko-cdc-runtime}
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels: {app: pekko-cdc-runtime}
   template:
@@ -16,18 +18,21 @@ spec:
       nodeSelector: {kubernetes.io/hostname: xjw}
       containers:
         - name: cdc-runtime
-          image: pekko-cdc-runtime
+          image: pekko-reference:cluster-runtime-20261113k
           imagePullPolicy: IfNotPresent
-          command: ["/opt/docker/bin/cdc-runtime"]
+          # The generated launcher is a shell script.  Make the JVM PID 1 so
+          # Kubernetes termination reaches CoordinatedShutdown instead of
+          # leaving the binlog session behind until SIGKILL.
+          command: ["/opt/docker/bin/pekko-reference", "-main", "cn.xuyinyin.magic.cdc.runtime.CdcRuntime"]
           envFrom:
             - secretRef: {name: pekko-cdc-runtime-config}
           env:
             - name: JAVA_OPTS
               value: "-Dconfig.file=/opt/docker/conf/application-cdc-runtime.conf"
             - name: DB_HOST
-              value: "state-mysql.cdc-runtime-acceptance.svc.cluster.local"
+              valueFrom: {secretKeyRef: {name: pekko-cdc-runtime-config, key: CDC_STATE_HOST}}
             - name: DB_PORT
-              value: "3306"
+              valueFrom: {secretKeyRef: {name: pekko-cdc-runtime-config, key: CDC_STATE_PORT}}
             - name: DB_NAME
               value: "cdc_runtime"
             - name: DB_USER

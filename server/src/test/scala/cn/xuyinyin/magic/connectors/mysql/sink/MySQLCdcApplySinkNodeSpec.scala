@@ -313,6 +313,18 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       }
     }
 
+    "accept a Debezium TEXT source against MySQL TEXT target metadata" in withFixture(
+      targetDdl = compatibleTarget.replace("note VARCHAR(255) NULL", "note TEXT NULL")
+    ) { fixture =>
+      val columns = sourceColumns.map(column =>
+        if (column.name == "note") column.copy(jdbcType = Types.VARCHAR, typeName = "TEXT") else column
+      )
+      Await.result(
+        fixture.node.validateSourceBoundary(fixture.sinkNode, fixture.boundary(columns = columns), _ => ()),
+        5.seconds
+      ) shouldBe Done
+    }
+
     "reject every unsigned integral source type during boundary validation" in withFixture() { fixture =>
       Vector(
         Types.TINYINT -> "TINYINT UNSIGNED",

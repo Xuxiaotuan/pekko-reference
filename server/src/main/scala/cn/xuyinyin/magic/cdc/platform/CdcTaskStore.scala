@@ -45,7 +45,9 @@ object CdcTaskStore {
 final class CdcTaskStore(open:()=>Connection,val limits:CdcPlatformLimits) {
   private val jdbc=new BootstrapJdbc(open,2)
   import jdbc._
+  private val logger=org.slf4j.LoggerFactory.getLogger(getClass)
   def initialize():Unit=connection {c=>
+    logger.info("CDC control JDBC endpoint={} database={}", c.getMetaData.getURL.replaceAll("(?i)(password=)[^&]*", "$1<redacted>"), Option(c.getCatalog).getOrElse(""))
     val mysql=c.getMetaData.getDatabaseProductName.toLowerCase(java.util.Locale.ROOT).contains("mysql")
     val suffix=if(mysql)" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin"else""
     Vector(

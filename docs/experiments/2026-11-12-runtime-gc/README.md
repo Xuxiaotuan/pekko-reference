@@ -1,10 +1,24 @@
 # 独立 Runtime 的 L GC 调度与旧命名空间启用
 
-本轮把 L GC 从 Runner 内存请求接入独立 `CdcRuntimeMain`：审计请求、GC operation、namespace inventory、pins 和批次游标均持久化在同一 state MySQL。未知 B 仍安全暂停；本轮没有提交或推送。
+本轮把 L GC 从 Runner 内存请求接入独立 `CdcRuntimeMain`：审计请求、GC operation、namespace inventory、pins 和批次游标均持久化在同一 state MySQL。未知 B 仍安全暂停。最终 acceptance 使用镜像 `cluster-runtime-20261113k`，并保留所有早期失败材料。
 
 源码基线由 [source-manifest.sha256](final/source-manifest.sha256) 固定。`final2` 的运行清单和本轮最终工作区清单分开保存；严格账号清点修复后没有把旧运行结果改写成新版本结果。早期失败材料没有被覆盖。
 
-## 实际结果
+## 最终 acceptance 结果
+
+最终一轮使用真实 MySQL Source、Actor Journal、Debezium JDBC offset/history 和 MySQL Sink：
+
+- owner 启动获准，GC namespace 为 `COMPLETE/OPEN`，API `/api/v1/cdc-gc` 返回 `READY`。
+- 单表全量初始化完成，任务记录了 `B=binlog.000017:325156481`、`F=binlog.000017:325157844`；Journal revision 从 0 到 10。
+- 全量后执行更新、插入、删除，Source 与目标逐字段一致；最终重启后仍一致，证据见 [final acceptance](cluster-live-20261113/final/README.md)。
+- GC proof 在真实目标账本和 Journal 校验后进入 `ACTIVE`；原始 L/ACK、控制证据、目标账本、Journal 和 offset 均保留。
+- Kubernetes 停止时 JVM 直接作为 PID 1，owner 持久化为 `STOPPED`、active grant 为 0、源端连接列表为空；再次启动后 owner 重新获准，原任务恢复为 `STREAMING/HEALTHY`。
+
+重启后的删除计划因剩余小批次帧的可节省空间小于 128 字节进入 `BLOCKED`，原始 L 没有被删除。这是安全保守结果，不把“没有 worthwhile space saving”写成 GC 成功。
+
+早期 ClusterIP 失败、TEXT JDBC 类型不兼容、shell launcher 吞掉 SIGTERM、GC wildcard writer、旧 namespace 摘要变更和权限不足等失败均保留在 [retry-evidence-20261113](cluster-live-20261113/retry-evidence-20261113.md) 及 `final/runtime.log` 中。
+
+## 历史结果（保留）
 
 - 独立 Runtime 真实入口 RG01—RG07 共 **7 项通过**：5 项收敛、2 项按预期安全暂停。
 - 固定 RG01 负载连续重复 10 轮，约 12 分钟的生命周期 soak **10/10 通过**；每轮逐字段相等，最终连接和事务采样为 0，见 [soak 证据](soak-20261113/README.md)。
@@ -62,7 +76,7 @@ L 只删除可重建的 GROUP 正文，保留 ACK、控制帧、Schema、恢复�
 - DDL、多 owner guardian 接管与 GC 的完整组合、恶意管理员、70 万真实活跃表和长时间吞吐未在本轮验证。
 - GC 调度当前按单 Runtime/capture 有界执行；没有把 70 万表变成 70 万常驻 Actor。
 
-[上一轮 L GC 组件和 17 项矩阵](../2026-11-12-capture-gc/README.md)仍保留原始失败材料。源码与实验文件已提交到 `0b571796858d14f46f7d81196139f677192a812b`；网站正文将在对应站点提交后再核对线上链接。
+[上一轮 L GC 组件和 17 项矩阵](../2026-11-12-capture-gc/README.md)仍保留原始失败材料。这里的历史提交号只描述旧材料；最终代码、部署清单和本轮证据以当前提交为准，网站正文在站点仓库的对应提交后再核对线上链接。
 
 ## 严格最终重跑
 

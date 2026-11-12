@@ -367,7 +367,8 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
         gcRequest.filter(f=>gc.get.covered(result.progress,f)).foreach {_=>
           try gc.get.publish(id,session.runner) catch {case NonFatal(e)=>
             if(!ExecutionFailure.from(e,"gc-publication").releaseConfirmed)throw e
-            observe("GC_PUBLICATION_DEFERRED",JsObject("taskId"->JsString(id),"error"->JsString(e.getClass.getSimpleName)))
+            val detail=(e.getClass.getSimpleName+":"+Option(e.getMessage).getOrElse("")).take(256)
+            observe("GC_PUBLICATION_DEFERRED",JsObject("taskId"->JsString(id),"error"->JsString(detail)))
           }
         }
       released=result.releaseConfirmed

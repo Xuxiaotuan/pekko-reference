@@ -660,6 +660,8 @@ class MySQLCdcApplyEngine {
       case (Some(_), None) | (None, Some(_)) => false
       case (None, None) if BooleanTypes.contains(source.jdbcType) => BooleanTypes.contains(target.jdbcType)
       case (None, None) if DecimalTypes.contains(source.jdbcType) => DecimalTypes.contains(target.jdbcType)
+      case (None, None) if TextTypeNames(source.typeName.toUpperCase(Locale.ROOT)) &&
+        TextTypeNames(target.typeName.toUpperCase(Locale.ROOT)) => true
       case (None, None) => source.jdbcType == target.jdbcType
     }
   }
@@ -715,6 +717,7 @@ object MySQLCdcApplyEngine {
   private val IntegralTypes = IntegralRanks.keySet
   private val BooleanTypes = Set(Types.BOOLEAN, Types.BIT)
   private val DecimalTypes = Set(Types.NUMERIC, Types.DECIMAL)
+  private val TextTypeNames = Set("TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT")
   private val SupportedSourceTypes = BooleanTypes ++ IntegralTypes ++ DecimalTypes ++ Set(
     Types.REAL,
     Types.FLOAT,

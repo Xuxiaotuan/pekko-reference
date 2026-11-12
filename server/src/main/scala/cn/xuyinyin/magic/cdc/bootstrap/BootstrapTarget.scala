@@ -29,7 +29,11 @@ final class BootstrapTarget(open:()=>Connection,val table:String,codec:Bootstrap
       require(names.result()==Vector(codec.primaryKey),"bootstrap target key mismatch")
       val metadata=c.getMetaData.getColumns(c.getCatalog,null,table,null);val cols=Vector.newBuilder[(String,Int)]
       try {while(metadata.next())if(metadata.getString("TABLE_NAME")==table)cols+=metadata.getString("COLUMN_NAME")->metadata.getInt("DATA_TYPE")}finally metadata.close()
-      require(cols.result()==codec.columns,"bootstrap target columns differ from source");codec.validateTable(c,table)
+      val expected=codec.schema.parseJson.asJsObject.fields("columns").asInstanceOf[JsArray].elements.map {x=>
+        val f=x.asJsObject.fields
+        (f("name").asInstanceOf[JsString].value,f("jdbcType").asInstanceOf[JsNumber].value.toInt,f.get("typeName").collect{case JsString(v)=>v}.getOrElse(""))
+      }
+      require(BootstrapSchemaCompatibility.columnsCompatible(expected,cols.result()),"bootstrap target columns differ from source");codec.validateTable(c,table)
     }
     transaction {c=>
       val inserted=update(c,"INSERT IGNORE INTO pekko_bootstrap_targets VALUES(?,?,?,?)",targetKey,id,table,codec.schemaId)==1

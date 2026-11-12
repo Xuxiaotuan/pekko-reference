@@ -2,6 +2,7 @@ package cn.xuyinyin.magic.connectors.mysql.source.capture
 
 import cn.xuyinyin.magic.connectors.mysql.source._
 import cn.xuyinyin.magic.cdc.{MySQLCdcEnvelope,MySQLCdcGroup}
+import cn.xuyinyin.magic.cdc.bootstrap.BootstrapSchemaCompatibility
 import org.apache.kafka.connect.data.Struct
 import org.apache.kafka.connect.source.SourceRecord
 import org.apache.pekko.Done
@@ -476,8 +477,8 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       val cols=c.getMetaData.getColumns(source.database,null,table,null)
       val actual=Vector.newBuilder[(String,Int)]
       try {while(cols.next())if(cols.getString("TABLE_NAME")==table && cols.getString("TABLE_CAT")==source.database)actual+=cols.getString("COLUMN_NAME")->cols.getInt("DATA_TYPE")}finally cols.close()
-      val wanted=expected("columns").asInstanceOf[JsArray].elements.map {x=>val f=x.asJsObject.fields;f("name").asInstanceOf[JsString].value->f("jdbcType").asInstanceOf[JsNumber].value.toInt}.toVector
-      require(actual.result()==wanted,"BLOCKED_SCHEMA: JDBC and Reader schema differ")
+      val wanted=expected("columns").asInstanceOf[JsArray].elements.map {x=>val f=x.asJsObject.fields;(f("name").asInstanceOf[JsString].value,f("jdbcType").asInstanceOf[JsNumber].value.toInt,f.get("typeName").collect{case JsString(v)=>v}.getOrElse(""))}.toVector
+      require(BootstrapSchemaCompatibility.columnsCompatible(wanted,actual.result()),"BLOCKED_SCHEMA: JDBC and Reader schema differ")
       require(expected("primaryKeyColumnNames").asInstanceOf[JsArray].elements.size==1,"one primary key required")
       val keys=c.getMetaData.getPrimaryKeys(source.database,null,table)
       val actualKeys=Vector.newBuilder[(Int,String)]

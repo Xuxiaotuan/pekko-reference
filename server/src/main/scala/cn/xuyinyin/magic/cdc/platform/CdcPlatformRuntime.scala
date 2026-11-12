@@ -72,6 +72,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
     }else true
     if(!recoveryProven){recoveryPending= !exhausted;nextRecoveryNanos=System.nanoTime()+1000000000L;ownerState="UNKNOWN";reason=Some(if(exhausted)"AUTOMATIC_RECOVERY_EXHAUSTED"else"OWNER_RELEASE_UNPROVEN")}
     else if(!stopping.get() && store.beginOwner(runtimeAttemptId,now,managedOwner)){
+      logger.info("CDC owner admission granted attempt={} persisted={}",runtimeAttemptId,store.ownerAttempt.map(_._1).getOrElse("none"))
       recoveryPending=false
       ownerGranted=true
       if(!stopping.get()){
@@ -81,7 +82,10 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
           if(!stopping.get() && !guardianLost.get())ownerState="ACTIVE"
         }
       }
-    }else {recoveryPending=managedOwner.nonEmpty && !stopping.get();nextRecoveryNanos=System.nanoTime()+1000000000L;ownerState="UNKNOWN";reason=Some("OWNER_RELEASE_UNPROVEN")}
+    }else {
+      logger.warn("CDC owner admission rejected attempt={} persisted={}",runtimeAttemptId,store.ownerAttempt.map(x=>x._1+":"+x._2).getOrElse("none"))
+      recoveryPending=managedOwner.nonEmpty && !stopping.get();nextRecoveryNanos=System.nanoTime()+1000000000L;ownerState="UNKNOWN";reason=Some("OWNER_RELEASE_UNPROVEN")
+    }
   }
   private def markStartupFailure():Unit=if(startupFailurePending && markingStartupFailure.compareAndSet(false,true))try {
     store.ownerAttempt match {
@@ -228,7 +232,15 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
       if(guardianLost.get()){ownerState="UNKNOWN";reason=Some("GUARDIAN_UNAVAILABLE")}else ownerState="STOPPING"
       try kernel.requestStop() catch {case NonFatal(_)=>startupFailedFlag.set(true)}
       clock.schedule(new Runnable {def run():Unit={
-        if(!stopped.get()){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN");stopRequested.trySuccess(false)}
+        if(!stopped.get()){
+          ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN")
+          // A bounded shutdown timeout is not a release proof. Persist the
+          // conservative owner state before the JVM may be terminated so a
+          // replacement cannot mistake an ACTIVE owner for a clean stop.
+          try if(ownerGranted)store.endOwner(runtimeAttemptId,confirmed=false,now)
+          catch {case NonFatal(_) => ()}
+          stopRequested.trySuccess(false)
+        }
       }},10L,TimeUnit.SECONDS)
       clock.scheduleWithFixedDelay(new Runnable {def run():Unit={
         if(initialized.isCompleted && active.get()==0 && !gcBusy.get() && !ticking.get() && !stopped.get() && closingCheck.compareAndSet(false,true)){
