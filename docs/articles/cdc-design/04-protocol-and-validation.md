@@ -2,7 +2,7 @@
 
 [系列导读与验证范围](README.md) · [1：目标架构](01-why-pekko-for-resident-cdc.md) · [2：批转流源码](02-source-and-recovery-contract.md) · [3：真实实验](03-real-mysql-journal-failure.md) · [4：恢复协议](04-protocol-and-validation.md) · [5：自建与复用](05-pekko-vs-flink-cdc.md) · [Flink CDC 深入系列](https://xuyinyin.cn/flink-cdc-series/)
 
-> **2026-11-11 当前源码与证据：** 生产证明链保留 BootstrapJournal 实际签发的进程内对象身份，并在投影事务中核验对应 Journal 的精确内容、最新序列和删除标记。进程内登记不能跨 JVM 搬运；恢复后的 Actor 必须从持久 Journal 重新签发。独立 JVM 实测拒绝同字段伪造对象，真实重签后才推进 journal_floor。同一 JVM 持有的旧对象在 Journal 未变化时仍可能有效，它不是随 Actor 停止自动撤销的能力。旧 Workflow receipt、兼容适配器及投影只留在历史测试设施。当前 L 没有生产删除路径，归档校验和 floor 推进不等于安全 GC 已实现；不能据此声称已经闭合保留期、容量或清理证明。 [拆分与验证记录](../../experiments/2026-11-08-cdc-standalone-entry/retire-workflow-runtime-20261111/README.md)。
+> **2026-11-11 当前源码与证据：** 生产证明链保留 BootstrapJournal 实际签发的进程内对象身份，并在投影事务中核验对应 Journal 的精确内容、最新序列和删除标记。进程内登记不能跨 JVM 搬运；恢复后的 Actor 必须从持久 Journal 重新签发。独立 JVM 实测拒绝同字段伪造对象，真实重签后才推进 journal_floor。同一 JVM 持有的旧对象在 Journal 未变化时仍可能有效，它不是随 Actor 停止自动撤销的能力。旧 Workflow receipt、兼容适配器及投影只留在历史测试设施。当前 L 已有独立 Runtime 的受保护前缀 GC：只删除可由目标账本重建的 GROUP 正文，ACK、控制帧、Schema、Journal、目标账本和受保护恢复点保留；未知 B、慢表、容量不足和证据不完整继续阻挡删除。该实现只证明逻辑回收，不证明 InnoDB 文件缩容或任意历史恢复。 [拆分与验证记录](../../experiments/2026-11-08-cdc-standalone-entry/retire-workflow-runtime-20261111/README.md)。
 
 [A/B 补测](../../experiments/2026-10-27-ab-followup/README.md)中，源 marker 回复不确定时保留原身份并暂停；观察连接断开与权限缺失单列为真实 MySQL 组件结果。取消先于 marker 绑定的样本中，订阅未复活，但代码仍可能发出 `B_BOUND` 观察事件；判断持久绑定须读取实际屏障。尚缺的固定门、旧状态证明和跨 JVM 资源准入仍为 `evidence_incomplete`。
 
@@ -258,3 +258,11 @@ MySQL 属性采集关闭时，丢失计数为零并不能证明属性可见。�
 ## 技术附录与证据入口
 
 [历史源码分析与实验档案](appendices/04-group-protocol-history.md)保留本篇此前全文；[附录索引](appendices/README.md)集中提供版本、完整矩阵和原始材料入口。当前主文只保留支撑核心论点所需的实现、代表性证据和边界。
+
+## 2026-11-12 Runtime GC 更新
+
+本轮已把 L 安全 GC 接入独立 CDC Runtime。GC 使用单个有界维护 worker，审计请求、namespace 清点、保护 pin、GC operation 和批次游标均持久化；表级审计仍使用原 BootstrapJournal、目标账本和 T/J/D 证据。旧 namespace 启用前会重新清点订阅、消费者、Journal、账号、连接和事务；清点不完整、未知 B、外来 Journal、危险账号或资源释放未知时安全暂停。
+
+真实入口 RG01—RG07 共 7 项通过，其中未知 B 和异常重启按预期 SAFE_PAUSED；L GC 的 LG01—LG16 加容量补测共 17 项通过。LG15 首次身份修复后未重启 Reader，保留失败材料；按重启边界重跑后通过。相关回归 53 项通过。
+
+源码结论、真实结果和未验证范围见 [Runtime GC 实验报告](https://github.com/Xuxiaotuan/pekko-reference/blob/0b571796858d14f46f7d81196139f677192a812b/docs/experiments/2026-11-12-runtime-gc/README.md)。这组结果不代表 70 万真实活跃表、DDL、多 owner guardian 接管、自动扩容或 InnoDB 文件缩容已经验收。

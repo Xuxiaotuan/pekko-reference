@@ -269,3 +269,11 @@ A14 在源 COMMIT 未知时的取消测试失败；B05 的启动与关闭竞争�
 ## 技术附录与证据入口
 
 [历史源码分析与实验档案](appendices/03-failure-experiments-history.md)保留本篇此前全文；[附录索引](appendices/README.md)集中提供版本、完整矩阵和原始材料入口。当前主文只保留支撑核心论点所需的实现、代表性证据和边界。
+
+## 2026-11-12 Runtime GC 更新
+
+本轮已把 L 安全 GC 接入独立 CDC Runtime。GC 使用单个有界维护 worker，审计请求、namespace 清点、保护 pin、GC operation 和批次游标均持久化；表级审计仍使用原 BootstrapJournal、目标账本和 T/J/D 证据。旧 namespace 启用前会重新清点订阅、消费者、Journal、账号、连接和事务；清点不完整、未知 B、外来 Journal、危险账号或资源释放未知时安全暂停。
+
+真实入口 RG01—RG07 共 7 项通过，其中未知 B 和异常重启按预期 SAFE_PAUSED；L GC 的 LG01—LG16 加容量补测共 17 项通过。LG15 首次身份修复后未重启 Reader，保留失败材料；按重启边界重跑后通过。相关回归 53 项通过。
+
+源码结论、真实结果和未验证范围见 [Runtime GC 实验报告](https://github.com/Xuxiaotuan/pekko-reference/blob/0b571796858d14f46f7d81196139f677192a812b/docs/experiments/2026-11-12-runtime-gc/README.md)。这组结果不代表 70 万真实活跃表、DDL、多 owner guardian 接管、自动扩容或 InnoDB 文件缩容已经验收。

@@ -2,7 +2,7 @@
 
 [系列导读与验证范围](README.md) · [1：目标架构](01-why-pekko-for-resident-cdc.md) · [2：批转流源码](02-source-and-recovery-contract.md) · [3：真实实验](03-real-mysql-journal-failure.md) · [4：恢复协议](04-protocol-and-validation.md) · [5：自建与复用](05-pekko-vs-flink-cdc.md) · [Flink CDC 深入系列](https://xuyinyin.cn/flink-cdc-series/)
 
-> **2026-11-11 当前源码与证据：** 当前工程的产品范围是独立 CDC Runtime，而不是工作流平台。生产包已排除旧 Actor、旧执行器与旧 receipt 适配器；保留兼容状态模型、旧表互斥锁和配额迁移，是维护历史状态的成本。C0 的实际证据支持一个指定 worker 故障窗口中的隔离、接管和逐字段追平，不支持 guardian 自身重启、未知 B 自动恢复或 70 万活跃表的容量承诺。L 自动安全删除尚未实现，也没有 Pekko/Flink 同负载基准，因此不能把目录收敛或局部恢复成功写成与 Flink CDC 等价。 [拆分与验证记录](../../experiments/2026-11-08-cdc-standalone-entry/retire-workflow-runtime-20261111/README.md)。
+> **2026-11-11 当前源码与证据：** 当前工程的产品范围是独立 CDC Runtime，而不是工作流平台。生产包已排除旧 Actor、旧执行器与旧 receipt 适配器；保留兼容状态模型、旧表互斥锁和配额迁移，是维护历史状态的成本。C0 的实际证据支持一个指定 worker 故障窗口中的隔离、接管和逐字段追平，不支持 guardian 自身重启、未知 B 自动恢复或 70 万活跃表的容量承诺。L 已实现受保护前缀的小批次逻辑 GC，但尚未证明物理文件缩容；也没有 Pekko/Flink 同负载基准，因此不能把目录收敛或局部恢复成功写成与 Flink CDC 等价。 [拆分与验证记录](../../experiments/2026-11-08-cdc-standalone-entry/retire-workflow-runtime-20261111/README.md)。
 
 [A/B 补测](../../experiments/2026-10-27-ab-followup/README.md)支持对具体准入与资源释放边界的分析，但矩阵仍未完成；这些数据不是 Pekko/Flink 吞吐、资源占用或高可用能力的同负载比较。
 
@@ -189,3 +189,11 @@ CDC 控制存储已参与一次真实旧 Workflow 恢复实验；当前证据不
 ## 技术附录与证据入口
 
 [历史源码分析与实验档案](appendices/05-framework-comparison-history.md)保留本篇此前全文；[附录索引](appendices/README.md)集中提供版本、完整矩阵和原始材料入口。当前主文只保留支撑核心论点所需的实现、代表性证据和边界。
+
+## 2026-11-12 Runtime GC 更新
+
+本轮已把 L 安全 GC 接入独立 CDC Runtime。GC 使用单个有界维护 worker，审计请求、namespace 清点、保护 pin、GC operation 和批次游标均持久化；表级审计仍使用原 BootstrapJournal、目标账本和 T/J/D 证据。旧 namespace 启用前会重新清点订阅、消费者、Journal、账号、连接和事务；清点不完整、未知 B、外来 Journal、危险账号或资源释放未知时安全暂停。
+
+真实入口 RG01—RG07 共 7 项通过，其中未知 B 和异常重启按预期 SAFE_PAUSED；L GC 的 LG01—LG16 加容量补测共 17 项通过。LG15 首次身份修复后未重启 Reader，保留失败材料；按重启边界重跑后通过。相关回归 53 项通过。
+
+源码结论、真实结果和未验证范围见 [Runtime GC 实验报告](https://github.com/Xuxiaotuan/pekko-reference/blob/0b571796858d14f46f7d81196139f677192a812b/docs/experiments/2026-11-12-runtime-gc/README.md)。这组结果不代表 70 万真实活跃表、DDL、多 owner guardian 接管、自动扩容或 InnoDB 文件缩容已经验收。
