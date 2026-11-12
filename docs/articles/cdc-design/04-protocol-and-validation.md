@@ -263,6 +263,6 @@ MySQL 属性采集关闭时，丢失计数为零并不能证明属性可见。�
 
 本轮已把 L 安全 GC 接入独立 CDC Runtime。GC 使用单个有界维护 worker，审计请求、namespace 清点、保护 pin、GC operation 和批次游标均持久化；表级审计仍使用原 BootstrapJournal、目标账本和 T/J/D 证据。旧 namespace 启用前会重新清点订阅、消费者、Journal、账号、连接和事务；清点不完整、未知 B、外来 Journal、危险账号或资源释放未知时安全暂停。
 
-真实入口 RG01—RG07 共 7 项通过，其中未知 B 和异常重启按预期 SAFE_PAUSED；L GC 的 LG01—LG16 加容量补测共 17 项通过。LG15 首次身份修复后未重启 Reader，保留失败材料；按重启边界重跑后通过。相关回归 53 项通过。
+真实入口 RG01—RG07 共 7 项通过，其中未知 B 和异常重启按预期 SAFE_PAUSED；L GC 的 LG01—LG16 加容量补测共 17 项通过。LG15 首次身份修复后未重启 Reader，保留失败材料；按重启边界重跑后通过。相关回归 53 项通过；固定 RG01 负载又连续完成 10 轮、约 12 分钟的生命周期 soak，逐字段对账和最终资源采样均通过。
 
-源码结论、真实结果和未验证范围见 [Runtime GC 实验报告](https://github.com/Xuxiaotuan/pekko-reference/blob/0b571796858d14f46f7d81196139f677192a812b/docs/experiments/2026-11-12-runtime-gc/README.md)。这组结果不代表 70 万真实活跃表、DDL、多 owner guardian 接管、自动扩容或 InnoDB 文件缩容已经验收。
+源码结论、真实结果和未验证范围见 [Runtime GC 实验报告](https://github.com/Xuxiaotuan/pekko-reference/blob/1ab1acf/docs/experiments/2026-11-12-runtime-gc/README.md)。这组结果不代表 70 万真实活跃表、DDL、多 owner guardian 接管、自动扩容或 InnoDB 文件缩容已经验收。
