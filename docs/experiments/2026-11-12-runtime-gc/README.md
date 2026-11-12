@@ -22,11 +22,13 @@
 
 - 独立 Runtime 真实入口 RG01—RG07 共 **7 项通过**：5 项收敛、2 项按预期安全暂停。
 - 固定 RG01 负载连续重复 10 轮，约 12 分钟的生命周期 soak **10/10 通过**；每轮逐字段相等，最终连接和事务采样为 0，见 [soak 证据](soak-20261113/README.md)。
-- 远端 amd64 集群 acceptance 已验证镜像、Deployment Ready、API port-forward 和 Source binlog 启动；State 复查连接随后失败并安全暂停，完整集群 Sink 对账仍未通过，见 [cluster-live](cluster-live-20261113/README.md)。
+- 早期远端 amd64 acceptance 曾因 State ClusterIP、Schema 类型和 Sink 类型比较失败；这些失败材料保留在 [cluster-live 重试记录](cluster-live-20261113/retry-evidence-20261113.md)。最终固定 NodePort、类型兼容、PID1 和 GC 账号后，完整 MySQL→Journal→Sink acceptance 通过，详见 [最终材料](cluster-live-20261113/final/README.md)。
 - L GC 真实 Reader/Journal/Sink 的严格串行重跑 LG01—LG16 加容量补测共 **17 项通过**，记录在 [capture-gc 严格证据](../2026-11-12-capture-gc/strict-final/verification.log)。此前并行运行导致账号清点门失败的材料仍保留，未用放宽测试门掩盖。
 - 选定本地主流程、Runtime、Journal、关闭、兼容和协议回归共 **53 项通过**，见 [regression.log](final/regression.log)。
 - 收敛用例的真实 MySQL 源表和目标表逐字段对账一致；慢表场景在持有目标行锁时仍保留保护前缀，释放锁后继续追平。未知 B、未清点 Journal、危险账号、清点中断、异常退出均没有放行删除。
 - [资源释放](final/resource-release.json) 显示最终检查时 Source/State 两个专用 MySQL 的外部连接和 InnoDB 事务均为 0，随后实例已关闭。测试数据目录、Journal 和失败材料保留。
+
+- 最新 `cdc-runtime` CI（commit `84e6aeb`）的隔离 Runtime 主路径 verify/image 均成功；完整仓库回归的 5 个失败套件和 411 个外部取消仍单独保留在最终回归摘要中。
 
 ## 主流程改造
 

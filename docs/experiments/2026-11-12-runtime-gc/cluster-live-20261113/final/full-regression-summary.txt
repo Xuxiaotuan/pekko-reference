@@ -12,3 +12,4 @@
 - cn.xuyinyin.magic.cdc.platform.CdcPlatformRuntimeSpec
 远端 GitHub Actions verify 同样失败，image/deploy 阶段按 needs 规则跳过。
 针对本次改动的 Compile/compile、BootstrapSchemaCompatibilitySpec、CdcGcSettingsSpec、TEXT sink targeted test、CdcPlatformRuntimeSpec（11 项）均单独通过。
+随后 CI workflow `43316778049`（commit `84e6aeb`）按收敛后的 CDC Runtime 主路径执行，verify 和 image 均成功；deploy 按 workflow 的手动 dispatch 规则保持 skipped。
