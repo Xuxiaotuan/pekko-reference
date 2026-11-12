@@ -10,6 +10,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class CdcPlatformRuntimeSpec extends STSpec {
+  Class.forName("org.h2.Driver")
   "bounded CDC runtime" should {
     "retry recovery after a transient proof lookup failure without activating early" in {
       val url="jdbc:h2:mem:cdc_recovery_retry_"+UUID.randomUUID().toString.replace('-','_')+";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"

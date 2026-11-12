@@ -1,0 +1,51 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 4 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapRunner.scala:469:53: return statement uses an exception to pass control to the caller of the enclosing named method run
+[warn]         if(s.phase=="CANCELED" || s.phase=="PAUSED")return
+[warn]                                                     ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapRunner.scala:472:34: return statement uses an exception to pass control to the caller of the enclosing named method run
+[warn]         if(state.phase=="PAUSED")return
+[warn]                                  ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapRunner.scala:490:21: return statement uses an exception to pass control to the caller of the enclosing named method run
+[warn]           if(stop())return
+[warn]                     ^
+[warn] three warnings found
+[info] done compiling
+[info] compiling 11 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapJournalProgressVerifier.scala:5:54: Unused import
+[warn] import org.apache.pekko.actor.typed.scaladsl.adapter._
+[warn]                                                      ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcBootstrapKernel.scala:3:73: Unused import
+[warn] import cn.xuyinyin.magic.connectors.mysql.source.{DebeziumEngineFactory,MySQLCdcStateConfig}
+[warn]                                                                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcBootstrapKernel.scala:11:57: Unused import
+[warn] import org.apache.pekko.actor.typed.scaladsl.{Behaviors,adapter}
+[warn]                                                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcJournalFenceVerifier.scala:6:54: Unused import
+[warn] import org.apache.pekko.actor.typed.scaladsl.adapter._
+[warn]                                                      ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcPlatformRuntime.scala:9:28: Unused import
+[warn] import scala.util.{Failure,Success}
+[warn]                            ^
+[error] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcTaskModels.scala:46:96: missing argument list for method apply in object BootstrapProgress
+[error] Unapplied methods are only converted to functions when a function type is expected.
+[error] You can make this conversion explicit by writing `apply _` or `apply(_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_)` instead of `apply`.
+[error]   implicit val progressFormat:RootJsonFormat[BootstrapProgress]=jsonFormat21(BootstrapProgress.apply)
+[error]                                                                                                ^
+[warn] 5 warnings found
+[error] one error found
+[error] (Compile / compileIncremental) Compilation failed
+[error] Total time: 5 s, completed 2026年11月11日 下午11:51:43

@@ -1,0 +1,340 @@
+03:47:37,859 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+03:47:37,859 |-INFO in ch.qos.logback.classic.util.ContextInitializer@75f49d3 - No custom configurators were discovered as a service.
+03:47:37,859 |-INFO in ch.qos.logback.classic.util.ContextInitializer@75f49d3 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+03:47:37,860 |-INFO in ch.qos.logback.classic.util.ContextInitializer@75f49d3 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+03:47:37,860 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+03:47:37,861 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+03:47:37,862 |-INFO in ch.qos.logback.classic.util.ContextInitializer@75f49d3 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+03:47:37,862 |-INFO in ch.qos.logback.classic.util.ContextInitializer@75f49d3 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+03:47:37,862 |-INFO in ch.qos.logback.classic.util.ContextInitializer@75f49d3 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+03:47:37,863 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+03:47:37,863 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+03:47:37,896 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+03:47:37,896 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+03:47:37,898 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+03:47:37,904 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+03:47:37,904 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+03:47:37,904 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+03:47:37,904 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+03:47:37,905 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+03:47:37,905 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+03:47:37,905 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+03:47:37,906 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+03:47:37,906 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+03:47:37,906 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+03:47:37,906 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+03:47:37,906 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+03:47:37,906 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@7de727f5 - End of configuration.
+03:47:37,906 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@5e2274d4 - Registering current configuration as safe fallback point
+03:47:37,907 |-INFO in ch.qos.logback.classic.util.ContextInitializer@75f49d3 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 45 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+SLF4J(W): A number (1) of logging calls during the initialization phase have been intercepted and are
+SLF4J(W): now being replayed. These are subject to the filtering rules of the underlying logging system.
+SLF4J(W): See also https://www.slf4j.org/codes.html#replay
+03:47:37.909 [34mINFO [0;39m [36m[bootstrap-gc_263c05ee4d0a-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+03:47:38.507 [34mINFO [0;39m [36m[main][0;39m [1;35m[o.a.k.common.config.AbstractConfig][0;39m - EmbeddedWorkerConfig values: 
+	access.control.allow.methods = 
+	access.control.allow.origin = 
+	admin.listeners = null
+	bootstrap.servers = [localhost:9092]
+	client.dns.lookup = use_all_dns_ips
+	config.providers = []
+	connector.client.config.override.policy = All
+	header.converter = class org.apache.kafka.connect.storage.SimpleHeaderConverter
+	header.converter.plugin.version = null
+	key.converter = class org.apache.kafka.connect.json.JsonConverter
+	key.converter.plugin.version = null
+	listeners = [http://:8083]
+	metric.reporters = [org.apache.kafka.common.metrics.JmxReporter]
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	offset.flush.interval.ms = 0
+	offset.flush.timeout.ms = 2000
+	offset.storage.file.filename = 
+	offset.storage.partitions = null
+	offset.storage.replication.factor = null
+	offset.storage.topic = 
+	plugin.discovery = hybrid_warn
+	plugin.path = null
+	response.http.headers.config = 
+	rest.advertised.host.name = null
+	rest.advertised.listener = null
+	rest.advertised.port = null
+	rest.extension.classes = []
+	ssl.cipher.suites = []
+	ssl.client.auth = none
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	task.shutdown.graceful.timeout.ms = 5000
+	topic.creation.enable = true
+	topic.tracking.allow.reset = true
+	topic.tracking.enable = true
+	value.converter = class org.apache.kafka.connect.json.JsonConverter
+	value.converter.plugin.version = null
+
+03:47:38.515 [34mINFO [0;39m [36m[main][0;39m [1;35m[o.a.k.common.config.AbstractConfig][0;39m - JsonConverterConfig values: 
+	converter.type = key
+	decimal.format = BASE64
+	replace.null.with.default = true
+	schema.content = null
+	schemas.cache.size = 1000
+	schemas.enable = false
+
+03:47:38.515 [34mINFO [0;39m [36m[main][0;39m [1;35m[o.a.k.common.config.AbstractConfig][0;39m - JsonConverterConfig values: 
+	converter.type = value
+	decimal.format = BASE64
+	replace.null.with.default = true
+	schema.content = null
+	schemas.cache.size = 1000
+	schemas.enable = false
+
+03:47:38.516 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'CREATING' to 'INITIALIZING'
+WINDOW {"pid":61791,"kind":"PROCESS_READY","at":"2026-11-12T03:47:38.517004Z"}
+03:47:38.531 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom source info struct maker plugin: io.debezium.connector.mysql.MySqlSourceInfoStructMaker
+WINDOW {"id":"a","kind":"BOOT_ACCEPTED","at":"2026-11-12T03:47:38.541275Z"}
+03:47:38.545 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = gc_263c05ee4d0a named = connection-validation
+03:47:38.548 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-gc_263c05ee4d0a-connection-validation
+03:47:38.589 [34mINFO [0;39m [36m[bootstrap-gc_263c05ee4d0a-pekko.persistence.dispatchers.default-plugin-dispatcher-16][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Starting...
+03:47:38.592 [34mINFO [0;39m [36m[bootstrap-gc_263c05ee4d0a-pekko.persistence.dispatchers.default-plugin-dispatcher-16][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Start completed.
+03:47:38.620 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-connection-validation][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Using 'SHOW BINARY LOG STATUS' to get binary log status
+03:47:38.621 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-connection-validation][0;39m [1;35m[i.d.connector.binlog.BinlogConnector][0;39m - Successfully tested connection for jdbc:mysql://127.0.0.1:25821/?useInformationSchema=true&nullCatalogMeansCurrent=false&useUnicode=true&characterEncoding=UTF-8&characterSetResults=UTF-8&zeroDateTimeBehavior=CONVERT_TO_NULL&connectTimeout=30000 with user 'root'
+03:47:38.621 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-connection-validation][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component JdbcConnection, id = JdbcConnection named = jdbc-connection-close
+03:47:38.621 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-connection-validation][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-jdbcconnection-JdbcConnection-jdbc-connection-close
+03:47:38.622 [34mINFO [0;39m [36m[debezium-jdbcconnection-JdbcConnection-jdbc-connection-close][0;39m [1;35m[io.debezium.jdbc.JdbcConnection][0;39m - Connection gracefully closed
+03:47:38.629 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.storage.jdbc.JdbcCommonConfig][0;39m - Configuration for 'JdbcOffsetBackingStoreConfig' with prefix 'offset.storage.': {jdbc.table.name=capture_offsets_b73b4c192b25035dcc8a2df0fa87a828, jdbc.connection.user=root, jdbc.connection.url=jdbc:mysql://127.0.0.1:25832/pekko_gc_263c05ee4d0a?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8, jdbc.connection.password=********, jdbc.table.ddl=CREATE TABLE %s (id VARCHAR(36) NOT NULL, offset_key VARCHAR(1255), offset_val VARCHAR(1255), record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id)), file.filename=}
+03:47:38.633 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.s.j.o.JdbcOffsetBackingStore][0;39m - Starting JdbcOffsetBackingStore db 'jdbc:mysql://127.0.0.1:25832/pekko_gc_263c05ee4d0a?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8'
+03:47:38.638 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'INITIALIZING' to 'CREATING_TASKS'
+03:47:38.642 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'CREATING_TASKS' to 'STARTING_TASKS'
+03:47:38.642 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Waiting max. for 40000 ms for individual source tasks to start.
+03:47:38.643 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom source info struct maker plugin: io.debezium.connector.mysql.MySqlSourceInfoStructMaker
+03:47:38.645 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.o.emitter.NoOpLineageEmitter][0;39m - You are using a no-op lineage emitter. If you want to emit open lineage event, please set 'openlineage.integration.enabled=true'
+03:47:38.647 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - Starting MySqlConnectorTask with configuration:
+   connector.class = io.debezium.connector.mysql.MySqlConnector
+   snapshot.locking.mode = none
+   bootstrap.servers = localhost:9092
+   driver.forceConnectionTimeZoneToSession = true
+   include.schema.changes = true
+   schema.history.internal.jdbc.connection.url = jdbc:mysql://127.0.0.1:25832/pekko_gc_263c05ee4d0a?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8
+   poll.interval.ms = 100
+   record.processing.threads = 1
+   errors.retry.delay.initial.ms = 300
+   driver.allowPublicKeyRetrieval = true
+   key.converter = org.apache.kafka.connect.json.JsonConverter
+   database.user = root
+   offset.storage = io.debezium.storage.jdbc.offset.JdbcOffsetBackingStore
+   heartbeat.interval.ms = 1000
+   offset.storage.jdbc.table.name = capture_offsets_b73b4c192b25035dcc8a2df0fa87a828
+   internal.task.management.timeout.ms = 40000
+   errors.max.retries = -1
+   database.password = ********
+   name = gc_263c05ee4d0a
+   offset.storage.jdbc.connection.password = ********
+   offset.storage.jdbc.table.ddl = CREATE TABLE %s (id VARCHAR(36) NOT NULL, offset_key VARCHAR(1255), offset_val VARCHAR(1255), record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id))
+   max.batch.size = 2
+   skipped.operations = none
+   snapshot.mode = no_data
+   schema.history.internal.jdbc.connection.password = ********
+   record.processing.shutdown.timeout.ms = 1000
+   provide.transaction.metadata = true
+   schema.history.internal.store.only.captured.databases.ddl = true
+   record.processing.order = ORDERED
+   tombstones.on.delete = false
+   topic.prefix = gc_263c05ee4d0a
+   decimal.handling.mode = string
+   offset.storage.file.filename = 
+   schema.history.internal.jdbc.table.ddl = CREATE TABLE %s (id VARCHAR(36) NOT NULL, history_data LONGTEXT, history_data_seq INT, record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id, history_data_seq))
+   value.converter = org.apache.kafka.connect.json.JsonConverter
+   offset.storage.jdbc.connection.url = jdbc:mysql://127.0.0.1:25832/pekko_gc_263c05ee4d0a?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8
+   database.server.id = 211463357
+   max.queue.size.in.bytes = 16777216
+   schema.history.internal.jdbc.table.name = capture_history_b73b4c192b25035dcc8a2df0fa87a828
+   offset.flush.timeout.ms = 2000
+   errors.retry.delay.max.ms = 10000
+   offset.storage.jdbc.connection.user = root
+   database.port = 25821
+   offset.flush.interval.ms = 0
+   schema.history.internal = io.debezium.storage.jdbc.history.JdbcSchemaHistory
+   record.processing.with.serial.consumer = false
+   database.hostname = 127.0.0.1
+   database.connectionTimeZone = UTC
+   schema.history.internal.jdbc.connection.user = root
+   connect.keep.alive.interval.ms = 5000
+   table.include.list = \Qpekko_gc_263c05ee4d0a\E\..*
+   database.include.list = pekko_gc_263c05ee4d0a
+
+03:47:38.649 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom topic naming strategy plugin: io.debezium.schema.DefaultTopicNamingStrategy
+03:47:38.667 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Using 'SHOW BINARY LOG STATUS' to get binary log status
+03:47:38.688 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - Found previous partition offset BinlogPartition{serverName='gc_263c05ee4d0a'} io.debezium.connector.mysql.MySqlPartition@c99263c: {transaction_id=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20690, file=binlog.000019, pos=1307635, gtids=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689, transaction_data_collection_order_pekko_gc_263c05ee4d0a.a=1, event=3}
+03:47:38.708 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.storage.jdbc.JdbcCommonConfig][0;39m - Configuration for 'JdbcSchemaHistoryConfig' with prefix 'schema.history.internal.': {connector.class=io.debezium.connector.mysql.MySqlConnector, jdbc.table.name=capture_history_b73b4c192b25035dcc8a2df0fa87a828, jdbc.connection.user=root, name=gc_263c05ee4d0a-schemahistory, jdbc.connection.url=jdbc:mysql://127.0.0.1:25832/pekko_gc_263c05ee4d0a?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8, jdbc.connection.password=********, connector.id=gc_263c05ee4d0a, jdbc.table.ddl=CREATE TABLE %s (id VARCHAR(36) NOT NULL, history_data LONGTEXT, history_data_seq INT, record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id, history_data_seq)), store.only.captured.databases.ddl=true}
+03:47:38.717 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlDatabaseSchema][0;39m - Using MySql DdlParserType DEFAULT
+03:47:38.745 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Using 'SHOW BINARY LOG STATUS' to get binary log status
+03:47:38.752 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - Guardrail validation skipped
+03:47:38.752 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - Closing connection before starting schema recovery
+03:47:38.752 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component JdbcConnection, id = JdbcConnection named = jdbc-connection-close
+03:47:38.752 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-jdbcconnection-JdbcConnection-jdbc-connection-close
+03:47:38.753 [34mINFO [0;39m [36m[debezium-jdbcconnection-JdbcConnection-jdbc-connection-close][0;39m [1;35m[io.debezium.jdbc.JdbcConnection][0;39m - Connection gracefully closed
+03:47:38.771 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - GTID Set retained: 'a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689'
+03:47:38.772 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - The current GTID set 'a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20690' does not contain the GTID set 'a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689' required by the connector
+03:47:38.773 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - Server has already purged '' GTIDs
+03:47:38.774 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - GTIDs known by the server but not processed yet 'a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20690-20690', for replication are available only 'a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20690-20690'
+03:47:38.774 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - Reconnecting after validating schema recovery
+03:47:38.783 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - Found previous offset BinlogOffsetContext{sourceInfoSchema=Schema{io.debezium.connector.mysql.Source:STRUCT}, sourceInfo=BinlogSourceInfo{currentGtid='null', currentBinlogFilename='binlog.000019', currentBinlogPosition=1307635, currentRowNumber=0, serverId=0, sourceTime=null, threadId=-1, currentQuery='null', tableIds=[], databaseName='null'}, snapshotCompleted=false, transactionContext=TransactionContext [currentTransactionId=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20690, perTableEventCount={pekko_gc_263c05ee4d0a.a=1}, totalEventCount=1], restartGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689', currentGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689', restartBinlogFilename='binlog.000019', restartBinlogPosition=1307635, restartRowsToSkip=0, restartEventsToSkip=3, currentEventLengthInBytes=0, inTransaction=false, transactionId='null', incrementalSnapshotContext=IncrementalSnapshotContext [windowOpened=false, chunkEndPosition=null, dataCollectionsToSnapshot=[], lastEventKeySent=null, maximumKey=null]}
+03:47:38.784 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.c.b.QueueProviderServiceProvider][0;39m - Using QueueProvider io.debezium.connector.base.DefaultQueueProvider
+03:47:38.790 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = gc_263c05ee4d0a named = SignalProcessor
+03:47:38.796 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom topic naming strategy plugin: io.debezium.schema.SchemaTopicNamingStrategy
+03:47:38.813 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = gc_263c05ee4d0a named = change-event-source-coordinator
+03:47:38.813 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = gc_263c05ee4d0a named = blocking-snapshot
+03:47:38.814 [34mINFO [0;39m [36m[pool-2-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator
+03:47:38.815 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - All tasks have started successfully.
+03:47:38.815 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'STARTING_TASKS' to 'POLLING_TASKS'
+03:47:38.816 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Metrics registered
+03:47:38.816 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Using io.debezium.embedded.async.ParallelSmtAndConvertBatchProcessor processor
+03:47:38.816 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Context created
+03:47:38.819 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.r.history.SchemaHistoryMetrics][0;39m - Started database schema history recovery
+WINDOW {"admission":{"readAvailable":2,"runAvailable":7,"writeAvailable":2},"at":"2026-11-12T03:47:38.899116Z","captureFailure":null,"actors":{"a":{"appliedPage":0,"attempt":0,"batchSequence":3,"cancelRequested":false,"completionRoot":"fc12c5e7dfbd741160a2584075ef0020b327199973cf919f50f848916ae97700","deltaAfter":59,"executionId":"ffc535bd-c089-45bb-8242-c13251b276f6","failure":null,"fence":"a_F","index":2,"phase":"STREAMING","recoveryAttempts":0,"recoveryPermit":null,"revision":23,"window":null}},"kind":"STATUS","captureReadiness":"STARTING"}
+WINDOW {"recoveryAttempts":1,"phase":"STREAMING","appliedPage":0,"batchSequence":3,"revision":24,"cancelRequested":false,"executionId":"ffc535bd-c089-45bb-8242-c13251b276f6","index":2,"deltaAfter":59,"failure":"execution_interrupted","window":null,"recoveryPermit":null,"completionRoot":"fc12c5e7dfbd741160a2584075ef0020b327199973cf919f50f848916ae97700","fence":"a_F","at":"2026-11-12T03:47:38.907335Z","id":"a","kind":"J_COMMITTED","attempt":0}
+WINDOW {"deltaAfter":59,"journalSequence":24,"kind":"J_FLOOR_VERIFIED","at":"2026-11-12T03:47:38.924049Z","id":"a"}
+03:47:39.066 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.r.history.SchemaHistoryMetrics][0;39m - Finished database schema history recovery of 26 change(s) in 247 ms
+WINDOW {"admission":{"readAvailable":2,"runAvailable":7,"writeAvailable":2},"at":"2026-11-12T03:47:39.077672Z","captureFailure":null,"actors":{"a":{"appliedPage":0,"attempt":0,"batchSequence":3,"cancelRequested":false,"completionRoot":"fc12c5e7dfbd741160a2584075ef0020b327199973cf919f50f848916ae97700","deltaAfter":59,"executionId":"ffc535bd-c089-45bb-8242-c13251b276f6","failure":"execution_interrupted","fence":"a_F","index":2,"phase":"STREAMING","recoveryAttempts":1,"recoveryPermit":null,"revision":24,"window":null}},"kind":"STATUS","captureReadiness":"STARTING"}
+03:47:39.086 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - A previous offset indicating a completed snapshot has been found.
+03:47:39.086 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Snapshot ended with SnapshotResult [status=SKIPPED, offset=BinlogOffsetContext{sourceInfoSchema=Schema{io.debezium.connector.mysql.Source:STRUCT}, sourceInfo=BinlogSourceInfo{currentGtid='null', currentBinlogFilename='binlog.000019', currentBinlogPosition=1307635, currentRowNumber=0, serverId=0, sourceTime=null, threadId=-1, currentQuery='null', tableIds=[], databaseName='null'}, snapshotCompleted=false, transactionContext=TransactionContext [currentTransactionId=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20690, perTableEventCount={pekko_gc_263c05ee4d0a.a=1}, totalEventCount=1], restartGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689', currentGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689', restartBinlogFilename='binlog.000019', restartBinlogPosition=1307635, restartRowsToSkip=0, restartEventsToSkip=3, currentEventLengthInBytes=0, inTransaction=false, transactionId='null', incrementalSnapshotContext=IncrementalSnapshotContext [windowOpened=false, chunkEndPosition=null, dataCollectionsToSnapshot=[], lastEventKeySent=null, maximumKey=null]}]
+03:47:39.088 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = gc_263c05ee4d0a named = binlog-client
+03:47:39.089 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Enable ssl PREFERRED mode for connector gc_263c05ee4d0a
+03:47:39.094 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.pipeline.signal.SignalProcessor][0;39m - SignalProcessor started. Scheduling it every 5000ms
+03:47:39.094 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-gc_263c05ee4d0a-SignalProcessor
+03:47:39.094 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Starting streaming
+03:47:39.096 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - GTID set purged on server: ''
+03:47:39.096 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Attempting to generate a filtered GTID set
+03:47:39.096 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - GTID set from previous recorded offset: a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689
+03:47:39.096 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - GTID set available on server: a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20690
+03:47:39.096 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Using first available positions for new GTID channels
+03:47:39.096 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Relevant GTID set available on server: a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20690
+03:47:39.096 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Final merged GTID set to use when connecting to MySQL: a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689
+03:47:39.096 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Registering binlog reader with GTID set: 'a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689'
+11月 12, 2026 3:47:39 上午 com.github.shyiko.mysql.binlog.BinaryLogClient setGtidSet
+信息: Enabling GTID
+03:47:39.100 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Skip 3 events on streaming start
+03:47:39.100 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Skip 0 rows on streaming start
+03:47:39.101 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-gc_263c05ee4d0a-binlog-client
+03:47:39.103 [34mINFO [0;39m [36m[blc-127.0.0.1:25821][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-gc_263c05ee4d0a-binlog-client
+11月 12, 2026 3:47:39 上午 com.github.shyiko.mysql.binlog.BinaryLogClient resolveDatabaseVersion
+信息: Database version: 9.5.0 (major=9, minor=5, mariadb=false)
+11月 12, 2026 3:47:39 上午 com.github.shyiko.mysql.binlog.BinaryLogClient tryUpgradeToSSL
+信息: SSL enabled
+11月 12, 2026 3:47:39 上午 com.github.shyiko.mysql.binlog.BinaryLogClient requestBinaryLogStreamMysql
+信息: Requesting streaming from position filename: , position: 4, GTID set: a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689
+11月 12, 2026 3:47:39 上午 com.github.shyiko.mysql.binlog.BinaryLogClient connect
+信息: Connected to 127.0.0.1:25821 at a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689 (sid:211463357, cid:3352)
+03:47:39.115 [34mINFO [0;39m [36m[blc-127.0.0.1:25821][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Connected to binlog at 127.0.0.1:25821, starting at BinlogOffsetContext{sourceInfoSchema=Schema{io.debezium.connector.mysql.Source:STRUCT}, sourceInfo=BinlogSourceInfo{currentGtid='null', currentBinlogFilename='binlog.000019', currentBinlogPosition=1307635, currentRowNumber=0, serverId=0, sourceTime=null, threadId=-1, currentQuery='null', tableIds=[], databaseName='null'}, snapshotCompleted=false, transactionContext=TransactionContext [currentTransactionId=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20690, perTableEventCount={pekko_gc_263c05ee4d0a.a=1}, totalEventCount=1], restartGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689', currentGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689', restartBinlogFilename='binlog.000019', restartBinlogPosition=1307635, restartRowsToSkip=0, restartEventsToSkip=3, currentEventLengthInBytes=0, inTransaction=false, transactionId='null', incrementalSnapshotContext=IncrementalSnapshotContext [windowOpened=false, chunkEndPosition=null, dataCollectionsToSnapshot=[], lastEventKeySent=null, maximumKey=null]}
+03:47:39.115 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Waiting for keepalive thread to start
+03:47:39.116 [34mINFO [0;39m [36m[blc-127.0.0.1:25821][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-gc_263c05ee4d0a-binlog-client
+03:47:39.120 [34mINFO [0;39m [36m[blc-127.0.0.1:25821][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Skipping previously processed row event: Event{header=EventHeaderV4{timestamp=1794455255000, eventType=EXT_UPDATE_ROWS, serverId=852821, headerLength=19, dataLength=107, nextPosition=1307949, flags=0}, data=UpdateRowsEventData{tableId=524, includedColumnsBeforeUpdate={0, 1, 2, 3, 4, 5}, includedColumns={0, 1, 2, 3, 4, 5}, rows=[
+    {before=[1, [B@7ba05ab8, 1.7450, [B@5b84a4f5, 2026-11-12T01:02:03.123456, 5], after=[1, [B@4254c3a5, 1.8700, [B@3bd824cd, 2026-11-12T01:02:03.123456, 6]}
+]}}
+WINDOW {"pkCreate":false,"pkDelete":false,"data":{"id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20690","ts_ms":1794455255847,"status":"END","data_collections":[{"data_collection":"pekko_gc_263c05ee4d0a.a","event_count":1}],"event_count":1},"key":{"id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20690"},"at":"2026-11-12T03:47:39.142246Z","value":"Struct{status=END,id=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20690,event_count=1,data_collections=[Struct{data_collection=pekko_gc_263c05ee4d0a.a,event_count=1}],ts_ms=1794455255847}","offset":{"offset":{"event":3,"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689","pos":1307635,"server_id":852821,"transaction_data_collection_order_pekko_gc_263c05ee4d0a.a":1,"transaction_id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20690"},"version":1},"schema":"Schema{io.debezium.connector.common.TransactionMetadataValue:STRUCT}","kind":"ORIGINAL_RECORD","headers":[]}
+WINDOW {"offset":{"offset":{"event":3,"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689","pos":1307635,"server_id":852821,"transaction_data_collection_order_pekko_gc_263c05ee4d0a.a":1,"transaction_id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20690"},"version":1},"records":1,"kind":"RAW_CALLBACK","at":"2026-11-12T03:47:39.144561Z","id":0}
+WINDOW {"id":0,"offset":{"offset":{"event":3,"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689","pos":1307635,"server_id":852821,"transaction_data_collection_order_pekko_gc_263c05ee4d0a.a":1,"transaction_id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20690"},"version":1},"kind":"RAW_ACK_BEGIN","at":"2026-11-12T03:47:39.152670Z"}
+WINDOW {"offset":{"offset":{"event":3,"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20689","pos":1307635,"server_id":852821,"transaction_data_collection_order_pekko_gc_263c05ee4d0a.a":1,"transaction_id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20690"},"version":1},"kind":"SDK_MARK_PROCESSED_RETURNED","at":"2026-11-12T03:47:39.153202Z"}
+WINDOW {"kind":"SDK_MARK_BATCH_FINISHED_RETURNED","at":"2026-11-12T03:47:39.157461Z"}
+WINDOW {"id":0,"kind":"RAW_ACK_RETURNED","at":"2026-11-12T03:47:39.157583Z"}
+WINDOW {"admission":{"readAvailable":2,"runAvailable":7,"writeAvailable":2},"at":"2026-11-12T03:47:39.216143Z","captureFailure":null,"actors":{"a":{"appliedPage":0,"attempt":0,"batchSequence":3,"cancelRequested":false,"completionRoot":"fc12c5e7dfbd741160a2584075ef0020b327199973cf919f50f848916ae97700","deltaAfter":59,"executionId":"ffc535bd-c089-45bb-8242-c13251b276f6","failure":"execution_interrupted","fence":"a_F","index":2,"phase":"STREAMING","recoveryAttempts":1,"recoveryPermit":null,"revision":24,"window":null}},"kind":"STATUS","captureReadiness":"ADMISSION_READY"}
+03:47:39.220 [34mINFO [0;39m [36m[debezium-mysqlconnector-gc_263c05ee4d0a-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Keepalive thread is running
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.238654Z"}
+WINDOW {"kind":"GC_PLANNED","at":"2026-11-12T03:47:39.287119Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.297955Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.342551Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.352259Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.395278Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.403611Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.438769Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.455153Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.491553Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.504015Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.539351Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.551296Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.584741Z"}
+WINDOW {"executionId":"ffc535bd-c089-45bb-8242-c13251b276f6","id":"a","kind":"BOOTSTRAP_REGISTERED","at":"2026-11-12T03:47:39.587108Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.595699Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.636695Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.644098Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.672530Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.681006Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.709236Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.717913Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.746454Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.753610Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.783674Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.790570Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.818462Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.826395Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.854373Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.861976Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.889885Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.898613Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.926149Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.932333Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.959883Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:39.967043Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:39.993753Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:40.000391Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:40.028025Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:40.035484Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:40.063823Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:40.070295Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:40.099469Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:40.107409Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:40.135011Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:40.140995Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:40.167432Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:40.175261Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:40.212397Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:40.219150Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:40.249591Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:40.257433Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:40.297237Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:40.303348Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:40.341406Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:40.348716Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:40.391308Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:40.397132Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:40.436207Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:40.443577Z"}
+WINDOW {"phase":"DELETING","kind":"GC_DELETED","at":"2026-11-12T03:47:40.474046Z"}
+WINDOW {"kind":"GC_HEAD_LOCKED","at":"2026-11-12T03:47:40.480897Z"}
+WINDOW {"phase":"DONE","kind":"GC_DELETED","at":"2026-11-12T03:47:40.513451Z"}
+WINDOW {"pkCreate":false,"pkDelete":false,"data":{"ts_ms":1794455260517},"key":{"serverName":"gc_263c05ee4d0a"},"at":"2026-11-12T03:47:40.518508Z","value":"Struct{ts_ms=1794455260517}","offset":{"offset":{"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20690","pos":1308059,"server_id":852821},"version":1},"schema":"Schema{io.debezium.connector.common.Heartbeat:STRUCT}","kind":"ORIGINAL_RECORD","headers":[]}
+WINDOW {"pkCreate":false,"pkDelete":false,"data":{"id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691","ts_ms":1794455260517,"status":"BEGIN","data_collections":null,"event_count":null},"key":{"id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691"},"at":"2026-11-12T03:47:40.518847Z","value":"Struct{status=BEGIN,id=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691,ts_ms=1794455260517}","offset":{"offset":{"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20690","pos":1308059,"server_id":852821,"transaction_id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691"},"version":1},"schema":"Schema{io.debezium.connector.common.TransactionMetadataValue:STRUCT}","kind":"ORIGINAL_RECORD","headers":[]}
+WINDOW {"offset":{"offset":{"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20690","pos":1308059,"server_id":852821,"transaction_id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691"},"version":1},"records":2,"kind":"RAW_CALLBACK","at":"2026-11-12T03:47:40.519312Z","id":1}
+WINDOW {"id":1,"offset":{"offset":{"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20690","pos":1308059,"server_id":852821,"transaction_id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691"},"version":1},"kind":"RAW_ACK_BEGIN","at":"2026-11-12T03:47:40.524820Z"}
+WINDOW {"offset":{"offset":{"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20690","pos":1308059,"server_id":852821},"version":1},"kind":"SDK_MARK_PROCESSED_RETURNED","at":"2026-11-12T03:47:40.525020Z"}
+WINDOW {"offset":{"offset":{"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20690","pos":1308059,"server_id":852821,"transaction_id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691"},"version":1},"kind":"SDK_MARK_PROCESSED_RETURNED","at":"2026-11-12T03:47:40.525084Z"}
+WINDOW {"kind":"SDK_MARK_BATCH_FINISHED_RETURNED","at":"2026-11-12T03:47:40.526448Z"}
+WINDOW {"id":1,"kind":"RAW_ACK_RETURNED","at":"2026-11-12T03:47:40.526492Z"}
+WINDOW {"pkCreate":false,"pkDelete":false,"data":{"source":{"gtid":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691","name":"gc_263c05ee4d0a","pos":1308247,"db":"pekko_gc_263c05ee4d0a","query":null,"row":0,"thread":3354,"connector":"mysql","file":"binlog.000019","ts_us":1794455260517456,"ts_ns":1794455260517456000,"table":"a","server_id":852821,"version":"3.6.1.Final","snapshot":null,"ts_ms":1794455260517,"sequence":null},"before":{"label":"before-gc-6","amount":"1.8700","revision":6,"id":1,"note":"","updated_at":1794445323123456},"ts_us":1794455260520299,"transaction":{"id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691","total_order":1,"data_collection_order":1},"ts_ns":1794455260520299000,"op":"u","ts_ms":1794455260520,"after":{"label":"after-gc","amount":"1.9950","revision":7,"id":1,"note":"","updated_at":1794445323123456}},"key":{"id":1},"at":"2026-11-12T03:47:40.526990Z","value":"Struct{before=Struct{id=1,label=before-gc-6,amount=1.8700,note=,updated_at=1794445323123456,revision=6},after=Struct{id=1,label=after-gc,amount=1.9950,note=,updated_at=1794445323123456,revision=7},source=Struct{version=3.6.1.Final,connector=mysql,name=gc_263c05ee4d0a,ts_ms=1794455260517,db=pekko_gc_263c05ee4d0a,ts_us=1794455260517456,ts_ns=1794455260517456000,table=a,server_id=852821,gtid=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691,file=binlog.000019,pos=1308247,row=0,thread=3354},transaction=Struct{id=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691,total_order=1,data_collection_order=1},op=u,ts_ms=1794455260520,ts_us=1794455260520299,ts_ns=1794455260520299000}","offset":{"offset":{"event":2,"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20690","pos":1308059,"row":1,"server_id":852821,"transaction_data_collection_order_pekko_gc_263c05ee4d0a.a":1,"transaction_id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691","ts_sec":1794455260},"version":1},"schema":"Schema{gc_263c05ee4d0a.pekko_gc_263c05ee4d0a.a.Envelope:STRUCT}","kind":"ORIGINAL_RECORD","headers":[{"name":"__debezium.context.connectorLogicalName","value":"gc_263c05ee4d0a"},{"name":"__debezium.context.taskId","value":"0"},{"name":"__debezium.context.connectorName","value":"mysql"},{"name":"__debezium.context.runId","value":"01a1cdde-4614-7430-a54e-ad6f8743ed0c"}]}
+WINDOW {"pkCreate":false,"pkDelete":false,"data":{"id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691","ts_ms":1794455260517,"status":"END","data_collections":[{"data_collection":"pekko_gc_263c05ee4d0a.a","event_count":1}],"event_count":1},"key":{"id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691"},"at":"2026-11-12T03:47:40.527150Z","value":"Struct{status=END,id=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691,event_count=1,data_collections=[Struct{data_collection=pekko_gc_263c05ee4d0a.a,event_count=1}],ts_ms=1794455260517}","offset":{"offset":{"event":3,"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20690","pos":1308059,"server_id":852821,"transaction_data_collection_order_pekko_gc_263c05ee4d0a.a":1,"transaction_id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691","ts_sec":1794455260},"version":1},"schema":"Schema{io.debezium.connector.common.TransactionMetadataValue:STRUCT}","kind":"ORIGINAL_RECORD","headers":[]}
+WINDOW {"offset":{"offset":{"event":3,"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20690","pos":1308059,"server_id":852821,"transaction_data_collection_order_pekko_gc_263c05ee4d0a.a":1,"transaction_id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691","ts_sec":1794455260},"version":1},"records":2,"kind":"RAW_CALLBACK","at":"2026-11-12T03:47:40.527426Z","id":2}
+WINDOW {"id":2,"offset":{"offset":{"event":3,"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20690","pos":1308059,"server_id":852821,"transaction_data_collection_order_pekko_gc_263c05ee4d0a.a":1,"transaction_id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691","ts_sec":1794455260},"version":1},"kind":"RAW_ACK_BEGIN","at":"2026-11-12T03:47:40.547646Z"}
+WINDOW {"offset":{"offset":{"event":2,"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20690","pos":1308059,"row":1,"server_id":852821,"transaction_data_collection_order_pekko_gc_263c05ee4d0a.a":1,"transaction_id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691","ts_sec":1794455260},"version":1},"kind":"SDK_MARK_PROCESSED_RETURNED","at":"2026-11-12T03:47:40.547838Z"}
+WINDOW {"offset":{"offset":{"event":3,"file":"binlog.000019","gtids":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-20690","pos":1308059,"server_id":852821,"transaction_data_collection_order_pekko_gc_263c05ee4d0a.a":1,"transaction_id":"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:20691","ts_sec":1794455260},"version":1},"kind":"SDK_MARK_PROCESSED_RETURNED","at":"2026-11-12T03:47:40.547906Z"}
+WINDOW {"kind":"SDK_MARK_BATCH_FINISHED_RETURNED","at":"2026-11-12T03:47:40.548715Z"}
+WINDOW {"id":2,"kind":"RAW_ACK_RETURNED","at":"2026-11-12T03:47:40.548749Z"}
+WINDOW {"groups":1,"batchSequence":3,"kind":"REPLAY_T","lastSequence":63,"at":"2026-11-12T03:47:40.629096Z","id":"a"}
+WINDOW {"recoveryAttempts":1,"phase":"STREAMING","appliedPage":0,"batchSequence":4,"revision":25,"cancelRequested":false,"executionId":"ffc535bd-c089-45bb-8242-c13251b276f6","index":2,"deltaAfter":63,"failure":"execution_interrupted","window":null,"recoveryPermit":null,"completionRoot":"fc12c5e7dfbd741160a2584075ef0020b327199973cf919f50f848916ae97700","fence":"a_F","at":"2026-11-12T03:47:40.631622Z","id":"a","kind":"J_COMMITTED","attempt":0}
+WINDOW {"deltaAfter":63,"journalSequence":25,"kind":"J_FLOOR_VERIFIED","at":"2026-11-12T03:47:40.640871Z","id":"a"}

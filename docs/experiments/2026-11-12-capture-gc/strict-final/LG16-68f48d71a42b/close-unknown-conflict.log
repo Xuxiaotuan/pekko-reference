@@ -1,0 +1,42 @@
+15:01:25,616 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+15:01:25,617 |-INFO in ch.qos.logback.classic.util.ContextInitializer@275b85e1 - No custom configurators were discovered as a service.
+15:01:25,617 |-INFO in ch.qos.logback.classic.util.ContextInitializer@275b85e1 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+15:01:25,617 |-INFO in ch.qos.logback.classic.util.ContextInitializer@275b85e1 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+15:01:25,618 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+15:01:25,618 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+15:01:25,620 |-INFO in ch.qos.logback.classic.util.ContextInitializer@275b85e1 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+15:01:25,620 |-INFO in ch.qos.logback.classic.util.ContextInitializer@275b85e1 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+15:01:25,620 |-INFO in ch.qos.logback.classic.util.ContextInitializer@275b85e1 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+15:01:25,620 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+15:01:25,621 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+15:01:25,656 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+15:01:25,656 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+15:01:25,659 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+15:01:25,665 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+15:01:25,665 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+15:01:25,665 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+15:01:25,665 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+15:01:25,666 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+15:01:25,666 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+15:01:25,666 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+15:01:25,667 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+15:01:25,667 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+15:01:25,667 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+15:01:25,667 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+15:01:25,667 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+15:01:25,667 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@98f9fe3 - End of configuration.
+15:01:25,667 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@70b739f1 - Registering current configuration as safe fallback point
+15:01:25,667 |-INFO in ch.qos.logback.classic.util.ContextInitializer@275b85e1 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 47 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+SLF4J(W): A number (1) of logging calls during the initialization phase have been intercepted and are
+SLF4J(W): now being replayed. These are subject to the filtering rules of the underlying logging system.
+SLF4J(W): See also https://www.slf4j.org/codes.html#replay
+15:01:25.670 [34mINFO [0;39m [36m[bootstrap-gc_68f48d71a42b-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+WINDOW {"error":"java.lang.IllegalArgumentException: requirement failed: another shared Reader owns this capture","kind":"START_FAILED","at":"2026-11-12T15:01:26.126498Z"}
+WINDOW {"kind":"CAPTURE_STOP_REQUESTED","at":"2026-11-12T15:01:26.129710Z"}
+Exception in thread "main" java.lang.IllegalArgumentException: requirement failed: another shared Reader owns this capture
+	at scala.Predef$.require(Predef.scala:337)
+	at cn.xuyinyin.magic.connectors.mysql.source.capture.SharedMySQLCapture.liftedTree2$1(SharedMySQLCapture.scala:227)
+	at cn.xuyinyin.magic.connectors.mysql.source.capture.SharedMySQLCapture.start(SharedMySQLCapture.scala:213)
+	at cn.xuyinyin.magic.workflow.integration.BootstrapMatrixWorker$.main(BootstrapMatrixWorker.scala:118)
+	at cn.xuyinyin.magic.workflow.integration.BootstrapMatrixWorker.main(BootstrapMatrixWorker.scala)

@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class BootstrapJdbcReleaseSpec extends STSpec {
   private def fixture():(BootstrapJdbc,AtomicInteger)={
+    Class.forName("org.h2.Driver")
     val opens=new AtomicInteger()
     val jdbc=new BootstrapJdbc(()=>{
       opens.incrementAndGet()

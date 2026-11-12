@@ -39,7 +39,11 @@ final class CdcPlatformExtension(system:ActorSystem[_]) extends Extension {
       val standalone=config.hasPath("pekko.cdc-standalone.managed-worker") && config.getBoolean("pekko.cdc-standalone.managed-worker")
       () => CdcManagedRecovery.recover(store,settings,supervisorConfig,guardianCheck,allowPendingB= !standalone)
     }.getOrElse(() => ())
-    val kernel=new CdcBootstrapKernel(settings,system,managed=managed.nonEmpty,
+    val diagnostics:(String,spray.json.JsObject)=>Unit=(kind,data)=>{
+      if(Set("FAILURE","KERNEL_FAILURE","GC_NAMESPACE_BLOCKED","GC_PUBLICATION_DEFERRED")(kind))
+        org.slf4j.LoggerFactory.getLogger(classOf[CdcPlatformExtension]).warn("CDC {} {}",kind,data.compactPrint)
+    }
+    val kernel=new CdcBootstrapKernel(settings,system,observe=diagnostics,managed=managed.nonEmpty,
       recoveryStore=if(managed.nonEmpty)Some(store)else None,freshAttest=freshAttest,fenceGuardStore=Some(store))
     val runtime=new CdcPlatformRuntime(store,kernel,settings.limits,
       polling=true,pollIntervalMillis=settings.pollIntervalMillis,managedOwner=managed,recoverManaged=recover,guardianCheck=guardianCheck)

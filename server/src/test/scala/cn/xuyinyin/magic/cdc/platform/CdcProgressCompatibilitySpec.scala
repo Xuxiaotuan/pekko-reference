@@ -14,11 +14,12 @@ class CdcProgressCompatibilitySpec extends AnyWordSpec with Matchers {
   "bootstrap progress serialization" should {
     "read legacy continuation JSON and preserve a new permit binding" in {
       val old=CdcProgressJson.encode(BootstrapProgress(revision=7,definition="definition")).parseJson.asJsObject
-      val legacy=JsObject(old.fields-"recoveryPermit"-"recoveryReceiptDigest").compactPrint
+      val legacy=JsObject(old.fields-"recoveryPermit"-"recoveryReceiptDigest"-"gcCheckpoint").compactPrint
       val recovered=CdcProgressJson.decode(legacy)
       recovered.revision shouldBe 7
       recovered.recoveryPermit shouldBe None
       recovered.recoveryReceiptDigest shouldBe None
+      recovered.gcCheckpoint shouldBe None
       val current=recovered.copy(recoveryPermit=Some("permit-1"),recoveryReceiptDigest=Some("a"*64))
       CdcProgressJson.decode(CdcProgressJson.encode(current)) shouldBe current
     }
@@ -36,6 +37,7 @@ class CdcProgressCompatibilitySpec extends AnyWordSpec with Matchers {
           val event=decoded.asInstanceOf[BootstrapJournal.Advanced]
           event.state.recoveryPermit shouldBe None
           event.state.recoveryReceiptDigest shouldBe None
+          event.state.gcCheckpoint shouldBe None
           // Extract the old event's unmodified progress object as a legacy snapshot payload.
           val mapper=new com.fasterxml.jackson.databind.ObjectMapper(new com.fasterxml.jackson.dataformat.cbor.CBORFactory())
           val oldState=mapper.readTree(bytes).get("state")

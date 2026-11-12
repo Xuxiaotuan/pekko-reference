@@ -55,11 +55,42 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
   def state:BootstrapProgress=waitFor(journal.read())
   private val retentionConsumer=CaptureConsumerIdentity.bootstrap(logStore.captureId,id,generation)
   private var retentionRegistered=false
+  @volatile private var gcSealRequested=false
+  private var gcAudit:Option[StepAudit]=None
+  /** Consumed by normal bounded scheduling steps, never on the Reader callback thread. */
+  def requestGcCheckpoint():Unit=synchronized {
+    require(state.phase=="STREAMING" && !state.cancelRequested,"GC checkpoint requires an active streaming subscription")
+    gcSealRequested=true
+  }
+  /** Handoff stays with the running table session; raw Journal capabilities are not exposed. */
+  private[magic] def publishGcCheckpoint(retention:CaptureGcRetention):String={
+    val verifier=journalProgressVerifier.getOrElse(throw new IllegalStateException("verified Journal required for GC"))
+    val receipt=waitFor(journal.persistedProgress()).getOrElse(throw new IllegalStateException("durable GC checkpoint missing"))
+    retention.rememberCheckpoint(receipt,verifier)
+  }
+  private[magic] def gcCheckpointRequested:Boolean=gcSealRequested
+  private def sealGcUnit():Unit={
+    val s=state
+    if(gcAudit.isEmpty)gcAudit=Some(new StepAudit(s))
+    gcAudit.get.advance().foreach {activation=>
+      require(state==gcAudit.get.accepted,"Journal moved during GC audit")
+      val proof=BootstrapGcCheckpoint.create(logStore.captureId,logStore.lineage,id,generation,s,activation,target.table,database)
+      emit("GC_AUDIT_COMPLETE","proof"->proof.parseJson)
+      val result=waitFor(journal.sealGcCheckpoint(s.revision,proof))
+      require(result.accepted,"GC checkpoint explicitly rejected")
+      recordProgress(result.state)
+      emit("GC_SEALED","proof"->proof.parseJson)
+      gcAudit=None;gcSealRequested=false
+    }
+  }
   private def registerRetention(current:BootstrapProgress):Unit=if(!retentionRegistered){
     logStore.registerConsumer(retentionConsumer,"BOOTSTRAP",id,"bootstrap",current.deltaAfter);retentionRegistered=true
   }
   private def update(f:BootstrapProgress=>BootstrapProgress):BootstrapProgress={
-    val n=waitFor(journal.update(f));observe("J_COMMITTED",json(n))
+    recordProgress(waitFor(journal.update(f)))
+  }
+  private def recordProgress(n:BootstrapProgress):BootstrapProgress={
+    observe("J_COMMITTED",json(n))
     if(retentionRegistered){
       val evidence=MySQLCdcGroup.hash(MySQLCdcGroup.canonical(JsObject("revision"->JsNumber(n.revision),"phase"->JsString(n.phase),
         "deltaAfter"->JsNumber(n.deltaAfter),"execution"->JsString(n.executionId))))
@@ -378,6 +409,9 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
               stepAudit=None
             }
             work.didWork=true;work.complete=state.phase=="STREAMING"
+          case "STREAMING" if gcSealRequested=>
+            sealGcUnit()
+            work.didWork=true;work.complete= !gcSealRequested
           case "STREAMING"=>work.didWork=replay(true)
           case other=>throw new IllegalArgumentException("unexpected bootstrap phase: "+other)
         }
@@ -490,6 +524,7 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
                   val proof=audit();emit("BEFORE_ACTIVATE","proof"->proof.parseJson)
                   if(!canceled){target.activate(proof);emit("ACTIVATION_T","proof"->proof.parseJson)
                     if(!canceled){val accepted=update(_.copy(phase="STREAMING"));if(accepted.phase=="STREAMING")emit("STREAMING","proof"->proof.parseJson)}}
+                case "STREAMING" if gcSealRequested=>sealGcUnit()
                 case "STREAMING"=>if(!replay(true))Thread.sleep(50)
                 case other=>throw new IllegalArgumentException("unexpected bootstrap phase: "+other)
               }

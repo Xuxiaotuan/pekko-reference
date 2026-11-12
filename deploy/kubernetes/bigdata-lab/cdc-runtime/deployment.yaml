@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pekko-cdc-runtime
+  namespace: bigdata-lab
+  labels: {app: pekko-cdc-runtime}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: pekko-cdc-runtime}
+  template:
+    metadata:
+      labels: {app: pekko-cdc-runtime}
+    spec:
+      terminationGracePeriodSeconds: 60
+      nodeSelector: {kubernetes.io/hostname: xjw}
+      containers:
+        - name: cdc-runtime
+          image: pekko-cdc-runtime
+          imagePullPolicy: IfNotPresent
+          command: ["/opt/docker/bin/cdc-runtime"]
+          envFrom:
+            - secretRef: {name: pekko-cdc-runtime-config}
+          env:
+            - name: JAVA_OPTS
+              value: "-Dconfig.file=/opt/docker/conf/application-cdc-runtime.conf"
+          ports:
+            - {name: http, containerPort: 8080}
+          volumeMounts:
+            - name: config
+              mountPath: /opt/docker/conf/application-cdc-runtime.conf
+              subPath: application-cdc-runtime.conf
+              readOnly: true
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {cpu: "1", memory: 1Gi}
+          # The runtime deliberately binds its management API to loopback.
+          # Keep probes inside the container; exposing it through the Service
+          # requires a separate authenticated management proxy.
+          livenessProbe:
+            tcpSocket: {port: http}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket: {port: http}
+            initialDelaySeconds: 15
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap: {name: pekko-cdc-runtime-config}

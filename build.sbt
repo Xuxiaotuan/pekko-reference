@@ -165,7 +165,9 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("server"))
       Docker / packageName    := projectName,
       Docker / version        := projectVersion,
       Docker / daemonUser     := projectName,
-      dockerBaseImage         := "eclipse-temurin:17-jre-alpine",
+      // The deployment targets include arm64 nodes (OrbStack and the lab cluster).
+      // The non-Alpine Temurin image publishes the Java 17 amd64/arm64 manifests.
+      dockerBaseImage         := "eclipse-temurin:17-jre",
       dockerExposedPorts      := Seq(8080),           // HTTP API端口
       dockerUpdateLatest      := true,
       

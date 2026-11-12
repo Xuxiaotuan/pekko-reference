@@ -38,6 +38,7 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
   private case class Capture(settings:CdcCaptureSettings,store:MySQLCaptureStore,reader:SharedMySQLCapture)
   private case class Session(runner:BootstrapRunner,journal:ActorRef[BootstrapJournal.Command],target:BootstrapTarget,pool:String)
   private val capturesById=mutable.Map.empty[String,Capture]
+  private val gcById=mutable.Map.empty[String,CdcGcCoordinator]
   private val recoveryOnly=mutable.Set.empty[String]
   private val sessions=mutable.Map.empty[String,Session]
   private val reservations=mutable.Map.empty[String,String]
@@ -55,6 +56,16 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
     "configuredCaptures"->JsNumber(settings.captures.size),"liveCaptures"->JsNumber(capturesById.size))}
   def captureReleaseEvidence:Vector[(String,CaptureReleaseEvidence)]=synchronized(capturesById.toVector.collect {case(id,c) if closing.contains(id)=>id->c.reader.releaseEvidence})
   private def stateOpen(c:CdcCaptureSettings):Connection=ManagedCdcJdbc.open(CdcJdbc.withTimeouts(c.controlState.jdbcUrl),c.controlState.username,c.controlState.password,"control",managed)
+  private def gcOpen(c:CdcCaptureSettings):Connection={
+    val account=c.gc.get
+    ManagedCdcJdbc.open(CdcJdbc.withTimeouts(c.controlState.jdbcUrl),account.username,account.password,"control",managed)
+  }
+  override def gcEnabled:Boolean=settings.captures.exists(_.gc.nonEmpty)
+  override def gcViews:Vector[JsObject]=synchronized(gcById.values.toVector).map(_.status)
+  override def maintainGc(attempt:String,stop:()=>Boolean):Unit={
+    val ready=dispatchCaptureIds
+    synchronized(gcById.toVector).filter(x=>ready(x._1)).foreach(_._2.tick(attempt,stop))
+  }
   private def materialOpen(c:CdcCaptureSettings):Connection=c.materialState match {
     case Some(account)=>ManagedCdcJdbc.open(CdcJdbc.withTimeouts(account.jdbcUrl),account.username,account.password,"control",managed)
     case None=>stateOpen(c)
@@ -92,6 +103,7 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
       record(()=>stateOpen(cfg),cfg.stateLineage)
       record(()=>captureLogOpen(cfg),cfg.stateLineage)
       cfg.materialState.foreach(_=>record(()=>materialOpen(cfg),cfg.stateLineage))
+      cfg.gc.foreach(_=>record(()=>gcOpen(cfg),cfg.stateLineage))
       record(()=>sourceOpen(cfg),cfg.sourceLineage)
       if(cfg.sourceObserverUsername.nonEmpty)record(()=>sourceOpen(cfg,observer=true),cfg.sourceLineage)
       if(cfg.sourceControllerUsername.nonEmpty)record(()=>sourceOpen(cfg,controller=true),cfg.sourceLineage)
@@ -148,6 +160,15 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
         if(stopping.get())false else {capturesById.update(cfg.id,Capture(cfg,store,reader));true}
       }
       if(!registered){reader.requestClose();throw new IllegalStateException("CDC kernel stopping")}
+      cfg.gc.foreach {g=>
+        require(!cfg.sourceFenceV2,"GC and source fence v2 require separate integration")
+        val gc=new CdcGcCoordinator(cfg,store,reader,()=>stateOpen(cfg),()=>gcOpen(cfg),system,settings.captures.map(_.id).toSet,observe)
+        synchronized {gcById.update(cfg.id,gc)}
+        val root=new BootstrapJdbc(()=>stateOpen(cfg))
+        val owner=root.connection(c=>root.query(c,"SELECT owner_attempt FROM pekko_cdc_owner_v1 WHERE platform_id='default'").head("owner_attempt"))
+        gc.initialize(owner,()=>stopping.get())
+      }
+      if(stopping.get())return
       if(deferred.contains(cfg.id))synchronized {recoveryOnly+=cfg.id}
       else reader.start()
     }
@@ -238,7 +259,9 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
     sameOwner:Boolean,stop:()=>Boolean,workPool:String):CdcKernelOutcome={
     // A parked tail needs no Journal/Actor/validation session. The immutable clean
     // progress belongs to this runtime owner; an interrupted JVM never receives it.
-    if(sameOwner && !cancel && continuation.exists(_.phase=="STREAMING") && !synchronized(sessions.contains(id))){
+    val gc=synchronized(gcById.get(task.captureId))
+    val gcRequest=if(cancel)None else gc.flatMap(_.requested(id))
+    if(gcRequest.isEmpty && sameOwner && !cancel && continuation.exists(_.phase=="STREAMING") && !synchronized(sessions.contains(id))){
       val c=synchronized(capturesById.getOrElse(task.captureId,throw new CdcPlatformException("CAPTURE_NOT_CONFIGURED")))
       val p=continuation.get
       if(c.store.readForConsumer(id,p.deltaAfter,1,CaptureConsumerIdentity.bootstrap(c.store.captureId,id,task.generation)).isEmpty)
@@ -336,7 +359,17 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
         if(!consumed)throw uncertain("pending-b-permit",new IllegalStateException("pending B permit consumption rejected"))
       }
       if(cancel)Await.result(new BootstrapJournalAccess(session.journal).cancel(),10.seconds)
+      gcRequest.foreach {floor=>
+        if(session.runner.state.phase=="STREAMING" && !gc.get.covered(session.runner.state,floor))session.runner.requestGcCheckpoint()
+      }
       val result=session.runner.step(stop,continuation)
+      if(result.progress.phase=="STREAMING" && result.validationComplete && !session.runner.gcCheckpointRequested)
+        gcRequest.filter(f=>gc.get.covered(result.progress,f)).foreach {_=>
+          try gc.get.publish(id,session.runner) catch {case NonFatal(e)=>
+            if(!ExecutionFailure.from(e,"gc-publication").releaseConfirmed)throw e
+            observe("GC_PUBLICATION_DEFERRED",JsObject("taskId"->JsString(id),"error"->JsString(e.getClass.getSimpleName)))
+          }
+        }
       released=result.releaseConfirmed
       val proof=if(result.progress.phase=="STREAMING" && result.validationComplete)session.target.activation else None
       if(result.validationComplete || result.terminal || result.paused){

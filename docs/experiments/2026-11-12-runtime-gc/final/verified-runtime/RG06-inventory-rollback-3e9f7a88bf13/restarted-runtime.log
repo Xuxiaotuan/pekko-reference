@@ -1,0 +1,328 @@
+01:37:17,165 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+01:37:17,166 |-INFO in ch.qos.logback.classic.util.ContextInitializer@61fe30 - No custom configurators were discovered as a service.
+01:37:17,166 |-INFO in ch.qos.logback.classic.util.ContextInitializer@61fe30 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+01:37:17,167 |-INFO in ch.qos.logback.classic.util.ContextInitializer@61fe30 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+01:37:17,168 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+01:37:17,169 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+01:37:17,172 |-INFO in ch.qos.logback.classic.util.ContextInitializer@61fe30 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 2 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+01:37:17,172 |-INFO in ch.qos.logback.classic.util.ContextInitializer@61fe30 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+01:37:17,173 |-INFO in ch.qos.logback.classic.util.ContextInitializer@61fe30 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+01:37:17,173 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+01:37:17,174 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+01:37:17,213 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+01:37:17,213 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+01:37:17,216 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+01:37:17,221 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+01:37:17,221 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+01:37:17,221 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+01:37:17,221 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+01:37:17,222 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+01:37:17,222 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+01:37:17,223 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+01:37:17,223 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+01:37:17,224 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+01:37:17,224 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+01:37:17,224 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+01:37:17,224 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+01:37:17,224 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@c9d0d6 - End of configuration.
+01:37:17,224 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@6ccdb29f - Registering current configuration as safe fallback point
+01:37:17,224 |-INFO in ch.qos.logback.classic.util.ContextInitializer@61fe30 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 51 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+01:37:17.329 [34mINFO [0;39m [36m[runtime-gc-runtime_3e9f7a88bf13-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+WINDOW {"pid":50188,"httpPort":57847,"kind":"PROCESS_READY","at":"2026-11-12T01:37:17.814266Z"}
+01:37:18.016 [34mINFO [0;39m [36m[cdc-platform-control-c126f763][0;39m [1;35m[o.a.k.common.config.AbstractConfig][0;39m - EmbeddedWorkerConfig values: 
+	access.control.allow.methods = 
+	access.control.allow.origin = 
+	admin.listeners = null
+	bootstrap.servers = [localhost:9092]
+	client.dns.lookup = use_all_dns_ips
+	config.providers = []
+	connector.client.config.override.policy = All
+	header.converter = class org.apache.kafka.connect.storage.SimpleHeaderConverter
+	header.converter.plugin.version = null
+	key.converter = class org.apache.kafka.connect.json.JsonConverter
+	key.converter.plugin.version = null
+	listeners = [http://:8083]
+	metric.reporters = [org.apache.kafka.common.metrics.JmxReporter]
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	offset.flush.interval.ms = 0
+	offset.flush.timeout.ms = 2000
+	offset.storage.file.filename = 
+	offset.storage.partitions = null
+	offset.storage.replication.factor = null
+	offset.storage.topic = 
+	plugin.discovery = hybrid_warn
+	plugin.path = null
+	response.http.headers.config = 
+	rest.advertised.host.name = null
+	rest.advertised.listener = null
+	rest.advertised.port = null
+	rest.extension.classes = []
+	ssl.cipher.suites = []
+	ssl.client.auth = none
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	task.shutdown.graceful.timeout.ms = 5000
+	topic.creation.enable = true
+	topic.tracking.allow.reset = true
+	topic.tracking.enable = true
+	value.converter = class org.apache.kafka.connect.json.JsonConverter
+	value.converter.plugin.version = null
+
+01:37:18.024 [34mINFO [0;39m [36m[cdc-platform-control-c126f763][0;39m [1;35m[o.a.k.common.config.AbstractConfig][0;39m - JsonConverterConfig values: 
+	converter.type = key
+	decimal.format = BASE64
+	replace.null.with.default = true
+	schema.content = null
+	schemas.cache.size = 1000
+	schemas.enable = false
+
+01:37:18.025 [34mINFO [0;39m [36m[cdc-platform-control-c126f763][0;39m [1;35m[o.a.k.common.config.AbstractConfig][0;39m - JsonConverterConfig values: 
+	converter.type = value
+	decimal.format = BASE64
+	replace.null.with.default = true
+	schema.content = null
+	schemas.cache.size = 1000
+	schemas.enable = false
+
+01:37:18.026 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'CREATING' to 'INITIALIZING'
+01:37:18.041 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom source info struct maker plugin: io.debezium.connector.mysql.MySqlSourceInfoStructMaker
+01:37:18.055 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = runtime_3e9f7a88bf13 named = connection-validation
+01:37:18.055 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-runtime_3e9f7a88bf13-connection-validation
+01:37:18.117 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-connection-validation][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Using 'SHOW BINARY LOG STATUS' to get binary log status
+01:37:18.118 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-connection-validation][0;39m [1;35m[i.d.connector.binlog.BinlogConnector][0;39m - Successfully tested connection for jdbc:mysql://127.0.0.1:25821/?useInformationSchema=true&nullCatalogMeansCurrent=false&useUnicode=true&characterEncoding=UTF-8&characterSetResults=UTF-8&zeroDateTimeBehavior=CONVERT_TO_NULL&connectTimeout=30000 with user 'rs_3e9f7a88bf13'
+01:37:18.121 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-connection-validation][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component JdbcConnection, id = JdbcConnection named = jdbc-connection-close
+01:37:18.121 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-connection-validation][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-jdbcconnection-JdbcConnection-jdbc-connection-close
+01:37:18.122 [34mINFO [0;39m [36m[debezium-jdbcconnection-JdbcConnection-jdbc-connection-close][0;39m [1;35m[io.debezium.jdbc.JdbcConnection][0;39m - Connection gracefully closed
+01:37:18.133 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.storage.jdbc.JdbcCommonConfig][0;39m - Configuration for 'JdbcOffsetBackingStoreConfig' with prefix 'offset.storage.': {jdbc.table.name=capture_offsets_c0891b39ed4a7029a7e3cf7e4b7db736, jdbc.connection.user=rd_3e9f7a88bf13, jdbc.connection.url=jdbc:mysql://127.0.0.1:25832/pekko_test_cdc_window_3e9f7a88bf13?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=30000, jdbc.connection.password=********, jdbc.table.ddl=CREATE TABLE %s (id VARCHAR(36) NOT NULL, offset_key VARCHAR(1255), offset_val VARCHAR(1255), record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id)), file.filename=}
+01:37:18.138 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.s.j.o.JdbcOffsetBackingStore][0;39m - Starting JdbcOffsetBackingStore db 'jdbc:mysql://127.0.0.1:25832/pekko_test_cdc_window_3e9f7a88bf13?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=30000'
+01:37:18.146 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'INITIALIZING' to 'CREATING_TASKS'
+01:37:18.151 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'CREATING_TASKS' to 'STARTING_TASKS'
+01:37:18.151 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Waiting max. for 40000 ms for individual source tasks to start.
+01:37:18.152 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom source info struct maker plugin: io.debezium.connector.mysql.MySqlSourceInfoStructMaker
+01:37:18.155 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.o.emitter.NoOpLineageEmitter][0;39m - You are using a no-op lineage emitter. If you want to emit open lineage event, please set 'openlineage.integration.enabled=true'
+01:37:18.157 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - Starting MySqlConnectorTask with configuration:
+   connector.class = io.debezium.connector.mysql.MySqlConnector
+   snapshot.locking.mode = none
+   bootstrap.servers = localhost:9092
+   driver.forceConnectionTimeZoneToSession = true
+   include.schema.changes = true
+   schema.history.internal.jdbc.connection.url = jdbc:mysql://127.0.0.1:25832/pekko_test_cdc_window_3e9f7a88bf13?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=30000
+   poll.interval.ms = 100
+   record.processing.threads = 1
+   errors.retry.delay.initial.ms = 300
+   driver.allowPublicKeyRetrieval = true
+   key.converter = org.apache.kafka.connect.json.JsonConverter
+   database.user = rs_3e9f7a88bf13
+   offset.storage = io.debezium.storage.jdbc.offset.JdbcOffsetBackingStore
+   heartbeat.interval.ms = 1000
+   offset.storage.jdbc.table.name = capture_offsets_c0891b39ed4a7029a7e3cf7e4b7db736
+   internal.task.management.timeout.ms = 40000
+   errors.max.retries = -1
+   database.password = ********
+   name = runtime_3e9f7a88bf13
+   offset.storage.jdbc.connection.password = ********
+   offset.storage.jdbc.table.ddl = CREATE TABLE %s (id VARCHAR(36) NOT NULL, offset_key VARCHAR(1255), offset_val VARCHAR(1255), record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id))
+   max.batch.size = 128
+   skipped.operations = none
+   snapshot.mode = no_data
+   schema.history.internal.jdbc.connection.password = ********
+   record.processing.shutdown.timeout.ms = 1000
+   provide.transaction.metadata = true
+   schema.history.internal.store.only.captured.databases.ddl = true
+   record.processing.order = ORDERED
+   tombstones.on.delete = false
+   topic.prefix = runtime_3e9f7a88bf13
+   decimal.handling.mode = string
+   offset.storage.file.filename = 
+   schema.history.internal.jdbc.table.ddl = CREATE TABLE %s (id VARCHAR(36) NOT NULL, history_data LONGTEXT, history_data_seq INT, record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id, history_data_seq))
+   value.converter = org.apache.kafka.connect.json.JsonConverter
+   offset.storage.jdbc.connection.url = jdbc:mysql://127.0.0.1:25832/pekko_test_cdc_window_3e9f7a88bf13?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=30000
+   database.server.id = 212218358
+   max.queue.size.in.bytes = 16777216
+   schema.history.internal.jdbc.table.name = capture_history_c0891b39ed4a7029a7e3cf7e4b7db736
+   offset.flush.timeout.ms = 2000
+   errors.retry.delay.max.ms = 10000
+   offset.storage.jdbc.connection.user = rd_3e9f7a88bf13
+   database.port = 25821
+   offset.flush.interval.ms = 0
+   schema.history.internal = io.debezium.storage.jdbc.history.JdbcSchemaHistory
+   record.processing.with.serial.consumer = false
+   database.hostname = 127.0.0.1
+   database.connectionTimeZone = UTC
+   schema.history.internal.jdbc.connection.user = rd_3e9f7a88bf13
+   connect.keep.alive.interval.ms = 5000
+   table.include.list = \Qpekko_test_cdc_window_3e9f7a88bf13\E\..*
+   database.include.list = pekko_test_cdc_window_3e9f7a88bf13
+
+01:37:18.158 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom topic naming strategy plugin: io.debezium.schema.DefaultTopicNamingStrategy
+01:37:18.176 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Using 'SHOW BINARY LOG STATUS' to get binary log status
+01:37:18.190 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - Found previous partition offset BinlogPartition{serverName='runtime_3e9f7a88bf13'} io.debezium.connector.mysql.MySqlPartition@ca4ab75: {transaction_id=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:16088, file=binlog.000018, pos=2958523, gtids=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16087, event=3}
+01:37:18.210 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.storage.jdbc.JdbcCommonConfig][0;39m - Configuration for 'JdbcSchemaHistoryConfig' with prefix 'schema.history.internal.': {connector.class=io.debezium.connector.mysql.MySqlConnector, jdbc.table.name=capture_history_c0891b39ed4a7029a7e3cf7e4b7db736, jdbc.connection.user=rd_3e9f7a88bf13, name=runtime_3e9f7a88bf13-schemahistory, jdbc.connection.url=jdbc:mysql://127.0.0.1:25832/pekko_test_cdc_window_3e9f7a88bf13?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=30000, jdbc.connection.password=********, connector.id=runtime_3e9f7a88bf13, jdbc.table.ddl=CREATE TABLE %s (id VARCHAR(36) NOT NULL, history_data LONGTEXT, history_data_seq INT, record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id, history_data_seq)), store.only.captured.databases.ddl=true}
+01:37:18.218 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlDatabaseSchema][0;39m - Using MySql DdlParserType DEFAULT
+01:37:18.247 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Using 'SHOW BINARY LOG STATUS' to get binary log status
+01:37:18.251 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - Guardrail validation skipped
+01:37:18.251 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - Closing connection before starting schema recovery
+01:37:18.251 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component JdbcConnection, id = JdbcConnection named = jdbc-connection-close
+01:37:18.251 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-jdbcconnection-JdbcConnection-jdbc-connection-close
+01:37:18.252 [34mINFO [0;39m [36m[debezium-jdbcconnection-JdbcConnection-jdbc-connection-close][0;39m [1;35m[io.debezium.jdbc.JdbcConnection][0;39m - Connection gracefully closed
+01:37:18.269 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - GTID Set retained: 'a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16087'
+01:37:18.269 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - The current GTID set 'a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16088' does not contain the GTID set 'a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16087' required by the connector
+01:37:18.270 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - Server has already purged '' GTIDs
+01:37:18.270 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - GTIDs known by the server but not processed yet 'a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:16088-16088', for replication are available only 'a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:16088-16088'
+01:37:18.270 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - Reconnecting after validating schema recovery
+01:37:18.279 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - Found previous offset BinlogOffsetContext{sourceInfoSchema=Schema{io.debezium.connector.mysql.Source:STRUCT}, sourceInfo=BinlogSourceInfo{currentGtid='null', currentBinlogFilename='binlog.000018', currentBinlogPosition=2958523, currentRowNumber=0, serverId=0, sourceTime=null, threadId=-1, currentQuery='null', tableIds=[], databaseName='null'}, snapshotCompleted=false, transactionContext=TransactionContext [currentTransactionId=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:16088, perTableEventCount={}, totalEventCount=0], restartGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16087', currentGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16087', restartBinlogFilename='binlog.000018', restartBinlogPosition=2958523, restartRowsToSkip=0, restartEventsToSkip=3, currentEventLengthInBytes=0, inTransaction=false, transactionId='null', incrementalSnapshotContext=IncrementalSnapshotContext [windowOpened=false, chunkEndPosition=null, dataCollectionsToSnapshot=[], lastEventKeySent=null, maximumKey=null]}
+01:37:18.280 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.b.QueueProviderServiceProvider][0;39m - Using QueueProvider io.debezium.connector.base.DefaultQueueProvider
+01:37:18.283 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = runtime_3e9f7a88bf13 named = SignalProcessor
+01:37:18.285 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom topic naming strategy plugin: io.debezium.schema.SchemaTopicNamingStrategy
+01:37:18.300 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = runtime_3e9f7a88bf13 named = change-event-source-coordinator
+01:37:18.300 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = runtime_3e9f7a88bf13 named = blocking-snapshot
+01:37:18.300 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator
+01:37:18.301 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - All tasks have started successfully.
+01:37:18.301 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'STARTING_TASKS' to 'POLLING_TASKS'
+01:37:18.301 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Using io.debezium.embedded.async.ParallelSmtAndConvertBatchProcessor processor
+01:37:18.303 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Metrics registered
+01:37:18.303 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Context created
+01:37:18.308 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.r.history.SchemaHistoryMetrics][0;39m - Started database schema history recovery
+01:37:18.527 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.r.history.SchemaHistoryMetrics][0;39m - Finished database schema history recovery of 24 change(s) in 218 ms
+01:37:18.545 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - A previous offset indicating a completed snapshot has been found.
+01:37:18.546 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Snapshot ended with SnapshotResult [status=SKIPPED, offset=BinlogOffsetContext{sourceInfoSchema=Schema{io.debezium.connector.mysql.Source:STRUCT}, sourceInfo=BinlogSourceInfo{currentGtid='null', currentBinlogFilename='binlog.000018', currentBinlogPosition=2958523, currentRowNumber=0, serverId=0, sourceTime=null, threadId=-1, currentQuery='null', tableIds=[], databaseName='null'}, snapshotCompleted=false, transactionContext=TransactionContext [currentTransactionId=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:16088, perTableEventCount={}, totalEventCount=0], restartGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16087', currentGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16087', restartBinlogFilename='binlog.000018', restartBinlogPosition=2958523, restartRowsToSkip=0, restartEventsToSkip=3, currentEventLengthInBytes=0, inTransaction=false, transactionId='null', incrementalSnapshotContext=IncrementalSnapshotContext [windowOpened=false, chunkEndPosition=null, dataCollectionsToSnapshot=[], lastEventKeySent=null, maximumKey=null]}]
+01:37:18.551 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = runtime_3e9f7a88bf13 named = binlog-client
+01:37:18.552 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Enable ssl PREFERRED mode for connector runtime_3e9f7a88bf13
+01:37:18.557 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.pipeline.signal.SignalProcessor][0;39m - SignalProcessor started. Scheduling it every 5000ms
+01:37:18.557 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-runtime_3e9f7a88bf13-SignalProcessor
+01:37:18.557 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Starting streaming
+01:37:18.560 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - GTID set purged on server: ''
+01:37:18.560 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Attempting to generate a filtered GTID set
+01:37:18.560 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - GTID set from previous recorded offset: a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16087
+01:37:18.560 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - GTID set available on server: a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16088
+01:37:18.560 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Using first available positions for new GTID channels
+01:37:18.560 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Relevant GTID set available on server: a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16088
+01:37:18.561 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Final merged GTID set to use when connecting to MySQL: a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16087
+01:37:18.561 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Registering binlog reader with GTID set: 'a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16087'
+11月 12, 2026 1:37:18 上午 com.github.shyiko.mysql.binlog.BinaryLogClient setGtidSet
+信息: Enabling GTID
+01:37:18.564 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Skip 3 events on streaming start
+01:37:18.564 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Skip 0 rows on streaming start
+01:37:18.564 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-runtime_3e9f7a88bf13-binlog-client
+01:37:18.565 [34mINFO [0;39m [36m[blc-127.0.0.1:25821][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-runtime_3e9f7a88bf13-binlog-client
+11月 12, 2026 1:37:18 上午 com.github.shyiko.mysql.binlog.BinaryLogClient resolveDatabaseVersion
+信息: Database version: 9.5.0 (major=9, minor=5, mariadb=false)
+11月 12, 2026 1:37:18 上午 com.github.shyiko.mysql.binlog.BinaryLogClient tryUpgradeToSSL
+信息: SSL enabled
+11月 12, 2026 1:37:18 上午 com.github.shyiko.mysql.binlog.BinaryLogClient requestBinaryLogStreamMysql
+信息: Requesting streaming from position filename: , position: 4, GTID set: a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16087
+11月 12, 2026 1:37:18 上午 com.github.shyiko.mysql.binlog.BinaryLogClient connect
+信息: Connected to 127.0.0.1:25821 at a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16087 (sid:212218358, cid:5211)
+01:37:18.576 [34mINFO [0;39m [36m[blc-127.0.0.1:25821][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Connected to binlog at 127.0.0.1:25821, starting at BinlogOffsetContext{sourceInfoSchema=Schema{io.debezium.connector.mysql.Source:STRUCT}, sourceInfo=BinlogSourceInfo{currentGtid='null', currentBinlogFilename='binlog.000018', currentBinlogPosition=2958523, currentRowNumber=0, serverId=0, sourceTime=null, threadId=-1, currentQuery='null', tableIds=[], databaseName='null'}, snapshotCompleted=false, transactionContext=TransactionContext [currentTransactionId=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:16088, perTableEventCount={}, totalEventCount=0], restartGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16087', currentGtidSet='a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16087', restartBinlogFilename='binlog.000018', restartBinlogPosition=2958523, restartRowsToSkip=0, restartEventsToSkip=3, currentEventLengthInBytes=0, inTransaction=false, transactionId='null', incrementalSnapshotContext=IncrementalSnapshotContext [windowOpened=false, chunkEndPosition=null, dataCollectionsToSnapshot=[], lastEventKeySent=null, maximumKey=null]}
+01:37:18.576 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Waiting for keepalive thread to start
+01:37:18.576 [34mINFO [0;39m [36m[blc-127.0.0.1:25821][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-runtime_3e9f7a88bf13-binlog-client
+01:37:18.576 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Keepalive thread is running
+01:37:18.584 [34mINFO [0;39m [36m[blc-127.0.0.1:25821][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Skipping previously processed row event: Event{header=EventHeaderV4{timestamp=1794447428000, eventType=EXT_WRITE_ROWS, serverId=852821, headerLength=19, dataLength=3143, nextPosition=2961864, flags=0}, data=WriteRowsEventData{tableId=961, includedColumns={0, 1, 2, 3, 4, 5}, rows=[
+    [1, [B@541b287c, 1.1200, [B@b8800ad, 2026-10-18T01:02:03.654321, 0],
+    [2, [B@753e0982, 2.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [3, [B@786b8791, 3.1200, [B@686ca728, 2026-10-18T01:02:03.654321, 0],
+    [4, [B@23aa5fe0, 4.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [5, [B@26dd200e, 5.1200, [B@22e6c4b, 2026-10-18T01:02:03.654321, 0],
+    [6, [B@ff6dec1, 6.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [7, [B@7e52c580, 7.1200, [B@31c04714, 2026-10-18T01:02:03.654321, 0],
+    [8, [B@40fd3953, 8.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [9, [B@79c4e75b, 9.1200, [B@11525326, 2026-10-18T01:02:03.654321, 0],
+    [10, [B@22995eff, 10.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [11, [B@b07dc5e, 11.1200, [B@55a71c5a, 2026-10-18T01:02:03.654321, 0],
+    [12, [B@566fbeab, 12.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [13, [B@3e697c3f, 13.1200, [B@bb9b280, 2026-10-18T01:02:03.654321, 0],
+    [14, [B@66913a61, 14.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [15, [B@4d204afe, 15.1200, [B@38dd4fe1, 2026-10-18T01:02:03.654321, 0],
+    [16, [B@7e36d7c8, 16.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [17, [B@119bb85d, 17.1200, [B@5ea3772a, 2026-10-18T01:02:03.654321, 0],
+    [18, [B@cd39958, 18.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [19, [B@4413979d, 19.1200, [B@8868612, 2026-10-18T01:02:03.654321, 0],
+    [20, [B@4dd9ba0f, 20.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [21, [B@5dd0f3b5, 21.1200, [B@52728ed, 2026-10-18T01:02:03.654321, 0],
+    [22, [B@39ad884d, 22.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [23, [B@392444b5, 23.1200, [B@63b3457f, 2026-10-18T01:02:03.654321, 0],
+    [24, [B@5fef69a4, 24.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [25, [B@a556df4, 25.1200, [B@11cf81e7, 2026-10-18T01:02:03.654321, 0],
+    [26, [B@68aeb61c, 26.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [27, [B@4c2850e4, 27.1200, [B@6db3ae58, 2026-10-18T01:02:03.654321, 0],
+    [28, [B@9ecab0, 28.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [29, [B@1d9d82e9, 29.1200, [B@133c5ece, 2026-10-18T01:02:03.654321, 0],
+    [30, [B@638df39f, 30.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [31, [B@15b07e14, 31.1200, [B@64cb2c81, 2026-10-18T01:02:03.654321, 0],
+    [32, [B@15f0c4f8, 32.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [33, [B@19edccd2, 33.1200, [B@fbb4125, 2026-10-18T01:02:03.654321, 0],
+    [34, [B@3229db77, 34.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [35, [B@21ed1ece, 35.1200, [B@5691dd7d, 2026-10-18T01:02:03.654321, 0],
+    [36, [B@3760ce3, 36.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [37, [B@7f789d99, 37.1200, [B@36aaf7d6, 2026-10-18T01:02:03.654321, 0],
+    [38, [B@6e08be4b, 38.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [39, [B@5daaa67d, 39.1200, [B@66056c04, 2026-10-18T01:02:03.654321, 0],
+    [40, [B@7703355, 40.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [41, [B@2c212f16, 41.1200, [B@24b0eda1, 2026-10-18T01:02:03.654321, 0],
+    [42, [B@6998d07f, 42.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [43, [B@6ff4bc82, 43.1200, [B@4a0877f5, 2026-10-18T01:02:03.654321, 0],
+    [44, [B@69f656f0, 44.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [45, [B@46c27899, 45.1200, [B@c18dc6f, 2026-10-18T01:02:03.654321, 0],
+    [46, [B@526b5c6, 46.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [47, [B@5e3c3244, 47.1200, [B@bef9faa, 2026-10-18T01:02:03.654321, 0],
+    [48, [B@41dec11c, 48.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [49, [B@71e6d464, 49.1200, [B@4e77660e, 2026-10-18T01:02:03.654321, 0],
+    [50, [B@3912b2a5, 50.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [51, [B@ef342ba, 51.1200, [B@49f1f2f4, 2026-10-18T01:02:03.654321, 0],
+    [52, [B@3c43aad2, 52.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [53, [B@1068a065, 53.1200, [B@41ad640, 2026-10-18T01:02:03.654321, 0],
+    [54, [B@42baf265, 54.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [55, [B@630ed5da, 55.1200, [B@36302a56, 2026-10-18T01:02:03.654321, 0],
+    [56, [B@64ca4206, 56.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [57, [B@7176ad20, 57.1200, [B@644306d1, 2026-10-18T01:02:03.654321, 0],
+    [58, [B@5316e295, 58.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [59, [B@657a5083, 59.1200, [B@21a1eea1, 2026-10-18T01:02:03.654321, 0],
+    [60, [B@5d2801ca, 60.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [61, [B@394e42b0, 61.1200, [B@e07f352, 2026-10-18T01:02:03.654321, 0],
+    [62, [B@207dd0d5, 62.1200, null, 2026-10-18T01:02:03.654321, 0],
+    [63, [B@3d46a341, 63.1200, [B@76563d9b, 2026-10-18T01:02:03.654321, 0],
+    [64, [B@477acd60, 64.1200, null, 2026-10-18T01:02:03.654321, 0]
+]}}
+01:37:18.982 [34mINFO [0;39m [36m[runtime-gc-runtime_3e9f7a88bf13-pekko.persistence.dispatchers.default-plugin-dispatcher-10][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Starting...
+01:37:18.985 [34mINFO [0;39m [36m[runtime-gc-runtime_3e9f7a88bf13-pekko.persistence.dispatchers.default-plugin-dispatcher-10][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Start completed.
+01:37:19.648 [34mINFO [0;39m [36m[capture-close-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'POLLING_TASKS' to 'STOPPING'
+01:37:19.648 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Task interrupted while polling.
+01:37:19.648 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - Stopping down connector
+11月 12, 2026 1:37:19 上午 com.github.shyiko.mysql.binlog.BinaryLogClient$5 run
+信息: threadExecutor is shut down, terminating keepalive thread
+01:37:19.744 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_3e9f7a88bf13-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Finished streaming
+01:37:19.744 [34mINFO [0;39m [36m[blc-127.0.0.1:25821][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Stopped reading binlog after 14 events, last recorded offset: {ts_sec=1794447438, file=binlog.000018, pos=2962352, gtids=a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-16089, server_id=852821, event=1}
+01:37:19.745 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.pipeline.signal.SignalProcessor][0;39m - SignalProcessor stopped
+01:37:19.745 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.service.DefaultServiceRegistry][0;39m - Debezium ServiceRegistry stopped.
+01:37:19.745 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component JdbcConnection, id = JdbcConnection named = jdbc-connection-close
+01:37:19.745 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-jdbcconnection-JdbcConnection-jdbc-connection-close
+01:37:19.746 [34mINFO [0;39m [36m[debezium-jdbcconnection-JdbcConnection-jdbc-connection-close][0;39m [1;35m[io.debezium.jdbc.JdbcConnection][0;39m - Connection gracefully closed
+01:37:19.746 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component JdbcConnection, id = JdbcConnection named = jdbc-connection-close
+01:37:19.746 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-jdbcconnection-JdbcConnection-jdbc-connection-close
+01:37:19.746 [34mINFO [0;39m [36m[debezium-jdbcconnection-JdbcConnection-jdbc-connection-close][0;39m [1;35m[io.debezium.jdbc.JdbcConnection][0;39m - Connection gracefully closed
+01:37:19.747 [34mINFO [0;39m [36m[capture-close-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Stopped task #1 out of 1 tasks (it took 98 ms to stop the task).
+01:37:19.747 [34mINFO [0;39m [36m[capture-close-1][0;39m [1;35m[i.d.s.j.o.JdbcOffsetBackingStore][0;39m - Stopped JdbcOffsetBackingStore
+01:37:19.747 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine is stopped.
+01:37:19.747 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'STOPPING' to 'STOPPED'
+01:37:27.222 [34mINFO [0;39m [36m[runtime-gc-runtime_3e9f7a88bf13-pekko.actor.default-dispatcher-11][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown initiated...
+01:37:27.224 [34mINFO [0;39m [36m[runtime-gc-runtime_3e9f7a88bf13-pekko.actor.default-dispatcher-11][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown completed.
+WINDOW {"kind":"PROCESS_STOPPED","at":"2026-11-12T01:37:27.227395Z"}

@@ -78,6 +78,15 @@ object BootstrapMatrixWorker {
                 catch {case e:InvocationTargetException=>throw e.getCause}
               }
             }).asInstanceOf[PreparedStatement]
+          }else if(stage=="GC_COMMIT" && m.getName=="prepareStatement" && a!=null && a(0).toString.startsWith("SELECT lineage FROM pekko_capture_readers")){
+            val statement=result.asInstanceOf[PreparedStatement]
+            Proxy.newProxyInstance(classOf[PreparedStatement].getClassLoader,Array(classOf[PreparedStatement]),new InvocationHandler {
+              def invoke(p:Any,method:Method,args:Array[AnyRef]):AnyRef={
+                val value=try method.invoke(statement,Option(args).getOrElse(Array.empty[AnyRef]):_*)catch {case e:InvocationTargetException=>throw e.getCause}
+                if(method.getName=="executeQuery")event("GC_HEAD_LOCKED",JsObject())
+                value
+              }
+            }).asInstanceOf[PreparedStatement]
           }else result
         }}).asInstanceOf[Connection]}
     val lineage=withConnection(settings,schema)(query(_,"SELECT @@server_uuid AS uuid")).elements.head.asJsObject.fields("uuid").convertTo[String]
@@ -87,8 +96,26 @@ object BootstrapMatrixWorker {
       override protected def sourceConnection():Connection=observed(()=>DriverManager.getConnection(settings.copy(port=controlProxy.port).url(schema)+"&socketTimeout=30000",settings.user,settings.password),armControl,controlProxy,"SOURCE_MARKER_COMMIT")
     }
     val admission=new BootstrapAdmission()
+    val gcEnabled=sys.env.get("RUN_CAPTURE_GC_MATRIX").contains("1")
+    val armGc=new AtomicReference[String]("")
+    def gcConnection():Connection=observed(()=>DriverManager.getConnection(state.copy(port=proxy.port).url(schema)+"&socketTimeout=10000",
+      sys.env("CAPTURE_GC_WRITER"),state.password),armGc,proxy,"GC_COMMIT")
+    val gc=if(gcEnabled)Some(new CaptureGcRetention(()=>gcConnection(),store,
+      MySQLCdcSourceNode.connectorStateTables(MySQLCdcStateConfig(state.url(schema),state.user,state.password,"capture_offsets","capture_history",0),captureId)._1))else None
+    val verifier=if(gcEnabled)Some(BootstrapJournalProgressVerifier.create(kit.system,()=>stateConnection(),()=>stateConnection()))else None
+    def withGcObserver[A](f:Connection=>A):A={val c=stateConnection();try f(c)finally c.close()}
+    def gcAccount:String=sys.env("CAPTURE_GC_WRITER")+"@127.0.0.1"
+    def gcDefiner:String=withGcObserver(c=>query(c,"SELECT CURRENT_USER() AS account").elements.head.asJsObject.fields("account").convertTo[String])
     try {
-      store.initialize();capture.start();emit("PROCESS_READY","pid"->JsNumber(ProcessHandle.current().pid()))
+      store.initialize()
+      if(gcEnabled){
+        new CaptureGcRetention(()=>stateConnection(),store,"capture_offsets").initialize()
+        withGcObserver {c=>
+          val empty=query(c,"SELECT discovery_status FROM pekko_capture_gc_state_v1").elements.head.asJsObject.fields("discovery_status")==JsString("UNKNOWN")
+          if(empty)CaptureGcMatrixProvision.birth(c,store,state.url(schema),state.password,gcAccount,gcDefiner)
+        }
+      }
+      capture.start();emit("PROCESS_READY","pid"->JsNumber(ProcessHandle.current().pid()))
       Iterator.continually(StdIn.readLine()).takeWhile(l=>l!=null && l!="STOP").foreach {line=>
         val cmd=line.split(" ")
         try cmd(0) match {
@@ -107,11 +134,29 @@ object BootstrapMatrixWorker {
             val source=new BootstrapSnapshot(()=>DriverManager.getConnection(settings.url(schema)+"&socketTimeout=30000",settings.user,settings.password),table,codec,10000,8L*1024*1024,observe)
             val targetConfig=cn.xuyinyin.magic.connectors.mysql.sink.MySQLCdcApplyConfig.trusted(state.host,state.port,schema,targetTable,state.user,state.password)
             val replaySink=new BootstrapReplaySink(_=>observed(()=>DriverManager.getConnection(state.copy(port=proxy.port).url(schema),state.user,state.password),armReplay,proxy,"REPLAY_TARGET_COMMIT"))
-            val r=new BootstrapRunner(id,table,generation,table+"|"+generation+"|"+targetTable+"|"+codec.schemaId,capture,store,spool,target,access,source,replaySink.bind(targetConfig),schema,()=>stateConnection(),admission,BootstrapLimits(groupBatch=batchSize.toInt),observe)(blocking)
+            val r=new BootstrapRunner(id,table,generation,table+"|"+generation+"|"+targetTable+"|"+codec.schemaId,capture,store,spool,target,access,source,replaySink.bind(targetConfig),schema,()=>stateConnection(),admission,BootstrapLimits(groupBatch=batchSize.toInt),observe,verifier)(blocking)
             runners.put(id,r)
             val f=Future(r.run(()=>stopping.get()))(blocking);futures.put(id,f)
             f.failed.foreach(e=>emit("RUN_FAILED","id"->JsString(id),"error"->JsString(e.toString)))
             emit("BOOT_ACCEPTED","id"->JsString(id))
+          case "GC_SEAL"=>runners.get(cmd(1)).requestGcCheckpoint();emit("GC_SEAL_REQUESTED")
+          case "GC_REMEMBER"=>
+            emit("GC_REMEMBERED","proofId"->JsString(runners.get(cmd(1)).publishGcCheckpoint(gc.get)))
+          case "GC_ACTIVATE"=>withGcObserver {o=>gc.get.activateCheckpoint(cmd(1),capture,o,gcAccount,gcDefiner)};emit("GC_ACTIVE")
+          case "GC_PLAN"=>gc.get.plan(cmd(1));emit("GC_PLANNED")
+          case "GC_DELETE_ASYNC"=>
+            val op=cmd(1);val size=cmd(2).toInt
+            Future {val phase=withGcObserver {o=>gc.get.deleteBatch(op,size,capture,o,gcAccount,gcDefiner)};emit("GC_DELETED","phase"->JsString(phase))}(blocking)
+              .failed.foreach(e=>emit("COMMAND_FAILED","command"->JsString("GC_DELETE_ASYNC"),"error"->JsString(e.toString)))
+            emit("GC_DELETE_ACCEPTED")
+          case "GC_DELETE"=>
+            val phase=withGcObserver {o=>gc.get.deleteBatch(cmd(1),cmd(2).toInt,capture,o,gcAccount,gcDefiner)}
+            emit("GC_DELETED","phase"->JsString(phase))
+          case "ARM_GC_CLOSE"=>closeStage.set("GC_COMMIT");closeUnknown.set(true);emit("ARMED")
+          case "ARM_GC"=>armGc.set(cmd(1));emit("ARMED")
+          case "GC_INSPECT"=>
+            val view=gc.get.inspect();emit("GC_VIEW","epoch"->JsNumber(view.epoch),"requiredFrom"->JsNumber(view.requiredFrom),
+              "actualAck"->view.actualAck.map(JsNumber(_)).getOrElse(JsNull),"blockers"->JsArray(view.blockers.map(JsString(_))))
           case "CANCEL"=>
             val result=Await.result(journals.get(cmd(1)).cancel(),20.seconds)
             emit("CANCEL_RESULT","id"->JsString(cmd(1)),"phase"->JsString(result.phase),
@@ -133,7 +178,7 @@ object BootstrapMatrixWorker {
           case "RELEASE"=>latch.get().countDown();factory.release();emit("GATE_RELEASED")
           case "RESOLVE_TX"=>proxy.resolveHeldTransaction();controlProxy.resolveHeldTransaction();emit("TX_RESOLVE_REQUESTED")
           case "DROP_RESPONSE"=>proxy.dropHeldResponse();controlProxy.dropHeldResponse();emit("RESPONSE_RELEASED")
-          case "STATUS"=>emit("STATUS","actors"->JsObject(runners.asScala.toVector.map{case(id,r)=>id->r.json(r.state)}.toMap),"captureFailure"->capture.failure.map(x=>JsString(x.toString)).getOrElse(JsNull),"admission"->admission.evidence)
+          case "STATUS"=>emit("STATUS","actors"->JsObject(runners.asScala.toVector.map{case(id,r)=>id->r.json(r.state)}.toMap),"captureFailure"->capture.failure.map(x=>JsString(x.toString)).getOrElse(JsNull),"captureReadiness"->JsString(if(gcEnabled)capture.startupEvidence.phase else capture.cachedStartupEvidence.phase),"admission"->admission.evidence)
           case "STATE"=>
             val actorState=JsObject(runners.asScala.toVector.map{case(id,r)=>id->r.json(r.state)}.toMap)
             val c=stateConnection();val j=try {val raw=query(c,"SELECT persistence_id,sequence_number,event_ser_id,event_ser_manifest,HEX(event_payload) AS payload_hex FROM event_journal ORDER BY ordering")

@@ -17,7 +17,7 @@ final class BootstrapJournalProgressVerifier private (uuid:String,database:Strin
     try {val r=id.executeQuery("SELECT @@server_uuid,DATABASE()");try {
       require(r.next() && r.getString(1)==uuid && r.getString(2)==database && !r.next(),"bootstrap Journal database changed")
     }finally r.close()}finally id.close()
-    val q=c.prepareStatement("SELECT sequence_number,deleted,event_payload,event_ser_id,event_ser_manifest FROM event_journal WHERE persistence_id=? AND sequence_number>=? ORDER BY sequence_number LIMIT 2 FOR UPDATE")
+    val q=c.prepareStatement("SELECT sequence_number,deleted,event_payload,event_ser_id,event_ser_manifest FROM event_journal WHERE persistence_id=? AND sequence_number>=? ORDER BY sequence_number LIMIT 2 FOR SHARE")
     q.setQueryTimeout(5);q.setString(1,receipt.persistenceId);q.setLong(2,receipt.sequenceNr)
     try {val r=q.executeQuery();try {
       require(r.next() && r.getLong(1)==receipt.sequenceNr && !r.getBoolean(2),"latest bootstrap Journal event missing or deleted")

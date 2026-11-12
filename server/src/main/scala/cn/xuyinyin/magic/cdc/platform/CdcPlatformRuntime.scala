@@ -13,6 +13,9 @@ final case class CdcKernelOutcome(progress:BootstrapProgress,releaseConfirmed:Bo
   validationComplete:Boolean,nextDelayMillis:Long,initializationEvidence:Option[String])
 private[cdc] final class CdcKernelDeferred extends IllegalStateException("bounded validation cache occupied")
 trait CdcPlatformKernel {
+  def gcEnabled:Boolean=false
+  def gcViews:Vector[spray.json.JsObject]=Vector.empty
+  def maintainGc(owner:String,stop:()=>Boolean):Unit=()
   def prepareManagedManifest():String=throw new IllegalStateException("managed resource manifest unavailable")
   def start():Unit
   def captures:Vector[CdcCaptureView]
@@ -36,6 +39,8 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
   private def threads(label:String):ThreadFactory=(r:Runnable)=>{val t=new Thread(r,"cdc-platform-"+label+"-"+runtimeAttemptId.take(8));t.setDaemon(true);t}
   private val controls=Executors.newFixedThreadPool(2,threads("control"))
   private val workers=Executors.newFixedThreadPool(limits.snapshotSteps+limits.tailSteps,threads("step"))
+  private val gcWorker=if(kernel.gcEnabled)Some(Executors.newSingleThreadExecutor(threads("gc")))else None
+  private val gcBusy=new AtomicBoolean()
   private val clock=Executors.newSingleThreadScheduledExecutor(threads("clock"))
   private val guardianClock=if(managedOwner.nonEmpty)Some(Executors.newSingleThreadScheduledExecutor(threads("guardian")))else None
   private val controlEc=ExecutionContext.fromExecutorService(controls)
@@ -126,6 +131,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
       cancelAllowed=ownerState=="ACTIVE" && !stopping.get() && v.cancelAllowed &&
         (healthy || (v.phase=="QUEUED" && v.executionId.isEmpty && v.releaseStatus=="RELEASED")))
   }
+  override def gcStatus():Future[Vector[spray.json.JsObject]]=io(kernel.gcViews)
   def captures():Future[Vector[CdcCaptureView]]=io(kernel.captures.map(v=>if(ownerState=="ACTIVE")v else v.copy(readiness="UNKNOWN",runtimeHealth="UNKNOWN",reason=reason)))
   def submit(request:CdcTaskRequest):Future[CdcTaskAcceptance]=io {
     if(stopping.get())throw new CdcPlatformException("CDC_PLATFORM_STOPPING")
@@ -154,6 +160,13 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
       val workEntered=new AtomicBoolean()
       io {
       workEntered.set(true)
+      if(!stopping.get() && gcWorker.nonEmpty && gcBusy.compareAndSet(false,true)){
+        Future(kernel.maintainGc(runtimeAttemptId,()=>stopping.get() || guardianLost.get()))(ExecutionContext.fromExecutorService(gcWorker.get))
+          .onComplete {r=>
+            r.failed.foreach {e=>if(!ExecutionFailure.from(e,"gc-maintenance").releaseConfirmed){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN");stopRuntime()}}
+            gcBusy.set(false)
+          }(ExecutionContext.parasitic)
+      }
       if(!recoveryComplete){recoveryAfter=store.recoverColdPage(runtimeAttemptId,recoveryAfter,128,now);recoveryComplete=recoveryAfter.isEmpty}
       val dispatch=store.dispatch(runtimeAttemptId,kernel.dispatchCaptureIds,128,now)
       lastDispatchAt=now;dispatchCaughtUp=dispatch.caughtUp
@@ -216,7 +229,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
         if(!stopped.get()){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN");stopRequested.trySuccess(false)}
       }},10L,TimeUnit.SECONDS)
       clock.scheduleWithFixedDelay(new Runnable {def run():Unit={
-        if(initialized.isCompleted && active.get()==0 && !ticking.get() && !stopped.get() && closingCheck.compareAndSet(false,true)){
+        if(initialized.isCompleted && active.get()==0 && !gcBusy.get() && !ticking.get() && !stopped.get() && closingCheck.compareAndSet(false,true)){
           Future {
             val clean=kernel.closeAndVerify()
             val persisted=if(ownerGranted)store.endOwner(runtimeAttemptId,clean && !startupFailedFlag.get(),now)
@@ -224,7 +237,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
               else clean
             if(persisted){
               stopped.set(true);ownerState="STOPPED";reason=None;stopRequested.trySuccess(true)
-              clock.shutdown();workers.shutdown();controls.shutdown()
+              clock.shutdown();workers.shutdown();gcWorker.foreach(_.shutdown());controls.shutdown()
             }else {ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN");stopRequested.trySuccess(false)}
           }(controlEc).onComplete {result=>
             result match {case Failure(_)=>ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN");stopRequested.trySuccess(false);case _=>()}

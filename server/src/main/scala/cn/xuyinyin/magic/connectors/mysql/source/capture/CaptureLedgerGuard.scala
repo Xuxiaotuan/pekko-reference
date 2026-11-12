@@ -21,8 +21,8 @@ private[magic] object CaptureLedgerGuard {
     (r(0),r(1),r(2),r(3))
   }
   /** Caller owns the transaction; commit follows this scope while its metadata lock is still held. */
-  def withVerified[A](observer:Connection,writer:Connection,serverUuid:String,database:String,account:String,definer:String)(use: =>A):A={
-    require(!writer.getAutoCommit && database.matches("pekko_gc_[a-z0-9_]{1,48}") && account.matches("[A-Za-z0-9_]+@[A-Za-z0-9_.%:-]+"),
+  def withVerified[A](observer:Connection,writer:Connection,serverUuid:String,database:String,account:String,definer:String,namespace:Option[CaptureGcNamespace.Permit]=None)(use: =>A):A={
+    require(!writer.getAutoCommit && (database.matches("pekko_gc_[a-z0-9_]{1,48}") || namespace.exists(_.matches(serverUuid,database,account,definer))) && account.matches("[A-Za-z0-9_]+@[A-Za-z0-9_.%:-]+"),
       "ledger guard requires a dedicated namespace and writer transaction")
     val host=account.split("@",2)(1)
     require(!host.contains("%") && !host.contains("_"),"ledger writer host wildcard is not allowed")
@@ -70,7 +70,9 @@ private[magic] object CaptureLedgerGuard {
     // and SET NULL can therefore change a supposedly immutable ledger row.
     require(rows(observer,"SELECT 1 FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=? AND TABLE_NAME=? AND (UPDATE_RULE NOT IN ('RESTRICT','NO ACTION') OR DELETE_RULE NOT IN ('RESTRICT','NO ACTION')) LIMIT 1",database,ledger).isEmpty,
       "foreign key action can bypass ledger triggers")
+    namespace.foreach(_.verifyOn(writer))
     val result=use
+    namespace.foreach(_.verifyOn(writer))
     require(!writer.getAutoCommit && identity(writer)==wi && identity(observer)==oi,"ledger guard scope changed")
     requireLock()
     require(transactionEvent()==eventId,"ledger transaction changed within guard scope")

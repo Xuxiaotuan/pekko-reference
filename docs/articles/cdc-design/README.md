@@ -15,7 +15,7 @@
 | worker 隔离接管 | 排除测试类的独立 guardian/supervisor/worker；真实 MySQL、Journal、Sink | C0 的 64 行、384 字段一致；不覆盖 guardian JVM 重启 |
 | receipt 重启 | Bootstrap 独立 JVM 从 Journal 恢复并重签；伪造副本拒绝 | 证明重签及投影；不证明 L 实际删除或任意字节码攻击防护 |
 | 未知 B | C1 的 PAUSED、UNKNOWN grant 及失败日志保留 | 安全暂停；自动恢复未通过 |
-| L 的 GC | 源码仅有归档和保留位置投影，没有生产删除路径 | 尚未实现，不能以 floor 推进替代 GC 验收 |
+| L 的 GC | 独立 Runtime 持久化 namespace、pin、proof、operation，并按受保护前缀小批删除可重建 GROUP | RG/LG 实测通过；只证明逻辑回收，未知 B、慢表和容量不足安全暂停；未证明物理文件缩容 |
 
 [本轮源码与实验材料](../../experiments/2026-11-08-cdc-standalone-entry/retire-workflow-runtime-20261111/README.md)固定运行范围。以下各历史报告仍按原版本解释，不因目录调整重标通过。
 
@@ -202,3 +202,5 @@
 ## 2026-11-09 持久化切换授权实验
 
 本轮真实旧 Workflow、独立 worker、Actor Journal 和 MySQL Sink 已完成 `KILL_T_BEFORE_J` 的持久化策略切换与运行时账号重绑定，源/目标 10 行、6 字段逐字段一致；并完成 Journal 提交后故障、启动回复丢失、配额/排空回复丢失、观察拒绝和 stale grant 窗口。结果和失败材料见 [持久化切换授权实验](../../experiments/2026-11-09-persistent-cutover-authorization/README.md)。
+
+[2026-11-12 Runtime GC 实验与边界](../../experiments/2026-11-12-runtime-gc/README.md)

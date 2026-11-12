@@ -15,6 +15,7 @@ object BootstrapJournal {
   final case class Read(reply:ActorRef[BootstrapProgress]) extends Command
   final case class Write(expected:Long,value:BootstrapProgress,reply:ActorRef[Result]) extends Command
   final case class Cancel(reply:ActorRef[BootstrapProgress]) extends Command
+  private[bootstrap] final case class SealGcCheckpoint(expected:Long,proof:String,reply:ActorRef[Result]) extends Command
   private[bootstrap] final case class ResumePendingB(expected:Long,executionId:String,definition:String,permit:String,reply:ActorRef[String]) extends Command
   private[bootstrap] final case class ResumePendingBWithReceipt(expected:Long,executionId:String,definition:String,permit:String,digest:String,reply:ActorRef[String]) extends Command
   private[bootstrap] final case class CompleteRecoveryReceipt(expected:Long,permit:String,digest:String,reply:ActorRef[String]) extends Command
@@ -68,8 +69,13 @@ object BootstrapJournal {
           val valid=s.phase!="RECOVERY_PENDING" && expected==s.revision && n.revision==expected+1 && BootstrapPhases.allowed(s.phase,n.phase) &&
             (!s.cancelRequested || n.cancelRequested) && (s.definition.isEmpty || n.definition==s.definition) &&
             (s.executionId.isEmpty || n.executionId==s.executionId) && n.recoveryPermit==s.recoveryPermit && n.recoveryReceiptDigest==s.recoveryReceiptDigest &&
-            n.recoveryAttempts>=s.recoveryAttempts && n.recoveryAttempts<=3
+            n.recoveryAttempts>=s.recoveryAttempts && n.recoveryAttempts<=3 && n.gcCheckpoint==s.gcCheckpoint
           if(valid)Effect.persist(Advanced(n)).thenReply(r)(x=>Result(true,x))else Effect.reply(r)(Result(false,s))
+        case SealGcCheckpoint(expected,proof,r)=>
+          val valid=scala.util.Try(BootstrapGcCheckpoint.validate(proof,id,s)).isSuccess
+          if(s.phase=="STREAMING" && !s.cancelRequested && expected==s.revision && valid)
+            Effect.persist(Advanced(s.copy(revision=s.revision+1,gcCheckpoint=Some(proof)))).thenReply(r)(x=>Result(true,x))
+          else Effect.reply(r)(Result(false,s))
         case Cancel(r)=>
           if(s.cancelRequested || s.phase=="CANCELED" || s.phase=="PAUSED" || s.phase=="RECOVERY_PENDING")Effect.reply(r)(s)
           else Effect.persist(Advanced(s.copy(revision=s.revision+1,phase="CANCELING",cancelRequested=true))).thenReply(r)(identity)
@@ -119,6 +125,8 @@ final class BootstrapJournalAccess(ref:ActorRef[BootstrapJournal.Command])(impli
   private implicit val timeout:Timeout=Timeout(10.seconds)
   def read():Future[BootstrapProgress]=ref.ask(BootstrapJournal.Read)
   def cancel():Future[BootstrapProgress]=ref.ask(BootstrapJournal.Cancel)
+  private[bootstrap] def sealGcCheckpoint(expected:Long,proof:String):Future[BootstrapJournal.Result]=
+    ref.ask(r=>BootstrapJournal.SealGcCheckpoint(expected,proof,r))
   private[magic] def resumePendingB(expected:Long,executionId:String,definition:String,permit:String):Future[String]=
     ref.ask(r=>BootstrapJournal.ResumePendingB(expected,executionId,definition,permit,r))
   private[magic] def resumePendingBWithReceipt(expected:Long,executionId:String,definition:String,permit:String,digest:String):Future[String]=

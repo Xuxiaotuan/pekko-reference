@@ -1,0 +1,118 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 3 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapRunner.scala:481:53: return statement uses an exception to pass control to the caller of the enclosing named method run
+[warn]         if(s.phase=="CANCELED" || s.phase=="PAUSED")return
+[warn]                                                     ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapRunner.scala:484:34: return statement uses an exception to pass control to the caller of the enclosing named method run
+[warn]         if(state.phase=="PAUSED")return
+[warn]                                  ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapRunner.scala:502:21: return statement uses an exception to pass control to the caller of the enclosing named method run
+[warn]           if(stop())return
+[warn]                     ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala:470:7: return statement uses an exception to pass control to the caller of the enclosing named method subscribe
+[warn]       return existing // Query/idempotency never rewrites an existing B, including B_PENDING.
+[warn]       ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala:507:7: return statement uses an exception to pass control to the caller of the enclosing named method requestFence
+[warn]       return f
+[warn]       ^
+[warn] 5 warnings found
+[info] done compiling
+[info] compiling 11 Scala sources to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/BootstrapMatrixWorker.scala:6:55: Unused import
+[warn] import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
+[warn]                                                       ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/CaptureGcMatrixSpec.scala:52:27: local default argument in value $anonfun is never used
+[warn]         def ready(c:Child,t:String="a"):Unit=awaitCondition("streaming "+t){
+[warn]                           ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/SharedCaptureMatrixWorker.scala:14:25: Unused import
+[warn] import org.apache.pekko.Done
+[warn]                         ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/SharedCaptureMatrixWorker.scala:22:56: Unused import
+[warn] import scala.concurrent.{Await,ExecutionContext,Future,Promise}
+[warn]                                                        ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/BootstrapMatrixWorker.scala:25:43: match may not be exhaustive.
+[warn]     val Array(schema,captureId,batchSize)=args;validateSchema(schema)
+[warn]                                           ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/CaptureAdmissionReleaseProbe.scala:237:29: match may not be exhaustive.
+[warn] It would fail on the following inputs: JsArray(_), JsFalse, JsNumber(_), JsString(_), JsTrue
+[warn]               cursor=payload("parent") match {case JsNull=>None;case x:JsObject=>Some(x.fields("sequence").asInstanceOf[JsNumber].value.toLongExact)}
+[warn]                             ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/CaptureStartupRecoveryWorker.scala:30:55: match may not be exhaustive.
+[warn]     val Array(schema,captureId,batchSize,startupGate)=args
+[warn]                                                       ^
+[warn] /Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/test/scala/cn/xuyinyin/magic/workflow/integration/SharedCaptureMatrixWorker.scala:32:43: match may not be exhaustive.
+[warn]     val Array(schema,captureId,batchSize)=args
+[warn]                                           ^
+[warn] 8 warnings found
+[info] done compiling
+01:08:54,841 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+01:08:54,842 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1342addb - No custom configurators were discovered as a service.
+01:08:54,842 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1342addb - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+01:08:54,842 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1342addb - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+01:08:54,842 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+01:08:54,843 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+01:08:54,844 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1342addb - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+01:08:54,844 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1342addb - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+01:08:54,844 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1342addb - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+01:08:54,844 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+01:08:54,844 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+01:08:54,874 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+01:08:54,874 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+01:08:54,877 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+01:08:54,899 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+01:08:54,899 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+01:08:54,899 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+01:08:54,899 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+01:08:54,901 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+01:08:54,901 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+01:08:54,902 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+01:08:54,903 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+01:08:54,904 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+01:08:54,904 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+01:08:54,904 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+01:08:54,904 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+01:08:54,904 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@54d6938a - End of configuration.
+01:08:54,905 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@6bea1054 - Registering current configuration as safe fallback point
+01:08:54,905 |-INFO in ch.qos.logback.classic.util.ContextInitializer@1342addb - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 61 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+[info] CaptureGcMatrixSpec:
+[info] L protected-prefix GC
+[info] - should preserve evidence and full-field equality for LG01
+[info] - should preserve evidence and full-field equality for LG02
+[info] - should preserve evidence and full-field equality for LG03
+[info] - should preserve evidence and full-field equality for LG04
+[info] - should preserve evidence and full-field equality for LG05
+[info] - should preserve evidence and full-field equality for LG06
+[info] - should preserve evidence and full-field equality for LG07
+[info] - should preserve evidence and full-field equality for LG08
+[info] - should preserve evidence and full-field equality for LG09
+[info] - should preserve evidence and full-field equality for LG10
+[info] - should preserve evidence and full-field equality for LG11
+[info] - should preserve evidence and full-field equality for LG12
+[info] - should preserve evidence and full-field equality for LG13
+[info] - should preserve evidence and full-field equality for LG14
+[info] - should preserve evidence and full-field equality for LG15
+[info] - should preserve evidence and full-field equality for LG16
+[info] Run completed in 2 minutes, 24 seconds.
+[info] Total number of tests run: 16
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 16, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 152 s (02:32), completed 2026年11月12日 上午1:11:19

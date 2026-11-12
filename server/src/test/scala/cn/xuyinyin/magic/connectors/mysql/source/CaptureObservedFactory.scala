@@ -40,6 +40,9 @@ final class CaptureObservedFactory(emit:(String,JsObject)=>Unit) extends Debeziu
         var pk=false
         val proxy=Proxy.newProxyInstance(committerClass.getClassLoader,Array(committerClass),new InvocationHandler {
           def invoke(o:Any,m:Method,args:Array[AnyRef]):AnyRef={
+            if(m.getName=="markBatchFinished" && take("BEFORE_FINISHED")){
+              emit("CUTPOINT",JsObject("window"->JsString("BEFORE_FINISHED")));gate.await()
+            }
             val result=try m.invoke(committer,Option(args).getOrElse(Array.empty[AnyRef]):_*)catch {case e:InvocationTargetException=>throw e.getCause}
             if(m.getName=="markProcessed") {
               val r=args(0).asInstanceOf[RecordChangeEvent[SourceRecord]].record()

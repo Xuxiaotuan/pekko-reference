@@ -39,8 +39,33 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   private val callbackFailed=new AtomicBoolean(false)
   private var engine:DebeziumEngineAccess=null
   private var completion:Future[Done]=null
-  private var owner:Connection=null
-  private var ownerId=0L
+  @volatile private var owner:Connection=null
+  @volatile private var ownerId=0L
+  private val gcFlights=new java.util.concurrent.atomic.AtomicInteger(0)
+  /** Includes COMMIT and physical close. Unknown release retains the flight and owner lease. */
+  private[capture] def withGcTransaction[A](body: =>A):A={
+    gcFlights.synchronized {
+      require(!stopping.get() && failure.isEmpty && owner!=null,"GC capture attempt is stopping or unhealthy")
+      gcFlights.incrementAndGet()
+    }
+    var release=true
+    try body catch {case scala.util.control.NonFatal(e)=>
+      if(!cn.xuyinyin.magic.cdc.recovery.ExecutionFailure.from(e,"capture-gc").releaseConfirmed){
+        release=false;error.compareAndSet(null,e);startup.fail()
+      }
+      throw e
+    }finally if(release)gcFlights.decrementAndGet()
+  }
+  /** A GC writer belongs to this live capture attempt, not merely a process ID. */
+  private[capture] def verifyGcLease(c:Connection,location:(String,String)):Unit={
+    require(!stopping.get() && error.get()==null && owner!=null && startup.evidence.phase=="ADMISSION_READY",
+      "GC requires the active, healthy capture attempt")
+    val q=c.prepareStatement("SELECT @@server_uuid,DATABASE(),IS_USED_LOCK(?)");q.setQueryTimeout(5)
+    try {q.setString(1,"pekko_capture_"+store.captureId);val r=q.executeQuery();try {
+      require(r.next() && (r.getString(1),r.getString(2))==location && r.getLong(3)==ownerId && !r.wasNull(),
+        "GC capture owner lease changed")
+    }finally r.close()}finally q.close()
+  }
   private var profileSequence=0L
   private var nextCallback=0L
   private case class Pending(id:Long,offset:String,handle:CdcBatchCommitHandle,var remaining:Int,bytes:Long,references:mutable.Set[Long])
@@ -74,7 +99,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   def streamingConnected:Option[Boolean]=
     if(stopping.get() || closed.get() || failure.nonEmpty)Some(false)else snapshots.streamingConnected
   private lazy val releaseGuard=new CaptureReleaseGuard(startup.evidence.runtimeAttemptId,()=>closeLocal(),
-    ()=>localCloseFinished.get() && !inside.get() && (engine==null || engine.localTerminationConfirmed),
+    ()=>localCloseFinished.get() && !inside.get() && gcFlights.get()==0 && (engine==null || engine.localTerminationConfirmed),
     includeOwner=>if(!started.get())CaptureServerRelease(startup.evidence.runtimeAttemptId,"CONFIRMED",None)
       else resourceObserver.map(_.sample(startup.evidence.runtimeAttemptId,ownerId,includeOwner))
         .getOrElse(CaptureServerRelease(startup.evidence.runtimeAttemptId,"UNKNOWN",Some("OBSERVER_UNAVAILABLE"))),
@@ -87,7 +112,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     }
   }
   def requestClose():Future[CaptureReleaseEvidence]={
-    if(stopping.compareAndSet(false,true))observe("CAPTURE_STOP_REQUESTED",JsObject())
+    gcFlights.synchronized {if(stopping.compareAndSet(false,true))observe("CAPTURE_STOP_REQUESTED",JsObject())}
     startup.stop();releaseGuard.request()
   }
   def refreshRelease():Future[CaptureReleaseEvidence]={requestClose();releaseGuard.refresh()}

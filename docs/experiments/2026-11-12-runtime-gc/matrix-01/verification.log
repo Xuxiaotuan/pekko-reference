@@ -1,0 +1,63 @@
+[info] welcome to sbt 1.9.8 (Microsoft Java 17.0.14)
+[info] loading global plugins from /Users/xujiawei/.sbt/1.0/plugins
+[info] loading settings for project pekko-reference-build from plugins.sbt ...
+[info] loading project definition from /Users/xujiawei/magic/scala-workbench/pekko-reference/project
+[info] loading settings for project root from build.sbt ...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[warn] there's a key that's not used by any other settings/tasks:
+[warn]  
+[warn] * root / maintainer
+[warn]   +- /Users/xujiawei/magic/scala-workbench/pekko-reference/build.sbt:60
+[warn]  
+[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
+[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] Defining Test / testOptions
+[info] The new value will be used by Test / test / testOptions, Test / testOnly / testOptions, Test / testQuick / testOptions
+[info] Reapplying settings...
+[info] set current project to pekko-reference (in build file:/Users/xujiawei/magic/scala-workbench/pekko-reference/)
+[info] compiling 1 Scala source to /Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/test-classes ...
+[info] done compiling
+08:58:58,580 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+08:58:58,580 |-INFO in ch.qos.logback.classic.util.ContextInitializer@168e1b3 - No custom configurators were discovered as a service.
+08:58:58,580 |-INFO in ch.qos.logback.classic.util.ContextInitializer@168e1b3 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+08:58:58,581 |-INFO in ch.qos.logback.classic.util.ContextInitializer@168e1b3 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+08:58:58,581 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+08:58:58,581 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+08:58:58,582 |-INFO in ch.qos.logback.classic.util.ContextInitializer@168e1b3 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 0 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+08:58:58,582 |-INFO in ch.qos.logback.classic.util.ContextInitializer@168e1b3 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+08:58:58,582 |-INFO in ch.qos.logback.classic.util.ContextInitializer@168e1b3 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+08:58:58,582 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+08:58:58,583 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/server/target/scala-2.13/classes/logback.xml]
+08:58:58,611 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+08:58:58,611 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+08:58:58,614 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+08:58:58,623 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+08:58:58,623 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+08:58:58,623 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+08:58:58,623 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+08:58:58,624 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+08:58:58,624 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+08:58:58,624 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+08:58:58,624 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+08:58:58,625 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+08:58:58,625 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+08:58:58,625 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+08:58:58,625 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+08:58:58,625 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@480c4697 - End of configuration.
+08:58:58,625 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@32f79012 - Registering current configuration as safe fallback point
+08:58:58,625 |-INFO in ch.qos.logback.classic.util.ContextInitializer@168e1b3 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 43 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+[info] CdcRuntimeGcSpec:
+[info] standalone Runtime GC
+[info] - should preserve durable boundaries and evidence for RG01-enable-restart
+[info] - should preserve durable boundaries and evidence for RG02-slow-table
+[info] - should preserve durable boundaries and evidence for RG03-unknown-B
+[info] - should preserve durable boundaries and evidence for RG04-orphan-Journal
+[info] - should preserve durable boundaries and evidence for RG05-unsafe-account
+[info] Run completed in 2 minutes, 47 seconds.
+[info] Total number of tests run: 5
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 5, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 171 s (02:51), completed 2026年11月12日 上午9:01:46

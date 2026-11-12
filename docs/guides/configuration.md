@@ -135,7 +135,7 @@ URL；源和状态实例须有不同的实际 `@@server_uuid`，分别填入两�
 
 两类 step 预算均须为正、总和不超过 32；candidate-page 上限 128。
 `batch-size` 同时用于本 capture 的 SDK 与组回放上限，`chunk-rows/page-rows` 约束
-初始化窗口和页。L/spool 是有限容量，不因配置线程数增加而自动扩容；当前没有自动 GC。
+初始化窗口和页。L/spool 是有限容量，不因配置线程数增加而自动扩容；GC 默认关闭，显式启用见下文。
 这里没有 `sink-host`、`sink-user` 或 `state-observer-user` 字段。当前 Sink 的主机、端口、库
 从控制 JDBC URL 派生，写入账户也是 `CDC_CONTROL_USER`。不能只在配置里填一个未被读取的字段，
 就认为已实现独立 Sink 部署。
@@ -331,3 +331,37 @@ session override 只影响本次 sbt 会话；若不先清除默认 exclude，in
 `http.shutdown-grace=5s` 必须严格小于 `pekko.coordinated-shutdown.phases.service-requests-done.timeout`（默认 10s），且两者为正。binding 通过 Pekko HTTP 注册协调 unbind/drain。外部 Pod/JVM 停止预算还要覆盖 preStop、Sharding handoff 及其他阶段。
 
 Guardian 现在明确读取 `pekko.cluster.sharding.number-of-shards`，默认 100。旧版本忽略过非默认值，修复后会改变相应 hash 映射；已有集群不能把它当无损滚动参数。见[架构与迁移边界](../architecture/README.md)。
+
+
+### 独立 Runtime 的 L GC（显式启用）
+
+2026-11-12 本地实现增加下列可选配置，放在单个 `captures` 项内。省略整个 `gc` 块，或设置 `enabled=false`，保留原启动行为。旧 `pekko.workflow.cdc-platform` 配置路径仍用于兼容，不会启动 Workflow 或 Cron。
+
+```hocon
+gc {
+  enabled = true
+  enable-legacy = true
+  username = ${CDC_GC_USER}
+  password = ${CDC_GC_PASSWORD}
+  account-host = "127.0.0.1"
+  ledger-definer = "control@localhost"
+  trusted-admin-accounts = ["control@localhost", "journal@localhost"]
+  producer-accounts = ["sdk@127.0.0.1"]
+  interval-ms = 60000
+  batch-frames = 32
+  page-size = 16
+  inventory-limit = 10000
+}
+```
+
+账号字符串必须对应实际 MySQL `user@host`。本例中的主机和账号需按部署替换；不能把所有现存账号直接列为可信管理员来绕过清点。GC 密码仅保存在配置/秘密服务中，不写入证明或日志。
+
+- `trusted-admin-accounts` 明确列出受控管理、控制/目标写入和 Journal 基础设施账号。其代码及管理操作属于信任边界，启用期间不得运行绕过 Runtime 的旧写入者。
+- `producer-accounts` 列出 SDK state、可选 material 等其他状态库生产账号。启用器核实完整客户端清单、角色/代理授权和对象权限。普通 producer 不得有全局权限、schema 级修改权限或修改/删除证据的 DDL 权限，也不能修改 Journal、目标组账本和命名空间许可。允许必要的 schema SELECT/CREATE 及具体运行表的 DML；已有宽泛授权需要 DBA 先收敛，Runtime 不自动改账号权限。
+- GC writer 必须与控制、SDK、material 账号分离，使用精确 host。它需要 schema SELECT，以及 L/retention/pin/checkpoint/recovery-frame/operation 表的必要 DML；不需要更新 Journal 或目标组账本。目标组账本的禁止 UPDATE/DELETE 触发器由显式启用时的控制连接安装；已有冲突定义不会被替换。
+- 旧命名空间启用发生在 Reader 启动前：取得独立 Runtime owner 和 capture 命名锁，确认旧 grant、会话与事务排空，清点订阅、消费者和真实 Journal。首次启用最多清点 `inventory-limit` 项；没有把 70 万冷任务元数据都激活为 Actor。中断的清点事务回滚，重启重新扫描，不续用半截游标。
+- 当前清点覆盖独立 CDC Runtime 的 Bootstrap Journal/注册表；外来执行器 Journal、孤儿、snapshot-only 历史、不完整身份、未知 B 或权限证明不足均拒绝启用 GC。原持久化记录不删除、不改名。GC 专项拒绝一般保留业务同步；未知 B 的 Reader 启动拒绝继续沿用原协议。
+- `page-size` 为每次维护登记的审计页，上限 32；审计请求持久化，走原 TAIL 配额。已覆盖当前位置的静默表不重建 Actor。`batch-frames` 上限 128，每批 GROUP 正文预算 1 MiB；删除任务保存固定上界和游标，重启不扩大原计划。
+- 维护使用一个有界 worker。GC 事务仍属于当前 Reader，关闭结果未知时保留 owner；Runtime 停止等待维护工作结束。`GET /api/v1/cdc-gc` 提供当前阶段、原因和 operation；HTTP 绑定、命名空间 READY 和表初始化完成分别判定。
+
+该 GC 回收 L 的重复 GROUP 正文，保留 ACK、控制帧、恢复元数据、T 账本和 Journal。慢表、取消表的保护仍可阻挡全局前缀；容量不足仍暂停。没有自动扩容、任意历史恢复或 InnoDB 文件缩容保证；受管 guardian 接管与 GC 的完整组合仍未验证。实测范围和失败材料见 [Runtime GC 实验](../experiments/2026-11-12-runtime-gc/README.md)。

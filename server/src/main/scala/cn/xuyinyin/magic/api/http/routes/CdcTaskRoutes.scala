@@ -65,6 +65,7 @@ final class CdcTaskRoutes(service: Option[CdcTaskService])(implicit ec: Executio
   val routes: Route = handleExceptions(ExceptionHandler { case NonFatal(error) => complete(failure(error)) }) {
     pathPrefix("api" / "v1") {
       concat(
+        path("cdc-gc") { get { withService(s=>completeResult(s.gcStatus().map(v=>StatusCodes.OK->JsObject("items"->JsArray(v))))) } },
         path("cdc-status") { get { withService(s => complete(StatusCodes.OK -> status(s.status))) } },
         path("cdc-captures") { get { withService(s => completeResult(s.captures().map(rows => StatusCodes.OK -> JsObject("items" -> JsArray(rows.map(capture)))))) } },
         pathPrefix("cdc-tasks") {

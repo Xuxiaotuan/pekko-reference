@@ -48,5 +48,6 @@ final case class BootstrapProgress(
   fence:Option[String]=None,deltaAfter:Long=0L,batchSequence:Long=0L,
   completionRoot:String="",recoveryAttempts:Int=0,cancelRequested:Boolean=false,failure:Option[String]=None,
   recoveryPermit:Option[String]=None,
-  recoveryReceiptDigest:Option[String]=None
+  recoveryReceiptDigest:Option[String]=None,
+  gcCheckpoint:Option[String]=None
 ) extends CborSerializable

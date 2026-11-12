@@ -179,7 +179,9 @@ private[integration] object CdcJournalWindowSupport extends DefaultJsonProtocol 
         sys.env.getOrElse("CDC_WINDOW_MYSQL_USER", "cdc_window"), sys.env("CDC_WINDOW_MYSQL_PASSWORD"))
     }
   }
-  def validateSchema(schema: String): Unit = require(schema.matches("pekko_test_cdc_window_[a-f0-9]{12}"))
+  def validateSchema(schema: String): Unit = require(schema.matches("pekko_test_cdc_window_[a-f0-9]{12}") ||
+    (schema.matches("pekko_gc_[a-f0-9]{12}") && sys.env.get("RUN_CAPTURE_GC_MATRIX").contains("1") &&
+      sys.env.get("CDC_LAB_EXCLUSIVE_LEASE").contains("capture-gc")))
   def withConnection[A](settings: Settings, schema: String)(body: Connection => A): A = {
     if (schema.nonEmpty) validateSchema(schema)
     // SBT may use a fresh test classloader for each testOnly invocation.
@@ -311,15 +313,16 @@ private[integration] object CdcJournalWindowSupport extends DefaultJsonProtocol 
     def events: Vector[JsObject] = observed.iterator().asScala.toVector
     def send(command: String): Unit = { input.write(command); input.newLine(); input.flush() }
     def state(): JsObject = { send("STATE"); awaitEvent("STATE") }
-    def awaitEvent(kind: String): JsObject = {
+    def awaitEvent(kind: String): JsObject = awaitOneOf(Set(kind))
+    def awaitOneOf(kinds:Set[String]):JsObject = {
       val deadline = 60.seconds.fromNow
       while (deadline.hasTimeLeft()) {
         val event = output.poll(100, TimeUnit.MILLISECONDS)
-        if (event != null && event.fields("kind") == JsString(kind)) return event
+        if (event != null && kinds(event.fields("kind").convertTo[String])) return event
         if (!process.isAlive && !drain.isAlive && output.isEmpty)
-          throw new AssertionError(s"child exited before $kind: ${process.exitValue()}; see $log")
+          throw new AssertionError(s"child exited before $kinds: ${process.exitValue()}; see $log")
       }
-      throw new AssertionError(s"missing child event $kind; see $log")
+      throw new AssertionError(s"missing child event $kinds; see $log")
     }
     def exit(): Int = {
       require(process.waitFor(30, TimeUnit.SECONDS), s"child failed to exit; see $log")

@@ -708,7 +708,7 @@ object MySQLCdcApplyEngine {
 
   private[sink] def jdbcUrl(config: MySQLCdcApplyConfig): String =
     s"jdbc:mysql://${config.host}:${config.port}/${config.database}" +
-      "?useSSL=false&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true"
+      "?useSSL=false&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&connectTimeout=5000&socketTimeout=30000"
 
   private val LedgerTable = "pekko_sync_batch_ledger"
   private val IntegralRanks = Map(Types.TINYINT -> 1, Types.SMALLINT -> 2, Types.INTEGER -> 3, Types.BIGINT -> 4)

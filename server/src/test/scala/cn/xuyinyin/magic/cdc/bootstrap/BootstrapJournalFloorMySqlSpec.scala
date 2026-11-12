@@ -81,7 +81,8 @@ class BootstrapJournalFloorMySqlSpec extends AnyWordSpec with Matchers {
         // A live old reference remains usable in this JVM while the persisted event is unchanged.
         store.projectBootstrapVerified(consumer,"req","generation","definition",receipt,verifier)
         floor shouldBe 1L
-        val resumed=new BootstrapJournalAccess(kit.spawn(BootstrapJournal(capture+"-req")))
+        val resumedActor=kit.spawn(BootstrapJournal(capture+"-req"))
+        val resumed=new BootstrapJournalAccess(resumedActor)
         val lock=open();lock.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);lock.setAutoCommit(false)
         try {
           verifier.verifyOn(lock,receipt,capture,"req","definition")
@@ -100,6 +101,19 @@ class BootstrapJournalFloorMySqlSpec extends AnyWordSpec with Matchers {
         exec(s"UPDATE event_journal SET deleted=FALSE WHERE persistence_id='bootstrap-v1-$capture-req' AND sequence_number=${latest.sequenceNr}")
         store.projectBootstrapVerified(consumer,"req","generation","definition",latest,verifier)
         floor shouldBe 2L
+        Vector("SCANNING","REPLAYING","ACTIVATING","STREAMING").foreach {phase=>
+          Await.result(resumed.update(_.copy(phase=phase)),10.seconds)
+        }
+        val streaming=Await.result(resumed.read(),10.seconds)
+        val activation="""{"bootstrap":"req","definition":"definition","baselineRoot":""}"""
+        val gcProof=BootstrapGcCheckpoint.create(capture,"lineage","req","generation",streaming,activation,"target_orders","db")
+        intercept[cn.xuyinyin.magic.cdc.recovery.CdcExecutionException](Await.result(resumed.update(_.copy(gcCheckpoint=Some(gcProof))),10.seconds))
+        Await.result(resumed.sealGcCheckpoint(streaming.revision-1,gcProof),10.seconds).accepted shouldBe false
+        Await.result(resumed.sealGcCheckpoint(streaming.revision,gcProof),10.seconds).accepted shouldBe true
+        Await.result(resumed.read(),10.seconds).gcCheckpoint shouldBe Some(gcProof)
+        kit.stop(resumedActor)
+        val restored=new BootstrapJournalAccess(kit.spawn(BootstrapJournal(capture+"-req")))
+        Await.result(restored.read(),10.seconds).gcCheckpoint shouldBe Some(gcProof)
         println(s"BOOTSTRAP_JOURNAL_FLOOR schema=$schema actualSequence=${latest.sequenceNr} javaForgedRejected=true staleRejected=true deletedRejected=true nextWriterBlocked=true finalFloor=2 auditFloor=0")
       }finally kit.shutdownTestKit()
     }

@@ -14,12 +14,12 @@ private[cdc] object CdcJdbc {
         }
         require(matches.size<=1)
         matches.headOption match {
-          case None=>parameters=parameters:+(name+"=5000")
+          case None=>parameters=parameters:+(name+(if(name.equalsIgnoreCase("socketTimeout"))"=30000"else"=5000"))
           case Some((parameter,index))=>
             val parts=parameter.split("=",-1)
             require(parts.length==2 && parts(0)==name && parts(1).matches("[0-9]+"))
             val value=parts(1).toLong;require(value<=Int.MaxValue)
-            if(value==0)parameters=parameters.updated(index,name+"=5000")
+            if(value==0)parameters=parameters.updated(index,name+(if(name.equalsIgnoreCase("socketTimeout"))"=30000"else"=5000"))
         }
       }
       base+"?"+parameters.mkString("&")

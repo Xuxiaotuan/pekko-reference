@@ -92,6 +92,7 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
   private val permits=new Semaphore(4)
   private val fenced=new AtomicBoolean(false)
   private val archiveAvailability=new java.util.IdentityHashMap[Connection,java.lang.Boolean]()
+  private val gcAvailability=new java.util.IdentityHashMap[Connection,java.lang.Boolean]()
   def releaseConfirmed:Boolean= !fenced.get()
   private def connection[A](f:Connection=>A):A={
     if(fenced.get())throw new CdcExecutionException(
@@ -100,7 +101,7 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
     require(permits.tryAcquire(5,TimeUnit.SECONDS),"capture store connection admission timed out")
     var c:Connection=null;var released=false;var primary:Throwable=null
     try {c=open();f(c)} catch {case e:Throwable=>primary=e;throw e} finally {
-      try {if(c!=null){archiveAvailability.synchronized(archiveAvailability.remove(c));c.close()};released=true}
+      try {if(c!=null){archiveAvailability.synchronized(archiveAvailability.remove(c));gcAvailability.synchronized(gcAvailability.remove(c));c.close()};released=true}
       catch {case close:Throwable=>
         val unknown=new CdcExecutionException(
           ExecutionFailure(ExecutionFailure.ReleaseUnknown,"capture-store-close",releaseConfirmed=false),close)
@@ -154,7 +155,7 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
   private def appendRaw(c:Connection,key:String,kind:String,table:String,sub:String,schema:String,payload:String,
     point:Option[CapturePoint]=None,resume:String=""):Long={
     val digest=frameDigest(kind,table,sub,schema,payload,point.map(_.json))
-    rows(c,"SELECT seq,digest FROM pekko_capture_log WHERE capture_id=? AND source_key=?",captureId,MySQLCdcGroup.hash(key)).headOption match {
+    rows(c,s"SELECT seq,digest FROM ${logicalLog(c)} l WHERE capture_id=? AND source_key=?",captureId,MySQLCdcGroup.hash(key)).headOption match {
       case Some(r)=>
         require(r("digest")==digest,"capture occurrence content conflict")
         if(kind=="GROUP")require(frame(c,r("seq").toLong)("payload")==payload,"capture occurrence payload conflict")
@@ -221,6 +222,17 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
     require(archiveEnabled(c),"capture archive not initialized")
   }
   private val archiveCopies=CaptureArchiveV1.fields.map(k=>s",a.$k AS copy_$k").mkString
+  private def logicalLog(c:Connection):String={
+    val enabled=gcAvailability.synchronized {Option(gcAvailability.get(c)).map(_.booleanValue()).getOrElse {
+      val found=rows(c,"SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='pekko_capture_gc_frames_v1'").head("n")=="1"
+      gcAvailability.put(c,java.lang.Boolean.valueOf(found));found
+    }}
+    if(!enabled)"pekko_capture_log" else {
+      val fields=CaptureArchiveV1.fields.mkString(",")
+      s"(SELECT $fields,NULL AS gc_proof FROM pekko_capture_log UNION ALL SELECT $fields,proof_id AS gc_proof FROM pekko_capture_gc_frames_v1)"
+    }
+  }
+  private def archiveSelect(c:Connection):String=frameSelect.replace("FROM pekko_capture_log l",s"FROM ${logicalLog(c)} l")
   private val frameSelect="""SELECT l.*,m.from_seq AS archive_from_seq,a.from_seq AS archive_frame_from_seq,m.to_seq AS archive_to_seq,m.lineage AS archive_lineage,
     m.frame_count AS archive_count,m.root AS archive_root,m.leaves_json AS archive_leaves
     """+archiveCopies+""" FROM pekko_capture_log l LEFT JOIN pekko_capture_archive_ranges_v1 m ON m.capture_id=l.capture_id
@@ -228,6 +240,18 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
     AND m.to_seq>=l.seq LEFT JOIN pekko_capture_archive_frames_v1 a ON a.capture_id=l.capture_id AND a.seq=l.seq"""
   /** A compacted GROUP retains its L row and is reconstructed only from the same-schema target ledger. */
   private def materializeGroup(c:Connection,r:Map[String,String]):Map[String,String]={
+    Option(r.getOrElse("gc_proof",null)).foreach {proof=>
+      val saved=rows(c,"SELECT * FROM pekko_capture_gc_checkpoints_v1 WHERE capture_id=? AND proof_id=?",captureId,proof).headOption
+        .getOrElse(throw new IllegalArgumentException("GC recovery certificate missing"))
+      require(saved("phase")=="ACTIVE" && saved("subscription_id")==r("subscription_id"),"GC recovery certificate inactive or wrong subscription")
+      val checkpoint=saved("proof_json").parseJson.asJsObject.fields
+      require(checkpoint("capture")==JsString(captureId) && checkpoint("lineage")==JsString(lineage) &&
+        MySQLCdcGroup.hash(MySQLCdcGroup.canonical(saved("proof_json").parseJson))==proof,"GC recovery certificate identity changed")
+      val journal=rows(c,"SELECT HEX(event_payload) AS payload,deleted FROM event_journal WHERE persistence_id=? AND sequence_number=?",
+        saved("journal_id"),saved("journal_sequence").toLong).headOption.getOrElse(throw new IllegalArgumentException("GC recovery Journal missing"))
+      require(Set("0","false")(journal("deleted").toLowerCase(java.util.Locale.ROOT)) &&
+        MySQLCdcGroup.hash(journal("payload").toLowerCase(java.util.Locale.ROOT))==saved("journal_digest"),"GC recovery Journal changed")
+    }
     val payload=Option(r.getOrElse("payload",null)).getOrElse("")
     if(r.get("kind").contains("GROUP") && payload.startsWith(CaptureGroupTombstone.Prefix)){
       val tombstone=payload.stripPrefix(CaptureGroupTombstone.Prefix);val f=tombstone.parseJson.asJsObject.fields
@@ -257,7 +281,7 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
   }
   private def frame(c:Connection,sequence:Long):Map[String,String]={
     val enabled=archiveEnabled(c)
-    val sql=if(enabled)frameSelect+" WHERE l.capture_id=? AND l.seq=?" else "SELECT * FROM pekko_capture_log WHERE capture_id=? AND seq=?"
+    val sql=if(enabled)archiveSelect(c)+" WHERE l.capture_id=? AND l.seq=?" else s"SELECT * FROM ${logicalLog(c)} l WHERE capture_id=? AND seq=?"
     val r=rows(c,sql,captureId,sequence).headOption.map(materializeGroup(c,_))
       .getOrElse(throw new IllegalArgumentException("capture proof references a missing frame"))
     if(enabled)checkedFrame(r)else {
@@ -265,9 +289,17 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
     }
   }
   private[capture] def proofFrame(c:Connection,sequence:Long):Map[String,String]=frame(c,sequence)
-  private[capture] def clearProofConnection(c:Connection):Unit=archiveAvailability.synchronized { archiveAvailability.remove(c); () }
+  private[capture] def clearProofConnection(c:Connection):Unit={archiveAvailability.synchronized {archiveAvailability.remove(c)};gcAvailability.synchronized {gcAvailability.remove(c)};()}
   private[capture] def proofOffsetKey(offset:String):String=offsetKey(offset)
 
+  /** Same head lock as append/admission/GC: newly admitted work cannot race a deletion plan. */
+  private def protectGcAdmission(c:Connection,id:String,kind:String):Unit={
+    if(rows(c,"SELECT 1 AS n FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='pekko_capture_gc_pins_v1'").nonEmpty){
+      val head=rows(c,"SELECT next_seq FROM pekko_capture_readers WHERE capture_id=?",captureId).head("next_seq").toLong
+      if(update(c,"INSERT IGNORE INTO pekko_capture_gc_pins_v1 VALUES(?,?,?,?,0)",captureId,id,kind,head)==1)
+        update(c,"UPDATE pekko_capture_gc_retention_v1 SET epoch=epoch+1 WHERE capture_id=?",captureId)
+    }
+  }
   /** Registration is durable before materialization. UNKNOWN history never enables GC. */
   private[magic] def registerConsumer(consumer:String,kind:String,subscription:String,node:String,resume:Long):Unit=tx {c=>
     require(consumer.matches("[a-f0-9]{64}") && Set("WORKFLOW","BOOTSTRAP")(kind) && subscription.nonEmpty &&
@@ -276,7 +308,14 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
     require(Set("UNKNOWN","COMPLETE")(barrier("discovery_status")) && barrier("barrier_status")=="OPEN","capture consumer admission fenced")
     val existing=rows(c,"SELECT * FROM pekko_capture_consumers_v1 WHERE capture_id=? AND consumer_id=? FOR UPDATE",captureId,consumer).headOption
     existing match {
-      case None=>update(c,"INSERT INTO pekko_capture_consumers_v1 VALUES(?,?,?,?,?,0,0,0,0,'')",captureId,consumer,kind,subscription,node)
+      case None=>
+        if(rows(c,"SELECT 1 AS n FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='pekko_capture_gc_retention_v1'").nonEmpty){
+          val reclaimed=rows(c,"SELECT reclaimed_before FROM pekko_capture_gc_retention_v1 WHERE capture_id=?",captureId).head("reclaimed_before").toLong
+          require(find(c,subscription).flatMap(_.bSequence).forall(_>=reclaimed) || resume>=reclaimed,
+            "new consumer precedes protected recovery floor")
+        }
+        update(c,"INSERT INTO pekko_capture_consumers_v1 VALUES(?,?,?,?,?,0,0,0,0,'')",captureId,consumer,kind,subscription,node)
+        protectGcAdmission(c,"consumer:"+consumer,"CONSUMER")
       case Some(r)=>require(r("consumer_kind")==kind && r("subscription_id")==subscription && r("source_node")==node &&
         resume>=r("journal_floor").toLong,"consumer identity or persisted Journal cursor changed")
     }
@@ -493,6 +532,7 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
         require(rows(c,"SELECT request_id FROM pekko_capture_subscriptions WHERE capture_id=? AND table_name=? AND status IN ('B_PENDING','CAPTURE_READY')",captureId,table).isEmpty,"table already subscribed")
         require(rows(c,"SELECT schema_id FROM pekko_capture_schemas WHERE capture_id=? AND table_name=?",captureId,table).headOption.exists(_("schema_id")==schemaId),"schema not ready")
         update(c,"INSERT INTO pekko_capture_subscriptions(capture_id,request_id,table_name,generation,status,schema_id) VALUES(?,?,?,?,'B_PENDING',?)",captureId,id,table,generation,schemaId)
+        protectGcAdmission(c,"subscription:"+id,"RECOVERY")
         anchor.foreach {case(offset,sequence)=>
           val ack=frame(c,sequence);require(ack("kind")=="ACK" && ack("table_name")==MySQLCdcGroup.hash(offset),"anchor ACK changed")
           verifyChain(c,sequence)
@@ -690,8 +730,8 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
   def recoveryInventory:(Boolean,Boolean,Boolean,Boolean)=connection {c=>
     def any(sql:String)=rows(c,sql,captureId).nonEmpty
     val head=rows(c,"SELECT next_seq,used_bytes,frontier FROM pekko_capture_readers WHERE capture_id=?",captureId).head
-    val frames=rows(c,"SELECT COUNT(*) AS n,COALESCE(MAX(seq),0) AS maximum FROM pekko_capture_log WHERE capture_id=?",captureId).head
-    if(head("next_seq").toLong!=frames("maximum").toLong+1 || frames("n")!=frames("maximum"))
+    val frames=rows(c,s"SELECT COUNT(*) AS n,COUNT(DISTINCT seq) AS distinct_n,COALESCE(MAX(seq),0) AS maximum FROM ${logicalLog(c)} l WHERE capture_id=?",captureId).head
+    if(head("next_seq").toLong!=frames("maximum").toLong+1 || frames("n")!=frames("maximum") || frames("distinct_n")!=frames("n"))
       throw new CaptureAdmissionException("CAPTURE_LOG_HEAD_INCONSISTENT")
     val priorHead=head("next_seq").toLong>1 || head("used_bytes").toLong>0 || head("frontier")!=null
     val domain=priorHead || any("SELECT 1 FROM pekko_capture_log WHERE capture_id=? LIMIT 1") ||
@@ -826,8 +866,8 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
       }
       require(find(c,id).exists(_.b.nonEmpty),"subscription not capture-ready")
       val enabled=archiveEnabled(c)
-      val sql=if(enabled)frameSelect+" WHERE l.capture_id=? AND l.subscription_id=? AND l.kind='GROUP' AND l.seq>? ORDER BY l.seq LIMIT ?"
-        else "SELECT * FROM pekko_capture_log WHERE capture_id=? AND subscription_id=? AND kind='GROUP' AND seq>? ORDER BY seq LIMIT ?"
+      val sql=if(enabled)archiveSelect(c)+" WHERE l.capture_id=? AND l.subscription_id=? AND l.kind='GROUP' AND l.seq>? ORDER BY l.seq LIMIT ?"
+        else s"SELECT * FROM ${logicalLog(c)} l WHERE capture_id=? AND subscription_id=? AND kind='GROUP' AND seq>? ORDER BY seq LIMIT ?"
       rows(c,sql,captureId,id,after,limit).map {input=>
         val raw=materializeGroup(c,input)
         val r=if(enabled)checkedFrame(raw)else {
@@ -900,7 +940,7 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
   def evidence:JsObject=connection {c=>
     def json(sql:String):JsArray=JsArray(rows(c,sql,captureId).map(r=>JsObject(r.map {case(k,v)=>k->Option(v).fold[JsValue](JsNull)(JsString(_))})))
     val enabled=archiveEnabled(c)
-    val sql=if(enabled)frameSelect+" WHERE l.capture_id=? ORDER BY l.seq" else "SELECT * FROM pekko_capture_log WHERE capture_id=? ORDER BY seq"
+    val sql=if(enabled)archiveSelect(c)+" WHERE l.capture_id=? ORDER BY l.seq" else s"SELECT * FROM ${logicalLog(c)} l WHERE capture_id=? ORDER BY seq"
     val log=JsArray(rows(c,sql,captureId).map(materializeGroup(c,_)).map(r=>if(enabled)checkedFrame(r)else r).map(r=>JsObject(r.map {case(k,v)=>k->Option(v).fold[JsValue](JsNull)(JsString(_))})))
     JsObject("reader"->json("SELECT * FROM pekko_capture_readers WHERE capture_id=?"),"subscriptions"->json("SELECT * FROM pekko_capture_subscriptions WHERE capture_id=?"),
       "schemas"->json("SELECT * FROM pekko_capture_schemas WHERE capture_id=?"),"fences"->json("SELECT * FROM pekko_capture_fences WHERE capture_id=?"),"log"->log)

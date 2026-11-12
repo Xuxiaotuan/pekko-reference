@@ -27,6 +27,7 @@ final case class CdcTaskPage(items:Vector[CdcTaskView],nextAfter:Option[String])
 final case class CdcPlatformStatus(enabled:Boolean,ownerState:String,reason:Option[String],activeSteps:Int,maxActiveSteps:Int)
 final case class CdcCaptureView(captureId:String,database:String,readiness:String,runtimeHealth:String,reason:Option[String])
 trait CdcTaskService {
+  def gcStatus():Future[Vector[JsObject]]=Future.successful(Vector.empty)
   def status:CdcPlatformStatus
   def captures():Future[Vector[CdcCaptureView]]
   def submit(request:CdcTaskRequest):Future[CdcTaskAcceptance]
@@ -43,7 +44,7 @@ private[cdc] final case class CdcTaskRecord(view:CdcTaskView,definition:CdcTaskR
   grantOwner:Option[String],dueAt:Long,continuation:Option[BootstrapProgress],workPool:String,schedulable:Boolean,wakeSequence:Long)
 private[cdc] final case class CdcTaskGrant(id:String,owner:String,pool:String,task:CdcTaskRecord)
 private[cdc] object CdcProgressJson extends DefaultJsonProtocol {
-  implicit val progressFormat:RootJsonFormat[BootstrapProgress]=jsonFormat21(BootstrapProgress.apply)
+  implicit val progressFormat:RootJsonFormat[BootstrapProgress]=jsonFormat22(BootstrapProgress.apply)
   def encode(progress:BootstrapProgress):String=progress.toJson.compactPrint
   def decode(value:String):BootstrapProgress=value.parseJson.convertTo[BootstrapProgress]
 }
