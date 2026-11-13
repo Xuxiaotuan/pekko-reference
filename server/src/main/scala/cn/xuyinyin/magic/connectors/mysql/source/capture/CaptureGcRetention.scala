@@ -257,9 +257,11 @@ private[magic] final class CaptureGcRetention(open:()=>Connection,store:MySQLCap
         val pinned=prior.filter {p=>
           require(currentHead>=p("head_seq").toLong,"actual D ACK head regressed")
           val proof=pages.gcActualIdentity(p("offset_json"),p("head_seq").toLong)
+          val pointerOperation=p.get("operation_id").flatMap(Option(_))
+          val pointerOperationActive=pointerOperation.exists(id=>query(c,"SELECT 1 FROM pekko_capture_gc_operations_v1 WHERE capture_id=? AND operation_id=? AND phase<>'DONE'",capture,id).nonEmpty)
           pages.statusIfPresentOn(c,proof).exists {state=>
             state.done && p("proof_id")==pages.proofId(proof) &&
-              (p.get("operation_id").flatMap(Option(_)).nonEmpty || activeOperation.isEmpty)
+              (pointerOperationActive || (pointerOperation.isEmpty && activeOperation.isEmpty))
           }
         }
         val selected=prior match {
