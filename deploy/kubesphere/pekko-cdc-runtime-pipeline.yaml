@@ -6,6 +6,7 @@ metadata:
   annotations:
     kubesphere.io/creator: admin
 spec:
+  type: pipeline
   pipeline:
     discarder:
       days_to_keep: "14"
@@ -124,3 +125,4 @@ spec:
           }
         }
       }
+    name: pekko-cdc-runtime
