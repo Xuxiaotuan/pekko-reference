@@ -166,7 +166,6 @@ final class CaptureAckPaging(open:()=>Connection,store:MySQLCaptureStore) {
   private[capture] def gcProofsOn(c:Connection,limit:Int,maxChildRows:Int):CaptureAckGcResult={
     lockHead(c)
     require(limit>=1 && limit<=64 && maxChildRows>=1024 && maxChildRows<=100000)
-    val counts=rows(c,"SELECT (SELECT COUNT(*) FROM pekko_capture_ack_pages_v1 WHERE capture_id=?) AS proofs,(SELECT COUNT(*) FROM pekko_capture_ack_page_nodes_v1 WHERE capture_id=?) AS nodes,(SELECT COUNT(*) FROM pekko_capture_ack_page_refs_v1 WHERE capture_id=?) AS refs",store.captureId,store.captureId,store.captureId).head
     val current=rows(c,"SELECT proof_id FROM pekko_capture_gc_actual_d_v1 WHERE capture_id=? FOR SHARE",store.captureId).headOption.map(_("proof_id")).getOrElse("")
     val candidates=rows(c,"""SELECT p.proof_id FROM pekko_capture_ack_pages_v1 p
       WHERE p.capture_id=? AND p.done=TRUE AND p.proof_id<>? AND NOT EXISTS
@@ -193,8 +192,9 @@ final class CaptureAckPaging(open:()=>Connection,store:MySQLCaptureStore) {
       }
     }
     val phase=blocked.map(_=>"BLOCKED").getOrElse("READY")
-    update(c,"UPDATE pekko_capture_ack_gc_state_v1 SET phase=?,observed_proofs=?,observed_nodes=?,observed_refs=?,last_deleted_proofs=?,last_deleted_nodes=?,last_deleted_refs=?,reason=? WHERE capture_id=?",phase,counts("proofs").toLong,counts("nodes").toLong,counts("refs").toLong,deletedProofs,deletedNodes,deletedRefs,blocked.orNull,store.captureId)
-    CaptureAckGcResult(deletedProofs,deletedNodes,deletedRefs,counts("proofs").toLong,counts("nodes").toLong,counts("refs").toLong,blocked)
+    val after=rows(c,"SELECT (SELECT COUNT(*) FROM pekko_capture_ack_pages_v1 WHERE capture_id=?) AS proofs,(SELECT COUNT(*) FROM pekko_capture_ack_page_nodes_v1 WHERE capture_id=?) AS nodes,(SELECT COUNT(*) FROM pekko_capture_ack_page_refs_v1 WHERE capture_id=?) AS refs",store.captureId,store.captureId,store.captureId).head
+    update(c,"UPDATE pekko_capture_ack_gc_state_v1 SET phase=?,observed_proofs=?,observed_nodes=?,observed_refs=?,last_deleted_proofs=IF(? > 0, ?, last_deleted_proofs),last_deleted_nodes=IF(? > 0, ?, last_deleted_nodes),last_deleted_refs=IF(? > 0, ?, last_deleted_refs),reason=? WHERE capture_id=?",phase,after("proofs").toLong,after("nodes").toLong,after("refs").toLong,deletedProofs,deletedProofs,deletedNodes,deletedNodes,deletedRefs,deletedRefs,blocked.orNull,store.captureId)
+    CaptureAckGcResult(deletedProofs,deletedNodes,deletedRefs,after("proofs").toLong,after("nodes").toLong,after("refs").toLong,blocked)
   }
   private def identity(i:CaptureAckPageIdentity):String={
     require(i.task.nonEmpty && i.intent.nonEmpty && i.sourceFence.nonEmpty && i.guardianAttempt.nonEmpty && i.head>0 && i.anchor>0 &&
