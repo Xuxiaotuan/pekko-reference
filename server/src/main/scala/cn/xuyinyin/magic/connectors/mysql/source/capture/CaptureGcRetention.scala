@@ -34,14 +34,16 @@ private[magic] final class CaptureGcRetention(open:()=>Connection,store:MySQLCap
   }
   def initialize():Unit=connection {c=>
     identity(c)
+    new CaptureAckPaging(open,store).initialize()
     Vector(
       "CREATE TABLE IF NOT EXISTS pekko_capture_gc_retention_v1(capture_id VARCHAR(64) PRIMARY KEY,epoch BIGINT NOT NULL,reclaimed_before BIGINT NOT NULL)",
       "CREATE TABLE IF NOT EXISTS pekko_capture_gc_pins_v1(capture_id VARCHAR(64) NOT NULL,pin_id VARCHAR(160) NOT NULL,pin_kind VARCHAR(24) NOT NULL,required_from BIGINT NOT NULL,revision BIGINT NOT NULL,PRIMARY KEY(capture_id,pin_id),INDEX oldest_pin(capture_id,required_from))",
       "CREATE TABLE IF NOT EXISTS pekko_capture_gc_checkpoints_v1(capture_id VARCHAR(64) NOT NULL,proof_id CHAR(64) NOT NULL,subscription_id VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL,proof_json LONGTEXT NOT NULL,journal_id VARCHAR(255) NOT NULL,journal_sequence BIGINT NOT NULL,journal_digest CHAR(64) NOT NULL,phase VARCHAR(24) NOT NULL,PRIMARY KEY(capture_id,proof_id),INDEX subscription_proofs(capture_id,subscription_id,generation,phase,journal_sequence))",
       "CREATE TABLE IF NOT EXISTS pekko_capture_gc_frames_v1(capture_id VARCHAR(64) NOT NULL,seq BIGINT NOT NULL,source_key CHAR(64) NOT NULL,kind VARCHAR(16) NOT NULL,table_name VARCHAR(128) NOT NULL,subscription_id VARCHAR(128) NOT NULL,schema_id CHAR(64) NOT NULL,payload LONGTEXT NOT NULL,digest CHAR(64) NOT NULL,point_json TEXT NULL,resume_json LONGTEXT NULL,proof_id CHAR(64) NOT NULL,PRIMARY KEY(capture_id,seq),UNIQUE KEY occurrence(capture_id,source_key),INDEX deliveries(capture_id,subscription_id,seq))",
-      "CREATE TABLE IF NOT EXISTS pekko_capture_gc_operations_v1(capture_id VARCHAR(64) NOT NULL,operation_id VARCHAR(128) NOT NULL,from_seq BIGINT NOT NULL,to_exclusive BIGINT NOT NULL,next_seq BIGINT NOT NULL,epoch BIGINT NOT NULL,phase VARCHAR(24) NOT NULL,deleted_rows BIGINT NOT NULL,reclaimed_bytes BIGINT NOT NULL,PRIMARY KEY(capture_id,operation_id))"
+      "CREATE TABLE IF NOT EXISTS pekko_capture_gc_operations_v1(capture_id VARCHAR(64) NOT NULL,operation_id VARCHAR(128) NOT NULL,from_seq BIGINT NOT NULL,to_exclusive BIGINT NOT NULL,next_seq BIGINT NOT NULL,epoch BIGINT NOT NULL,phase VARCHAR(24) NOT NULL,deleted_rows BIGINT NOT NULL,reclaimed_bytes BIGINT NOT NULL,PRIMARY KEY(capture_id,operation_id))",
+      "CREATE TABLE IF NOT EXISTS pekko_capture_gc_actual_d_v1(capture_id VARCHAR(64) PRIMARY KEY,offset_json LONGTEXT NOT NULL,head_seq BIGINT NOT NULL,proof_id CHAR(64) NOT NULL,operation_id VARCHAR(128) NULL)"
     ).foreach(s=>update(c,s+" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin"))
-    require(query(c,"SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ('pekko_capture_gc_retention_v1','pekko_capture_gc_pins_v1','pekko_capture_gc_checkpoints_v1','pekko_capture_gc_frames_v1','pekko_capture_gc_operations_v1') AND engine='InnoDB'").head("n")=="5",
+    require(query(c,"SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ('pekko_capture_gc_retention_v1','pekko_capture_gc_pins_v1','pekko_capture_gc_checkpoints_v1','pekko_capture_gc_frames_v1','pekko_capture_gc_operations_v1','pekko_capture_gc_actual_d_v1') AND engine='InnoDB'").head("n")=="6",
       "GC retention requires InnoDB")
     Vector(("pekko_capture_gc_checkpoints_v1","subscription_proofs","capture_id,subscription_id,generation,phase,journal_sequence"),
       ("pekko_capture_gc_frames_v1","deliveries","capture_id,subscription_id,seq")).foreach {case(table,index,columns)=>
@@ -175,6 +177,7 @@ private[magic] final class CaptureGcRetention(open:()=>Connection,store:MySQLCap
       require(boundary>head("reclaimed_before").toLong,"GC prefix is pinned")
       update(c,"INSERT INTO pekko_capture_gc_operations_v1 VALUES(?,?,?,?,?,?,'PLANNED',0,0)",capture,operation,
         head("reclaimed_before").toLong,boundary,head("reclaimed_before").toLong,head("epoch").toLong)
+      update(c,"UPDATE pekko_capture_gc_actual_d_v1 SET operation_id=? WHERE capture_id=? AND operation_id IS NULL",operation,capture)
     }
   }
 
@@ -240,12 +243,40 @@ private[magic] final class CaptureGcRetention(open:()=>Connection,store:MySQLCap
     val values=query(c,s"SELECT offset_key,offset_val FROM `$offsetTable` WHERE offset_val IS NOT NULL LIMIT 2 FOR SHARE")
     val d=CaptureCheckpoint.decode(capture,values.map(r=>r("offset_key")->r("offset_val")))
     if(d.status!="COMPLETE")None else {
-      val offset=store.proofOffsetKey(d.value.get)
-      query(c,"SELECT seq FROM pekko_capture_log WHERE capture_id=? AND kind='ACK' AND table_name=? ORDER BY seq DESC LIMIT 1",capture,MySQLCdcGroup.hash(offset)).headOption.map {r=>
-        val n=r("seq").toLong
-        val proof=CaptureAckProof.inspect(n,n,0,offset,k=>store.proofFrame(c,k))
-        require(proof.anchorInChain && proof.anchorOffsetMatches,"actual D has no valid ACK coverage")
-        n
+      val currentOffset=store.proofOffsetKey(d.value.get)
+      query(c,"SELECT seq FROM pekko_capture_log WHERE capture_id=? AND kind='ACK' AND table_name=? ORDER BY seq DESC LIMIT 1",capture,MySQLCdcGroup.hash(currentOffset)).headOption.flatMap {r=>
+        val currentHead=r("seq").toLong
+        val pages=new CaptureAckPaging(open,store)
+        val prior=query(c,"SELECT * FROM pekko_capture_gc_actual_d_v1 WHERE capture_id=? FOR UPDATE",capture).headOption
+        val activeOperation=query(c,"SELECT operation_id FROM pekko_capture_gc_operations_v1 WHERE capture_id=? AND phase<>'DONE' ORDER BY operation_id LIMIT 1",capture).headOption.map(_("operation_id"))
+        val pinned=prior.filter {p=>
+          require(currentHead>=p("head_seq").toLong,"actual D ACK head regressed")
+          val proof=pages.gcActualIdentity(p("offset_json"),p("head_seq").toLong)
+          pages.statusIfPresentOn(c,proof).exists {state=>
+            state.done && p("proof_id")==pages.proofId(proof) &&
+              (p.get("operation_id").flatMap(Option(_)).nonEmpty || activeOperation.isEmpty)
+          }
+        }
+        val selected=prior match {
+          case Some(p) if pinned.nonEmpty=>p
+          case Some(p)=>
+            val oldHead=p("head_seq").toLong
+            val operationDone=p.get("operation_id").flatMap(Option(_)).exists(id=>query(c,"SELECT 1 FROM pekko_capture_gc_operations_v1 WHERE capture_id=? AND operation_id=? AND phase='DONE'",capture,id).nonEmpty)
+            if(!operationDone || currentHead<=oldHead)p
+            else {
+              val proof=pages.gcActualIdentity(currentOffset,currentHead)
+              val id=pages.proofId(proof)
+              update(c,"UPDATE pekko_capture_gc_actual_d_v1 SET offset_json=?,head_seq=?,proof_id=?,operation_id=NULL WHERE capture_id=?",currentOffset,currentHead,id,capture)
+              query(c,"SELECT * FROM pekko_capture_gc_actual_d_v1 WHERE capture_id=? FOR UPDATE",capture).head
+            }
+          case None=>
+            val proof=pages.gcActualIdentity(currentOffset,currentHead)
+            val id=pages.proofId(proof)
+            update(c,"INSERT INTO pekko_capture_gc_actual_d_v1 VALUES(?,?,?,?,NULL)",capture,currentOffset,currentHead,id)
+            query(c,"SELECT * FROM pekko_capture_gc_actual_d_v1 WHERE capture_id=? FOR UPDATE",capture).head
+        }
+        val state=pages.advanceGcActualOn(c,selected("offset_json"),selected("head_seq").toLong,128)
+        if(state.done)Some(selected("head_seq").toLong)else None
       }
     }
   }

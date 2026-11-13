@@ -114,6 +114,25 @@ private[magic] object CapturePinnedProof {
 
 /** Bounded, restartable ACK traversal. L remains retained; this is not a GC permit. */
 final class CaptureAckPaging(open:()=>Connection,store:MySQLCaptureStore) {
+  /** Stable identity for the GC-owned proof of one observed SDK D.  The
+    * observed head/offset are pinned in the state table; later source ACKs do
+    * not invalidate this conservative lower bound. */
+  private[capture] def gcActualIdentity(offset:String,head:Long):CaptureAckPageIdentity=
+    CaptureAckPageIdentity("__gc_actual_d__",store.proofOffsetKey(offset),head,head,
+      MySQLCdcGroup.hash("gc-actual-d|"+store.captureId),
+      "gc:"+store.lineage,"gc-actual-d")
+
+  /** Start or advance one bounded page of the GC-owned D proof. */
+  private[capture] def advanceGcActualOn(c:Connection,offset:String,head:Long,limit:Int):CaptureAckPage={
+    val i=gcActualIdentity(offset,head)
+    val current=statusIfPresentOn(c,i).getOrElse {beginOn(c,i);statusOn(c,i)}
+    if(current.done)current else stepOn(c,i,current.revision,limit)
+  }
+
+  private[capture] def gcActualStatusOn(c:Connection,offset:String,head:Long):CaptureAckPage={
+    val i=gcActualIdentity(offset,head);statusOn(c,i)
+  }
+
   private def sql[A](c:Connection,s:String,args:Seq[Any])(f:PreparedStatement=>A):A={
     val q=c.prepareStatement(s);q.setQueryTimeout(5)
     try {args.zipWithIndex.foreach {case(v,i)=>q.setObject(i+1,v)};f(q)}finally q.close()
