@@ -272,3 +272,9 @@ MySQL 属性采集关闭时，丢失计数为零并不能证明属性可见。�
 本轮把协议验证落到真实部署：owner、Journal、offset、L、T 和 GC proof 都在同一个 State MySQL 中可查询，目标逐字段对账覆盖全量、实时三种变更和一次正常停止/重启。PID1 修复解决了“Pod 已删但 Binlog Dump 仍在”的部署边界；固定 writer host/definer 和性能表权限解决了 ledger guard 的实际准入边界。
 
 未验证范围保持明确：未知 B 自动恢复、DDL、多 owner guardian 接管、70 万活跃物理表、跨实例共享 Reader 和长期吞吐。旧版本 GC 在重启后的 no-worthwhile-space-saving 情形安全 BLOCKED；当前实现只增加了保留 L 的自动重规划，部署后的真实结果仍需单独记录。
+
+## 2026-11-13 KubeSphere 集群流水线与线上边界
+
+参考集群中已有成功的 KubeSphere Pipeline 后，本轮实际运行了 `pekko-cdc-runtime` PipelineRun `pekko-cdc-runtime-n7kjw`：构建、Harbor 推送和 `bigdata-lab/pekko-cdc-runtime` 滚动部署均成功。新 Pod 重启后 owner 为 `ACTIVE`，Source MySQL 保留一个 Debezium Binlog Dump 会话且没有 InnoDB 未提交事务；Source 与 Sink 当前 `source_rows/target_source_rows` 的两行六字段逐字段相等。原始对象、状态和对账材料见 [KubeSphere 集群证据](../../experiments/2026-11-12-runtime-gc/cluster-live-20261113/kubesphere-20261113/)。
+
+这条 KubeSphere 结果与 GitHub Actions deploy 分开统计：GitHub Actions 的 verify/image 成功，但 deploy 因环境没有 `KUBE_CONFIG_DATA` 仍保留失败证据。线上 GC 实际返回 `BLOCKED / ACK proof budget exceeded`，所以只能证明安全暂停，没有证明 ACK proof 超预算后的自动重规划、自动扩容或跨重启继续删除。人工清理旧 UNKNOWN owner 后再重启是实验门槛，不是自动 fencing 已完成的证明；70 万真实活跃表、DDL、多 owner 和长期吞吐仍未验证。

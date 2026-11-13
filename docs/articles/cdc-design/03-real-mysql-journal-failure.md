@@ -283,3 +283,9 @@ A14 在源 COMMIT 未知时的取消测试失败；B05 的启动与关闭竞争�
 最终集群材料保留了两类失败和一条通过路径：旧 ClusterIP Journal 连接 20/20 失败；旧 shell launcher 不是 PID1，停止后留下 ACTIVE owner 和 Binlog Dump；`cdc_gc@%`、旧 namespace 摘要和性能表权限又分别触发了 guard/namespace/权限拒绝。修正为 State NodePort、固定 `cdc_gc@192.168.31.115`、`cdc_control@%` definer 及直接 JVM PID1 后，干净运行完成 B/F、实时变更、GC proof ACTIVE 和 STOPPED→ACTIVE 重启。
 
 Source 与目标最终逐字段一致的证据位于 `docs/experiments/2026-11-12-runtime-gc/cluster-live-20261113/final/`。重启后删除计划因小帧节省不足 BLOCKED，属于保留原始 L 的失败证据；不能用前一轮 GC proof ACTIVE 抹掉这一边界。
+
+## 2026-11-13 KubeSphere 集群流水线与线上边界
+
+参考集群中已有成功的 KubeSphere Pipeline 后，本轮实际运行了 `pekko-cdc-runtime` PipelineRun `pekko-cdc-runtime-n7kjw`：构建、Harbor 推送和 `bigdata-lab/pekko-cdc-runtime` 滚动部署均成功。新 Pod 重启后 owner 为 `ACTIVE`，Source MySQL 保留一个 Debezium Binlog Dump 会话且没有 InnoDB 未提交事务；Source 与 Sink 当前 `source_rows/target_source_rows` 的两行六字段逐字段相等。原始对象、状态和对账材料见 [KubeSphere 集群证据](../../experiments/2026-11-12-runtime-gc/cluster-live-20261113/kubesphere-20261113/)。
+
+这条 KubeSphere 结果与 GitHub Actions deploy 分开统计：GitHub Actions 的 verify/image 成功，但 deploy 因环境没有 `KUBE_CONFIG_DATA` 仍保留失败证据。线上 GC 实际返回 `BLOCKED / ACK proof budget exceeded`，所以只能证明安全暂停，没有证明 ACK proof 超预算后的自动重规划、自动扩容或跨重启继续删除。人工清理旧 UNKNOWN owner 后再重启是实验门槛，不是自动 fencing 已完成的证明；70 万真实活跃表、DDL、多 owner 和长期吞吐仍未验证。

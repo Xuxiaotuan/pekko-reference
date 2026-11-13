@@ -203,3 +203,9 @@ CDC 控制存储已参与一次真实旧 Workflow 恢复实验；当前证据不
 最终运行结果支持的结论很具体：Pekko 路径可以把共享 Reader、表级 Journal、低并发 step worker、目标账本和受保护 GC 组合在一个独立 Runtime 中，并允许在停止后以持久 owner 状态重新启动；它没有因此获得 Flink CDC 的同负载吞吐、Checkpoint 或 70 万活跃表容量证明。GC no-worthwhile-space-saving 会保留 L 并自动重规划，说明自建协议把证据和保守边界暴露给运维，也增加了账号、权限、namespace、Journal、目标 receipt 和 GC 的维护责任；该重规划的真实集群结果仍必须与本地测试分开记录。
 
 因此本文当前的比较仍是职责与证据边界比较，不是性能排名。Flink CDC 的并行 Source、Checkpoint 和成熟运行时能力没有在本仓库的这次单表 acceptance 中被重测；Pekko 的优势只应表述为可按业务需要定制常驻控制和资源准入，不能扩大成整体优于 Flink CDC。
+
+## 2026-11-13 KubeSphere 集群流水线与线上边界
+
+参考集群中已有成功的 KubeSphere Pipeline 后，本轮实际运行了 `pekko-cdc-runtime` PipelineRun `pekko-cdc-runtime-n7kjw`：构建、Harbor 推送和 `bigdata-lab/pekko-cdc-runtime` 滚动部署均成功。新 Pod 重启后 owner 为 `ACTIVE`，Source MySQL 保留一个 Debezium Binlog Dump 会话且没有 InnoDB 未提交事务；Source 与 Sink 当前 `source_rows/target_source_rows` 的两行六字段逐字段相等。原始对象、状态和对账材料见 [KubeSphere 集群证据](../../experiments/2026-11-12-runtime-gc/cluster-live-20261113/kubesphere-20261113/)。
+
+这条 KubeSphere 结果与 GitHub Actions deploy 分开统计：GitHub Actions 的 verify/image 成功，但 deploy 因环境没有 `KUBE_CONFIG_DATA` 仍保留失败证据。线上 GC 实际返回 `BLOCKED / ACK proof budget exceeded`，所以只能证明安全暂停，没有证明 ACK proof 超预算后的自动重规划、自动扩容或跨重启继续删除。人工清理旧 UNKNOWN owner 后再重启是实验门槛，不是自动 fencing 已完成的证明；70 万真实活跃表、DDL、多 owner 和长期吞吐仍未验证。

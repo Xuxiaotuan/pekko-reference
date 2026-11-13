@@ -84,3 +84,11 @@ L 只删除可重建的 GROUP 正文，保留 ACK、控制帧、Schema、恢复�
 ## 严格最终重跑
 
 在恢复 Capture GC 严格账号清点后，独立 Runtime RG01—RG07 使用相同专用 Source/State MySQL 串行执行，**7/7 通过**；日志和逐项材料见 [strict-final](strict-final/)。该运行与前一轮 `final2` 分开保存，源码清单以 `strict-final/source-manifest.sha256` 为准。
+
+## 2026-11-13 KubeSphere 集群流水线补充
+
+参考集群中已有成功的 KubeSphere Pipeline 后，本轮新增并实际运行 `pekko-cdc-runtime` PipelineRun `pekko-cdc-runtime-n7kjw`。PipelineRun 从 02:17:23Z 到 02:21:50Z，结果为 `Succeeded/SUCCESS`，构建并推送 Harbor 镜像 `100.97.53.78:5001/xxt/pekko-cdc-runtime:build-1-189ddce37c7d`，随后滚动更新 `bigdata-lab/pekko-cdc-runtime`。这条路径与 GitHub Actions deploy 分开统计；后者仍因环境缺少 `KUBE_CONFIG_DATA` 保留失败证据。
+
+新 Pod 重启后 API 返回 owner `ACTIVE`；源端有一个 Debezium Binlog Dump 会话且没有 InnoDB 未提交事务；Source 与 Sink 的 `source_rows/target_source_rows` 两行六字段逐字段相等。证据、原始 Kubernetes 对象和 SHA-256 见 [KubeSphere 集群材料](cluster-live-20261113/kubesphere-20261113/)。
+
+这次线上运行的 GC 返回 `BLOCKED`，原因是 `ACK proof budget exceeded`。它证明安全暂停仍然生效，但不是 no-worthwhile-space-saving 自动重规划的通过证据；ACK proof 超预算后的自动扩容、跨重启继续删除和 70 万活跃表仍未验证。人工清理旧 UNKNOWN owner 后再重启属于实验门槛，不是自动 fencing 证明。

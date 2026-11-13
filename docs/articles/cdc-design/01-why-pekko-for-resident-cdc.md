@@ -195,3 +195,9 @@ C0、C1、迟提交和迟回滚四项在接管后进入 STREAMING，各自源与
 独立 CDC Runtime 在单实例专用 acceptance 环境跑通了一条可复核主线：共享 Reader 捕获 `source_rows`，任务经 B/F 初始化后进入持续消费；真实更新、插入、删除与目标逐字段对账一致。GC namespace 经过账号、Journal、目标账本和 namespace permit 校验后进入 READY，GC proof 进入 ACTIVE。Kubernetes 部署改为让 JVM 直接作为 PID 1，停止时 owner 为 STOPPED、grant 为 0、源端连接为空，重新启动后原任务仍为 STREAMING/HEALTHY。
 
 这只证明单表真实链路、受保护 GC 和一次重启窗口；70 万物理表、长期吞吐、DDL、多 owner 自动接管和跨实例共享 Reader 仍未验证。旧版本重启后的 GC 小批量删除因节省空间不足而安全 BLOCKED，原始 L 保留；新版本的自动重规划需以部署后的真实 `replan-*` 证据确认，不能用本地测试替代。
+
+## 2026-11-13 KubeSphere 集群流水线与线上边界
+
+参考集群中已有成功的 KubeSphere Pipeline 后，本轮实际运行了 `pekko-cdc-runtime` PipelineRun `pekko-cdc-runtime-n7kjw`：构建、Harbor 推送和 `bigdata-lab/pekko-cdc-runtime` 滚动部署均成功。新 Pod 重启后 owner 为 `ACTIVE`，Source MySQL 保留一个 Debezium Binlog Dump 会话且没有 InnoDB 未提交事务；Source 与 Sink 当前 `source_rows/target_source_rows` 的两行六字段逐字段相等。原始对象、状态和对账材料见 [KubeSphere 集群证据](../../experiments/2026-11-12-runtime-gc/cluster-live-20261113/kubesphere-20261113/)。
+
+这条 KubeSphere 结果与 GitHub Actions deploy 分开统计：GitHub Actions 的 verify/image 成功，但 deploy 因环境没有 `KUBE_CONFIG_DATA` 仍保留失败证据。线上 GC 实际返回 `BLOCKED / ACK proof budget exceeded`，所以只能证明安全暂停，没有证明 ACK proof 超预算后的自动重规划、自动扩容或跨重启继续删除。人工清理旧 UNKNOWN owner 后再重启是实验门槛，不是自动 fencing 已完成的证明；70 万真实活跃表、DDL、多 owner 和长期吞吐仍未验证。
