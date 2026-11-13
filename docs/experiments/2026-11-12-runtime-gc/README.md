@@ -100,3 +100,11 @@ L 只删除可重建的 GROUP 正文，保留 ACK、控制帧、Schema、恢复�
 真实 KubeSphere PipelineRun `pekko-cdc-runtime-g7kcr` 成功，镜像 `build-3-61495e0f2b5e` 已部署。重启后 owner `ACTIVE`，任务 `STREAMING/ADMISSION_READY/HEALTHY/RELEASED`；actual-D proof head `7742`、ACK 节点 `7731`、page `done=1`。原 `runtime_315c...` operation 从 `DELETING 42→44` 收敛为 `DONE`，删除 1 个 GROUP、回收 235 字节，API 返回 `DONE`。Source 与 Sink 两行六字段逐字段一致，Source 保留一个 Binlog Dump 会话且无 InnoDB 未提交事务。
 
 此前发现的 3 个旧 Sleep 会话和第一次 `OWNER_RELEASE_UNPROVEN` 仍保留在 [ACK proof 预算实验材料](cluster-live-20261113/gc-ack-proof-budget-20261113/)；这次清理是基于无事务证据的专用账号排空，不是自动 fencing 的通用证明。分页 proof 表本身尚无独立 GC，70 万活跃表、无限 ACK 历史、自动扩容、DDL、多 owner 仍未验证。
+
+## 2026-11-13 分页 proof 表 GC 与容量边界
+
+分页 proof GC 现只删除已完成、非当前 actual-D、未被 GC audit/GC frame/Recovery Anchor 引用的 proof；refs、nodes、prior、pins、page 按子表顺序删除，ACK/Journal/L/目标账本保留。每轮最多 8 个 proof；单个 proof 子行超过 20,000 时安全阻塞，不截断。
+
+真实运行中旧 actual-D proof `d9b4921a...`（head 7742）被回收，新 proof `f777e7d3...`（head 13052）保留，Source/Sink 两行六字段逐字段一致，重启后 owner ACTIVE、GC API 可用。详细证据见 [proof GC 材料](cluster-live-20261113/gc-ack-proof-gc-20261113/)。
+
+功能代码提交 `754f9aa` 已真实部署并验证；后续只保留删除计数的修订 `0aaf013` 对应 KubeSphere Run `p6jr9` 长时间 Jenkins RUNNING 后被取消，属于 `evidence_incomplete`，不把它扩大成 GC 功能失败。proof state 自身二次 GC、70 万活跃表、并发 B proof 和无限 ACK 历史仍未验证。
