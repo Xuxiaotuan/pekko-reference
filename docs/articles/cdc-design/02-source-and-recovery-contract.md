@@ -341,12 +341,12 @@ C0（COMMIT 未转发）、C1（COMMIT 已成功但回复丢失）、迟提交�
 
 本轮已把 L 安全 GC 接入独立 CDC Runtime。GC 使用单个有界维护 worker，审计请求、namespace 清点、保护 pin、GC operation 和批次游标均持久化；表级审计仍使用原 BootstrapJournal、目标账本和 T/J/D 证据。旧 namespace 启用前会重新清点订阅、消费者、Journal、账号、连接和事务；清点不完整、未知 B、外来 Journal、危险账号或资源释放未知时安全暂停。
 
-真实入口 RG01—RG07 共 7 项通过，其中未知 B 和异常重启按预期 SAFE_PAUSED；L GC 的 LG01—LG16 加容量补测共 17 项通过。LG15 首次身份修复后未重启 Reader，保留失败材料；按重启边界重跑后通过。相关回归 53 项通过；固定 RG01 负载又连续完成 10 轮、约 12 分钟的生命周期 soak，逐字段对账和最终资源采样均通过。
+真实入口 RG01—RG07 共 7 项通过，其中未知 B 和异常重启按预期 SAFE_PAUSED；L GC 的 LG01—LG16 加容量补测共 17 项通过。LG15 首次身份修复后未重启 Reader，保留失败材料；按重启边界重跑后通过。此前 5 个完整回归失败套件已修正；同一 JDK 17 的完整回归为 722 成功、0 失败、415 个专用外部环境取消。固定 RG01 负载又连续完成 10 轮、约 12 分钟的生命周期 soak，逐字段对账和最终资源采样均通过。
 
-源码结论、真实结果和远端 amd64 acceptance 已验证镜像、Deployment Ready、API port-forward 和 Source binlog 启动；State 复查连接失败后按协议安全暂停，完整集群 Sink 对账仍未收敛。 未验证范围见 [Runtime GC 实验报告](https://github.com/Xuxiaotuan/pekko-reference/blob/1ab1acf/docs/experiments/2026-11-12-runtime-gc/README.md)。这组结果不代表 70 万真实活跃表、DDL、多 owner guardian 接管、自动扩容或 InnoDB 文件缩容已经验收。
+源码结论、真实结果和未验证边界分别记录在 [Runtime GC 实验报告](../../experiments/2026-11-12-runtime-gc/README.md)。本轮代码修复了 GC no-worthwhile-space-saving 的安全重规划：小 GROUP 保留原始 L、只前移 operation 游标，旧 BLOCKED schedule 会在下一 tick 进入 REPLANNING；真实集群重跑的结果以新 `replan-*` 材料为准。这组结果不代表 70 万真实活跃表、DDL、多 owner guardian 接管、自动扩容或 InnoDB 文件缩容已经验收。
 
 ## 本轮真实 Reader/Sink 补充（2026-11-13）
 
 最终 acceptance 使用真实 MySQL Source、Debezium Reader、Actor Journal 和 MySQL Sink：`B=binlog.000017:325156481`，`F=binlog.000017:325157844`，全量目标与 Source 逐字段一致；随后更新、插入、删除仍逐字段一致。任务 Journal revision 从 0 增长到 12，L/ACK、offset、目标组账本和 GC proof 均可在 State MySQL 中核对。
 
-一次 PID1 修复后的停止/重启证明了 owner STOPPED → 新 owner ACTIVE 的正常窗口；这不是未知 B 或旧 owner 未排空时的自动接管证明。重启后的 GC 删除因小批次没有达到 128 字节节省阈值而 BLOCKED，原始 L 没被删除。该结果支持“证明不足就暂停”的协议边界，不能写成任意历史都能自动回收。
+一次 PID1 修复后的停止/重启证明了 owner STOPPED → 新 owner ACTIVE 的正常窗口；这不是未知 B 或旧 owner 未排空时的自动接管证明。旧版本重启后的 GC 删除因小批次没有达到 128 字节节省阈值而 BLOCKED，原始 L 没被删除；新版本只允许安全跳过该帧并继续找后续可回收帧，真实集群是否完成重规划以部署后的证据为准。该结果支持“证明不足就保留 L”的协议边界，不能写成任意历史都能自动回收。

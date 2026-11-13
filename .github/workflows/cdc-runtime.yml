@@ -74,7 +74,12 @@ jobs:
           docker push "$image"
 
   deploy:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy }}
+    # The workflow currently lives on the CDC feature branch rather than the
+    # repository default branch, so GitHub does not render a manual dispatch
+    # button.  Keep ordinary pushes non-deploying and allow one explicit,
+    # auditable marker for this branch; workflow_dispatch remains supported
+    # once the workflow is installed on the default branch.
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.deploy) || (github.event_name == 'push' && github.ref == 'refs/heads/feature/pekkosync-mvp-cleanup-datafusion' && contains(github.event.head_commit.message, '[deploy-cdc-runtime]')) }}
     needs: image
     runs-on: ubuntu-24.04
     environment: cdc-runtime

@@ -93,7 +93,7 @@
 | A0/B0 信号与资源探针 | 七个实际组合、一个真实 Journal/Sink witness；heartbeat 静默对照与最终会话确认 | snapshot、当前 callback/ACK、实际 D、本地结束和服务端释放必须分开观察 | 原 5 秒自然释放未通过；SDK-only 不能替代 L/目标保证 |
 | A1/A2 生产准入 | 最终候选 6 项启动/Reader 检查、5 个定点 Bootstrap variant；603 项常规后端、24 项取证/runner 工具检查 | 特定风险状态启动前拒绝、当前 attempt 准入及所选 T/J 恢复窗口 | 不补齐旧漏数；不是完整 A/B 26 项或全部 I 矩阵重跑 |
 | 本轮关闭与释放 | 两个正常 Reader 场景、全局关闭容量与有界响应检查；真实 Kernel 另验证未决 L 事务的账号归属、UNKNOWN 与 owner 保留 | 修复 L 在共享控制账号下被漏观察的真实反例；只有实际事务结束才可复用 | 旧正常关闭不补作 L 故障证明；不是 B01—B10 全扩展矩阵或快速释放 SLA |
-| 本轮平台与入口 | 真实 P01—P08；本地双 MySQL GC/RG 矩阵；远端 amd64 acceptance 的镜像、Deployment、API port-forward 和 Source binlog 启动 | 按 CONVERGED / CANCELED / SAFE_PAUSED / CONTROL_PLANE_ONLY 分开；远端 State 复查失败保留 UNKNOWN | 远端完整任务 Sink 对账尚未收敛；八项不都是恢复收敛；旧静态快照 guardian 证据不等于新共享链路 HA |
+| 本轮平台与入口 | 真实 P01—P08；本地双 MySQL GC/RG 矩阵；远端 amd64 acceptance 的镜像、Deployment、API port-forward 和 Source binlog 启动；本地完整回归 722 成功、0 失败、415 external_blocked 取消 | 按 CONVERGED / CANCELED / SAFE_PAUSED / CONTROL_PLANE_ONLY 分开；远端 State 复查失败保留 UNKNOWN | GC no-worthwhile-space-saving 的真实集群重规划仍以部署后 `replan-*` 材料为准；旧静态快照 guardian 证据不等于新共享链路 HA |
 | 冷元数据与资源 | 50,000 pilot 后，700,000 条精确 COUNT、7,000 页遍历、EXPLAIN、60 秒固定观察；无 ActorSystem/Reader/源表 | 对应配置的索引与查询可执行，测试进程堆/线程/磁盘另列原值 | 不是同量真实源表、CDC 吞吐、长期稳定或总 RSS 上界 |
 | 本轮内核及相关回归 | 最终生产代码的所选常规后端 650 项、前端 13 项和构建；完整 61 项初始化检查含 13 个源 marker 未知的 SAFE_PAUSED；31 项共享检查与原 27 项按报告分版 | 失败期待、正确拒绝、功能恢复与保存材料复算分别报告 | 常规集合排除 ExternalIntegration 和已知旧 ActorSpec；61 项不是 61 次自动恢复，旧反例不删除 |
 | 规模与长期维护 | 700,000 条冷索引实验；Runtime GC 固定负载约 12 分钟、10 轮生命周期 soak | 冷目录和固定重启边界有证据 | 70 万真实活跃表、天级 churn、DDL、多 owner 与性能胜负未验证 |

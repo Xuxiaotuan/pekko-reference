@@ -186,12 +186,12 @@ C0、C1、迟提交和迟回滚四项在接管后进入 STREAMING，各自源与
 
 本轮已把 L 安全 GC 接入独立 CDC Runtime。GC 使用单个有界维护 worker，审计请求、namespace 清点、保护 pin、GC operation 和批次游标均持久化；表级审计仍使用原 BootstrapJournal、目标账本和 T/J/D 证据。旧 namespace 启用前会重新清点订阅、消费者、Journal、账号、连接和事务；清点不完整、未知 B、外来 Journal、危险账号或资源释放未知时安全暂停。
 
-真实入口 RG01—RG07 共 7 项通过，其中未知 B 和异常重启按预期 SAFE_PAUSED；L GC 的 LG01—LG16 加容量补测共 17 项通过。LG15 首次身份修复后未重启 Reader，保留失败材料；按重启边界重跑后通过。相关回归 53 项通过；固定 RG01 负载又连续完成 10 轮、约 12 分钟的生命周期 soak，逐字段对账和最终资源采样均通过。
+真实入口 RG01—RG07 共 7 项通过，其中未知 B 和异常重启按预期 SAFE_PAUSED；L GC 的 LG01—LG16 加容量补测共 17 项通过。LG15 首次身份修复后未重启 Reader，保留失败材料；按重启边界重跑后通过。此前 5 个完整回归失败套件已修正；同一 JDK 17 的完整回归为 722 成功、0 失败、415 个专用外部环境取消。固定 RG01 负载又连续完成 10 轮、约 12 分钟的生命周期 soak，逐字段对账和最终资源采样均通过。
 
-源码结论、真实结果和远端 amd64 acceptance 已验证镜像、Deployment Ready、API port-forward 和 Source binlog 启动；State 复查连接失败后按协议安全暂停，完整集群 Sink 对账仍未收敛。 未验证范围见 [Runtime GC 实验报告](https://github.com/Xuxiaotuan/pekko-reference/blob/1ab1acf/docs/experiments/2026-11-12-runtime-gc/README.md)。这组结果不代表 70 万真实活跃表、DDL、多 owner guardian 接管、自动扩容或 InnoDB 文件缩容已经验收。
+源码结论、真实结果和未验证边界分别记录在 [Runtime GC 实验报告](../../experiments/2026-11-12-runtime-gc/README.md)。本轮代码修复了 GC no-worthwhile-space-saving 的安全重规划：小 GROUP 保留原始 L、只前移 operation 游标，旧 BLOCKED schedule 会在下一 tick 进入 REPLANNING；真实集群重跑的结果以新 `replan-*` 材料为准。这组结果不代表 70 万真实活跃表、DDL、多 owner guardian 接管、自动扩容或 InnoDB 文件缩容已经验收。
 
 ## 本轮最终 acceptance 补充（2026-11-13）
 
 独立 CDC Runtime 在单实例专用 acceptance 环境跑通了一条可复核主线：共享 Reader 捕获 `source_rows`，任务经 B/F 初始化后进入持续消费；真实更新、插入、删除与目标逐字段对账一致。GC namespace 经过账号、Journal、目标账本和 namespace permit 校验后进入 READY，GC proof 进入 ACTIVE。Kubernetes 部署改为让 JVM 直接作为 PID 1，停止时 owner 为 STOPPED、grant 为 0、源端连接为空，重新启动后原任务仍为 STREAMING/HEALTHY。
 
-这只证明单表真实链路、受保护 GC 和一次重启窗口；70 万物理表、长期吞吐、DDL、多 owner 自动接管和跨实例共享 Reader 仍未验证。重启后的 GC 小批量删除因节省空间不足而安全 BLOCKED，原始 L 保留，这一边界也属于最终结果。
+这只证明单表真实链路、受保护 GC 和一次重启窗口；70 万物理表、长期吞吐、DDL、多 owner 自动接管和跨实例共享 Reader 仍未验证。旧版本重启后的 GC 小批量删除因节省空间不足而安全 BLOCKED，原始 L 保留；新版本的自动重规划需以部署后的真实 `replan-*` 证据确认，不能用本地测试替代。
