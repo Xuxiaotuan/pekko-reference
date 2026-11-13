@@ -1,0 +1,15 @@
+命令：sbt -batch 'project pekko-server' 'set Test / testOptions := Seq()' test
+时间：2026-11-13（本机 JDK 17.0.14）
+总测试：722
+成功：722
+失败：0
+取消：415（专用 MySQL/Kafka/外部 Workflow 或其他 external_blocked 条件）
+
+本轮修复对应的五个历史失败套件：
+- MySQLBatchSyncIntegrationTest：旧远程 Workflow/MySQL 夹具改为显式环境门控；未提供凭据时记录 external_blocked，不保留硬编码密码。
+- CommonSpec：移除 JDK 8 的 ClassLoader.usr_paths 反射，改为显式 native library 路径；材料缺失时 external_blocked。
+- MySQLCdcApplySinkNodeSpec：同步当前 connectTimeout=5000、socketTimeout=30000 URL 契约。
+- CdcJdbcSpec：同步 platform JDBC 默认 socketTimeout=30000 契约。
+- CdcPlatformRuntimeSpec：在完整并行回归中通过 11 项。
+
+此结果只证明本地完整测试没有失败；415 个取消项仍需要其各自的专用外部环境，不能升级为真实 MySQL/集群故障矩阵已经全部通过。

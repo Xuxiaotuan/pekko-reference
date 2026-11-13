@@ -18,7 +18,9 @@ spec:
       nodeSelector: {kubernetes.io/hostname: xjw}
       containers:
         - name: cdc-runtime
-          image: pekko-reference:cluster-runtime-20261113k
+          # Kustomize replaces this stable logical name with the immutable
+          # GHCR image tag supplied by the GitHub deployment job.
+          image: pekko-cdc-runtime:dev
           imagePullPolicy: IfNotPresent
           # The generated launcher is a shell script.  Make the JVM PID 1 so
           # Kubernetes termination reaches CoordinatedShutdown instead of

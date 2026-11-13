@@ -30,7 +30,7 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       val config = MySQLCdcApplyConfig("mysql", 3306, "target_db", "target_rows", "writer", "secret")
 
       MySQLCdcApplySinkNode.jdbcUrl(config) shouldBe
-        "jdbc:mysql://mysql:3306/target_db?useSSL=false&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true"
+        "jdbc:mysql://mysql:3306/target_db?useSSL=false&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&connectTimeout=5000&socketTimeout=30000"
     }
 
     "resolve only an environment-backed password" in {

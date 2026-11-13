@@ -21,4 +21,6 @@
 
 `runtime.log` 保存最终运行日志，`state.sql.txt` 保存 owner、task、namespace、GC proof、L/Journal 的最终状态，`row-reconciliation.txt` 保存逐字段对账输出。
 
-完整后端回归在本轮工作区为 726 项：721 成功、5 失败、411 因专用外部环境而取消；失败套件是既有 `MySQLBatchSyncIntegrationTest`、`CommonSpec`、`MySQLCdcApplySinkNodeSpec`、`CdcJdbcSpec`、`CdcPlatformRuntimeSpec`，摘要见 `full-regression-summary.txt`。这解释了远端 `cdc-runtime` workflow 的 verify 失败；本轮 acceptance 的真实 MySQL 证据和针对性 Runtime/Schema/Sink 测试仍单独列示，不能升级成全套绿灯。
+此前 726 项回归的 5 个失败套件及原始输出仍保留在 `full-regression-summary.txt`，没有被覆盖。本轮修复后用同一工作区、同一 JDK 17 重新跑完整回归：722 成功、0 失败、415 因专用外部环境而取消；四项是默认超时/URL 断言同步，两个旧外部夹具改为显式 `external_blocked`，CdcPlatformRuntime 在完整并行回归中通过。完整输出见 `full-regression-20261113.txt`。
+
+GC 代码同时修复了 no-worthwhile-space-saving 的重规划：小 GROUP 经过同一 proof/target ledger 校验后只推进持久化 operation 游标，原始 L 保留；旧版本留下的 `BLOCKED` schedule 在下一 tick 被标记 `REPLANNING` 后继续处理。真实集群重跑材料单独放在后续 `replan-*` 目录，不能用本地回归替代。

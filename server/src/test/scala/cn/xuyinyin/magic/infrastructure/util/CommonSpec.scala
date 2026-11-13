@@ -3,29 +3,21 @@ package cn.xuyinyin.magic.infrastructure.util
 import cn.xuyinyin.magic.tags.ExternalIntegration
 import cn.xuyinyin.magic.testkit.STSpec
 
+import java.nio.file.{Files,Paths}
+
 class CommonSpec extends STSpec {
-  private val libraryPath = "/Users/xujiawei/magic/rust-workbench/hello_rust/target/release"
-
-  // 辅助方法：添加库路径
-  private def addLibraryPath(path: String): Unit = {
-    val usrPaths = classOf[ClassLoader].getDeclaredField("usr_paths")
-    usrPaths.setAccessible(true)
-    val paths = usrPaths.get(null).asInstanceOf[Array[String]]
-
-    if (!paths.contains(path)) {
-      val newPaths = new Array[String](paths.length + 1)
-      System.arraycopy(paths, 0, newPaths, 0, paths.length)
-      newPaths(paths.length) = path
-      usrPaths.set(null, newPaths)
-    }
+  private val library = sys.env.get("RUST_NATIVE_LIB").map(Paths.get(_)).getOrElse {
+    val name=if(System.getProperty("os.name","").toLowerCase.contains("mac"))"libhello_rust.dylib"else"libhello_rust.so"
+    Paths.get("/Users/xujiawei/magic/rust-workbench/hello_rust/target/release",name)
   }
   // 声明 native 方法
   @native def calculatePrimes(start: Long, end: Long): Long
   @native def sayHello(input: String): String
   "CommonSpec" should {
     "load native library" taggedAs(ExternalIntegration) in {
-      addLibraryPath(libraryPath)
-      System.loadLibrary("hello_rust")
+      if(!Files.isRegularFile(library)) cancel(s"external_blocked: native library not found at $library")
+      try System.load(library.toAbsolutePath.toString)
+      catch { case e: UnsatisfiedLinkError => cancel(s"external_blocked: native library unavailable: ${e.getMessage}") }
       val result = calculatePrimes(1, 100)
       println(s"Result: $result")
       val hello = sayHello("Scala Test")

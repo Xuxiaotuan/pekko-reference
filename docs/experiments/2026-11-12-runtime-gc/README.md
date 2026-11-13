@@ -14,7 +14,7 @@
 - GC proof 在真实目标账本和 Journal 校验后进入 `ACTIVE`；原始 L/ACK、控制证据、目标账本、Journal 和 offset 均保留。
 - Kubernetes 停止时 JVM 直接作为 PID 1，owner 持久化为 `STOPPED`、active grant 为 0、源端连接列表为空；再次启动后 owner 重新获准，原任务恢复为 `STREAMING/HEALTHY`。
 
-重启后的删除计划因剩余小批次帧的可节省空间小于 128 字节进入 `BLOCKED`，原始 L 没有被删除。这是安全保守结果，不把“没有 worthwhile space saving”写成 GC 成功。
+旧版本重启后的删除计划因剩余小批次帧的可节省空间小于 128 字节进入 `BLOCKED`，原始 L 没有被删除。当前实现把这类帧作为安全的游标前移候选：原始 L 仍保留，后续可回收帧继续重规划；旧版本留下的同类 `BLOCKED` schedule 会在下一 tick 进入 `REPLANNING`。这不等于小帧已经被删除。
 
 早期 ClusterIP 失败、TEXT JDBC 类型不兼容、shell launcher 吞掉 SIGTERM、GC wildcard writer、旧 namespace 摘要变更和权限不足等失败均保留在 [retry-evidence-20261113](cluster-live-20261113/retry-evidence-20261113.md) 及 `final/runtime.log` 中。
 
@@ -28,7 +28,7 @@
 - 收敛用例的真实 MySQL 源表和目标表逐字段对账一致；慢表场景在持有目标行锁时仍保留保护前缀，释放锁后继续追平。未知 B、未清点 Journal、危险账号、清点中断、异常退出均没有放行删除。
 - [资源释放](final/resource-release.json) 显示最终检查时 Source/State 两个专用 MySQL 的外部连接和 InnoDB 事务均为 0，随后实例已关闭。测试数据目录、Journal 和失败材料保留。
 
-- 最新 `cdc-runtime` CI（commit `84e6aeb`）的隔离 Runtime 主路径 verify/image 均成功；完整仓库回归的 5 个失败套件和 411 个外部取消仍单独保留在最终回归摘要中。
+- 最新 `cdc-runtime` CI（commit `84e6aeb`）的隔离 Runtime 主路径 verify/image 均成功；此前完整仓库回归的 5 个失败套件保留在原始摘要中，本轮同一 JDK 17 完整回归为 722 成功、0 失败、415 external_blocked 取消，见 [修复后完整回归](cluster-live-20261113/final/full-regression-20261113.txt)。
 
 ## 主流程改造
 
@@ -37,6 +37,7 @@
 3. 每个 STREAMING 任务的 GC 审计请求先写 `pekko_capture_gc_audits_v1`，通过原 `StepAudit` 后由 Actor Journal 封存 v2 proof，目标组账本和 activation 收据验证成功才标记 ACTIVE。已有覆盖当前位置的证明不会重复创建 Actor。
 4. 增加 `GET /api/v1/cdc-gc`，只读展示 namespace、operation 和阻塞原因。API ready、namespace COMPLETE、表初始化完成、GC proof ACTIVE 分开判断。
 5. `CdcGcSettings` 只在 `gc.enabled=true` 时启用；账号、角色、trusted admin、producer inventory 和旧命名空间启用均显式校验。未配置 GC 时保持原独立 Runtime 行为。
+6. GC 对 no-worthwhile-space-saving 做安全重规划：小 GROUP 在 proof、目标账本和 ACK 边界已核验后保留原始 L、前移 operation 游标；旧版本遗留的同类 `BLOCKED` schedule 在下一维护 tick 进入 `REPLANNING`。
 6. 平台 JDBC 的默认 socket timeout 从 5 秒改为 30 秒，避免慢表持锁时被误判为基础设施失败；connect timeout 仍为 5 秒。
 
 ## 旧命名空间启用边界

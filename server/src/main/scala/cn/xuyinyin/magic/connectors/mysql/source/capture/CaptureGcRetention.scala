@@ -193,8 +193,7 @@ private[magic] final class CaptureGcRetention(open:()=>Connection,store:MySQLCap
         val bounded=candidates.takeWhile {r=>if(r("kind")=="GROUP")bytes+=r("payload_bytes").toLong;bytes<=1024*1024}
         require(candidates.isEmpty || bounded.nonEmpty,"GC frame exceeds one MiB deletion budget; retain original L")
         val rows=bounded.filter(_("kind")=="GROUP").map {r=>query(c,"SELECT * FROM pekko_capture_log WHERE capture_id=? AND seq=? FOR UPDATE",capture,r("seq").toLong).head}
-        var saving=0L
-        rows.foreach {row=>
+        val prepared=rows.map {row=>
           val sub=store.subscriptionOn(c,row("subscription_id")).get
           val certificate=query(c,"""SELECT proof_id FROM pekko_capture_gc_checkpoints_v1 WHERE capture_id=? AND subscription_id=? AND generation=? AND phase='ACTIVE'
             AND CAST(JSON_UNQUOTE(JSON_EXTRACT(proof_json,'$.deltaAfter')) AS UNSIGNED)>? ORDER BY journal_sequence DESC LIMIT 1""",capture,sub.requestId,sub.generation,row("seq").toLong)
@@ -210,16 +209,22 @@ private[magic] final class CaptureGcRetention(open:()=>Connection,store:MySQLCap
           val tombstone=CaptureGroupTombstone.seal(original,store.protocol,sub.generation,target,identity,evidence)
           val body=CaptureGroupTombstone.Prefix+tombstone
           val gain=original("payload").getBytes(java.nio.charset.StandardCharsets.UTF_8).length-body.getBytes(java.nio.charset.StandardCharsets.UTF_8).length-64
-          require(gain>=128,"GC frame has no worthwhile space saving")
-          update(c,"INSERT INTO pekko_capture_gc_frames_v1 VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",capture,row("seq").toLong,row("source_key"),row("kind"),
-            row("table_name"),row("subscription_id"),row("schema_id"),body,row("digest"),row("point_json"),row("resume_json"),proof("proof_id"))
-          require(update(c,"DELETE FROM pekko_capture_log WHERE capture_id=? AND seq=? AND digest=?",capture,row("seq").toLong,row("digest"))==1,"GC frame disappeared")
-          saving+=gain
+          (row,body,gain,proof("proof_id"))
         }
+        // A small frame is safe to retain: advancing the durable cursor past it
+        // keeps the operation bounded and lets a later, worthwhile frame be
+        // reclaimed.  The original L row is never deleted in this branch.
+        val reclaimable=prepared.filter(_._3>=128)
+        reclaimable.foreach {case (row,body,gain,proofId)=>
+          update(c,"INSERT INTO pekko_capture_gc_frames_v1 VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",capture,row("seq").toLong,row("source_key"),row("kind"),
+            row("table_name"),row("subscription_id"),row("schema_id"),body,row("digest"),row("point_json"),row("resume_json"),proofId)
+          require(update(c,"DELETE FROM pekko_capture_log WHERE capture_id=? AND seq=? AND digest=?",capture,row("seq").toLong,row("digest"))==1,"GC frame disappeared")
+        }
+        val saving=reclaimable.map(_._3).sum
         if(bounded.nonEmpty){
           require(update(c,"UPDATE pekko_capture_readers SET used_bytes=used_bytes-? WHERE capture_id=? AND used_bytes>=?",saving,capture,saving)==1,"GC byte accounting underflow")
           update(c,"UPDATE pekko_capture_gc_operations_v1 SET phase='DELETING',next_seq=?,deleted_rows=deleted_rows+?,reclaimed_bytes=reclaimed_bytes+? WHERE capture_id=? AND operation_id=?",
-            bounded.last("seq").toLong+1,rows.size,saving,capture,operation)
+            bounded.last("seq").toLong+1,reclaimable.size,saving,capture,operation)
           "DELETING"
         }else {
           update(c,"UPDATE pekko_capture_gc_operations_v1 SET phase='DONE',next_seq=to_exclusive WHERE capture_id=? AND operation_id=?",capture,operation)

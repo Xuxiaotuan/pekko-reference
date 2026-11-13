@@ -85,8 +85,20 @@ private[cdc] final class CdcGcCoordinator(cfg:CdcCaptureSettings,store:MySQLCapt
         if(page.nonEmpty)page.last("request_id")else"",if(page.nonEmpty)now else now+settings.intervalMillis,capture)
     }
   }
+  /** A no-gain frame is a safe cursor advance, not a durable safety failure.
+    * Re-open schedules left BLOCKED by an older runtime so the next tick can
+    * skip the retained frame and continue to a later candidate.
+    */
+  private def reopenNoGainSchedule():Unit=transaction {c=>
+    val row=query(c,"SELECT phase,reason FROM pekko_capture_gc_schedule_v1 WHERE capture_id=? FOR UPDATE",capture).headOption
+    row.filter(r=>r("phase")=="BLOCKED" && Option(r("reason")).exists(_.startsWith("GC frame has no worthwhile space saving"))).foreach {_=>
+      update(c,"UPDATE pekko_capture_gc_schedule_v1 SET phase='REPLANNING',reason='AUTO_REPLAN' WHERE capture_id=?",capture)
+      observe("GC_REPLAN",JsObject("captureId"->JsString(capture),"reason"->JsString("AUTO_REPLAN_NO_GAIN")))
+    }
+  }
   def tick(owner:String,stop:()=>Boolean):Unit=if(ready && !stop() && System.nanoTime()>=nextWorkNanos)try {
     nextWorkNanos=System.nanoTime()+math.min(settings.intervalMillis,1000L)*1000000L
+    reopenNoGainSchedule()
     wake(owner,System.currentTimeMillis())
     transaction {c=>
       val pending=query(c,"SELECT a.subscription_id FROM pekko_capture_gc_audits_v1 a JOIN pekko_cdc_tasks_v1 t ON t.task_id=a.subscription_id WHERE a.capture_id=? AND a.phase='REQUESTED' AND t.phase='STREAMING' AND t.desired_state='RUNNING' AND t.grant_id IS NULL ORDER BY a.subscription_id LIMIT ?",capture,settings.pageSize)

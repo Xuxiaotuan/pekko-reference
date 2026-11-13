@@ -9,7 +9,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.BeforeAndAfterAll
 import spray.json._
-import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
@@ -48,12 +47,16 @@ class MySQLBatchSyncIntegrationTest extends AnyFlatSpec with Matchers with Befor
     } finally super.afterAll()
   }
 
-  // 测试数据库配置
-  val dbHost = "100.82.226.63"
-  val dbPort = 31765
-  val dbName = "test"
-  val dbUser = "root"
-  val dbPass = "asd123456"
+  // Legacy Workflow fixture is opt-in.  Do not keep a production password in tests.
+  private val legacyFixtureEnabled=sys.env.get("RUN_LEGACY_MYSQL_BATCH").contains("1")
+  private def requireLegacyFixture():Unit={
+    if(!legacyFixtureEnabled)cancel("external_blocked: set RUN_LEGACY_MYSQL_BATCH=1 with LEGACY_MYSQL_* credentials to run the legacy Workflow fixture")
+  }
+  private val dbHost = sys.env.getOrElse("LEGACY_MYSQL_HOST","")
+  private val dbPort = sys.env.get("LEGACY_MYSQL_PORT").flatMap(_.toIntOption).getOrElse(0)
+  private val dbName = sys.env.getOrElse("LEGACY_MYSQL_DATABASE","")
+  private val dbUser = sys.env.getOrElse("LEGACY_MYSQL_USER","")
+  private val dbPass = sys.env.getOrElse("LEGACY_MYSQL_PASSWORD","")
 
   "NodeRegistry" should "包含MySQL连接器" taggedAs(ExternalIntegration) in {
     // 验证Source连接器已注册
@@ -70,6 +73,7 @@ class MySQLBatchSyncIntegrationTest extends AnyFlatSpec with Matchers with Befor
   }
 
   "MySQLSourceNode" should "读取数据库数据" taggedAs(ExternalIntegration) in {
+    requireLegacyFixture()
     val source = cn.xuyinyin.magic.workflow.execution.registry.NodeRegistry.builtins()
       .findSource("mysql.query")
       .getOrElse(fail("MySQL Source未找到"))
@@ -121,6 +125,7 @@ class MySQLBatchSyncIntegrationTest extends AnyFlatSpec with Matchers with Befor
   }
 
   "WorkflowExecutionEngine" should "执行完整的MySQL同步workflow" taggedAs(ExternalIntegration) in {
+    requireLegacyFixture()
     println("\n" + "="*60)
     println("测试: 完整批量同步 xjwtest → xjwtest1")
     println("="*60)
@@ -216,6 +221,7 @@ class MySQLBatchSyncIntegrationTest extends AnyFlatSpec with Matchers with Befor
   }
 
   "MySQL同步性能测试" should "达到预期吞吐量" taggedAs(ExternalIntegration) in {
+    requireLegacyFixture()
     println("\n" + "="*60)
     println("性能测试: 大量数据同步")
     println("="*60)
