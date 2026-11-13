@@ -177,9 +177,13 @@ private[magic] final class CaptureGcRetention(open:()=>Connection,store:MySQLCap
       require(boundary>head("reclaimed_before").toLong,"GC prefix is pinned")
       update(c,"INSERT INTO pekko_capture_gc_operations_v1 VALUES(?,?,?,?,?,?,'PLANNED',0,0)",capture,operation,
         head("reclaimed_before").toLong,boundary,head("reclaimed_before").toLong,head("epoch").toLong)
-      update(c,"UPDATE pekko_capture_gc_actual_d_v1 SET operation_id=? WHERE capture_id=? AND operation_id IS NULL",operation,capture)
     }
+    update(c,"UPDATE pekko_capture_gc_actual_d_v1 SET operation_id=? WHERE capture_id=? AND operation_id IS NULL",operation,capture)
   }
+
+  /** Commit one bounded actual-D proof page independently of operation planning.
+    * A partial proof must survive the caller's later BLOCKED decision. */
+  def advanceActualProof():Boolean=locked(c=>actualAck(c).nonEmpty)
 
   /** Delete original GROUP rows only; the minimum frame/ACK/control evidence and T ledger survive. */
   def deleteBatch(operation:String,limit:Int,reader:SharedMySQLCapture,observer:Connection,account:String,definer:String):String=reader.withGcTransaction {locked {c=>

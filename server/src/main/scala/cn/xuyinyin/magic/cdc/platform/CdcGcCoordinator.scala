@@ -113,7 +113,10 @@ private[cdc] final class CdcGcCoordinator(cfg:CdcCaptureSettings,store:MySQLCapt
         Some(id)
       }
     }
-    selected.foreach {op=>
+    if(!retention.advanceActualProof()){
+      connection(c=>update(c,"UPDATE pekko_capture_gc_schedule_v1 SET phase='BLOCKED',reason=?,next_at=? WHERE capture_id=?","actual D proof pending",System.currentTimeMillis()+settings.intervalMillis,capture))
+      observe("GC_BLOCKED",JsObject("captureId"->JsString(capture),"reason"->JsString("ACTUAL_D_PROOF_PENDING")))
+    }else selected.foreach {op=>
       retention.plan(op)
       val phase=connection(c=>retention.deleteBatch(op,settings.batchFrames,reader,c,settings.account,settings.ledgerDefiner))
       connection(c=>update(c,"UPDATE pekko_capture_gc_schedule_v1 SET phase=?,reason=NULL,operation_id=? WHERE capture_id=?",phase,if(phase=="DONE")null else op,capture))
