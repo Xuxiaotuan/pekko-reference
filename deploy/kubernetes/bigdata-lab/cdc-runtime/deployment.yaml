@@ -16,6 +16,8 @@ spec:
     spec:
       terminationGracePeriodSeconds: 60
       nodeSelector: {kubernetes.io/hostname: xjw}
+      imagePullSecrets:
+        - name: xxt-harbor-pull
       containers:
         - name: cdc-runtime
           # Kustomize replaces this stable logical name with the immutable

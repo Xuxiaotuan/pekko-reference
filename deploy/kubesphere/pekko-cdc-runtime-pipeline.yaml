@@ -1,0 +1,126 @@
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: Pipeline
+metadata:
+  name: pekko-cdc-runtime
+  namespace: bigdata-lab-devops845xv
+  annotations:
+    kubesphere.io/creator: admin
+spec:
+  pipeline:
+    discarder:
+      days_to_keep: "14"
+      num_to_keep: "20"
+    jenkinsfile: |-
+      pipeline {
+        agent {
+          kubernetes {
+            inheritFrom 'maven'
+            containerTemplate {
+              name 'maven'
+              image 'maven:3.9.10-sapmachine-17'
+              privileged true
+            }
+          }
+        }
+
+        options {
+          skipDefaultCheckout(true)
+          disableConcurrentBuilds()
+          timeout(time: 45, unit: 'MINUTES')
+        }
+
+        environment {
+          REGISTRY = '100.97.53.78:5001'
+          IMAGE_REPOSITORY = 'xxt/pekko-cdc-runtime'
+          SOURCE_REPOSITORY = 'https://github.com/Xuxiaotuan/pekko-reference.git'
+          SOURCE_BRANCH = 'feature/pekkosync-mvp-cleanup-datafusion'
+          TARGET_NAMESPACE = 'bigdata-lab'
+          DEPLOYMENT_NAME = 'pekko-cdc-runtime'
+          CONTAINER_NAME = 'cdc-runtime'
+          HTTP_PROXY = 'http://100.95.135.45:7890'
+          HTTPS_PROXY = 'http://100.95.135.45:7890'
+          ALL_PROXY = 'socks5://100.95.135.45:7890'
+          NO_PROXY = '100.97.53.78,100.82.226.63,10.233.0.1,kubernetes.default.svc,.svc,.cluster.local,localhost,127.0.0.1'
+        }
+
+        stages {
+          stage('Source') {
+            steps {
+              container('maven') {
+                deleteDir()
+                sh '''
+                  set -eu
+                  git -c http.version=HTTP/1.1 clone --depth 1 --branch "$SOURCE_BRANCH" "$SOURCE_REPOSITORY" .
+                  git config --global --add safe.directory "$PWD"
+                  git rev-parse --short=12 HEAD > .git-short
+                '''
+              }
+            }
+          }
+
+          stage('Verify and Image') {
+            steps {
+              container('maven') {
+                sh '''
+                  set -eu
+                  sbt_version=1.10.7
+                  curl --fail --location --http1.1 --retry 5 --retry-all-errors --retry-delay 3 \
+                    -o "/tmp/sbt-${sbt_version}.tgz" \
+                    "https://github.com/sbt/sbt/releases/download/v${sbt_version}/sbt-${sbt_version}.tgz"
+                  tar -xzf "/tmp/sbt-${sbt_version}.tgz" -C /tmp
+                  export PATH="/tmp/sbt/bin:$PATH"
+                  export JAVA_HOME="${JAVA_HOME:-/opt/java/openjdk}"
+                  export JAVA_TOOL_OPTIONS="-Dhttp.proxyHost=100.95.135.45 -Dhttp.proxyPort=7890 -Dhttps.proxyHost=100.95.135.45 -Dhttps.proxyPort=7890 -Djava.net.useSystemProxies=false"
+                  export SBT_OPTS="-Dhttp.proxyHost=100.95.135.45 -Dhttp.proxyPort=7890 -Dhttps.proxyHost=100.95.135.45 -Dhttps.proxyPort=7890 -Dsbt.boot.directory=/root/.m2/sbt/boot -Dsbt.global.base=/root/.m2/sbt"
+                  export COURSIER_CACHE="/root/.m2/coursier"
+                  sbt -batch 'project pekko-server' Compile/compile \
+                    'testOnly cn.xuyinyin.magic.cdc.platform.CdcJdbcSpec cn.xuyinyin.magic.cdc.platform.CdcPlatformRuntimeSpec cn.xuyinyin.magic.connectors.mysql.sink.MySQLCdcApplySinkNodeSpec'
+                  sbt -batch 'project pekko-server' dockerBuild
+                '''
+              }
+            }
+          }
+
+          stage('Push Harbor') {
+            steps {
+              container('maven') {
+                withCredentials([usernamePassword(credentialsId: 'xxt-harbor', usernameVariable: 'HARBOR_USER', passwordVariable: 'HARBOR_PASSWORD')]) {
+                  sh '''
+                    set -eu
+                    image="$REGISTRY/$IMAGE_REPOSITORY"
+                    tag="build-${BUILD_NUMBER}-$(cat .git-short)"
+                    echo "$HARBOR_PASSWORD" | docker login "$REGISTRY" -u "$HARBOR_USER" --password-stdin
+                    docker tag pekko-reference:0.1 "$image:$tag"
+                    docker push "$image:$tag"
+                    printf '%s\n' "$image:$tag" > .image
+                  '''
+                }
+              }
+            }
+          }
+
+          stage('Deploy') {
+            steps {
+              container('maven') {
+                sh '''
+                  set -eu
+                  image="$(cat .image)"
+                  kubectl apply -k deploy/kubernetes/bigdata-lab/cdc-runtime
+                  kubectl -n "$TARGET_NAMESPACE" set image deployment/"$DEPLOYMENT_NAME" "$CONTAINER_NAME"="$image"
+                  kubectl -n "$TARGET_NAMESPACE" rollout status deployment/"$DEPLOYMENT_NAME" --timeout=180s
+                  kubectl -n "$TARGET_NAMESPACE" get deployment "$DEPLOYMENT_NAME" -o jsonpath='{.spec.template.spec.containers[0].image}'
+                  printf '\n'
+                '''
+              }
+            }
+          }
+        }
+
+        post {
+          always {
+            container('maven') {
+              sh 'docker logout "$REGISTRY" >/dev/null 2>&1 || true'
+            }
+          }
+        }
+      }
