@@ -122,6 +122,9 @@ private[cdc] final class CdcGcCoordinator(cfg:CdcCaptureSettings,store:MySQLCapt
       connection(c=>update(c,"UPDATE pekko_capture_gc_schedule_v1 SET phase=?,reason=NULL,operation_id=? WHERE capture_id=?",phase,if(phase=="DONE")null else op,capture))
       observe("GC_BATCH",JsObject("captureId"->JsString(capture),"operation"->JsString(op),"phase"->JsString(phase)))
     }
+    val proofGc=retention.gcAckProofBatch(settings.ackProofGcBatch,settings.ackProofChildRows)
+    if(proofGc.deletedProofs>0 || proofGc.blockedReason.nonEmpty)
+      observe("GC_ACK_PROOF_GC",JsObject("captureId"->JsString(capture),"deletedProofs"->JsNumber(proofGc.deletedProofs),"deletedNodes"->JsNumber(proofGc.deletedNodes),"deletedRefs"->JsNumber(proofGc.deletedRefs),"reason"->proofGc.blockedReason.map(JsString(_)).getOrElse(JsNull)))
   }catch {case NonFatal(e)=>
     val message=Option(e.getMessage).getOrElse(e.getClass.getSimpleName).take(128)
     connection(c=>update(c,"UPDATE pekko_capture_gc_schedule_v1 SET phase='BLOCKED',reason=? WHERE capture_id=?",message,capture))

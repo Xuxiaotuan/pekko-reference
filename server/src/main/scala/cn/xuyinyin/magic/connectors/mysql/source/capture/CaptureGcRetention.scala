@@ -184,6 +184,7 @@ private[magic] final class CaptureGcRetention(open:()=>Connection,store:MySQLCap
   /** Commit one bounded actual-D proof page independently of operation planning.
     * A partial proof must survive the caller's later BLOCKED decision. */
   def advanceActualProof():Boolean=locked(c=>actualAck(c).nonEmpty)
+  def gcAckProofBatch(limit:Int,maxChildRows:Int):CaptureAckGcResult=locked(c=>new CaptureAckPaging(open,store).gcProofsOn(c,limit,maxChildRows))
 
   /** Delete original GROUP rows only; the minimum frame/ACK/control evidence and T ledger survive. */
   def deleteBatch(operation:String,limit:Int,reader:SharedMySQLCapture,observer:Connection,account:String,definer:String):String=reader.withGcTransaction {locked {c=>

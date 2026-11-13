@@ -8,6 +8,7 @@ import spray.json._
 final case class CaptureAckPageIdentity(task:String, offset:String, head:Long, anchor:Long,
   intent:String, sourceFence:String, guardianAttempt:String, priorHead:Option[Long]=None,priorDigest:Option[String]=None)
 final case class CaptureAckPage(revision:Long, done:Boolean, anchorMatchesOffset:Boolean)
+final case class CaptureAckGcResult(deletedProofs:Int,deletedNodes:Long,deletedRefs:Long,observedProofs:Long,observedNodes:Long,observedRefs:Long,blockedReason:Option[String])
 private[magic] final case class CapturePinnedWitness(capture:String,lineage:String,identity:CaptureAckPageIdentity,
   proofId:String,intentSeq:Long,headDigest:String,mode:String) {
   def json:String=CapturePinnedWitness.encode(this)
@@ -154,8 +155,46 @@ final class CaptureAckPaging(open:()=>Connection,store:MySQLCaptureStore) {
       "CREATE TABLE IF NOT EXISTS pekko_capture_ack_page_nodes_v1(capture_id VARCHAR(64) NOT NULL,proof_id CHAR(64) NOT NULL,ack_seq BIGINT NOT NULL,ack_digest CHAR(64) NOT NULL,parent_seq BIGINT NULL,parent_digest CHAR(64) NULL,ref_count INT NOT NULL,PRIMARY KEY(capture_id,proof_id,ack_seq))",
       "CREATE TABLE IF NOT EXISTS pekko_capture_ack_page_pins_v1(capture_id VARCHAR(64) NOT NULL,proof_id CHAR(64) NOT NULL,identity_json LONGTEXT NOT NULL,PRIMARY KEY(capture_id,proof_id))",
       "CREATE TABLE IF NOT EXISTS pekko_capture_ack_prior_v1(capture_id VARCHAR(64) NOT NULL,proof_id CHAR(64) NOT NULL,prior_seq BIGINT NOT NULL,prior_digest CHAR(64) NOT NULL,verified BOOLEAN NOT NULL,PRIMARY KEY(capture_id,proof_id))",
-      "CREATE TABLE IF NOT EXISTS pekko_capture_ack_page_refs_v1(capture_id VARCHAR(64) NOT NULL,proof_id CHAR(64) NOT NULL,ack_seq BIGINT NOT NULL,ref_index INT NOT NULL,target_seq BIGINT NOT NULL,target_digest CHAR(64) NOT NULL,PRIMARY KEY(capture_id,proof_id,ack_seq,ref_index),INDEX membership(capture_id,proof_id,target_seq))"
+      "CREATE TABLE IF NOT EXISTS pekko_capture_ack_page_refs_v1(capture_id VARCHAR(64) NOT NULL,proof_id CHAR(64) NOT NULL,ack_seq BIGINT NOT NULL,ref_index INT NOT NULL,target_seq BIGINT NOT NULL,target_digest CHAR(64) NOT NULL,PRIMARY KEY(capture_id,proof_id,ack_seq,ref_index),INDEX membership(capture_id,proof_id,target_seq))",
+      "CREATE TABLE IF NOT EXISTS pekko_capture_ack_gc_state_v1(capture_id VARCHAR(64) PRIMARY KEY,phase VARCHAR(16) NOT NULL,observed_proofs BIGINT NOT NULL,observed_nodes BIGINT NOT NULL,observed_refs BIGINT NOT NULL,last_deleted_proofs BIGINT NOT NULL,last_deleted_nodes BIGINT NOT NULL,last_deleted_refs BIGINT NOT NULL,reason VARCHAR(128) NULL)"
     ).foreach(s=>update(c,s+" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin"))finally c.close()
+    val c2=open();try update(c2,"INSERT IGNORE INTO pekko_capture_ack_gc_state_v1 VALUES(?, 'READY', 0, 0, 0, 0, 0, 0, NULL)",store.captureId)finally c2.close()
+  }
+
+  /** Delete only completed, unreferenced proof material. The source ACK log is
+    * never touched; a later proof can rebuild from it. */
+  private[capture] def gcProofsOn(c:Connection,limit:Int,maxChildRows:Int):CaptureAckGcResult={
+    lockHead(c)
+    require(limit>=1 && limit<=64 && maxChildRows>=1024 && maxChildRows<=100000)
+    val counts=rows(c,"SELECT (SELECT COUNT(*) FROM pekko_capture_ack_pages_v1 WHERE capture_id=?) AS proofs,(SELECT COUNT(*) FROM pekko_capture_ack_page_nodes_v1 WHERE capture_id=?) AS nodes,(SELECT COUNT(*) FROM pekko_capture_ack_page_refs_v1 WHERE capture_id=?) AS refs",store.captureId,store.captureId,store.captureId).head
+    val current=rows(c,"SELECT proof_id FROM pekko_capture_gc_actual_d_v1 WHERE capture_id=? FOR SHARE",store.captureId).headOption.map(_("proof_id")).getOrElse("")
+    val candidates=rows(c,"""SELECT p.proof_id FROM pekko_capture_ack_pages_v1 p
+      WHERE p.capture_id=? AND p.done=TRUE AND p.proof_id<>? AND NOT EXISTS
+      (SELECT 1 FROM pekko_capture_gc_audits_v1 a WHERE a.capture_id=p.capture_id AND a.proof_id=p.proof_id)
+      AND NOT EXISTS (SELECT 1 FROM pekko_capture_gc_frames_v1 f WHERE f.capture_id=p.capture_id AND f.proof_id=p.proof_id)
+      AND NOT EXISTS (SELECT 1 FROM pekko_cdc_b_proof_anchor_v2 b WHERE b.witness_json LIKE CONCAT('%\"proofId\":\"',p.proof_id,'\"%'))
+      ORDER BY p.head_seq LIMIT ?""",store.captureId,current,limit)
+    var deletedProofs=0;var deletedNodes=0L;var deletedRefs=0L;var blocked:Option[String]=None
+    candidates.foreach {row=>
+      if(blocked.isEmpty){
+        val id=row("proof_id")
+        val child=rows(c,"SELECT (SELECT COUNT(*) FROM pekko_capture_ack_page_nodes_v1 WHERE capture_id=? AND proof_id=?) AS nodes,(SELECT COUNT(*) FROM pekko_capture_ack_page_refs_v1 WHERE capture_id=? AND proof_id=?) AS refs",store.captureId,id,store.captureId,id).head
+        val n=child("nodes").toLong;val r=child("refs").toLong
+        if(n+r+3>maxChildRows)blocked=Some("ACK_PROOF_CHILD_BATCH_LIMIT")
+        else {
+          require(rows(c,"SELECT done FROM pekko_capture_ack_pages_v1 WHERE capture_id=? AND proof_id=? FOR UPDATE",store.captureId,id).head("done")=="1","ACK proof changed during GC")
+          deletedRefs+=update(c,"DELETE FROM pekko_capture_ack_page_refs_v1 WHERE capture_id=? AND proof_id=?",store.captureId,id)
+          deletedNodes+=update(c,"DELETE FROM pekko_capture_ack_page_nodes_v1 WHERE capture_id=? AND proof_id=?",store.captureId,id)
+          update(c,"DELETE FROM pekko_capture_ack_prior_v1 WHERE capture_id=? AND proof_id=?",store.captureId,id)
+          update(c,"DELETE FROM pekko_capture_ack_page_pins_v1 WHERE capture_id=? AND proof_id=?",store.captureId,id)
+          require(update(c,"DELETE FROM pekko_capture_ack_pages_v1 WHERE capture_id=? AND proof_id=? AND done=TRUE",store.captureId,id)==1,"ACK proof page disappeared")
+          deletedProofs+=1
+        }
+      }
+    }
+    val phase=blocked.map(_=>"BLOCKED").getOrElse("READY")
+    update(c,"UPDATE pekko_capture_ack_gc_state_v1 SET phase=?,observed_proofs=?,observed_nodes=?,observed_refs=?,last_deleted_proofs=?,last_deleted_nodes=?,last_deleted_refs=?,reason=? WHERE capture_id=?",phase,counts("proofs").toLong,counts("nodes").toLong,counts("refs").toLong,deletedProofs,deletedNodes,deletedRefs,blocked.orNull,store.captureId)
+    CaptureAckGcResult(deletedProofs,deletedNodes,deletedRefs,counts("proofs").toLong,counts("nodes").toLong,counts("refs").toLong,blocked)
   }
   private def identity(i:CaptureAckPageIdentity):String={
     require(i.task.nonEmpty && i.intent.nonEmpty && i.sourceFence.nonEmpty && i.guardianAttempt.nonEmpty && i.head>0 && i.anchor>0 &&
