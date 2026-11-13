@@ -92,3 +92,11 @@ L 只删除可重建的 GROUP 正文，保留 ACK、控制帧、Schema、恢复�
 新 Pod 重启后 API 返回 owner `ACTIVE`；源端有一个 Debezium Binlog Dump 会话且没有 InnoDB 未提交事务；Source 与 Sink 的 `source_rows/target_source_rows` 两行六字段逐字段相等。证据、原始 Kubernetes 对象和 SHA-256 见 [KubeSphere 集群材料](cluster-live-20261113/kubesphere-20261113/)。
 
 这次线上运行的 GC 返回 `BLOCKED`，原因是 `ACK proof budget exceeded`。它证明安全暂停仍然生效，但不是 no-worthwhile-space-saving 自动重规划的通过证据；ACK proof 超预算后的自动扩容、跨重启继续删除和 70 万活跃表仍未验证。人工清理旧 UNKNOWN owner 后再重启属于实验门槛，不是自动 fencing 证明。
+
+## 2026-11-13 ACK proof budget 修复与真实集群收敛
+
+线上长链根因已核实：`primary` 有 7,110 条 ACK，旧 `CaptureAckProof.inspect` 固定 4,096 条预算导致 `ACK proof budget exceeded`。本轮复用 `CaptureAckPaging`，新增 GC-owned actual-D pinned proof；每次最多推进 128 个节点，proof 未完成时先提交分页状态并安全阻塞，完成后才允许 operation plan/delete。
+
+真实 KubeSphere PipelineRun `pekko-cdc-runtime-g7kcr` 成功，镜像 `build-3-61495e0f2b5e` 已部署。重启后 owner `ACTIVE`，任务 `STREAMING/ADMISSION_READY/HEALTHY/RELEASED`；actual-D proof head `7742`、ACK 节点 `7731`、page `done=1`。原 `runtime_315c...` operation 从 `DELETING 42→44` 收敛为 `DONE`，删除 1 个 GROUP、回收 235 字节，API 返回 `DONE`。Source 与 Sink 两行六字段逐字段一致，Source 保留一个 Binlog Dump 会话且无 InnoDB 未提交事务。
+
+此前发现的 3 个旧 Sleep 会话和第一次 `OWNER_RELEASE_UNPROVEN` 仍保留在 [ACK proof 预算实验材料](cluster-live-20261113/gc-ack-proof-budget-20261113/)；这次清理是基于无事务证据的专用账号排空，不是自动 fencing 的通用证明。分页 proof 表本身尚无独立 GC，70 万活跃表、无限 ACK 历史、自动扩容、DDL、多 owner 仍未验证。

@@ -1,0 +1,39 @@
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: PipelineRun
+metadata:
+  annotations:
+    devops.kubesphere.io/jenkins-pipelinerun-id: "3"
+    devops.kubesphere.io/jenkins-pipelinerun-status: '{"causes":[{"_class":"io.jenkins.blueocean.service.embedded.rest.AbstractRunImpl$BlueCauseImpl","shortDescription":"Started
+      by user admin","userId":"admin","userName":"admin"}],"durationInMillis":255263,"enQueueTime":"2026-11-13T03:27:46Z","endTime":"2026-11-13T03:32:01Z","startTime":"2026-11-13T03:27:46Z","estimatedDurationInMillis":276087,"id":"3","organization":"jenkins","pipeline":"pekko-cdc-runtime","replayable":true,"result":"SUCCESS","runSummary":"stable","state":"FINISHED","type":"WorkflowRun"}'
+  creationTimestamp: "2026-11-13T03:27:45Z"
+  finalizers:
+  - pipelinerun.finalizers.kubesphere.io
+  generateName: pekko-cdc-runtime-
+  generation: 1
+  labels:
+    devops.kubesphere.io/pipeline: pekko-cdc-runtime
+  name: pekko-cdc-runtime-g7kcr
+  namespace: bigdata-lab-devops845xv
+  resourceVersion: "224358887"
+  uid: 7d5c3863-c9e4-499e-914a-dd2ea0ccf1c7
+spec:
+  pipelineRef:
+    kind: Pipeline
+    name: pekko-cdc-runtime
+    namespace: bigdata-lab-devops845xv
+status:
+  completionTime: "2026-11-13T03:32:01Z"
+  conditions:
+  - lastProbeTime: "2026-11-13T03:32:03Z"
+    lastTransitionTime: "2026-11-13T03:32:03Z"
+    reason: FINISHED
+    status: "True"
+    type: Succeeded
+  - lastProbeTime: "2026-11-13T03:32:00Z"
+    lastTransitionTime: "2026-11-13T03:32:00Z"
+    reason: RUNNING
+    status: Unknown
+    type: Ready
+  phase: Succeeded
+  startTime: "2026-11-13T03:27:46Z"
+  updateTime: "2026-11-13T03:32:03Z"
