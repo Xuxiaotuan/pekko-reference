@@ -1,0 +1,2945 @@
+{
+  "checkpointAtCut": {
+    "batchId": "b2bae26e126411f6be2842f99113ca156ef9183a88deafe6a0454c122ba2e720",
+    "cursor": {
+      "offset": {
+        "event": 2,
+        "file": "binlog.000001",
+        "gtids": "02804ffc-c4c2-4e27-a700-459acf16eda1:1-703",
+        "pos": 1143533,
+        "row": 1,
+        "server_id": 14365,
+        "ts_sec": 1795094354
+      },
+      "version": 1
+    },
+    "sequence": 1,
+    "sourceRows": 1,
+    "targetRows": 1
+  },
+  "checkpointBefore": {
+    "batchId": "fbd42200b32f6ceaaa363319c820bc9fae72038e5e5ba9f4773865f5b71e21f1",
+    "cursor": {
+      "offset": {
+        "event": 2,
+        "file": "binlog.000001",
+        "gtids": "02804ffc-c4c2-4e27-a700-459acf16eda1:1-699",
+        "pos": 1137642,
+        "row": 1,
+        "server_id": 14365,
+        "ts_sec": 1795094354
+      },
+      "version": 1
+    },
+    "sequence": 0,
+    "sourceRows": 1,
+    "targetRows": 1
+  },
+  "firstReplayBatch": {
+    "batchId": "cb933aee879361635b42f2795ae9f13442a1d3c0d1f1ae47bdec002468fdd953",
+    "cursor": {
+      "offset": {
+        "event": 6,
+        "file": "binlog.000001",
+        "gtids": "02804ffc-c4c2-4e27-a700-459acf16eda1:1-706",
+        "pos": 1155513,
+        "row": 1,
+        "server_id": 14365,
+        "ts_sec": 1795094407
+      },
+      "version": 1
+    },
+    "rows": [{
+      "groupId": "47e96eaa3bca9a48759e86827227f61ac61cd62554f0173af5204005b711eb25",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "1.1300",
+            "id": 1,
+            "label": "window-1",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "1.1200",
+            "id": 1,
+            "label": "初始-1",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 1
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 0,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "00fd330d18a253eca7805ca55c75a59d09fec5eccb657492425260b11d89bfd0",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "4aef86c93b7345728a75ae0254bd8b6ed1f099dc9ce3bf9bbf5aaf3251c706fe",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "2.1300",
+            "id": 2,
+            "label": "window-2",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "2.1200",
+            "id": 2,
+            "label": "初始-2",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 2
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 1,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "31120a04d73c361e9a4baaeee33f1b293ded6fb31d3e7d318c1873b008b359a0",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "cf7102c658d428ea850911ca08b7b793ca94a22d3ff3d84bd9fb58798485449e",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "3.1300",
+            "id": 3,
+            "label": "window-3",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "3.1200",
+            "id": 3,
+            "label": "初始-3",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 3
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 2,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "8ec616be9d105e3d5bd2416ccc9d37481a1522536c13ef36a90e2b59b8016a6a",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "172a476708a4e8b5e02cbbbd8e3dd768d83bfde5d72fb453b55f904d946f0977",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "4.1300",
+            "id": 4,
+            "label": "window-4",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "4.1200",
+            "id": 4,
+            "label": "初始-4",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 4
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 3,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "e46948ad6f4003ca49e2fd7d02f55f6553fb6107aa1cca1dbe0c623f94601ae1",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "e6c5a7e335bf0cc1a67385d5bacac77bf0c550ef277224a80f936fb0b19f6c14",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "5.1300",
+            "id": 5,
+            "label": "window-5",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "5.1200",
+            "id": 5,
+            "label": "初始-5",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 5
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 4,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "f9282367d79d7e5c40adaf95e870ed2b613694cade6a8ede546782790c8cf6ab",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "60d87603e50ba2a57a6284737a8a49657380f6203b2fd2f65905223074cee260",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "6.1300",
+            "id": 6,
+            "label": "window-6",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "6.1200",
+            "id": 6,
+            "label": "初始-6",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 6
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 5,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "63d8d1eddc4b21255f4668ba2fe9f84d9cb673c970fc1208f0eb7581e6aac31c",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "ce0933a54a60beff534fa1cee90e5769f36310197ca5455af83044e45e8e3ebe",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "7.1300",
+            "id": 7,
+            "label": "window-7",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "7.1200",
+            "id": 7,
+            "label": "初始-7",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 7
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 6,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "e50e10ba51367e9ee86be12284dbe972883e4099e28480916b1326a67ffe5449",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "7a78290c4867b8641bc3b69bb10228a4772e798334820de19c754b61d1a364a8",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "8.1300",
+            "id": 8,
+            "label": "window-8",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "8.1200",
+            "id": 8,
+            "label": "初始-8",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 8
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 7,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "a48c3aab11269749ce0230f1dcc4c68485a7ac41051f03d4f1c91c9ec02ea4a1",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "4f587dc9d92759fe7e35a627a67b7a9333d2c7238c2c5889f3c698b2ce2b9bf8",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "9.1300",
+            "id": 9,
+            "label": "window-9",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "9.1200",
+            "id": 9,
+            "label": "初始-9",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 9
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 8,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "eb4f7c0255be5424bc7c7295a90e8f1cb651f67e7e74f321366ea5da4615dd95",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "6879eaba9a7b9be67e130daab2e93d8a1e4b6781c7e3865eefd129dad969a27a",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "10.1300",
+            "id": 10,
+            "label": "window-10",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "10.1200",
+            "id": 10,
+            "label": "初始-10",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 10
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 9,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "ff24e1ff91601cbd67cf26324d53f4cf607c7f2d2b8cc80eeae0bd9f5f8ab86b",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "249a9ae051390e4b728633a626c0b1d467810b542202b7cd9c3c39bcb4698009",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "11.1300",
+            "id": 11,
+            "label": "window-11",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "11.1200",
+            "id": 11,
+            "label": "初始-11",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 11
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 10,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "8185516ebf64b24f6f94eab2c50669c268a455585406fe5eeef7c4fd4b8493f9",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "c6a2b6849dc27deff366d9b936012ba82f96436ad64bf881c1332561da695a5f",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "12.1300",
+            "id": 12,
+            "label": "window-12",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "12.1200",
+            "id": 12,
+            "label": "初始-12",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 12
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 11,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "c9cc24b1db328e5f6a4a4e27f50a53033371269a9f0ec738962e124348f38d4e",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "5348e4db016dc22f276b373cecf174cad0b8bda51730054e2e1eea515dbb0647",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "13.1300",
+            "id": 13,
+            "label": "window-13",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "13.1200",
+            "id": 13,
+            "label": "初始-13",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 13
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 12,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "e04a8684c3828ab9526720cc9a47d6ed72e7adccf7ca4ef895e86206347b97f8",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "865c9b53525a669aa177963888e6c888ed296ab64e6ecb9f95f50aa57f29dfad",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "14.1300",
+            "id": 14,
+            "label": "window-14",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "14.1200",
+            "id": 14,
+            "label": "初始-14",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 14
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 13,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "59867a6cbcbc2819eb786932276db491ead88d2a507bed0cf2176c86ebd43456",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "2973672b9558ee961ba0cdac2ca405fc1dd228d916e2e061859f61d8548736e8",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "15.1300",
+            "id": 15,
+            "label": "window-15",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "15.1200",
+            "id": 15,
+            "label": "初始-15",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 15
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 14,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "14da74bf20bf4950b16282e6421f1132f1131005e2db8d85ef50a9b72509aaa7",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "cfd6915d396a956c6b5008c1d933b8f91df99fea9bd2d0e8fff04f2680e68ed0",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "16.1300",
+            "id": 16,
+            "label": "window-16",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "16.1200",
+            "id": 16,
+            "label": "初始-16",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 16
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 15,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "eb82246cca74dca323b6461cd113b71e1b506a59fac683b82bfae0e0f06854f4",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "e59b352ebde18b8234302b34af42873fd0005ed29e6c5b204a72e1807877e3e7",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "17.1300",
+            "id": 17,
+            "label": "window-17",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "17.1200",
+            "id": 17,
+            "label": "初始-17",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 17
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 16,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "b77aa476e036b5f34704c30adc5c16ece3964989a7cc5ccae6e21e97bfaa52ad",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "1e237a1c880ad913df0ca853d4cd75c563b7a27f978fbafbd48207466aed96f5",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "18.1300",
+            "id": 18,
+            "label": "window-18",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "18.1200",
+            "id": 18,
+            "label": "初始-18",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 18
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 17,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "5b90941fedf85f9f14403353738becb673bcf8ce2f2509e7923c7a2185c7e85d",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "f9d7c144f54054dcc4bffdd9601610cdc5a4f6e84af69e81b9420a6a61314094",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "19.1300",
+            "id": 19,
+            "label": "window-19",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "19.1200",
+            "id": 19,
+            "label": "初始-19",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 19
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 18,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "e500d54cfeacf621243fa33d139f70c4b7c0ac02a4fda1744b711768d01f4a02",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "6efb6326c9f3985aa0674879946ddadd33c441c3986ae0b2091d7e20fb18196a",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "20.1300",
+            "id": 20,
+            "label": "window-20",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "20.1200",
+            "id": 20,
+            "label": "初始-20",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 20
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 19,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "be3dd405ae6ae7ebe1f8483423a1a5c6a227fe8fcd1234e9261d5ddc9888d982",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "5567ca74b8ec16b77934c06bd41bc09dff8be51da40a79c5bc42eed25368c723",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "21.1300",
+            "id": 21,
+            "label": "window-21",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "21.1200",
+            "id": 21,
+            "label": "初始-21",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 21
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 20,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "1aef0a1cdc51d7c81a003a11723edcb20ccce2de0ac10b5b75ef1972ba76348b",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "409f285d0b89063fe9cf7e14c4c426b2d2179af56699a9facf70828f29566360",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "22.1300",
+            "id": 22,
+            "label": "window-22",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "22.1200",
+            "id": 22,
+            "label": "初始-22",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 22
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 21,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "9a408d4f88edb63c67acfdd6fcd3c57203ac292c96aaff9c58564032865007c3",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "10ecd5c4cd993253e1ad1ecab2eeda223b45bc528b44700ffae58a816e410d58",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "23.1300",
+            "id": 23,
+            "label": "window-23",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "23.1200",
+            "id": 23,
+            "label": "初始-23",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 23
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 22,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "b68372aa1a3b82bc2f2033466a87287dcbeb155709da28b001ab84b7936ac402",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "33bd7339ef631eb4e9b66d5af6889844dfc10ba399d09c48178aad11be274152",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "24.1300",
+            "id": 24,
+            "label": "window-24",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "24.1200",
+            "id": 24,
+            "label": "初始-24",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 24
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 23,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "b736f3c60614b026f8cfad2ea323aa86ebf25ee11014971852f93b703b14dc52",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "8813895749a231b681ad5d10ff0ce79064436af57401f5da805070d492a3f81b",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "25.1300",
+            "id": 25,
+            "label": "window-25",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "25.1200",
+            "id": 25,
+            "label": "初始-25",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 25
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 24,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "fe3aceb6788076239b96d813b1547e9e4d8c790bc290ccd1fee9982613f2089a",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "dc335091e32b82876fd5acce98d79c15be18d0869067eaac971de52f0191d8da",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "26.1300",
+            "id": 26,
+            "label": "window-26",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "26.1200",
+            "id": 26,
+            "label": "初始-26",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 26
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 25,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "fbba29fa4a6c14d997a1207d8ab86d9af6ca06d58e2f5d9a24969e96e41fe9aa",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "73165282d926464d18d4e34911e6118f5ae96b331d39a3089f45e59a7ce6a517",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "27.1300",
+            "id": 27,
+            "label": "window-27",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "27.1200",
+            "id": 27,
+            "label": "初始-27",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 27
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 26,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "6d28054f180a1ad9658a99d57cb91372e8f51887ad90b4ddb2be322d8799deea",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "fbfefed23daf2c1708b147897841c92c619bb9536af660e26609bfbcc7e66c04",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "28.1300",
+            "id": 28,
+            "label": "window-28",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "28.1200",
+            "id": 28,
+            "label": "初始-28",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 28
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 27,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "397ae526289948b3643d3cbc8326e4878ae4e3330fe4d056b05463b2036d0540",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "19854beaac744931e9ac84db19aa96fe3720a3c6cf4893c89932b099877f024f",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "29.1300",
+            "id": 29,
+            "label": "window-29",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "29.1200",
+            "id": 29,
+            "label": "初始-29",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 29
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 28,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "57d61b84ee939afc7f1cc468499b0996a78c260403638bcb4b8a5c6cf9a85552",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "09478f99653e0ea35200535dba011fa6fe0e6ce2166c17f297a73735f8fe0b2d",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "30.1300",
+            "id": 30,
+            "label": "window-30",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "30.1200",
+            "id": 30,
+            "label": "初始-30",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 30
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 29,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "679e7a730d706b96bbf9c43f326d5d2fbf726796ad8ebe9c1f34b510dbcc3509",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "ea245822d78657d5d7ebb9771dc64de418912f1786d5ab2f1598419a1767b7b5",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "31.1300",
+            "id": 31,
+            "label": "window-31",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "31.1200",
+            "id": 31,
+            "label": "初始-31",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 31
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 30,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "e75dffd5764a589da4efd293277b500972e1e916635b011b401d512d81c03d79",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "3150056a4d67af3fe2634204ed430812cce0c50b360df3b5daab86e3b19a3cbd",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "32.1300",
+            "id": 32,
+            "label": "window-32",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "32.1200",
+            "id": 32,
+            "label": "初始-32",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 32
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 31,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "2e1de87ccf51109f472167a73aba7bfda624a59166329f2304e372b3fa94df20",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "5bb1c2535249dcc660c8359c0c668fdea135ba4b7666b16cbf20c8441c0a1a4d",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "33.1300",
+            "id": 33,
+            "label": "window-33",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "33.1200",
+            "id": 33,
+            "label": "初始-33",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 33
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 32,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "cb773ba4756f3771846b642217251fb194b41539351d058651ad53f3e8e9a33a",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "7248763682532b9f06fdbfe9730795f8a36b33ca94aeeadc45547aefa33e1bd8",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "34.1300",
+            "id": 34,
+            "label": "window-34",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "34.1200",
+            "id": 34,
+            "label": "初始-34",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 34
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 33,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "8f233a3d814a93987b7f14b6aa48b1edb4ec7a0ab9695e824258a170d281b491",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "d2f054bdba43181ab88360341003a4b56759556d809bc28735ad812f06e5ee76",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "35.1300",
+            "id": 35,
+            "label": "window-35",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "35.1200",
+            "id": 35,
+            "label": "初始-35",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 35
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 34,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "9fc3ff9446c2243ba0736a3a61e05107887e247012f8e1b55544cee8aee34a79",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "a06669e5a0b11970ffeb8520c5f1459982daa65ef9fbbe29b1c1c7afa5169bff",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "36.1300",
+            "id": 36,
+            "label": "window-36",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "36.1200",
+            "id": 36,
+            "label": "初始-36",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 36
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 35,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "f6dc4493db187a35563dbbe135517a1a61e98c6a4cc3e527e51334c2908861de",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "a3a21d4e1faa755b6e850fdcbbfdf935ea35db372d7469ed904a37ab68364089",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "37.1300",
+            "id": 37,
+            "label": "window-37",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "37.1200",
+            "id": 37,
+            "label": "初始-37",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 37
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 36,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "7deec2f8041ab950324aac7840aa0889a46abccee695505c5a146fe564c66d48",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "e8b6717076917483f874c7b967d033f022da66a6bcf631d7a1ccedbe6493eb5f",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "38.1300",
+            "id": 38,
+            "label": "window-38",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "38.1200",
+            "id": 38,
+            "label": "初始-38",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 38
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 37,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "6eddbcf0eb5f54ea83ad910a0d85964c3ac7a96eb6fec2eea0e5315704335ba5",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "d8d1e514f02c3648d2d5dae5f75fc0e02c058ac4cb3c4f274a790cde0aac4691",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "39.1300",
+            "id": 39,
+            "label": "window-39",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "39.1200",
+            "id": 39,
+            "label": "初始-39",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 39
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 38,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "d31a7fa15328634aef7529a45f1135e058c627ccbd3fcd6db462d6eb80236d38",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "62f1874d72714874fbd00ccd4591e1e1f1dfb4277f1281c435746a49c5c165cd",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "40.1300",
+            "id": 40,
+            "label": "window-40",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "40.1200",
+            "id": 40,
+            "label": "初始-40",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 40
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 39,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "e0815de545405d6d541923c016279d6c8a19a89d981edf4d2b951cba59bff323",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "2c00b512fbba560331aee75941bb56cd26f8c36fd7a6773880a4d5ee9be0d801",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "41.1300",
+            "id": 41,
+            "label": "window-41",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "41.1200",
+            "id": 41,
+            "label": "初始-41",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 41
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 40,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "ecaa296c7cdbd8ea6f31ab3722b431be27104b9307b39e78acdfa0de42f80516",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "b922b16b34925fe4d13de3ec5ee8cdad43d993d7ac777c42917305f0317841b4",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "42.1300",
+            "id": 42,
+            "label": "window-42",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "42.1200",
+            "id": 42,
+            "label": "初始-42",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 42
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 41,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "46139b6ca94b5a1bd2d24daac9454f44891958552dd08192ecdc9819c9963960",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "350239c0534eea2a20561d4833bbd20f17fdc96aecc99ae9e8f16eda61885134",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "43.1300",
+            "id": 43,
+            "label": "window-43",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "43.1200",
+            "id": 43,
+            "label": "初始-43",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 43
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 42,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "4dc6176aefd44917ded88c6bcdee02d6db94c49599610f15ef2d40eadba74b32",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "309fea277b9240793cd474330fa83a18b4cb8f1d64a86471c19074a6f93efcc5",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "44.1300",
+            "id": 44,
+            "label": "window-44",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "44.1200",
+            "id": 44,
+            "label": "初始-44",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 44
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 43,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "5154d52f97c235630bc471c0b0841e7791a4c9e8c087a716aa22b272731bc1f6",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "5ea3110f1c4b847bb15f6d8ee75d6222c5fa32bf92b1098d7474c2f7a2c0163b",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "45.1300",
+            "id": 45,
+            "label": "window-45",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "45.1200",
+            "id": 45,
+            "label": "初始-45",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 45
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 44,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "63b0c77e5077403a7ffec2093a3f5b9fc6cf656c6d0c465aee8b9a88d615bd4b",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "4ad4fe3dfa1db058f3636b88c90bc7c19f72074e26d599431468eba94a58612f",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "46.1300",
+            "id": 46,
+            "label": "window-46",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "46.1200",
+            "id": 46,
+            "label": "初始-46",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 46
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 45,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "a675ddce0c1f5e0839b5e91ee9ec7bb119add5d9e695bdfd28fd11eef29ebe80",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "123fe2daa48d8874eca398bc8e35596050b6f1c577b4a3790479c85cc268dfa2",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "47.1300",
+            "id": 47,
+            "label": "window-47",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "47.1200",
+            "id": 47,
+            "label": "初始-47",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 47
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 46,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "412b4fc535073d0bc32707b282b9c3f8d787e0b0724bd5540d6e685fc4a809a9",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "9bcef8e90a8993e03a8132d0533596ade55b4f1c30beaeff0e1fe90597324c32",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "48.1300",
+            "id": 48,
+            "label": "window-48",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "48.1200",
+            "id": 48,
+            "label": "初始-48",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 48
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 47,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "c5348200c45abb792c04c0e917604e69777c7e93533993c925f169534dff2dc5",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "64cf582b4bea9884c19254f9179614492caa47a028d071863c2107f6c19af04e",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "49.1300",
+            "id": 49,
+            "label": "window-49",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "49.1200",
+            "id": 49,
+            "label": "初始-49",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 49
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 48,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "5f1b79c6136aaad2bac5ccaac9237223b731178c1a1d1b248e23b7a8bc07c05a",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "dfe4f4c15f32e61d7f0447fa5567f2bbf317f8f13a4075a89c1e9fe6c7875d86",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "50.1300",
+            "id": 50,
+            "label": "window-50",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "50.1200",
+            "id": 50,
+            "label": "初始-50",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 50
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 49,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "d73d619271c146fdb80139f0c47fd59b5cb9f64cc75d93d32eb0b664ea81ef9b",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "cd6318b36f6b61761ec76c1bdbd8fc315060afa1e2a0499c0c5ed6b95dd960e3",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "51.1300",
+            "id": 51,
+            "label": "window-51",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "51.1200",
+            "id": 51,
+            "label": "初始-51",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 51
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 50,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "48ebb01107030a590f7354d96d0d58bf8cdef69823797c1b943ce09d589347e2",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "2ce5076f250b00b67cd880084c9ee6b2fa34c60a1d8bb90a9fb438ffe12549c0",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "52.1300",
+            "id": 52,
+            "label": "window-52",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "52.1200",
+            "id": 52,
+            "label": "初始-52",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 52
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 51,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "6965763c7f80c50296fb07fe136be0ea3e99b79484197a6f8b6bf65f2d5f68f5",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "7befe5700770fe3c969f76d5c34d82a54adc7efa98d51e9bb132d714ec40a2ff",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "53.1300",
+            "id": 53,
+            "label": "window-53",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "53.1200",
+            "id": 53,
+            "label": "初始-53",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 53
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 52,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "16047002352462b7f07db691b4b1b243c1f87ae7c1a7d5177b128fe310ee0619",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "1a1b3f9dbc9d9c2ed12b0ff1f545b2117bc60ade80ebba6c79b482026df20aab",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "54.1300",
+            "id": 54,
+            "label": "window-54",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "54.1200",
+            "id": 54,
+            "label": "初始-54",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 54
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 53,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "90c82c8afab1c95c79158c425756187b0c8233dbcd404fbd2ee06861314c041c",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "67fbf3c4a71cbbaaebe0f6e70ae73313c8a2dd06d7b859a6164f8b04bcf0ab6a",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "55.1300",
+            "id": 55,
+            "label": "window-55",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "55.1200",
+            "id": 55,
+            "label": "初始-55",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 55
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 54,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "25469ba2b82c5dcf710cc4de49fa27f47cb4eda35ea8cad30f7f06021bb00c9b",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "00806996d0c611aa5b5e926c4e652f080cc4a8bb1807e1d0a18311c95d43296a",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "56.1300",
+            "id": 56,
+            "label": "window-56",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "56.1200",
+            "id": 56,
+            "label": "初始-56",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 56
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 55,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "68daea5ae543ff03dc0ff070f4065cc0a63439df86f3f8dbc214b1cb0d43a542",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "f3acc365774fd18c3b11927f741541412a673ddc65e4535fbd39c52f81b288de",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "57.1300",
+            "id": 57,
+            "label": "window-57",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "57.1200",
+            "id": 57,
+            "label": "初始-57",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 57
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 56,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "66b46ee33dc8de0d703c3d2ecdfb08e2331cd1fdd5b833aa127e0d67b1c9fec6",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "32e3d9052ec9bebd5b13249909da6112de7d12bcb2b8e218cc1f4d8d6d0e2caf",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "58.1300",
+            "id": 58,
+            "label": "window-58",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "58.1200",
+            "id": 58,
+            "label": "初始-58",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 58
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 57,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "700053066ee17ccd82fe55ac9451f9f874569eeb8e51a159d54dfb146703aa77",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "954d2326e9f93a85d48c637eeca3d10e50719eec9b0672a43c2122582cfb00a5",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "59.1300",
+            "id": 59,
+            "label": "window-59",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "59.1200",
+            "id": 59,
+            "label": "初始-59",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 59
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 58,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "18e2530acbe40b95da08dc832e2837dd74a1cc20080fb41dce9e1b857cc84000",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "8258fd9375b092eef5848400f7e8586523ac47d6ec0e577b42ef692556d750ca",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "60.1300",
+            "id": 60,
+            "label": "window-60",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "60.1200",
+            "id": 60,
+            "label": "初始-60",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 60
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 59,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "2017abc24a17e52840924f4dbd1837f3754a229ad5a980d9173ddbef17aed5a7",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "5725d822f0a6fe15ee44af66a6658310aa9a1f1c07beb421b007074e86e61301",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "61.1300",
+            "id": 61,
+            "label": "window-61",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "61.1200",
+            "id": 61,
+            "label": "初始-61",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 61
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 60,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "c4f8fd9a6b3bcbf9c0eb73092eace9f9a253429a459ad4bcf9ecc3d5e9a824ba",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "53c738ffeccb53a04e4f2d904576d504d2383ae0d7ed49f2225912df5df52a8a",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "62.1300",
+            "id": 62,
+            "label": "window-62",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "62.1200",
+            "id": 62,
+            "label": "初始-62",
+            "note": null,
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 62
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 61,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "52636d30371092dc8dbe01bd0e7595d4708a8ac3b5d7d2a729088cdd6020f394",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "d00a9aab61b338ffa1497c16f29f41da4b7dacc9eb407fb099a64f4a35c3bbdf",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "63.1300",
+            "id": 63,
+            "label": "window-63",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "63.1200",
+            "id": 63,
+            "label": "初始-63",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 63
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 62,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "8e7090879b37315eb8eb76ceabea6beb5f504d1c36bc0e330432d2810b4c7b7a",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "b8ca2727b1821d37a1d0d80bb71e5a295c20cbdeda965e5d6e4bcf1c32b26885",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "64.1300",
+            "id": 64,
+            "label": "window-64",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "64.1200",
+            "id": 64,
+            "label": "trusted-streaming-baseline",
+            "note": "v2-baseline",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 64
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1143757,
+            "row": 63,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "808a81c88a856132e31e9afcd820045d9c7dd2a933c4c88a467bcd72ab6ff3bf",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "0759e547bd0d769808e51f8498655f1677d3950ed52c82e2db9b1fef7d175de2",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "1.1300",
+            "id": 1,
+            "label": "repeat-a",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "1.1300",
+            "id": 1,
+            "label": "window-1",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "key": {
+            "id": 1
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1150083,
+            "row": 0,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "2f02d4a5a5eba6d7cf8aee2de19eda9469554877f44d5d541960972bb5196bba",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "541c99e20bacb2f84f3a0c432bbd00a90df4ee3eebbf5c20f13d1b942a67b169",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "1.1300",
+            "id": 1,
+            "label": "repeat-b",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "1.1300",
+            "id": 1,
+            "label": "repeat-a",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "key": {
+            "id": 1
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1150327,
+            "row": 0,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "70121b60f27f2c83c3e241e96fd9528624f194d1b98b8dc1c66798a4cd161154",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "4ef653c9d79f7ad233de7b29703f728878acdfd7e1f5fbdc0a66847ea2635161",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "1.1300",
+            "id": 1,
+            "label": "repeat-a",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "1.1300",
+            "id": 1,
+            "label": "repeat-b",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "key": {
+            "id": 1
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1150571,
+            "row": 0,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "18c757ec7369cecec800923d0fbd628eeb546a0399546c93c7884bef7ec0d7af",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "b7e8d12db8376b4f8565ef13b20ecbb89b637edb2b79e196534d6acff322e454",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "1.1300",
+            "id": 1,
+            "label": "repeat-b",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "1.1300",
+            "id": 1,
+            "label": "repeat-a",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "key": {
+            "id": 1
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1150815,
+            "row": 0,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "617dbfd98a47dc7d7d165111e6e21acb50cb40b294488e6b5b16c74ba484c04c",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "eec945de1af77bd075144723384c29b952c5baecfc1ee046442449b2ecde23fa",
+      "members": [{
+        "envelope": {
+          "after": null,
+          "before": {
+            "amount": "50.1300",
+            "id": 50,
+            "label": "window-50",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "key": {
+            "id": 50
+          },
+          "op": "d",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1151059,
+            "row": 0,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "8f54c07761b748e0b6af105ad2467d708c6201dfc64121955b99f409fbe5eccb",
+        "role": "pk.d"
+      }, {
+        "envelope": {
+          "after": {
+            "amount": "50.1300",
+            "id": 150,
+            "label": "window-50",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": null,
+          "key": {
+            "id": 150
+          },
+          "op": "c",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094354770,
+            "file": "binlog.000001",
+            "position": 1151059,
+            "row": 0,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "f635792accb370149514c7ccfb276e1a87b4528a6a5c4eed9554ff4436253707",
+        "role": "pk.c"
+      }],
+      "version": 1
+    }, {
+      "groupId": "a7ddb28a0bc12d3f577441eb379843b20827734b68b6ec011ee05d4ea9e7b26c",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "-123.4500",
+            "id": 1,
+            "label": "after-cut",
+            "note": "",
+            "revision": 2,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "1.1300",
+            "id": 1,
+            "label": "repeat-b",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "key": {
+            "id": 1
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094407830,
+            "file": "binlog.000001",
+            "position": 1155729,
+            "row": 0,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "1d31e8808e8950b1916891537a251eadfa7439a9aa166a5245368aea70b101c2",
+        "role": "single.u"
+      }],
+      "version": 1
+    }, {
+      "groupId": "66df586b6845d58a1a57a4dbefe0ed1309ab6d12fc319f1fb34f12263743df92",
+      "members": [{
+        "envelope": {
+          "after": null,
+          "before": {
+            "amount": "64.1300",
+            "id": 64,
+            "label": "window-64",
+            "note": null,
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "key": {
+            "id": 64
+          },
+          "op": "d",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094407830,
+            "file": "binlog.000001",
+            "position": 1155963,
+            "row": 0,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "b653f9c23804194e4279c0afd314bc2d1171ce18ca7b256364a7d2bef9c5167a",
+        "role": "single.d"
+      }],
+      "version": 1
+    }, {
+      "groupId": "3f2a193e18d03fa2e6b21ab9b3926be2a6f9b55d471135ef6e4f3a7c06753086",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "99999999999999.9999",
+            "id": 65,
+            "label": "新增🙂",
+            "note": null,
+            "revision": 2,
+            "updated_at": "2026-10-18T23:59:59.999999"
+          },
+          "before": null,
+          "key": {
+            "id": 65
+          },
+          "op": "c",
+          "source": {
+            "connectorId": "groups_bc767c24cfe9",
+            "database": "pekko_test_cdc_window_bc767c24cfe9",
+            "eventTimestampMillis": 1795094407830,
+            "file": "binlog.000001",
+            "position": 1156141,
+            "row": 0,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "14dca8dc15b7c7b73afdc5f7d7e879ccaf58bac3e0583ffdf7202ace5ff495b4",
+        "role": "single.c"
+      }],
+      "version": 1
+    }],
+    "sequence": 2
+  },
+  "originalPid": 72461,
+  "recoveredPid": 72498
+}

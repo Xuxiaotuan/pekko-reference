@@ -1,0 +1,225 @@
+{
+  "sourceCommit": "472e809a2393769d468d1e385bf1373a1f453ec3",
+  "runtime": {
+    "sourcePort": 14365,
+    "stateJournalSinkPort": 14366,
+    "mysql": "9.5.0",
+    "debezium": "3.6.1.Final",
+    "pekko": "1.1.3",
+    "jdk": "17.0.14"
+  },
+  "executedAt": "2026-11-19",
+  "commands": [
+    "sbt 'project pekko-server' 'set Test / testOptions := Seq()' 'testOnly cn.xuyinyin.magic.workflow.integration.RealMySQLCdcRecoveryWindowsSpec'",
+    "sbt 'project pekko-server' 'set Test / testOptions := Seq()' 'testOnly cn.xuyinyin.magic.workflow.integration.RealMySQLCdcAutomaticRecoverySpec'"
+  ],
+  "recoveryWindows": {
+    "N0": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/N0"
+    },
+    "J1": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/J1"
+    },
+    "J2": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/J2"
+    },
+    "C1": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/C1"
+    },
+    "C0": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/C0"
+    },
+    "K1": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/K1"
+    },
+    "K2": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/K2"
+    }
+  },
+  "automaticRecovery": {
+    "AUTO-A": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/AUTO-A",
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64
+    },
+    "AUTO-B": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/AUTO-B",
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64
+    },
+    "LATE_COMMIT": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/LATE_COMMIT",
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64
+    },
+    "LATE_ROLLBACK": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/LATE_ROLLBACK",
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64
+    },
+    "AUTO-D": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/AUTO-D",
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64
+    },
+    "AUTO-E": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/AUTO-E",
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64
+    },
+    "AUTO-F": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/AUTO-F",
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64
+    },
+    "R1": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/R1",
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64
+    },
+    "R2": {
+      "result": "PASS",
+      "fullFieldConvergence": true,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/R2",
+      "comparisonEqual": true,
+      "sourceCount": 64,
+      "targetCount": 64
+    },
+    "R3": {
+      "result": "SAFE_BLOCK",
+      "fullFieldConvergence": false,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/R3",
+      "comparisonEqual": false,
+      "sourceCount": 64,
+      "targetCount": 64,
+      "blockedStatus": "recovery_blocked"
+    },
+    "R5": {
+      "result": "SAFE_BLOCK",
+      "fullFieldConvergence": false,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/R5",
+      "comparisonEqual": false,
+      "sourceCount": 64,
+      "targetCount": 64,
+      "blockedStatus": "recovery_blocked"
+    },
+    "R6": {
+      "result": "SAFE_BLOCK",
+      "fullFieldConvergence": false,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/R6",
+      "comparisonEqual": false,
+      "sourceCount": 64,
+      "targetCount": 64,
+      "blockedStatus": "recovery_blocked"
+    },
+    "R7-PK": {
+      "result": "SAFE_BLOCK",
+      "fullFieldConvergence": false,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/R7-PK",
+      "comparisonEqual": false,
+      "sourceCount": 64,
+      "targetCount": 64,
+      "blockedStatus": "recovery_blocked"
+    },
+    "R7-D": {
+      "result": "SAFE_BLOCK",
+      "fullFieldConvergence": false,
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/R7-D",
+      "comparisonEqual": false,
+      "sourceCount": 64,
+      "targetCount": 64,
+      "blockedStatus": "recovery_blocked"
+    }
+  },
+  "probeFailures": {
+    "R4-initial": {
+      "error": "java.lang.AssertionError: missing child event Set(J_REPLY_HELD); see /Users/xujiawei/magic/scala-workbench/pekko-reference/target/cdc-automatic-recovery/R4-5a9bfb4c9a2d/original.log",
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/R4-initial",
+      "rawLogPath": "target/cdc-automatic-recovery/R4-5a9bfb4c9a2d/original.log"
+    },
+    "R4-rerun": {
+      "error": "java.lang.AssertionError: missing child event Set(J_REPLY_HELD); see /Users/xujiawei/magic/scala-workbench/pekko-reference/target/cdc-automatic-recovery/R4-b715048a3c78/original.log",
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/R4-rerun",
+      "rawLogPath": "target/cdc-automatic-recovery/R4-b715048a3c78/original.log"
+    },
+    "REJECT-J-initial": {
+      "error": "java.lang.AssertionError: missing child event Set(J_REJECTION_READY); see /Users/xujiawei/magic/scala-workbench/pekko-reference/target/cdc-automatic-recovery/REJECT-J-97edb132e464/original.log",
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/REJECT-J-initial",
+      "rawLogPath": "target/cdc-automatic-recovery/REJECT-J-97edb132e464/original.log"
+    },
+    "REJECT-J-rerun": {
+      "error": "java.lang.AssertionError: missing child event Set(J_REJECTION_READY); see /Users/xujiawei/magic/scala-workbench/pekko-reference/target/cdc-automatic-recovery/REJECT-J-0c314cfddc11/original.log",
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/REJECT-J-rerun",
+      "rawLogPath": "target/cdc-automatic-recovery/REJECT-J-0c314cfddc11/original.log"
+    },
+    "REJECT-J-RETRY-initial": {
+      "error": "java.lang.AssertionError: missing child event Set(J_REJECTION_READY); see /Users/xujiawei/magic/scala-workbench/pekko-reference/target/cdc-automatic-recovery/REJECT-J-RETRY-30784987ed71/original.log",
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/REJECT-J-RETRY-initial",
+      "rawLogPath": "target/cdc-automatic-recovery/REJECT-J-RETRY-30784987ed71/original.log"
+    },
+    "REJECT-J-RETRY-rerun": {
+      "error": "java.lang.AssertionError: missing child event Set(J_REJECTION_READY); see /Users/xujiawei/magic/scala-workbench/pekko-reference/target/cdc-automatic-recovery/REJECT-J-RETRY-78f2f620f670/original.log",
+      "evidencePath": "docs/experiments/2026-11-19-checkpoint-recovery/artifacts/REJECT-J-RETRY-rerun",
+      "rawLogPath": "target/cdc-automatic-recovery/REJECT-J-RETRY-78f2f620f670/original.log"
+    }
+  }
+}

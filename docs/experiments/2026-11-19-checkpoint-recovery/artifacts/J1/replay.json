@@ -1,0 +1,97 @@
+{
+  "checkpointAtCut": {
+    "batchId": "f14352493f4715a3f6a88ce239af18ec32dea3c21ffff620063a5758cb87c119",
+    "cursor": {
+      "offset": {
+        "event": 2,
+        "file": "binlog.000001",
+        "gtids": "02804ffc-c4c2-4e27-a700-459acf16eda1:1-316",
+        "pos": 520726,
+        "row": 16,
+        "server_id": 14365,
+        "ts_sec": 1795094343
+      },
+      "version": 1
+    },
+    "sequence": 1,
+    "sourceRows": 16,
+    "targetRows": 16
+  },
+  "checkpointBefore": {
+    "batchId": "70166a0aa1b0172fc20d0d851fafbecdea4fefa310dc2d2c2ab750d85138a7a9",
+    "cursor": {
+      "offset": {
+        "event": 2,
+        "file": "binlog.000001",
+        "gtids": "02804ffc-c4c2-4e27-a700-459acf16eda1:1-312",
+        "pos": 514839,
+        "row": 1,
+        "server_id": 14365,
+        "ts_sec": 1795094342
+      },
+      "version": 1
+    },
+    "sequence": 0,
+    "sourceRows": 1,
+    "targetRows": 1
+  },
+  "firstReplayBatch": {
+    "batchId": "0b80c428d10524bc852f69a5173d254042c350c130659acc78f2fcd6846122fd",
+    "cursor": {
+      "offset": {
+        "event": 2,
+        "file": "binlog.000001",
+        "gtids": "02804ffc-c4c2-4e27-a700-459acf16eda1:1-316",
+        "pos": 520726,
+        "row": 1,
+        "server_id": 14365,
+        "ts_sec": 1795094343
+      },
+      "version": 1
+    },
+    "rows": [{
+      "groupId": "f26617e9549f750929975c998bd443501b53fab39d3a6d75af8b7c2e090eacb7",
+      "members": [{
+        "envelope": {
+          "after": {
+            "amount": "1.1300",
+            "id": 1,
+            "label": "window-1",
+            "note": "窗口-🙂",
+            "revision": 1,
+            "updated_at": "2026-10-19T12:34:56.123456"
+          },
+          "before": {
+            "amount": "1.1200",
+            "id": 1,
+            "label": "初始-1",
+            "note": "  中文🙂  ",
+            "revision": 0,
+            "updated_at": "2026-10-18T01:02:03.654321"
+          },
+          "key": {
+            "id": 1
+          },
+          "op": "u",
+          "source": {
+            "connectorId": "groups_baf510dd7fc6",
+            "database": "pekko_test_cdc_window_baf510dd7fc6",
+            "eventTimestampMillis": 1795094343868,
+            "file": "binlog.000001",
+            "position": 520950,
+            "row": 0,
+            "snapshot": false,
+            "table": "source_rows"
+          },
+          "version": 1
+        },
+        "eventId": "44e5170c8335ba3038b47cbab54a6f16303030ff62083f3a4d291f0569f4a52a",
+        "role": "single.u"
+      }],
+      "version": 1
+    }],
+    "sequence": 2
+  },
+  "originalPid": 72448,
+  "recoveredPid": 72453
+}

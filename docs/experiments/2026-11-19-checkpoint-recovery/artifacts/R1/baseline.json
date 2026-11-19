@@ -1,0 +1,1532 @@
+{
+  "D": [{
+    "offset_key": "[\"auto_58d1af6ad274\",{\"server\":\"auto_58d1af6ad274\"}]",
+    "offset_val": "{\"ts_sec\":1795094608,\"file\":\"binlog.000001\",\"pos\":10073155,\"gtids\":\"02804ffc-c4c2-4e27-a700-459acf16eda1:1-5960\",\"row\":1,\"server_id\":14365,\"event\":2}"
+  }],
+  "J": {
+    "actorCheckpoints": [{
+      "batchId": "ce12e45a8d7def8791adf498d7c7e4a40feec5f111383958228eb87a34f4fd50",
+      "cursor": {
+        "offset": {
+          "event": 2,
+          "file": "binlog.000001",
+          "gtids": "02804ffc-c4c2-4e27-a700-459acf16eda1:1-5960",
+          "pos": 10073155,
+          "row": 1,
+          "server_id": 14365,
+          "ts_sec": 1795094608
+        },
+        "version": 1
+      },
+      "sequence": 0,
+      "sourceRows": 1,
+      "targetRows": 1
+    }],
+    "at": "2026-11-19T13:23:30.284614Z",
+    "boundary": {
+      "partitionId": "mysql-cdc:auto_58d1af6ad274",
+      "sourceNodeId": "source-1",
+      "upperBound": "{\"columns\":[{\"jdbcType\":-5,\"name\":\"id\",\"typeName\":\"BIGINT\"},{\"jdbcType\":12,\"name\":\"label\",\"typeName\":\"VARCHAR\"},{\"jdbcType\":3,\"name\":\"amount\",\"typeName\":\"DECIMAL\"},{\"jdbcType\":12,\"name\":\"note\",\"typeName\":\"VARCHAR\"},{\"jdbcType\":93,\"name\":\"updated_at\",\"typeName\":\"DATETIME\"},{\"jdbcType\":4,\"name\":\"revision\",\"typeName\":\"INT\"}],\"connectorId\":\"auto_58d1af6ad274\",\"database\":\"pekko_test_cdc_window_58d1af6ad274\",\"groupProtocol\":{\"generation\":\"initialized-v1\",\"replicationId\":\"auto_58d1af6ad274\",\"sourceLineage\":\"02804ffc-c4c2-4e27-a700-459acf16eda1\",\"version\":1},\"primaryKey\":\"id\",\"schemaFingerprint\":\"13ce4dad881a3a9235b9e42df7277e75766144f3053677249d282ef0eaf05cfb\",\"table\":\"source_rows\",\"version\":2}"
+    },
+    "executionId": "9dab6656-a80a-40dd-900d-41d077f8f372",
+    "journal": [{
+      "checkpoint": null,
+      "eventPayloadBase64": "v2x3b3JrZmxvd0pzb255BJh7ImF1dGhvciI6InRlc3QiLCJkZXNjcmlwdGlvbiI6Imlzb2xhdGVkIHJlcHJvZHVjdGlvbiIsImVkZ2VzIjpbeyJhbmltYXRlZCI6ZmFsc2UsImlkIjoic291cmNlLXRvLXNpbmsiLCJzb3VyY2UiOiJzb3VyY2UtMSIsInNvdXJjZUhhbmRsZSI6Im91dCIsInRhcmdldCI6InNpbmstMSIsInRhcmdldEhhbmRsZSI6ImluIn1dLCJpZCI6IndvcmtmbG93LWF1dG9fNThkMWFmNmFkMjc0LWdyb3VwcyIsIm1ldGFkYXRhIjp7ImNyZWF0ZWRBdCI6InRlc3QiLCJ1cGRhdGVkQXQiOiJ0ZXN0In0sIm5hbWUiOiJDREMgam91cm5hbCBmYXVsdCB3aW5kb3ciLCJub2RlcyI6W3siY29uZmlnIjp7ImNvbm5lY3RvcklkIjoiYXV0b181OGQxYWY2YWQyNzQiLCJkYXRhYmFzZSI6InBla2tvX3Rlc3RfY2RjX3dpbmRvd181OGQxYWY2YWQyNzQiLCJncm91cFByb3RvY29sIjp7ImdlbmVyYXRpb24iOiJpbml0aWFsaXplZC12MSIsImluaXRpYWxpemVkVGFyZ2V0Ijp0cnVlLCJyZXBsaWNhdGlvbklkIjoiYXV0b181OGQxYWY2YWQyNzQiLCJzb3VyY2VMaW5lYWdlIjoiMDI4MDRmZmMtYzRjMi00ZTI3LWE3MDAtNDU5YWNmMTZlZGExIn0sImhvc3QiOiIxMjcuMC4wLjEiLCJtYXhCYXRjaFNpemUiOjEyOCwicGFzc3dvcmRFbnYiOiJDRENfV0lORE9XX01ZU1FMX1BBU1NXT1JEIiwicG9sbEludGVydmFsTWlsbGlzIjoxMDAwLCJwb3J0IjoxNDM2NSwic2VydmVySWQiOjc0MTgxOSwidGFibGUiOiJzb3VyY2Vfcm93cyIsInVzZXJuYW1lIjoiY2RjX2xhYiJ9LCJpZCI6InNvdXJjZS0xIiwibGFiZWwiOiJyZWFsIHNvdXJjZSIsIm5vZGVUeXBlIjoibXlzcWwuY2RjIiwicG9zaXRpb24iOnsieCI6MC4wLCJ5IjowLjB9LCJ0eXBlIjoic291cmNlIn0seyJjb25maWciOnsiZGF0YWJhc2UiOiJwZWtrb190ZXN0X2NkY193aW5kb3dfNThkMWFmNmFkMjc0IiwiaG9zdCI6IjEyNy4wLjAuMSIsInBhc3N3b3JkRW52IjoiQ0RDX1dJTkRPV19NWVNRTF9QQVNTV09SRCIsInBvcnQiOjE0MzY1LCJ0YWJsZSI6InRhcmdldF9yb3dzIiwidXNlcm5hbWUiOiJjZGNfbGFiIn0sImlkIjoic2luay0xIiwibGFiZWwiOiJyZWFsIHRhcmdldCIsIm5vZGVUeXBlIjoibXlzcWwuY2RjLmFwcGx5IiwicG9zaXRpb24iOnsieCI6MS4wLCJ5IjowLjB9LCJ0eXBlIjoic2luayJ9XSwidGFncyI6W10sInZlcnNpb24iOiIxIn1ocmV2aXNpb24BaXRpbWVzdGFtcBsAAAGh8/n6//8=",
+      "eventSerializerId": 33,
+      "eventSerializerManifest": "cn.xuyinyin.magic.cdc.compat.WorkflowEvents$WorkflowDefined",
+      "eventType": "WorkflowDefined",
+      "journalSequence": 1,
+      "recovery": null,
+      "writer": "a88592cb-1014-4005-8cf4-b556330b2fd0"
+    }, {
+      "checkpoint": null,
+      "eventPayloadBase64": "v2tleGVjdXRpb25JZHgkOWRhYjY2NTYtYTgwYS00MGRkLTkwMGQtNDFkMDc3ZjhmMzcyZ3RyaWdnZXK/ZGtpbmRmbWFudWFsaXJlcXVlc3RJZGdpbml0aWFsanNjaGVkdWxlSWT2a3NjaGVkdWxlZEF0IGl0cmlnZ2VySWT2/3B3b3JrZmxvd1JldmlzaW9uAWl0aW1lc3RhbXAbAAABofP5+zT/",
+      "eventSerializerId": 33,
+      "eventSerializerManifest": "cn.xuyinyin.magic.cdc.compat.WorkflowEvents$ResumableExecutionStarted",
+      "eventType": "ResumableExecutionStarted",
+      "journalSequence": 2,
+      "recovery": null,
+      "writer": "a88592cb-1014-4005-8cf4-b556330b2fd0"
+    }, {
+      "checkpoint": null,
+      "eventPayloadBase64": "v2tleGVjdXRpb25JZHgkOWRhYjY2NTYtYTgwYS00MGRkLTkwMGQtNDFkMDc3ZjhmMzcyaGJvdW5kYXJ5v2xzb3VyY2VOb2RlSWRoc291cmNlLTFrcGFydGl0aW9uSWR4G215c3FsLWNkYzphdXRvXzU4ZDFhZjZhZDI3NGp1cHBlckJvdW5keQK4eyJjb2x1bW5zIjpbeyJqZGJjVHlwZSI6LTUsIm5hbWUiOiJpZCIsInR5cGVOYW1lIjoiQklHSU5UIn0seyJqZGJjVHlwZSI6MTIsIm5hbWUiOiJsYWJlbCIsInR5cGVOYW1lIjoiVkFSQ0hBUiJ9LHsiamRiY1R5cGUiOjMsIm5hbWUiOiJhbW91bnQiLCJ0eXBlTmFtZSI6IkRFQ0lNQUwifSx7ImpkYmNUeXBlIjoxMiwibmFtZSI6Im5vdGUiLCJ0eXBlTmFtZSI6IlZBUkNIQVIifSx7ImpkYmNUeXBlIjo5MywibmFtZSI6InVwZGF0ZWRfYXQiLCJ0eXBlTmFtZSI6IkRBVEVUSU1FIn0seyJqZGJjVHlwZSI6NCwibmFtZSI6InJldmlzaW9uIiwidHlwZU5hbWUiOiJJTlQifV0sImNvbm5lY3RvcklkIjoiYXV0b181OGQxYWY2YWQyNzQiLCJkYXRhYmFzZSI6InBla2tvX3Rlc3RfY2RjX3dpbmRvd181OGQxYWY2YWQyNzQiLCJncm91cFByb3RvY29sIjp7ImdlbmVyYXRpb24iOiJpbml0aWFsaXplZC12MSIsInJlcGxpY2F0aW9uSWQiOiJhdXRvXzU4ZDFhZjZhZDI3NCIsInNvdXJjZUxpbmVhZ2UiOiIwMjgwNGZmYy1jNGMyLTRlMjctYTcwMC00NTlhY2YxNmVkYTEiLCJ2ZXJzaW9uIjoxfSwicHJpbWFyeUtleSI6ImlkIiwic2NoZW1hRmluZ2VycHJpbnQiOiIxM2NlNGRhZDg4MWEzYTkyMzViOWU0MmRmNzI3N2U3NTc2NjE0NGYzMDUzNjc3MjQ5ZDI4MmVmMGVhZjA1Y2ZiIiwidGFibGUiOiJzb3VyY2Vfcm93cyIsInZlcnNpb24iOjJ9/2l0aW1lc3RhbXAbAAABofP5+3P/",
+      "eventSerializerId": 33,
+      "eventSerializerManifest": "cn.xuyinyin.magic.cdc.compat.WorkflowEvents$ExecutionSnapshotInitialized",
+      "eventType": "ExecutionSnapshotInitialized",
+      "journalSequence": 3,
+      "recovery": null,
+      "writer": "a88592cb-1014-4005-8cf4-b556330b2fd0"
+    }, {
+      "checkpoint": {
+        "batchId": "ce12e45a8d7def8791adf498d7c7e4a40feec5f111383958228eb87a34f4fd50",
+        "cursor": {
+          "offset": {
+            "event": 2,
+            "file": "binlog.000001",
+            "gtids": "02804ffc-c4c2-4e27-a700-459acf16eda1:1-5960",
+            "pos": 10073155,
+            "row": 1,
+            "server_id": 14365,
+            "ts_sec": 1795094608
+          },
+          "version": 1
+        },
+        "sequence": 0,
+        "sourceRows": 1,
+        "targetRows": 1
+      },
+      "eventPayloadBase64": "v2tleGVjdXRpb25JZHgkOWRhYjY2NTYtYTgwYS00MGRkLTkwMGQtNDFkMDc3ZjhmMzcyamNoZWNrcG9pbnS/bHNvdXJjZU5vZGVJZGhzb3VyY2UtMWtwYXJ0aXRpb25JZHgbbXlzcWwtY2RjOmF1dG9fNThkMWFmNmFkMjc0bWJhdGNoU2VxdWVuY2UAZ2JhdGNoSWR4QGNlMTJlNDVhOGQ3ZGVmODc5MWFkZjQ5OGQ3YzdlNGE0MGZlZWM1ZjExMTM4Mzk1ODIyOGViODdhMzRmNGZkNTBmY3Vyc29yv2RraW5kdm15c3FsLmJpbmxvZy5ncm91cHMudjFldmFsdWV4rHsib2Zmc2V0Ijp7ImV2ZW50IjoyLCJmaWxlIjoiYmlubG9nLjAwMDAwMSIsImd0aWRzIjoiMDI4MDRmZmMtYzRjMi00ZTI3LWE3MDAtNDU5YWNmMTZlZGExOjEtNTk2MCIsInBvcyI6MTAwNzMxNTUsInJvdyI6MSwic2VydmVyX2lkIjoxNDM2NSwidHNfc2VjIjoxNzk1MDk0NjA4fSwidmVyc2lvbiI6MX1qdXBwZXJCb3VuZHkCuHsiY29sdW1ucyI6W3siamRiY1R5cGUiOi01LCJuYW1lIjoiaWQiLCJ0eXBlTmFtZSI6IkJJR0lOVCJ9LHsiamRiY1R5cGUiOjEyLCJuYW1lIjoibGFiZWwiLCJ0eXBlTmFtZSI6IlZBUkNIQVIifSx7ImpkYmNUeXBlIjozLCJuYW1lIjoiYW1vdW50IiwidHlwZU5hbWUiOiJERUNJTUFMIn0seyJqZGJjVHlwZSI6MTIsIm5hbWUiOiJub3RlIiwidHlwZU5hbWUiOiJWQVJDSEFSIn0seyJqZGJjVHlwZSI6OTMsIm5hbWUiOiJ1cGRhdGVkX2F0IiwidHlwZU5hbWUiOiJEQVRFVElNRSJ9LHsiamRiY1R5cGUiOjQsIm5hbWUiOiJyZXZpc2lvbiIsInR5cGVOYW1lIjoiSU5UIn1dLCJjb25uZWN0b3JJZCI6ImF1dG9fNThkMWFmNmFkMjc0IiwiZGF0YWJhc2UiOiJwZWtrb190ZXN0X2NkY193aW5kb3dfNThkMWFmNmFkMjc0IiwiZ3JvdXBQcm90b2NvbCI6eyJnZW5lcmF0aW9uIjoiaW5pdGlhbGl6ZWQtdjEiLCJyZXBsaWNhdGlvbklkIjoiYXV0b181OGQxYWY2YWQyNzQiLCJzb3VyY2VMaW5lYWdlIjoiMDI4MDRmZmMtYzRjMi00ZTI3LWE3MDAtNDU5YWNmMTZlZGExIiwidmVyc2lvbiI6MX0sInByaW1hcnlLZXkiOiJpZCIsInNjaGVtYUZpbmdlcnByaW50IjoiMTNjZTRkYWQ4ODFhM2E5MjM1YjllNDJkZjcyNzdlNzU3NjYxNDRmMzA1MzY3NzI0OWQyODJlZjBlYWYwNWNmYiIsInRhYmxlIjoic291cmNlX3Jvd3MiLCJ2ZXJzaW9uIjoyff9xc291cmNlUm93c1NjYW5uZWQBcXRhcmdldFJvd3NXcml0dGVuAf9pdGltZXN0YW1wGwAAAaHz+gDi/w==",
+      "eventSerializerId": 33,
+      "eventSerializerManifest": "cn.xuyinyin.magic.cdc.compat.WorkflowEvents$ExecutionCheckpointAdvanced",
+      "eventType": "ExecutionCheckpointAdvanced",
+      "journalSequence": 4,
+      "recovery": null,
+      "writer": "a88592cb-1014-4005-8cf4-b556330b2fd0"
+    }],
+    "kind": "STATE",
+    "recovery": null,
+    "status": "running",
+    "workflowRevision": 1
+  },
+  "T": [{
+    "group_id": "a70bb8b396c6ecd1f8e9093b09517467a24ab10340481c0e284153864ca1e1b3",
+    "evidence": "{\"group\":{\"groupId\":\"a70bb8b396c6ecd1f8e9093b09517467a24ab10340481c0e284153864ca1e1b3\",\"members\":[{\"envelope\":{\"after\":{\"amount\":\"64.1200\",\"id\":64,\"label\":\"trusted-streaming-baseline\",\"note\":\"v2-baseline\",\"revision\":0,\"updated_at\":\"2026-10-18T01:02:03.654321\"},\"before\":{\"amount\":\"64.1200\",\"id\":64,\"label\":\"trusted-streaming-baseline\",\"note\":null,\"revision\":0,\"updated_at\":\"2026-10-18T01:02:03.654321\"},\"key\":{\"id\":64},\"op\":\"u\",\"source\":{\"connectorId\":\"auto_58d1af6ad274\",\"database\":\"pekko_test_cdc_window_58d1af6ad274\",\"eventTimestampMillis\":1795094608808,\"file\":\"binlog.000001\",\"position\":10073371,\"row\":0,\"snapshot\":false,\"table\":\"source_rows\"},\"version\":1},\"eventId\":\"a68b9a3ef0dab64048d63e9a8fff71e96eb4a8c4add4a814b3c017035b19b64b\",\"role\":\"single.u\"}],\"version\":1},\"identity\":{\"columns\":[{\"jdbcType\":-5,\"name\":\"id\",\"typeName\":\"BIGINT\"},{\"jdbcType\":12,\"name\":\"label\",\"typeName\":\"VARCHAR\"},{\"jdbcType\":3,\"name\":\"amount\",\"typeName\":\"DECIMAL\"},{\"jdbcType\":12,\"name\":\"note\",\"typeName\":\"VARCHAR\"},{\"jdbcType\":93,\"name\":\"updated_at\",\"typeName\":\"DATETIME\"},{\"jdbcType\":4,\"name\":\"revision\",\"typeName\":\"INT\"}],\"connectorId\":\"auto_58d1af6ad274\",\"database\":\"pekko_test_cdc_window_58d1af6ad274\",\"groupProtocol\":{\"generation\":\"initialized-v1\",\"replicationId\":\"auto_58d1af6ad274\",\"sourceLineage\":\"02804ffc-c4c2-4e27-a700-459acf16eda1\",\"version\":1},\"primaryKey\":\"id\",\"schemaFingerprint\":\"13ce4dad881a3a9235b9e42df7277e75766144f3053677249d282ef0eaf05cfb\",\"table\":\"source_rows\",\"version\":2},\"targetTable\":\"target_rows\"}",
+    "committed_at": "2026-11-19 13:23:30.138675"
+  }],
+  "audit": [{
+    "audit_id": "1",
+    "new_label": "初始-1",
+    "row_id": "1",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "2",
+    "new_label": "初始-2",
+    "row_id": "2",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "3",
+    "new_label": "初始-3",
+    "row_id": "3",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "4",
+    "new_label": "初始-4",
+    "row_id": "4",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "5",
+    "new_label": "初始-5",
+    "row_id": "5",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "6",
+    "new_label": "初始-6",
+    "row_id": "6",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "7",
+    "new_label": "初始-7",
+    "row_id": "7",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "8",
+    "new_label": "初始-8",
+    "row_id": "8",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "9",
+    "new_label": "初始-9",
+    "row_id": "9",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "10",
+    "new_label": "初始-10",
+    "row_id": "10",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "11",
+    "new_label": "初始-11",
+    "row_id": "11",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "12",
+    "new_label": "初始-12",
+    "row_id": "12",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "13",
+    "new_label": "初始-13",
+    "row_id": "13",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "14",
+    "new_label": "初始-14",
+    "row_id": "14",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "15",
+    "new_label": "初始-15",
+    "row_id": "15",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "16",
+    "new_label": "初始-16",
+    "row_id": "16",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "17",
+    "new_label": "初始-17",
+    "row_id": "17",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "18",
+    "new_label": "初始-18",
+    "row_id": "18",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "19",
+    "new_label": "初始-19",
+    "row_id": "19",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "20",
+    "new_label": "初始-20",
+    "row_id": "20",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "21",
+    "new_label": "初始-21",
+    "row_id": "21",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "22",
+    "new_label": "初始-22",
+    "row_id": "22",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "23",
+    "new_label": "初始-23",
+    "row_id": "23",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "24",
+    "new_label": "初始-24",
+    "row_id": "24",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "25",
+    "new_label": "初始-25",
+    "row_id": "25",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "26",
+    "new_label": "初始-26",
+    "row_id": "26",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "27",
+    "new_label": "初始-27",
+    "row_id": "27",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "28",
+    "new_label": "初始-28",
+    "row_id": "28",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "29",
+    "new_label": "初始-29",
+    "row_id": "29",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "30",
+    "new_label": "初始-30",
+    "row_id": "30",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "31",
+    "new_label": "初始-31",
+    "row_id": "31",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "32",
+    "new_label": "初始-32",
+    "row_id": "32",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "33",
+    "new_label": "初始-33",
+    "row_id": "33",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "34",
+    "new_label": "初始-34",
+    "row_id": "34",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "35",
+    "new_label": "初始-35",
+    "row_id": "35",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "36",
+    "new_label": "初始-36",
+    "row_id": "36",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "37",
+    "new_label": "初始-37",
+    "row_id": "37",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "38",
+    "new_label": "初始-38",
+    "row_id": "38",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "39",
+    "new_label": "初始-39",
+    "row_id": "39",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "40",
+    "new_label": "初始-40",
+    "row_id": "40",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "41",
+    "new_label": "初始-41",
+    "row_id": "41",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "42",
+    "new_label": "初始-42",
+    "row_id": "42",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "43",
+    "new_label": "初始-43",
+    "row_id": "43",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "44",
+    "new_label": "初始-44",
+    "row_id": "44",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "45",
+    "new_label": "初始-45",
+    "row_id": "45",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "46",
+    "new_label": "初始-46",
+    "row_id": "46",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "47",
+    "new_label": "初始-47",
+    "row_id": "47",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "48",
+    "new_label": "初始-48",
+    "row_id": "48",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "49",
+    "new_label": "初始-49",
+    "row_id": "49",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "50",
+    "new_label": "初始-50",
+    "row_id": "50",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "51",
+    "new_label": "初始-51",
+    "row_id": "51",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "52",
+    "new_label": "初始-52",
+    "row_id": "52",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "53",
+    "new_label": "初始-53",
+    "row_id": "53",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "54",
+    "new_label": "初始-54",
+    "row_id": "54",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "55",
+    "new_label": "初始-55",
+    "row_id": "55",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "56",
+    "new_label": "初始-56",
+    "row_id": "56",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "57",
+    "new_label": "初始-57",
+    "row_id": "57",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "58",
+    "new_label": "初始-58",
+    "row_id": "58",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "59",
+    "new_label": "初始-59",
+    "row_id": "59",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "60",
+    "new_label": "初始-60",
+    "row_id": "60",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "61",
+    "new_label": "初始-61",
+    "row_id": "61",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "62",
+    "new_label": "初始-62",
+    "row_id": "62",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "63",
+    "new_label": "初始-63",
+    "row_id": "63",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "64",
+    "new_label": "初始-64",
+    "row_id": "64",
+    "old_revision": null,
+    "new_revision": "0",
+    "old_label": null,
+    "op": "I"
+  }, {
+    "audit_id": "65",
+    "new_label": "trusted-streaming-baseline",
+    "row_id": "64",
+    "old_revision": "0",
+    "new_revision": "0",
+    "old_label": "初始-64",
+    "op": "U"
+  }, {
+    "audit_id": "66",
+    "new_label": "trusted-streaming-baseline",
+    "row_id": "64",
+    "old_revision": "0",
+    "new_revision": "0",
+    "old_label": "trusted-streaming-baseline",
+    "op": "U"
+  }],
+  "comparison": {
+    "comparedFields": ["id", "label", "amount", "note", "updated_at", "revision"],
+    "equal": true,
+    "extraKeys": [],
+    "fieldDifferences": [],
+    "missingKeys": [],
+    "source": [{
+      "label": "初始-1",
+      "amount": "1.1200",
+      "revision": "0",
+      "id": "1",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-2",
+      "amount": "2.1200",
+      "revision": "0",
+      "id": "2",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-3",
+      "amount": "3.1200",
+      "revision": "0",
+      "id": "3",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-4",
+      "amount": "4.1200",
+      "revision": "0",
+      "id": "4",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-5",
+      "amount": "5.1200",
+      "revision": "0",
+      "id": "5",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-6",
+      "amount": "6.1200",
+      "revision": "0",
+      "id": "6",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-7",
+      "amount": "7.1200",
+      "revision": "0",
+      "id": "7",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-8",
+      "amount": "8.1200",
+      "revision": "0",
+      "id": "8",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-9",
+      "amount": "9.1200",
+      "revision": "0",
+      "id": "9",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-10",
+      "amount": "10.1200",
+      "revision": "0",
+      "id": "10",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-11",
+      "amount": "11.1200",
+      "revision": "0",
+      "id": "11",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-12",
+      "amount": "12.1200",
+      "revision": "0",
+      "id": "12",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-13",
+      "amount": "13.1200",
+      "revision": "0",
+      "id": "13",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-14",
+      "amount": "14.1200",
+      "revision": "0",
+      "id": "14",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-15",
+      "amount": "15.1200",
+      "revision": "0",
+      "id": "15",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-16",
+      "amount": "16.1200",
+      "revision": "0",
+      "id": "16",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-17",
+      "amount": "17.1200",
+      "revision": "0",
+      "id": "17",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-18",
+      "amount": "18.1200",
+      "revision": "0",
+      "id": "18",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-19",
+      "amount": "19.1200",
+      "revision": "0",
+      "id": "19",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-20",
+      "amount": "20.1200",
+      "revision": "0",
+      "id": "20",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-21",
+      "amount": "21.1200",
+      "revision": "0",
+      "id": "21",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-22",
+      "amount": "22.1200",
+      "revision": "0",
+      "id": "22",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-23",
+      "amount": "23.1200",
+      "revision": "0",
+      "id": "23",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-24",
+      "amount": "24.1200",
+      "revision": "0",
+      "id": "24",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-25",
+      "amount": "25.1200",
+      "revision": "0",
+      "id": "25",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-26",
+      "amount": "26.1200",
+      "revision": "0",
+      "id": "26",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-27",
+      "amount": "27.1200",
+      "revision": "0",
+      "id": "27",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-28",
+      "amount": "28.1200",
+      "revision": "0",
+      "id": "28",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-29",
+      "amount": "29.1200",
+      "revision": "0",
+      "id": "29",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-30",
+      "amount": "30.1200",
+      "revision": "0",
+      "id": "30",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-31",
+      "amount": "31.1200",
+      "revision": "0",
+      "id": "31",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-32",
+      "amount": "32.1200",
+      "revision": "0",
+      "id": "32",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-33",
+      "amount": "33.1200",
+      "revision": "0",
+      "id": "33",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-34",
+      "amount": "34.1200",
+      "revision": "0",
+      "id": "34",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-35",
+      "amount": "35.1200",
+      "revision": "0",
+      "id": "35",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-36",
+      "amount": "36.1200",
+      "revision": "0",
+      "id": "36",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-37",
+      "amount": "37.1200",
+      "revision": "0",
+      "id": "37",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-38",
+      "amount": "38.1200",
+      "revision": "0",
+      "id": "38",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-39",
+      "amount": "39.1200",
+      "revision": "0",
+      "id": "39",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-40",
+      "amount": "40.1200",
+      "revision": "0",
+      "id": "40",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-41",
+      "amount": "41.1200",
+      "revision": "0",
+      "id": "41",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-42",
+      "amount": "42.1200",
+      "revision": "0",
+      "id": "42",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-43",
+      "amount": "43.1200",
+      "revision": "0",
+      "id": "43",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-44",
+      "amount": "44.1200",
+      "revision": "0",
+      "id": "44",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-45",
+      "amount": "45.1200",
+      "revision": "0",
+      "id": "45",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-46",
+      "amount": "46.1200",
+      "revision": "0",
+      "id": "46",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-47",
+      "amount": "47.1200",
+      "revision": "0",
+      "id": "47",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-48",
+      "amount": "48.1200",
+      "revision": "0",
+      "id": "48",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-49",
+      "amount": "49.1200",
+      "revision": "0",
+      "id": "49",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-50",
+      "amount": "50.1200",
+      "revision": "0",
+      "id": "50",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-51",
+      "amount": "51.1200",
+      "revision": "0",
+      "id": "51",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-52",
+      "amount": "52.1200",
+      "revision": "0",
+      "id": "52",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-53",
+      "amount": "53.1200",
+      "revision": "0",
+      "id": "53",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-54",
+      "amount": "54.1200",
+      "revision": "0",
+      "id": "54",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-55",
+      "amount": "55.1200",
+      "revision": "0",
+      "id": "55",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-56",
+      "amount": "56.1200",
+      "revision": "0",
+      "id": "56",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-57",
+      "amount": "57.1200",
+      "revision": "0",
+      "id": "57",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-58",
+      "amount": "58.1200",
+      "revision": "0",
+      "id": "58",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-59",
+      "amount": "59.1200",
+      "revision": "0",
+      "id": "59",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-60",
+      "amount": "60.1200",
+      "revision": "0",
+      "id": "60",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-61",
+      "amount": "61.1200",
+      "revision": "0",
+      "id": "61",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-62",
+      "amount": "62.1200",
+      "revision": "0",
+      "id": "62",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-63",
+      "amount": "63.1200",
+      "revision": "0",
+      "id": "63",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "trusted-streaming-baseline",
+      "amount": "64.1200",
+      "revision": "0",
+      "id": "64",
+      "note": "v2-baseline",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }],
+    "sourceCount": 64,
+    "target": [{
+      "label": "初始-1",
+      "amount": "1.1200",
+      "revision": "0",
+      "id": "1",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-2",
+      "amount": "2.1200",
+      "revision": "0",
+      "id": "2",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-3",
+      "amount": "3.1200",
+      "revision": "0",
+      "id": "3",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-4",
+      "amount": "4.1200",
+      "revision": "0",
+      "id": "4",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-5",
+      "amount": "5.1200",
+      "revision": "0",
+      "id": "5",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-6",
+      "amount": "6.1200",
+      "revision": "0",
+      "id": "6",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-7",
+      "amount": "7.1200",
+      "revision": "0",
+      "id": "7",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-8",
+      "amount": "8.1200",
+      "revision": "0",
+      "id": "8",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-9",
+      "amount": "9.1200",
+      "revision": "0",
+      "id": "9",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-10",
+      "amount": "10.1200",
+      "revision": "0",
+      "id": "10",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-11",
+      "amount": "11.1200",
+      "revision": "0",
+      "id": "11",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-12",
+      "amount": "12.1200",
+      "revision": "0",
+      "id": "12",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-13",
+      "amount": "13.1200",
+      "revision": "0",
+      "id": "13",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-14",
+      "amount": "14.1200",
+      "revision": "0",
+      "id": "14",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-15",
+      "amount": "15.1200",
+      "revision": "0",
+      "id": "15",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-16",
+      "amount": "16.1200",
+      "revision": "0",
+      "id": "16",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-17",
+      "amount": "17.1200",
+      "revision": "0",
+      "id": "17",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-18",
+      "amount": "18.1200",
+      "revision": "0",
+      "id": "18",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-19",
+      "amount": "19.1200",
+      "revision": "0",
+      "id": "19",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-20",
+      "amount": "20.1200",
+      "revision": "0",
+      "id": "20",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-21",
+      "amount": "21.1200",
+      "revision": "0",
+      "id": "21",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-22",
+      "amount": "22.1200",
+      "revision": "0",
+      "id": "22",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-23",
+      "amount": "23.1200",
+      "revision": "0",
+      "id": "23",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-24",
+      "amount": "24.1200",
+      "revision": "0",
+      "id": "24",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-25",
+      "amount": "25.1200",
+      "revision": "0",
+      "id": "25",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-26",
+      "amount": "26.1200",
+      "revision": "0",
+      "id": "26",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-27",
+      "amount": "27.1200",
+      "revision": "0",
+      "id": "27",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-28",
+      "amount": "28.1200",
+      "revision": "0",
+      "id": "28",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-29",
+      "amount": "29.1200",
+      "revision": "0",
+      "id": "29",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-30",
+      "amount": "30.1200",
+      "revision": "0",
+      "id": "30",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-31",
+      "amount": "31.1200",
+      "revision": "0",
+      "id": "31",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-32",
+      "amount": "32.1200",
+      "revision": "0",
+      "id": "32",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-33",
+      "amount": "33.1200",
+      "revision": "0",
+      "id": "33",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-34",
+      "amount": "34.1200",
+      "revision": "0",
+      "id": "34",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-35",
+      "amount": "35.1200",
+      "revision": "0",
+      "id": "35",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-36",
+      "amount": "36.1200",
+      "revision": "0",
+      "id": "36",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-37",
+      "amount": "37.1200",
+      "revision": "0",
+      "id": "37",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-38",
+      "amount": "38.1200",
+      "revision": "0",
+      "id": "38",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-39",
+      "amount": "39.1200",
+      "revision": "0",
+      "id": "39",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-40",
+      "amount": "40.1200",
+      "revision": "0",
+      "id": "40",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-41",
+      "amount": "41.1200",
+      "revision": "0",
+      "id": "41",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-42",
+      "amount": "42.1200",
+      "revision": "0",
+      "id": "42",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-43",
+      "amount": "43.1200",
+      "revision": "0",
+      "id": "43",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-44",
+      "amount": "44.1200",
+      "revision": "0",
+      "id": "44",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-45",
+      "amount": "45.1200",
+      "revision": "0",
+      "id": "45",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-46",
+      "amount": "46.1200",
+      "revision": "0",
+      "id": "46",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-47",
+      "amount": "47.1200",
+      "revision": "0",
+      "id": "47",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-48",
+      "amount": "48.1200",
+      "revision": "0",
+      "id": "48",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-49",
+      "amount": "49.1200",
+      "revision": "0",
+      "id": "49",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-50",
+      "amount": "50.1200",
+      "revision": "0",
+      "id": "50",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-51",
+      "amount": "51.1200",
+      "revision": "0",
+      "id": "51",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-52",
+      "amount": "52.1200",
+      "revision": "0",
+      "id": "52",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-53",
+      "amount": "53.1200",
+      "revision": "0",
+      "id": "53",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-54",
+      "amount": "54.1200",
+      "revision": "0",
+      "id": "54",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-55",
+      "amount": "55.1200",
+      "revision": "0",
+      "id": "55",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-56",
+      "amount": "56.1200",
+      "revision": "0",
+      "id": "56",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-57",
+      "amount": "57.1200",
+      "revision": "0",
+      "id": "57",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-58",
+      "amount": "58.1200",
+      "revision": "0",
+      "id": "58",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-59",
+      "amount": "59.1200",
+      "revision": "0",
+      "id": "59",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-60",
+      "amount": "60.1200",
+      "revision": "0",
+      "id": "60",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-61",
+      "amount": "61.1200",
+      "revision": "0",
+      "id": "61",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-62",
+      "amount": "62.1200",
+      "revision": "0",
+      "id": "62",
+      "note": null,
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "初始-63",
+      "amount": "63.1200",
+      "revision": "0",
+      "id": "63",
+      "note": "  中文🙂  ",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }, {
+      "label": "trusted-streaming-baseline",
+      "amount": "64.1200",
+      "revision": "0",
+      "id": "64",
+      "note": "v2-baseline",
+      "updated_at": "2026-10-18 01:02:03.654321"
+    }],
+    "targetCount": 64
+  }
+}
