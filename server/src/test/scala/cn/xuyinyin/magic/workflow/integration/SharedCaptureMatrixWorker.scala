@@ -169,7 +169,7 @@ object SharedCaptureMatrixWorker {
               a!EventSourcedWorkflowActor.ExecuteManual("start",p.ref);require(p.receiveMessage(20.seconds).isInstanceOf[EventSourcedWorkflowActor.ExecutionAccepted])
             }
             emit("APPLY_READY","id"->JsString(cmd(1)))
-          case "GRAPH_APPLY"=>
+          case "GRAPH_APPLY"|"GRAPH_RECOVER"=>
             val graphId="graph-"+captureId+"-"+cmd(1)
             val journalRef=kit.spawn(BootstrapJournal(graphId),"graph-journal-"+cmd(1))
             val journal=new BootstrapJournalAccess(journalRef)
@@ -178,8 +178,12 @@ object SharedCaptureMatrixWorker {
             val graph=new TableCdcGraph(capture,TableGraphSettings(cmd(1),"graph-source",graphId,consumer),
               new MySQLTableGraphSink(sinkConfig),new BootstrapJournalTableGraph(journal))(SystemMaterializer(kit.system).materializer,ec)
             val tableActor=kit.spawn(TableActor(()=>graph),"table-graph-"+cmd(1))
-            val probe=kit.createTestProbe[TableActor.Reply]();graphActors(cmd(1))=tableActor;tableActor!TableActor.Start(probe.ref)
-            probe.receiveMessage(30.seconds) match {case TableActor.Started=>emit("GRAPH_APPLY_READY","id"->JsString(cmd(1)),"graphId"->JsString(graphId));case other=>throw new IllegalStateException("table graph start failed: "+other)}
+            val probe=kit.createTestProbe[TableActor.Reply]();graphActors(cmd(1))=tableActor
+            if(cmd(0)=="GRAPH_RECOVER")tableActor!TableActor.StartRecovered(probe.ref)else tableActor!TableActor.Start(probe.ref)
+            probe.receiveMessage(30.seconds) match {
+              case TableActor.Started=>emit(if(cmd(0)=="GRAPH_RECOVER")"GRAPH_RECOVER_READY"else "GRAPH_APPLY_READY","id"->JsString(cmd(1)),"graphId"->JsString(graphId))
+              case other=>throw new IllegalStateException("table graph start failed: "+other)
+            }
           case "ARM_L"=>armL.set(cmd(1));emit("ARMED")
           case "ARM_CONTROL"=>armControl.set(cmd(1));emit("ARMED")
           case "ARM_SUBSCRIBE"=>admissionGate.set(true);emit("ARMED")

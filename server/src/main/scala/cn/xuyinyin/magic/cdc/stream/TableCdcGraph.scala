@@ -21,6 +21,10 @@ trait TableGraphJournal {
   /** The returned revision is the durable Journal revision used by the L projection. */
   def persist(checkpoint:BatchCheckpoint)(implicit ec:ExecutionContext):Future[Long]
   def latest:Option[BatchCheckpoint]
+  def recover(settings:TableGraphSettings)(implicit ec:ExecutionContext):Future[TableGraphSettings]=
+    Future.successful(latest.fold(settings)(checkpoint=>
+      settings.copy(after=checkpoint.cursor.value.parseJson.asJsObject.fields("sequence").asInstanceOf[spray.json.JsNumber].value.toLongExact,
+        nextBatchSequence=checkpoint.batchSequence+1L)))
 }
 
 final case class TableGraphSettings(subscriptionId:String,sourceNodeId:String,executionId:String,
@@ -35,16 +39,21 @@ final class TableCdcGraph(capture:SharedMySQLCapture,settings:TableGraphSettings
   journal:TableGraphJournal)(implicit materializer:Materializer,ec:ExecutionContext) {
   require(settings.consumerId.matches("[a-f0-9]{64}"))
   def materialize():TableGraphMaterialized={
-    val source=capture.tableSource(settings.subscriptionId,settings.sourceNodeId,settings.executionId,
-      settings.after,settings.nextBatchSequence,settings.batchSize,settings.consumerId)
+    materialize(settings)
+  }
+  def materializeRecovered()(implicit ec:ExecutionContext):Future[TableGraphMaterialized]=
+    journal.recover(settings).map(materialize)
+  private def materialize(activeSettings:TableGraphSettings):TableGraphMaterialized={
+    val source=capture.tableSource(activeSettings.subscriptionId,activeSettings.sourceNodeId,activeSettings.executionId,
+      activeSettings.after,activeSettings.nextBatchSequence,activeSettings.batchSize,activeSettings.consumerId)
     val (kill,done)=source.viaMat(KillSwitches.single)(Keep.right).mapAsync(1){batch=>
-      sink.commit(settings.subscriptionId,settings.executionId,batch).flatMap {result=>
+      sink.commit(activeSettings.subscriptionId,activeSettings.executionId,batch).flatMap {result=>
         val checkpoint=result match {
           case Committed(value)=>value
           case AlreadyCommitted(value)=>value
         }
         journal.persist(checkpoint).flatMap {revision=>
-          capture.acknowledgeTableBatch(settings.subscriptionId,settings.sourceNodeId,settings.consumerId,batch,revision)
+          capture.acknowledgeTableBatch(activeSettings.subscriptionId,activeSettings.sourceNodeId,activeSettings.consumerId,batch,revision)
         }
       }
     }.toMat(Sink.ignore)(Keep.both).run()
@@ -64,6 +73,8 @@ final class MySQLTableGraphSink(config:MySQLCdcApplyConfig) extends TableGraphSi
 final class BootstrapJournalTableGraph(journal:BootstrapJournalAccess) extends TableGraphJournal {
   private val latestRef=new AtomicReference[Option[BatchCheckpoint]](None)
   override def latest:Option[BatchCheckpoint]=latestRef.get()
+  override def recover(settings:TableGraphSettings)(implicit ec:ExecutionContext):Future[TableGraphSettings]=
+    journal.read().map(state=>settings.copy(after=state.deltaAfter,nextBatchSequence=state.batchSequence+1L))
   override def persist(checkpoint:BatchCheckpoint)(implicit ec:ExecutionContext):Future[Long]={
     latestRef.set(Some(checkpoint))
     journal.update {state=>
