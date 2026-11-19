@@ -1,0 +1,36 @@
+{
+  "sourceCommit": "56657cb",
+  "ports": {
+    "source": 14365,
+    "stateJournalSink": 14366
+  },
+  "scenario": "GRAPH-MULTI",
+  "result": "PASS",
+  "graph": "one SharedMySQLCapture -> two independently materialized TableCdcGraph instances -> per-table Sink/Journal/ACK",
+  "evidence": {
+    "sourceRowsAndTargetRows": "artifacts/final.json",
+    "journalAndLedger": "artifacts/final.json",
+    "cleanup": "artifacts/cleanup.json",
+    "rawLog": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/shared-capture-matrix/GRAPH-MULTI-b90770e27e1b/original.log"
+  },
+  "observed": {
+    "tables": [
+      "a",
+      "b"
+    ],
+    "fieldsComparedPerTable": 24,
+    "differencesPerTable": {
+      "a": 0,
+      "b": 0
+    },
+    "graphJournalRows": 3,
+    "ledgerRows": 3,
+    "cleanupConnections": 0
+  },
+  "unverified": [
+    "graph restart from a recovered Journal checkpoint",
+    "cross-JVM restore",
+    "runtime Savepoint coordination",
+    "DDL and 700000 physical table capacity"
+  ]
+}
