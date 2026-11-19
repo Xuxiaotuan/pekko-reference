@@ -1,0 +1,28 @@
+{
+  "sourceCommit": "dee596a",
+  "scenario": "GRAPH-RESTART",
+  "result": "PASS",
+  "evidence": {
+    "initial": "artifacts/before-restart.json",
+    "final": "artifacts/final.json",
+    "cleanup": "artifacts/cleanup.json",
+    "rawLog": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/shared-capture-matrix/GRAPH-RESTART-554f16942a08/recovered.log"
+  },
+  "observed": {
+    "table": "a",
+    "fieldsCompared": 24,
+    "differences": 0,
+    "missing": 0,
+    "extra": 0,
+    "journalRows": 2,
+    "ledgerRows": 2,
+    "cleanupConnections": 0
+  },
+  "recovery": "新 JVM 使用同一 persistence_id 读取 deltaAfter 和 batchSequence，StartRecovered 从 Journal cursor 继续消费 L",
+  "unverified": [
+    "多表同时恢复的协调",
+    "跨 JVM Savepoint",
+    "DDL",
+    "700000 physical tables"
+  ]
+}
