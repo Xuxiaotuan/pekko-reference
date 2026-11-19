@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
   import CdcJournalWindowSupport._
   "shared capture with real MySQL, Journal and Sink" should {
-    for(variant<-Vector("GRAPH","R01","R01-concurrent","R02","R03","R03-late-commit","R03-late-rollback","R03-close-unknown","R04","R05","R06","R07","R07-d-before","R07-d-after","R08","R09","R10","R10-mid","R10-ack-d","R11","R11-rollback","R12","R12-ddl","R12-drop","R12-truncate","R13","R13-reject","R14","R14-capacity","R15","R15-late-bind","R15-bound-cancel","R15-unknown-cancel","R15-unknown-cancel-rollback","R16","R16-history","R16-log","R16-lineage","R16-source","R16-registry","R16-control-row","R16-ack-chain","R16-ack-ref","R16-namespace","R16-binlog")) {
+    for(variant<-Vector("GRAPH","GRAPH-MULTI","R01","R01-concurrent","R02","R03","R03-late-commit","R03-late-rollback","R03-close-unknown","R04","R05","R06","R07","R07-d-before","R07-d-after","R08","R09","R10","R10-mid","R10-ack-d","R11","R11-rollback","R12","R12-ddl","R12-drop","R12-truncate","R13","R13-reject","R14","R14-capacity","R15","R15-late-bind","R15-bound-cancel","R15-unknown-cancel","R15-unknown-cancel-rollback","R16","R16-history","R16-log","R16-lineage","R16-source","R16-registry","R16-control-row","R16-ack-chain","R16-ack-ref","R16-namespace","R16-binlog")) {
       val scenario=variant.take(3)
       s"retain independent capture/application evidence for $variant" taggedAs ExternalIntegration in {
         if(!sys.env.get("RUN_SHARED_CAPTURE_MATRIX").contains("1"))cancel("disposable dual MySQL required")
@@ -76,7 +76,7 @@ class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
           awaitCondition("B "+id){store.subscription(id).exists(_.status=="CAPTURE_READY")}
         }
         def apply(c:Child,id:String,table:String,recover:Boolean=false):Unit={
-          if(variant=="GRAPH") {c.send(s"GRAPH_APPLY $id $table");c.awaitEvent("GRAPH_APPLY_READY")}
+          if(variant.startsWith("GRAPH")) {c.send(s"GRAPH_APPLY $id $table");c.awaitEvent("GRAPH_APPLY_READY")}
           else {c.send(s"${if(recover)"RECOVER_APPLY" else "APPLY"} $id $table");c.awaitEvent("APPLY_READY")}
         }
         def save(label:String,c:Child):Unit={
@@ -164,7 +164,14 @@ class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
             subscribe(child,"a","a");apply(child,"a","a");mutation("a","baseline");awaitCondition("baseline T/J"){equal("a")};save("baseline",child)
             scenario match {
               case "GRA"=>
-                awaitCondition("independent graph target converges"){equal("a")};save("final",child)
+                if(variant=="GRAPH-MULTI"){
+                  subscribe(child,"b","b")
+                  apply(child,"b","b")
+                  mutation("a","graph-multi-a")
+                  mutation("b","graph-multi-b")
+                  awaitCondition("independent graph targets converge"){equal("a") && equal("b")}
+                }else awaitCondition("independent graph target converges"){equal("a")}
+                save("final",child)
               case "R01"=>
                 if(variant=="R01-concurrent"){
                   child.send("ARM_SUBSCRIBE");child.awaitEvent("ARMED")
