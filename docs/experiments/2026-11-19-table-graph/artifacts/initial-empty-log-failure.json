@@ -1,0 +1,13 @@
+{
+  "scenario": "GRAPH",
+  "runDirectory": "target/shared-capture-matrix/GRAPH-281af642c516",
+  "status": "evidence_incomplete",
+  "observed": {
+    "testProcess": "returned passed",
+    "graphJournalRows": 0,
+    "sourceTargetComparisonsEqual": true,
+    "cleanupConnections": 0
+  },
+  "interpretation": "对照表相等只说明目标仍保持基线，不能证明后续变更已经经过 Graph。首次实现的空 L Source 在后续变更到达前结束，导致 graphJournal 没有记录。",
+  "correctiveChange": "将 tableSource 改为 Source.tick(100ms) 轮询不可变 L，直到被 KillSwitch 停止。修复后的 GRAPH-428ae48ce260 重跑才计入 PASS。"
+}
