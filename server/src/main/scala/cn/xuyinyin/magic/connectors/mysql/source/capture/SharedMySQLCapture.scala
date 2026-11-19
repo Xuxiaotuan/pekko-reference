@@ -5,12 +5,14 @@ import cn.xuyinyin.magic.cdc.{MySQLCdcEnvelope,MySQLCdcGroup}
 import cn.xuyinyin.magic.cdc.bootstrap.BootstrapSchemaCompatibility
 import org.apache.kafka.connect.data.Struct
 import org.apache.kafka.connect.source.SourceRecord
-import org.apache.pekko.Done
+import org.apache.pekko.{Done,NotUsed}
+import org.apache.pekko.stream.scaladsl.Source
 import spray.json._
 import java.sql.{Connection,DriverManager}
 import java.util.concurrent.atomic.{AtomicBoolean,AtomicReference}
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext,Future}
+import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 import scala.util.Failure
 import cn.xuyinyin.magic.cdc.savepoint.CaptureEpoch
@@ -84,6 +86,43 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   def sealCaptureEpoch():CaptureEpoch=commandLock.synchronized {
     requireAdmission()
     CaptureEpoch(store.captureId,store.nextCaptureEpoch(),store.lineage,store.lastAckSequence,store.frontier,store.routeDigest,store.tableSetDigest)
+  }
+
+  /**
+    * Materializable per-table view of the durable capture log.
+    *
+    * The Debezium callback and this Source never share a JDBC connection. The
+    * Source only reads immutable GROUP frames from L, so a slow table cannot
+    * block the Reader callback or another table graph.
+    */
+  def tableSource(subscriptionId:String,sourceNodeId:String,executionId:String,after:Long,
+    sequence:Long,batchSize:Int,consumerId:String)(implicit ec:ExecutionContext):Source[CdcCapturedBatch,NotUsed]={
+    require(subscriptionId.nonEmpty && sourceNodeId.nonEmpty && executionId.nonEmpty && consumerId.matches("[a-f0-9]{64}"))
+    require(batchSize>0 && batchSize<=1000 && after>=0 && sequence>=0)
+    store.registerConsumer(consumerId,"WORKFLOW",subscriptionId,sourceNodeId,after)
+    val reader=new CapturedLogReader(store,source.database)
+    val cursor=new AnyRef
+    var current=after
+    var nextSequence=sequence
+    Source.tick(Duration.Zero,100.millis,()).mapAsync(1){_=>Future {
+      cursor.synchronized {
+        reader.readBatch(subscriptionId,current,batchSize,sourceNodeId,executionId,nextSequence,Some(consumerId)).map {batch=>
+          current=batch.cursor.value.parseJson.asJsObject.fields("sequence").asInstanceOf[JsNumber].value.toLongExact
+          nextSequence+=1L
+          batch
+        }
+      }
+    }}.mapConcat(_.toList).mapMaterializedValue(_=>NotUsed)
+  }
+
+  /** Persist the graph's table checkpoint after Journal has acknowledged it. */
+  def acknowledgeTableBatch(subscriptionId:String,sourceNodeId:String,consumerId:String,batch:CdcCapturedBatch,
+    journalRevision:Long)(implicit ec:ExecutionContext):Future[Done]=Future {
+    require(consumerId.matches("[a-f0-9]{64}") && journalRevision>=0)
+    val reader=new CapturedLogReader(store,source.database)
+    val floor=reader.resumePosition(subscriptionId,batch.cursor)
+    store.projectConsumerJournal(consumerId,"WORKFLOW",subscriptionId,sourceNodeId,floor,journalRevision,batch.batchId)
+    Done
   }
   /** Install only after state and source release proof; never replace a gate in flight. */
   private[magic] def installRecoveryGate(gate:cn.xuyinyin.magic.cdc.platform.CdcTaskStore.ReaderRecoveryGate):Unit=commandLock.synchronized {

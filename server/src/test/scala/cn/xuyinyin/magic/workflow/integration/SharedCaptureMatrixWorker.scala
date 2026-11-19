@@ -10,10 +10,14 @@ import cn.xuyinyin.magic.workflow.execution.{WorkflowExecutionEngine,ReliableRun
 import cn.xuyinyin.magic.workflow.execution.registry.NodeRegistry
 import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL._
 import cn.xuyinyin.magic.cdc.compat.WorkflowEvents.ExecutionCheckpointAdvanced
+import cn.xuyinyin.magic.cdc.bootstrap.{BootstrapJournal,BootstrapJournalAccess}
+import cn.xuyinyin.magic.cdc.stream.{BootstrapJournalTableGraph,MySQLTableGraphSink,TableActor,TableCdcGraph,TableGraphSettings}
+import cn.xuyinyin.magic.connectors.mysql.sink.MySQLCdcApplyConfig
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.Done
 import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import org.apache.pekko.actor.typed.scaladsl.adapter._
+import org.apache.pekko.stream.SystemMaterializer
 import org.apache.pekko.serialization.SerializationExtension
 import java.sql.{Connection,DriverManager,PreparedStatement}
 import java.lang.reflect.{InvocationHandler,InvocationTargetException,Method,Proxy}
@@ -60,6 +64,7 @@ object SharedCaptureMatrixWorker {
       "pekko.loglevel"->"WARNING","pekko.stdout-loglevel"->"WARNING").asJava).withFallback(ConfigFactory.load("application-test"))
     val kit=ActorTestKit("capture-"+captureId,cfg)
     implicit val ec:ExecutionContext=kit.system.executionContext
+    implicit val scheduler:org.apache.pekko.actor.typed.Scheduler=kit.system.scheduler
     def stateConnection(port:Int=state.port):Connection=DriverManager.getConnection(state.copy(port=port).url(schema),state.user,state.password)
     def observedConnection():Connection={
       val c=stateConnection(proxy.port);var barrier=false
@@ -117,6 +122,7 @@ object SharedCaptureMatrixWorker {
       }
     }
     val actors=scala.collection.mutable.Map.empty[String,org.apache.pekko.actor.typed.ActorRef[EventSourcedWorkflowActor.Command]]
+    val graphActors=scala.collection.mutable.Map.empty[String,org.apache.pekko.actor.typed.ActorRef[TableActor.Command]]
     def workflow(id:String,table:String):Workflow={
       val n=Node("source","source","mysql.cdc.log","captured log",Position(0,0),JsObject("subscriptionId"->JsString(id),"initializedTarget"->JsBoolean(true),"batchSize"->JsNumber(batchSize.toInt)))
       val t=Node("target","sink","mysql.cdc.apply","real target",Position(1,0),JsObject("host"->JsString(state.host),"port"->JsNumber(state.port),"database"->JsString(schema),"table"->JsString("target_"+table),"username"->JsString(state.user),"passwordEnv"->JsString("CDC_WINDOW_MYSQL_PASSWORD")))
@@ -163,6 +169,17 @@ object SharedCaptureMatrixWorker {
               a!EventSourcedWorkflowActor.ExecuteManual("start",p.ref);require(p.receiveMessage(20.seconds).isInstanceOf[EventSourcedWorkflowActor.ExecutionAccepted])
             }
             emit("APPLY_READY","id"->JsString(cmd(1)))
+          case "GRAPH_APPLY"=>
+            val graphId="graph-"+captureId+"-"+cmd(1)
+            val journalRef=kit.spawn(BootstrapJournal(graphId),"graph-journal-"+cmd(1))
+            val journal=new BootstrapJournalAccess(journalRef)
+            val consumer=CaptureConsumerIdentity.workflow(captureId,cmd(1),"graph-source",graphId)
+            val sinkConfig=MySQLCdcApplyConfig(state.host,state.port,schema,"target_"+cmd(2),state.user,state.password)
+            val graph=new TableCdcGraph(capture,TableGraphSettings(cmd(1),"graph-source",graphId,consumer),
+              new MySQLTableGraphSink(sinkConfig),new BootstrapJournalTableGraph(journal))(SystemMaterializer(kit.system).materializer,ec)
+            val tableActor=kit.spawn(TableActor(()=>graph),"table-graph-"+cmd(1))
+            val probe=kit.createTestProbe[TableActor.Reply]();graphActors(cmd(1))=tableActor;tableActor!TableActor.Start(probe.ref)
+            probe.receiveMessage(30.seconds) match {case TableActor.Started=>emit("GRAPH_APPLY_READY","id"->JsString(cmd(1)),"graphId"->JsString(graphId));case other=>throw new IllegalStateException("table graph start failed: "+other)}
           case "ARM_L"=>armL.set(cmd(1));emit("ARMED")
           case "ARM_CONTROL"=>armControl.set(cmd(1));emit("ARMED")
           case "ARM_SUBSCRIBE"=>admissionGate.set(true);emit("ARMED")

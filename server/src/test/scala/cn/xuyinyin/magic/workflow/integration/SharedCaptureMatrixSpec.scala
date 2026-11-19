@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
   import CdcJournalWindowSupport._
   "shared capture with real MySQL, Journal and Sink" should {
-    for(variant<-Vector("R01","R01-concurrent","R02","R03","R03-late-commit","R03-late-rollback","R03-close-unknown","R04","R05","R06","R07","R07-d-before","R07-d-after","R08","R09","R10","R10-mid","R10-ack-d","R11","R11-rollback","R12","R12-ddl","R12-drop","R12-truncate","R13","R13-reject","R14","R14-capacity","R15","R15-late-bind","R15-bound-cancel","R15-unknown-cancel","R15-unknown-cancel-rollback","R16","R16-history","R16-log","R16-lineage","R16-source","R16-registry","R16-control-row","R16-ack-chain","R16-ack-ref","R16-namespace","R16-binlog")) {
+    for(variant<-Vector("GRAPH","R01","R01-concurrent","R02","R03","R03-late-commit","R03-late-rollback","R03-close-unknown","R04","R05","R06","R07","R07-d-before","R07-d-after","R08","R09","R10","R10-mid","R10-ack-d","R11","R11-rollback","R12","R12-ddl","R12-drop","R12-truncate","R13","R13-reject","R14","R14-capacity","R15","R15-late-bind","R15-bound-cancel","R15-unknown-cancel","R15-unknown-cancel-rollback","R16","R16-history","R16-log","R16-lineage","R16-source","R16-registry","R16-control-row","R16-ack-chain","R16-ack-ref","R16-namespace","R16-binlog")) {
       val scenario=variant.take(3)
       s"retain independent capture/application evidence for $variant" taggedAs ExternalIntegration in {
         if(!sys.env.get("RUN_SHARED_CAPTURE_MATRIX").contains("1"))cancel("disposable dual MySQL required")
@@ -75,7 +75,10 @@ class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
           c.send(s"SUBSCRIBE $id $table g1");c.awaitEvent("SUBSCRIBE_ACCEPTED")
           awaitCondition("B "+id){store.subscription(id).exists(_.status=="CAPTURE_READY")}
         }
-        def apply(c:Child,id:String,table:String,recover:Boolean=false):Unit={c.send(s"${if(recover)"RECOVER_APPLY" else "APPLY"} $id $table");c.awaitEvent("APPLY_READY")}
+        def apply(c:Child,id:String,table:String,recover:Boolean=false):Unit={
+          if(variant=="GRAPH") {c.send(s"GRAPH_APPLY $id $table");c.awaitEvent("GRAPH_APPLY_READY")}
+          else {c.send(s"${if(recover)"RECOVER_APPLY" else "APPLY"} $id $table");c.awaitEvent("APPLY_READY")}
+        }
         def save(label:String,c:Child):Unit={
           if(label=="final" && variant!="R13-reject" && variant!="R14-capacity")awaitCondition("J caught up to captured groups"){
             val actors=c.state().fields("actors").asJsObject.fields
@@ -87,6 +90,7 @@ class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
           }
           write(dir,label+".json",JsObject("case"->JsString(scenario),"process"->JsNumber(c.pid),"worker"->c.state(),"comparisons"->JsObject(names.map(t=>t->comparison(t)).toMap),
             "T"->withConnection(state,schema)(query(_,"SELECT * FROM pekko_sync_cdc_group_ledger ORDER BY group_id")),
+            "graphJournal"->withConnection(state,schema)(query(_,"SELECT persistence_id,sequence_number,event_ser_manifest FROM event_journal WHERE persistence_id LIKE 'bootstrap-v1-graph-%' ORDER BY ordering")),
             "stateTransactions"->withConnection(state,schema)(query(_,"SELECT trx_mysql_thread_id,trx_state,trx_started,trx_query FROM information_schema.innodb_trx")),
             "sourceTransactions"->withConnection(source,schema)(query(_,"SELECT trx_mysql_thread_id,trx_state,trx_started,trx_query FROM information_schema.innodb_trx")),
             "stateConnections"->withConnection(state,schema)(query(_,s"SELECT ID,DB,COMMAND,STATE FROM information_schema.processlist WHERE DB='$schema'"))))
@@ -159,6 +163,8 @@ class SharedCaptureMatrixSpec extends AnyWordSpec with Matchers {
           } else {
             subscribe(child,"a","a");apply(child,"a","a");mutation("a","baseline");awaitCondition("baseline T/J"){equal("a")};save("baseline",child)
             scenario match {
+              case "GRA"=>
+                awaitCondition("independent graph target converges"){equal("a")};save("final",child)
               case "R01"=>
                 if(variant=="R01-concurrent"){
                   child.send("ARM_SUBSCRIBE");child.awaitEvent("ARMED")

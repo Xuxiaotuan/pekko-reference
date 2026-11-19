@@ -1,0 +1,31 @@
+{
+  "sourceCommit": "working-tree-after-472e809",
+  "ports": {
+    "source": 14365,
+    "stateJournalSink": 14366
+  },
+  "scenario": "GRAPH",
+  "result": "PASS",
+  "graph": "SharedMySQLCapture.tableSource -> TableCdcGraph -> MySQLTableGraphSink -> BootstrapJournalTableGraph -> SharedMySQLCapture.acknowledgeTableBatch",
+  "evidence": {
+    "sourceRowsAndTargetRows": "artifacts/final.json",
+    "journalAndLedger": "artifacts/final.json",
+    "cleanup": "artifacts/cleanup.json",
+    "rawLog": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/shared-capture-matrix/GRAPH-5b305b24c22f/original.log"
+  },
+  "assertions": [
+    "one real SharedMySQLCapture remained the sole Debezium reader",
+    "one table graph materialized independently and consumed immutable L frames",
+    "MySQL transactional sink committed the mutation",
+    "BootstrapJournal persisted the graph checkpoint before L consumer projection",
+    "capture ACK projection completed after Journal persistence",
+    "source and target table comparison converged"
+  ],
+  "unverified": [
+    "multiple table graphs concurrently materialized against the same Reader",
+    "graph restart from a recovered BootstrapJournal checkpoint",
+    "cross-JVM graph restore",
+    "runtime Savepoint coordination with graph materialization",
+    "DDL and 700,000 physical table capacity"
+  ]
+}
