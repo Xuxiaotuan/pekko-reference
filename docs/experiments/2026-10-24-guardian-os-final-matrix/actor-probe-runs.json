@@ -1,0 +1,74 @@
+[
+  {
+    "name": "actor-shared-100000",
+    "startNs": 1792851887515739000,
+    "endNs": 1792851890104368000,
+    "command": [
+      "/Users/xujiawei/Library/Java/JavaVirtualMachines/ms-17.0.14/Contents/Home/bin/java",
+      "-Xmx3G",
+      "-XX:+UseG1GC",
+      "-Xlog:gc:file=docs/experiments/2026-10-24-guardian-os-final-matrix/actor-shared-100000-gc.log",
+      "-cp",
+      "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/guardian-os-runtimes/r-1792851860999716000/*",
+      "cn.xuyinyin.magic.actor.ActorShutdownProbe",
+      "shared",
+      "100000",
+      "docs/experiments/2026-10-24-guardian-os-final-matrix/actor-shared-100000.jsonl"
+    ],
+    "exitCode": 0
+  },
+  {
+    "name": "actor-per-message-100000",
+    "startNs": 1792851890104883000,
+    "endNs": 1792851895321130000,
+    "command": [
+      "/Users/xujiawei/Library/Java/JavaVirtualMachines/ms-17.0.14/Contents/Home/bin/java",
+      "-Xmx3G",
+      "-XX:+UseG1GC",
+      "-Xlog:gc:file=docs/experiments/2026-10-24-guardian-os-final-matrix/actor-per-message-100000-gc.log",
+      "-cp",
+      "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/guardian-os-runtimes/r-1792851860999716000/*",
+      "cn.xuyinyin.magic.actor.ActorShutdownProbe",
+      "per-message",
+      "100000",
+      "docs/experiments/2026-10-24-guardian-os-final-matrix/actor-per-message-100000.jsonl"
+    ],
+    "exitCode": 0
+  },
+  {
+    "name": "actor-shared-1000000",
+    "startNs": 1792851895321953000,
+    "endNs": 1792851907542103000,
+    "command": [
+      "/Users/xujiawei/Library/Java/JavaVirtualMachines/ms-17.0.14/Contents/Home/bin/java",
+      "-Xmx3G",
+      "-XX:+UseG1GC",
+      "-Xlog:gc:file=docs/experiments/2026-10-24-guardian-os-final-matrix/actor-shared-1000000-gc.log",
+      "-cp",
+      "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/guardian-os-runtimes/r-1792851860999716000/*",
+      "cn.xuyinyin.magic.actor.ActorShutdownProbe",
+      "shared",
+      "1000000",
+      "docs/experiments/2026-10-24-guardian-os-final-matrix/actor-shared-1000000.jsonl"
+    ],
+    "exitCode": 0
+  },
+  {
+    "name": "actor-per-message-1000000",
+    "startNs": 1792851907542828000,
+    "endNs": 1792851926253938000,
+    "command": [
+      "/Users/xujiawei/Library/Java/JavaVirtualMachines/ms-17.0.14/Contents/Home/bin/java",
+      "-Xmx3G",
+      "-XX:+UseG1GC",
+      "-Xlog:gc:file=docs/experiments/2026-10-24-guardian-os-final-matrix/actor-per-message-1000000-gc.log",
+      "-cp",
+      "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/guardian-os-runtimes/r-1792851860999716000/*",
+      "cn.xuyinyin.magic.actor.ActorShutdownProbe",
+      "per-message",
+      "1000000",
+      "docs/experiments/2026-10-24-guardian-os-final-matrix/actor-per-message-1000000.jsonl"
+    ],
+    "exitCode": 0
+  }
+]

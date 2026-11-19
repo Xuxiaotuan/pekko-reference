@@ -1,0 +1,5 @@
+Before this fix, the same deployed Runtime returned:
+/api/v1/cdc-gc => BLOCKED / ACK proof budget exceeded
+Source log count: 7,110 ACK frames; latest ACK sequence: 7,121.
+The old code called CaptureAckProof.inspect with a fixed 4,096-chain budget.
+A subsequent restart also exposed three old Sleep sessions under pekko_cdc_runtime; the observer correctly refused startup until they were killed after confirming no InnoDB transaction.

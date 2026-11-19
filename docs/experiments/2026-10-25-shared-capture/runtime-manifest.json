@@ -1,0 +1,909 @@
+{
+  "jdk": "openjdk version \"17.0.14\" 2025-01-21 LTS\nOpenJDK Runtime Environment Microsoft-10800294 (build 17.0.14+7-LTS)\nOpenJDK 64-Bit Server VM Microsoft-10800294 (build 17.0.14+7-LTS, mixed mode, sharing)",
+  "dependencies": [
+    {
+      "name": "scala-library-2.13.12.jar",
+      "sha256": "c6a879e4973a60f6162668542a33eaccc2bb565d1c934fb061c5844259131dd1"
+    },
+    {
+      "name": "scala-logging_2.13-3.9.5.jar",
+      "sha256": "87a3017d3f43e6ace7566fe4c3d615134c6914ff871c8d64bb32ca1d996d0545"
+    },
+    {
+      "name": "logback-classic-1.4.12.jar",
+      "sha256": "4b4a99e1931bb0ea6c0b6c48d42bc48cde36a18e8dc9cc2f7b8c8a2364c2ec93"
+    },
+    {
+      "name": "scalatest_2.13-3.2.19.jar",
+      "sha256": "c37d97f16172d45b2aef0cebbe59dd2174b7d1ff2c2f272516707cf923015a52"
+    },
+    {
+      "name": "pekko-actor-typed_2.13-1.1.3.jar",
+      "sha256": "91e8d52bbaafe989e947a638488d570bab13b6713720e6eecdb6337dd3b0b706"
+    },
+    {
+      "name": "pekko-cluster-typed_2.13-1.1.3.jar",
+      "sha256": "fa9b2d0406fc3350fcff422951858fc75a7dfddf57967b0da3828fee76a44775"
+    },
+    {
+      "name": "pekko-cluster-sharding-typed_2.13-1.1.3.jar",
+      "sha256": "88e18ace4ada766e6c2acc699820fb55729fb9c386524d0b1f235ca66b9b4213"
+    },
+    {
+      "name": "pekko-cluster-tools_2.13-1.1.3.jar",
+      "sha256": "421fab0152651353de8235dbddcc71f673eaa76d6e4c84b741b845a17f88f154"
+    },
+    {
+      "name": "pekko-discovery_2.13-1.1.3.jar",
+      "sha256": "1c817c98ebe43317e77ffe7bdd7b90d6f901237a8a4d544fd304e709d4912563"
+    },
+    {
+      "name": "pekko-serialization-jackson_2.13-1.1.3.jar",
+      "sha256": "5c9e433f0238acd36b4e0eab75494ebbc1b6b201ec72c0052d1ac878644df45f"
+    },
+    {
+      "name": "pekko-stream_2.13-1.1.3.jar",
+      "sha256": "e4851aef8357379f1e289c83da6246227d893aee4cb489fa4985cac80d670bc7"
+    },
+    {
+      "name": "pekko-management-cluster-http_2.13-1.1.1.jar",
+      "sha256": "23ca4eaf6a3ca41b78d87f615c48e0e85834d90a3beaf0b00c215892aabdd0b0"
+    },
+    {
+      "name": "pekko-management-cluster-bootstrap_2.13-1.1.1.jar",
+      "sha256": "f84ea9ee33831ea651ba58a128d2dd3122c587f9153e2c0e0d95c23ce4973705"
+    },
+    {
+      "name": "pekko-discovery-kubernetes-api_2.13-1.1.1.jar",
+      "sha256": "7bcf28ffc8b86f035f0cb6857d2b934184828a87c5461d78a8c21d23f6189edd"
+    },
+    {
+      "name": "pekko-persistence-typed_2.13-1.1.3.jar",
+      "sha256": "a983ebd13c7c2a38eb745d88c13751bc33477e8e9d26d4b5d2178b62c3b3ea9b"
+    },
+    {
+      "name": "pekko-persistence-query_2.13-1.1.3.jar",
+      "sha256": "b63589e76c4697008ba1cfd03ada79ba25a10c2a103bfe853590bde34341a59e"
+    },
+    {
+      "name": "pekko-persistence-jdbc_2.13-1.1.1.jar",
+      "sha256": "0792caff4a6a1bd360b5de37fa42937fa13b38eaa7d2bb65b2adabe865517497"
+    },
+    {
+      "name": "cron4s-core_2.13-0.8.2.jar",
+      "sha256": "e3644a5e3537f41def69482dc6bd0dd39464057d47b3b1c6221281815bcdd8ae"
+    },
+    {
+      "name": "pekko-http_2.13-1.1.0.jar",
+      "sha256": "27be227e06d1f56ae04f1b1e8ec3338ea12d6c0ab32bf670a217cb17bab7df3e"
+    },
+    {
+      "name": "pekko-http-spray-json_2.13-1.1.0.jar",
+      "sha256": "02f26cddba9f2934ced4b7880cb505180ec924efabbd12bf5d2dbca4d0bbad12"
+    },
+    {
+      "name": "pekko-connectors-slick_2.13-1.1.0.jar",
+      "sha256": "a5a46eaabb0bc7cfaa26cce10337e8c877d2eafa48b4e3c5f7cf3d800072f6e5"
+    },
+    {
+      "name": "pekko-connectors-kafka_2.13-1.1.0.jar",
+      "sha256": "825e7366e8a0dea3995475d698c331d4255d32b55e8c022e488886a2bb27e392"
+    },
+    {
+      "name": "mysql-connector-j-9.1.0.jar",
+      "sha256": "8776e2ebc46072c9a47ea59d98298c4273bd9f16a7b26b5dfa4744535aa26c62"
+    },
+    {
+      "name": "HikariCP-5.0.1.jar",
+      "sha256": "26d492397e6775b4296737a8919bf04047afe5827fdd2c08b4557595436b3a2b"
+    },
+    {
+      "name": "debezium-api-3.6.1.Final.jar",
+      "sha256": "893c73a44dd05b3a102830efb53b2636c63cfdf890860411dcc4969282c9544b"
+    },
+    {
+      "name": "debezium-embedded-3.6.1.Final.jar",
+      "sha256": "a883a35d75aa1f393d2550a77c845226496d5886a07a77fe6f9bc118a2dddbfe"
+    },
+    {
+      "name": "debezium-connector-mysql-3.6.1.Final.jar",
+      "sha256": "db56640086983fa838aaedffd7a2fc9887932fc028dbbfef11f62fc49248d5a2"
+    },
+    {
+      "name": "debezium-storage-jdbc-3.6.1.Final.jar",
+      "sha256": "fef3404ca765a132b8850f907f9452424ec4160233284d2c0ae015a4ad515017"
+    },
+    {
+      "name": "spray-json_2.13-1.3.6.jar",
+      "sha256": "08b3b4b659e9be1828156ca3ac21f9c63d3aec344af04ee10ef1bda4aed171de"
+    },
+    {
+      "name": "jackson-databind-2.17.2.jar",
+      "sha256": "c04993f33c0f845342653784f14f38373d005280e6359db5f808701cfae73c0c"
+    },
+    {
+      "name": "jackson-core-2.17.2.jar",
+      "sha256": "721a189241dab0525d9e858e5cb604d3ecc0ede081e2de77d6f34fa5779a5b46"
+    },
+    {
+      "name": "jackson-annotations-2.17.2.jar",
+      "sha256": "873a606e23507969f9bbbea939d5e19274a88775ea5a169ba7e2d795aa5156e1"
+    },
+    {
+      "name": "jackson-module-scala_2.13-2.17.3.jar",
+      "sha256": "95346d46a6bd0814b76c49ac6d208fb227e92a60c569d1dcf198dc5fb59f07ed"
+    },
+    {
+      "name": "simpleclient-0.16.0.jar",
+      "sha256": "22c374f237f7bc4fdb1f0ec2da379c0ba00e69ad2ffe8b6ade543d73062d377f"
+    },
+    {
+      "name": "simpleclient_hotspot-0.16.0.jar",
+      "sha256": "134f156cfeb44cbd3864065806ef5db5543c68af578d1d7ee59283e2e9853f73"
+    },
+    {
+      "name": "simpleclient_common-0.16.0.jar",
+      "sha256": "eba6ec26ce7e40cbb8725e05fb83247a9f4f44945b9e7522e3375dde67b9f059"
+    },
+    {
+      "name": "calcite-core-1.39.0.jar",
+      "sha256": "b736037a8566a8d8a9fd23cc2997b979ff586dd09221c593eb6ae94e950e92ee"
+    },
+    {
+      "name": "calcite-server-1.39.0.jar",
+      "sha256": "c192f871470613d9495c969bb4c81f8046d2a5c6abda8bc108f31c23f499a103"
+    },
+    {
+      "name": "pekko-stream-testkit_2.13-1.1.3.jar",
+      "sha256": "e5006309b8c4983e3129d122444d2c43e5f662701b2d049ab90f42760d01a4d4"
+    },
+    {
+      "name": "pekko-multi-node-testkit_2.13-1.1.3.jar",
+      "sha256": "3b033608dda1e86bb3990b6663d27dda4335e17e901b61ffd1deaf42dd0e9625"
+    },
+    {
+      "name": "pekko-actor-testkit-typed_2.13-1.1.3.jar",
+      "sha256": "8d797f1378f323fd6482477ce22e6286b33eb25e8a7ee7dd07b24077a6300f92"
+    },
+    {
+      "name": "pekko-persistence-testkit_2.13-1.1.3.jar",
+      "sha256": "4f69c4214adf52be9d5563bb48fc5c98896ac98e5b0a2b89fc2810ccade5e257"
+    },
+    {
+      "name": "pekko-http-testkit_2.13-1.1.0.jar",
+      "sha256": "57d226932abaeaf805bc6da1aecbe8a270d03e214a15ea3ecb903d534a286213"
+    },
+    {
+      "name": "scalacheck-1-17_2.13-3.2.17.0.jar",
+      "sha256": "2b69446a4a2a71da5924b864fb061aa717a36edfeba1fa937d2eb069a46208c0"
+    },
+    {
+      "name": "scalacheck_2.13-1.17.0.jar",
+      "sha256": "c29b7ed539129095a22b3243788bde0e2ad4bd53ef90530bea0fa828b3d39293"
+    },
+    {
+      "name": "h2-2.3.232.jar",
+      "sha256": "8dae62d22db8982c3dcb3826edb9c727c5d302063a67eef7d63d82de401f07d3"
+    },
+    {
+      "name": "scala-reflect-2.13.12.jar",
+      "sha256": "c648ceb93a9fcbd22603e0be3d6a156723ae661f516c772a550a088bb3cbca7a"
+    },
+    {
+      "name": "slf4j-api-2.0.16.jar",
+      "sha256": "a12578dde1ba00bd9b816d388a0b879928d00bab3c83c240f7013bf4196c579a"
+    },
+    {
+      "name": "logback-core-1.4.12.jar",
+      "sha256": "132f1ae2e3be4e7ccbcaaec24cb7d16fc7e903d43cc69ad7ebc1a9ca54e9dcff"
+    },
+    {
+      "name": "scalatest-core_2.13-3.2.19.jar",
+      "sha256": "30230081d029f6341b83fe7f157d336113e1c97497fe950169293d28a5bf2936"
+    },
+    {
+      "name": "scalatest-featurespec_2.13-3.2.19.jar",
+      "sha256": "58a44e6be12409596feab4d4123900ef2af55d3fcb72033412059ce055e91dee"
+    },
+    {
+      "name": "scalatest-flatspec_2.13-3.2.19.jar",
+      "sha256": "de4d28423dc69e91fdc8f3a03a4fb6b443c5626b819c896e5fbe4a73a375654a"
+    },
+    {
+      "name": "scalatest-freespec_2.13-3.2.19.jar",
+      "sha256": "f3e463422cca38117bb48665602543474fbc2c37427b1133a9c34332f895b08a"
+    },
+    {
+      "name": "scalatest-funsuite_2.13-3.2.19.jar",
+      "sha256": "926aeb37193ad79d0b380160765c9ab61d4367b994c1ab715896fe4961241d5e"
+    },
+    {
+      "name": "scalatest-funspec_2.13-3.2.19.jar",
+      "sha256": "4c682781b67c5daeeebb9e132a78929b824f88747b963b9aa8bd24a0a7d6893b"
+    },
+    {
+      "name": "scalatest-propspec_2.13-3.2.19.jar",
+      "sha256": "6c1c7d557485861d920b1c26748a871232b626e93d466a3d9bb8dbbc6e38485d"
+    },
+    {
+      "name": "scalatest-refspec_2.13-3.2.19.jar",
+      "sha256": "7a4c836cf66c99c1e12ca96e6d94c4f68b7dbb49144f9e13af73ada4df752652"
+    },
+    {
+      "name": "scalatest-wordspec_2.13-3.2.19.jar",
+      "sha256": "08050f3d05c72575cac29a1483185b443d5f9f34c1fcf80c683083330385ef93"
+    },
+    {
+      "name": "scalatest-diagrams_2.13-3.2.19.jar",
+      "sha256": "a77294d3d5a564e1d8cd6550d4ac795ac042fa90efa91d139da123d7ec5f3bec"
+    },
+    {
+      "name": "scalatest-matchers-core_2.13-3.2.19.jar",
+      "sha256": "033f16c1143fbe51675d080b13ac319d98581d0331ba3ccebb121e3904a774a3"
+    },
+    {
+      "name": "scalatest-shouldmatchers_2.13-3.2.19.jar",
+      "sha256": "64658d736039267baae0108af620617e8ce88b2f4683112e2e31e4ad2a603c0f"
+    },
+    {
+      "name": "scalatest-mustmatchers_2.13-3.2.19.jar",
+      "sha256": "8ebbd5c12843d75f15283f31c35994b6e733ce737f666b05528fa8b6e67ad32e"
+    },
+    {
+      "name": "pekko-actor_2.13-1.1.3.jar",
+      "sha256": "fe4d62f57f756eba3a11deb8f5de91b36581c3adb91ac0c1c06a7accd5addbbc"
+    },
+    {
+      "name": "pekko-slf4j_2.13-1.1.3.jar",
+      "sha256": "b95059d2e8e7b73f0e15dff2a6c4ac99ce2d8d481b45e640328063efea70e8cf"
+    },
+    {
+      "name": "pekko-cluster_2.13-1.1.3.jar",
+      "sha256": "703008d5a36de5bbed35976d01a81b1b522151f06891e356a44c20f7c8375ec6"
+    },
+    {
+      "name": "pekko-distributed-data_2.13-1.1.3.jar",
+      "sha256": "520e69d443144f35f6a0027a3ebb73e7a3d8c39f480ad4db1936a48228ffb188"
+    },
+    {
+      "name": "pekko-cluster-sharding_2.13-1.1.3.jar",
+      "sha256": "e006f523bfdfedab42b45feadf7d827de1c5f1ec17efe9ff394f94e7c66304fb"
+    },
+    {
+      "name": "pekko-remote_2.13-1.1.3.jar",
+      "sha256": "fd7e299962dcfa0789a561e8c3773b1ed04e3784238afc525b85f69a810e91f7"
+    },
+    {
+      "name": "pekko-coordination_2.13-1.1.3.jar",
+      "sha256": "e4cec14ca12179bbcf30c7ab3d51b3ed0f5dc9870c83d37aef46b49dcc755a68"
+    },
+    {
+      "name": "jackson-datatype-jdk8-2.17.2.jar",
+      "sha256": "aaa98d3edabf50426bd822fad1442fbdada6e470969326cbcab5c2798f1738d9"
+    },
+    {
+      "name": "jackson-datatype-jsr310-2.17.2.jar",
+      "sha256": "9b80024a9822e70b07f6bb13824c76c137c1064a1b5eb518374ab141870fdbcc"
+    },
+    {
+      "name": "jackson-module-parameter-names-2.17.3.jar",
+      "sha256": "f736404f3a4dc554e7ec816caccfebc68e65d402c2de7ec3c4438f6895179467"
+    },
+    {
+      "name": "jackson-dataformat-cbor-2.17.3.jar",
+      "sha256": "a7b607ec8a60e720d75752e7a37dd81b8aea5d2d43052eec18442ad5c8bcd8d9"
+    },
+    {
+      "name": "lz4-java-1.8.0.jar",
+      "sha256": "d74a3334fb35195009b338a951f918203d6bbca3d1d359033dc33edd1cadc9ef"
+    },
+    {
+      "name": "pekko-protobuf-v3_2.13-1.1.3.jar",
+      "sha256": "399654481fbc0fec000cad0f85943c9108b9460d3a177c79eff4534bd7391efa"
+    },
+    {
+      "name": "reactive-streams-1.0.4.jar",
+      "sha256": "f75ca597789b3dac58f61857b9ac2e1034a68fa672db35055a8fb4509e325f28"
+    },
+    {
+      "name": "ssl-config-core_2.13-0.6.1.jar",
+      "sha256": "478d7a888fddc5a3f714e5ff1b665090ed9bb45cca6278c7cc94e4514a12067b"
+    },
+    {
+      "name": "pekko-management_2.13-1.1.1.jar",
+      "sha256": "e1e0bc06e5373979088964d9388a669181722e65a04e17dba753b088569c7ed6"
+    },
+    {
+      "name": "pekko-http-core_2.13-1.1.0.jar",
+      "sha256": "00db02529bcda7598883bc61838b0e165d03e7b31481108e9848e013bfd56bfa"
+    },
+    {
+      "name": "pekko-management-pki_2.13-1.1.1.jar",
+      "sha256": "1ddba9102270963a05b626134268719d5a0056856d082a1e6b11776b81067aaf"
+    },
+    {
+      "name": "pekko-stream-typed_2.13-1.1.3.jar",
+      "sha256": "cc178b418c3a409a4198d9323a2f811ebbc0e642b90c95756173eece0f38cebc"
+    },
+    {
+      "name": "pekko-persistence_2.13-1.1.3.jar",
+      "sha256": "e705bbc989a5e780f4e1abc8c765ad4f6a86b897264c61055c12ae46a1a2ea2e"
+    },
+    {
+      "name": "slick_2.13-3.5.1.jar",
+      "sha256": "a3de1533acb57624cb884d0da5d86013978950a38266ea90133b48f76de0891c"
+    },
+    {
+      "name": "slick-hikaricp_2.13-3.5.1.jar",
+      "sha256": "93e01ad6f5548c5ed9a49d2f85309e246d67bf089830b505906b35a24f20859b"
+    },
+    {
+      "name": "cron4s-atto_2.13-0.8.2.jar",
+      "sha256": "be0ec1cfbf62ef8e8e4fb0161d2a1bebee3620931ba320c8762b0399f00cf06d"
+    },
+    {
+      "name": "cron4s-parser_2.13-0.8.2.jar",
+      "sha256": "e2fbf28fe1773e326f490ea43a639db9a25427bd1e7e3f64d89db9646909ca26"
+    },
+    {
+      "name": "cats-core_2.13-2.10.0.jar",
+      "sha256": "9d710e00f6af12dd8e885ec622f78d4b3a35802872e9f01c17ce9c82273aa0b8"
+    },
+    {
+      "name": "shapeless_2.13-2.3.11.jar",
+      "sha256": "498e909814dbdf6041c52af74c7def1a37bb594dc11800d1dd7f2d8c751aa1d7"
+    },
+    {
+      "name": "kafka-clients-4.3.0.jar",
+      "sha256": "97a5b492d4ad658fd2dfba969fa0e403c2e38c971fb1e083da4e391471925fc1"
+    },
+    {
+      "name": "protobuf-java-4.33.4.jar",
+      "sha256": "3ca892fd6ea8b37d01bb6917dbc0bf2637548b756753f65a28d4f1d4d982347f"
+    },
+    {
+      "name": "debezium-util-3.6.1.Final.jar",
+      "sha256": "9501581790412207cda72b2b57874e0430e2f9e4c5e94a054f7b06e07c112e5f"
+    },
+    {
+      "name": "debezium-connector-common-3.6.1.Final.jar",
+      "sha256": "365a695d512b085cff2cd12e28e44a7a3e733b43bfb27f3608508d7800e2de45"
+    },
+    {
+      "name": "connect-api-4.3.0.jar",
+      "sha256": "7938f71e76e3b03cfba284a987a07d925533710166499264652e05eaba709429"
+    },
+    {
+      "name": "connect-runtime-4.3.0.jar",
+      "sha256": "9c4a4a815302a23db37785729594f6362719fda62e6a74d812d1e2719995ec99"
+    },
+    {
+      "name": "connect-json-4.3.0.jar",
+      "sha256": "4af42f973b7ed4def6d394055e9b46ea7da38f69c9d5a45fa4614b492a01ad2e"
+    },
+    {
+      "name": "connect-file-4.3.0.jar",
+      "sha256": "07de275f018451aeda20882e282bdfc207be65ba01568e28e291530f052701ee"
+    },
+    {
+      "name": "debezium-connect-plugins-3.6.1.Final.jar",
+      "sha256": "712d34752f945fb4062354a9faf04424dd3660411137b3bb160b0a68d4a7ee8e"
+    },
+    {
+      "name": "debezium-connector-binlog-3.6.1.Final.jar",
+      "sha256": "1b23f155ce8c9c108513b8c50b16744831f52c29d367797343008782314b3dd5"
+    },
+    {
+      "name": "debezium-storage-kafka-3.6.1.Final.jar",
+      "sha256": "0ad7cda56d8d973174080dd89ccabe48c3b2bc790fb5c018468ffa85ba93a283"
+    },
+    {
+      "name": "debezium-storage-file-3.6.1.Final.jar",
+      "sha256": "b29adac3a76cf4ba331894e226c68e339747fd00bdf9c6c513ad5ebcfcf2b4a5"
+    },
+    {
+      "name": "debezium-ddl-parser-3.6.1.Final.jar",
+      "sha256": "03b1a891289999fa916b2dfbba0fa797dc1d005529bbb61a6f1efca77e055978"
+    },
+    {
+      "name": "mysql-binlog-connector-java-0.41.0.jar",
+      "sha256": "a4bd7e9e24269fdfbbdfcd692f100878dc2539b5f331276c7700fdde44341364"
+    },
+    {
+      "name": "paranamer-2.8.jar",
+      "sha256": "688cb118a6021d819138e855208c956031688be4b47a24bb615becc63acedf07"
+    },
+    {
+      "name": "simpleclient_tracer_otel-0.16.0.jar",
+      "sha256": "a2a84c59bef3796bb7f9c6f2ae8b7de8b905313ef28180ac3de7ff61dd68df3f"
+    },
+    {
+      "name": "simpleclient_tracer_otel_agent-0.16.0.jar",
+      "sha256": "7ad2bb40df74a772d9f5445a3d03579b49d6b37a47d5e90f6cf3f59ecf41ad06"
+    },
+    {
+      "name": "calcite-linq4j-1.39.0.jar",
+      "sha256": "0d72c668bba51f663e75fd8346cda19863bee9d71d57b479ead15994ffb909b2"
+    },
+    {
+      "name": "jts-core-1.19.0.jar",
+      "sha256": "dbb8644cf324123d06c27aa982f570811e10b4cb1f2aef893b00de237d33efc0"
+    },
+    {
+      "name": "jts-io-common-1.19.0.jar",
+      "sha256": "e0f0c62024d4282f5f905de1abd2cc96f975a51d9e8d98254234fa14b16bbe9b"
+    },
+    {
+      "name": "proj4j-1.2.2.jar",
+      "sha256": "e6fb89b55a6466aff5cc8497079e9d08c160122f4b433e8061acc37f81d7f802"
+    },
+    {
+      "name": "error_prone_annotations-2.28.0.jar",
+      "sha256": "f3fc8a3a0a4020706a373b00e7f57c2512dd26d1f83d28c7d38768f8682b231e"
+    },
+    {
+      "name": "guava-33.3.0-jre.jar",
+      "sha256": "dfadc3bce3101eff1452aae47d7c833fee443b47bdf9ef13311b6c7cab663ddf"
+    },
+    {
+      "name": "avatica-core-1.26.0.jar",
+      "sha256": "f1a02099af732f6fc09f3d32a1e8914a337200a266d6d145bc65c691292e5fa0"
+    },
+    {
+      "name": "apiguardian-api-1.1.2.jar",
+      "sha256": "b509448ac506d607319f182537f0b35d71007582ec741832a1f111e5b5b70b38"
+    },
+    {
+      "name": "checker-qual-3.43.0.jar",
+      "sha256": "3fbc2e98f05854c3df16df9abaa955b91b15b3ecac33623208ed6424640ef0f6"
+    },
+    {
+      "name": "jackson-dataformat-yaml-2.15.4.jar",
+      "sha256": "9a463ac8ce75fa20c4c16365f6a71ea8808bbc4eca3736e315667cd31e1b549c"
+    },
+    {
+      "name": "uzaygezen-core-0.2.jar",
+      "sha256": "29aabe951d220f03b3789332f9f455ca2eba953c91ecef8aa06f76f458cedc4e"
+    },
+    {
+      "name": "json-path-2.9.0.jar",
+      "sha256": "11a9ee6f88bb31f1450108d1cf6441377dec84aca075eb6bb2343be157575bea"
+    },
+    {
+      "name": "sketches-core-0.9.0.jar",
+      "sha256": "672a7973eae372d9f6ad9dab5904292ab38a1be2b7445521a0d820a59f2ae13c"
+    },
+    {
+      "name": "commons-codec-1.16.0.jar",
+      "sha256": "56595fb20b0b85bc91d0d503dad50bb7f1b9afc0eed5dffa6cbb25929000484d"
+    },
+    {
+      "name": "aggdesigner-algorithm-6.0.jar",
+      "sha256": "9c06b3af57653eaf004231818cc8e91569d832d0b24ae1a8600daf023c050bfb"
+    },
+    {
+      "name": "commons-dbcp2-2.11.0.jar",
+      "sha256": "58d144d6327b4a054ca0e71a4438456bd66c0ca8d0c1aa799f59dcfb0ec599cc"
+    },
+    {
+      "name": "commons-lang3-3.13.0.jar",
+      "sha256": "82f528cf718c7a3c2f30fc5bc784e3c6a0a10b17605dadb9e16c82ede11e6064"
+    },
+    {
+      "name": "commons-math3-3.6.1.jar",
+      "sha256": "1e56d7b058d28b65abd256b8458e3885b674c1d588fa43cd7d1cbb9c7ef2b308"
+    },
+    {
+      "name": "commons-text-1.11.0.jar",
+      "sha256": "2acf30a070b19163d5a480eae411a281341e870020e3534c6d5d4c8472739e30"
+    },
+    {
+      "name": "commons-io-2.15.0.jar",
+      "sha256": "a328dad730921d197b6a9b195dffa00e41c974c2dac8fe37e84d31706bca7792"
+    },
+    {
+      "name": "commons-compiler-3.1.11.jar",
+      "sha256": "a9fee57ad0db1a442cd2a19268c41cd9aab4967ef63d29a3f5533315d102be68"
+    },
+    {
+      "name": "janino-3.1.11.jar",
+      "sha256": "48748fdce9ee2021d4e78412c67d528ff992635c36064f5b5f432af8b4b90ed6"
+    },
+    {
+      "name": "pekko-testkit_2.13-1.1.3.jar",
+      "sha256": "10761401cd7d06a5ed5d62a88f37f9f52ceebc063fbcb174268c6baf3a022d2f"
+    },
+    {
+      "name": "netty-transport-4.1.116.Final.jar",
+      "sha256": "6a9ee0f9eec8cdbfcb7be10538ee2aa72cbe9ad4377a800c2dcc1338495ce368"
+    },
+    {
+      "name": "netty-handler-4.1.116.Final.jar",
+      "sha256": "86e04a3cb816670fa7f07e5e6333f45c5303d77eeee4cbc54b7b26992570630f"
+    },
+    {
+      "name": "test-interface-1.0.jar",
+      "sha256": "15f70b38bb95f3002fec9aea54030f19bb4ecfbad64c67424b5e5fea09cd749e"
+    },
+    {
+      "name": "scalatest-compatible-3.2.19.jar",
+      "sha256": "5dc6b8fa5396fe9e1a7c2b72df174a8eb3e92770cdc3e70636d3eba673cd0da3"
+    },
+    {
+      "name": "scalactic_2.13-3.2.19.jar",
+      "sha256": "c27c33de17d450e29e66c16c5af4cfa33e8ffcf03c124f0a3d249d848cccd4af"
+    },
+    {
+      "name": "scala-xml_2.13-2.1.0.jar",
+      "sha256": "d122cbf93115ee714570de6a9c18e53001fedb474911d4cb5091758ee51f053a"
+    },
+    {
+      "name": "config-1.4.3.jar",
+      "sha256": "8ada4c185ce72416712d63e0b5afdc5f009c0cdf405e5f26efecdf156aa5dfb6"
+    },
+    {
+      "name": "lmdbjava-0.9.0.jar",
+      "sha256": "09d9ef91e626ddf5aa7693af36c5e384dc37ed9504ac08ac63e08a9940373228"
+    },
+    {
+      "name": "pekko-pki_2.13-1.1.3.jar",
+      "sha256": "179b5c1d62419410da064858785083292ea05da796047a1d6ce16e37fcaae9d9"
+    },
+    {
+      "name": "agrona-1.22.0.jar",
+      "sha256": "d422a57e89ccb6ae0f9482efa16f5dd0b993dac0db3860f54b033f21f45206cf"
+    },
+    {
+      "name": "pekko-parsing_2.13-1.1.0.jar",
+      "sha256": "b385e7669691a06fbbf6f44ebbd39366f7fa2b6658ddcd6a536e092b5ebd37f4"
+    },
+    {
+      "name": "parboiled_2.13-2.5.1.jar",
+      "sha256": "2a3dba2bcc2770e787eb2f156f2157dc051c1821d3454343956c0d1a79f8f083"
+    },
+    {
+      "name": "atto-core_2.13-0.9.5.jar",
+      "sha256": "11a4c9a088241c9f4022f29ae847bfbadbe7051c30dde97e2066418a7f44c622"
+    },
+    {
+      "name": "cats-kernel_2.13-2.10.0.jar",
+      "sha256": "4692439fa950910c0e7572aebcfbe98fed871f1b208a192011b954305851e181"
+    },
+    {
+      "name": "zstd-jni-1.5.6-10.jar",
+      "sha256": "b6c3237e24b8252a5a9c3a0e1ae30ef8f323412e74bd358548b7a9e527d676df"
+    },
+    {
+      "name": "lz4-java-1.10.2.jar",
+      "sha256": "252dabd586d22149a31661a8afc1a50747714eb1a298bd4a6e780c8c91a13866"
+    },
+    {
+      "name": "snappy-java-1.1.10.7.jar",
+      "sha256": "4c766cb3f855415ee734b2392949a0b6f12a60879334a74518deaf6270d32e36"
+    },
+    {
+      "name": "debezium-config-3.6.1.Final.jar",
+      "sha256": "0d4b6335aca11e8ba40aa00d39b23b863ef968e79d47ed7a133b9461f8218405"
+    },
+    {
+      "name": "debezium-openlineage-api-3.6.1.Final.jar",
+      "sha256": "7e7e0fb3c3a12b3e8bfe2d42df278ff2a9fab8c58fa12199590e35fdb88b2062"
+    },
+    {
+      "name": "sketches-java-0.8.2.jar",
+      "sha256": "b24c3d175556eb381ef2b2f0a7dffe7cb1fb7a9f893f41260822b5ec6cb13cca"
+    },
+    {
+      "name": "jakarta.ws.rs-api-3.1.0.jar",
+      "sha256": "6b3b3628b8b4aedda0d24c3354335e985497d8ef3c510b8f3028e920d5b8663d"
+    },
+    {
+      "name": "connect-transforms-4.3.0.jar",
+      "sha256": "a1b6b347e26997e4e5ede01752a9ac572e8d938b48bf3a4b22c27890dca65b7e"
+    },
+    {
+      "name": "jose4j-0.9.6.jar",
+      "sha256": "7314af50cde9c99e8eaf43eee617a23edcc6bb43036221064355094999d837ef"
+    },
+    {
+      "name": "jackson-jakarta-rs-json-provider-2.21.2.jar",
+      "sha256": "ca969ea798efedc4b56589505fab51eb69c11a361b2e7583855593fc8690a666"
+    },
+    {
+      "name": "jersey-container-servlet-3.1.10.jar",
+      "sha256": "4aadc66d2d36afb273b3898581d6aa51e0f992308d56fd51b8e3201efa461f67"
+    },
+    {
+      "name": "jersey-hk2-3.1.10.jar",
+      "sha256": "00ed71c496a856ac1f73272482a7abe27b5a96b823c29cc08f4b708c8d3e647e"
+    },
+    {
+      "name": "jaxb-api-2.3.1.jar",
+      "sha256": "88b955a0df57880a26a74708bc34f74dcaf8ebf4e78843a28b50eae945732b06"
+    },
+    {
+      "name": "activation-1.1.1.jar",
+      "sha256": "ae475120e9fcd99b4b00b38329bd61cdc5eb754eee03fe66c01f50e137724f99"
+    },
+    {
+      "name": "jetty-server-12.0.34.jar",
+      "sha256": "fb7a1401b7b2358e9cb975764c54fac72fcecd7ae5199369041118603cd3fd7d"
+    },
+    {
+      "name": "jetty-ee10-servlet-12.0.34.jar",
+      "sha256": "08030501c5868ba348e0e349121cb3493586c29d438c725bf76b0559e8d5f5ed"
+    },
+    {
+      "name": "jetty-ee10-servlets-12.0.34.jar",
+      "sha256": "bf9fe841e09f39d498838965b57e52b79f12e7bd5e259e645cc9e0a6cbe96426"
+    },
+    {
+      "name": "jetty-client-12.0.34.jar",
+      "sha256": "b77b7535a809c78af71126b90aed0836cc9f9ac80d32e5cbf7a07025ace14401"
+    },
+    {
+      "name": "classgraph-4.8.179.jar",
+      "sha256": "16558357f234052370109127a45d69a9bd6d8646925594792634486dc48b159d"
+    },
+    {
+      "name": "maven-artifact-3.9.15.jar",
+      "sha256": "f154c31f15ac97c37b9cdf9f8d63cde5053c470d2daf54df7dfd3bb3c9e501c6"
+    },
+    {
+      "name": "swagger-annotations-2.2.39.jar",
+      "sha256": "ea3017076809f8104ff8a130dc4c12db8c67595aa1d978104a9beca8277a7d29"
+    },
+    {
+      "name": "jackson-module-blackbird-2.21.2.jar",
+      "sha256": "5ed62cdcd357a24b73de9280e167aa014d7b4c17d04823844d482274cf07097e"
+    },
+    {
+      "name": "antlr4-runtime-4.10.1.jar",
+      "sha256": "da66be0c98acfb29bc708300d05f1a3269c40f9984a4cb9251cf2ba1898d1334"
+    },
+    {
+      "name": "simpleclient_tracer_common-0.16.0.jar",
+      "sha256": "e84a784ac8e24f182ee62da80b6b5c8140774b75bfa4bf9cc3d3b8390db625f6"
+    },
+    {
+      "name": "json-simple-1.1.1.jar",
+      "sha256": "4e69696892b88b41c55d49ab2fdcc21eead92bf54acc588c0050596c3b75199c"
+    },
+    {
+      "name": "failureaccess-1.0.2.jar",
+      "sha256": "8a8f81cf9b359e3f6dfa691a1e776985c061ef2f223c9b2c80753e1b458e8064"
+    },
+    {
+      "name": "listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar",
+      "sha256": "b372a037d4230aa57fbeffdef30fd6123f9c0c2db85d0aced00c91b974f33f99"
+    },
+    {
+      "name": "jsr305-3.0.2.jar",
+      "sha256": "766ad2a0783f2687962c8ad74ceecc38a28b9f72a2d085ee438b7813e928d0c7"
+    },
+    {
+      "name": "j2objc-annotations-3.0.0.jar",
+      "sha256": "88241573467ddca44ffd4d74aa04c2bbfd11bf7c17e0c342c94c9de7a70a7c64"
+    },
+    {
+      "name": "avatica-metrics-1.26.0.jar",
+      "sha256": "80df9083dd2f33aa79da2154b413cb5d77a8f2473cedcf8e7c97312cd922777a"
+    },
+    {
+      "name": "httpclient5-5.4.1.jar",
+      "sha256": "c6c6fc60cbb3edd9e823d9226d608ff3135eb48bd2049bb83bdbc3ef4a911138"
+    },
+    {
+      "name": "httpcore5-5.3.1.jar",
+      "sha256": "83f559ad1ee723c1ab3e80b040551cfacb2e5a52bdf04dcdd35419a6760d81b3"
+    },
+    {
+      "name": "snakeyaml-2.1.jar",
+      "sha256": "69a4537045ddbcaed4c68eef074462eb12d324d7953f62c5ecd35df645e8aec9"
+    },
+    {
+      "name": "json-smart-2.5.0.jar",
+      "sha256": "432b9e545848c4141b80717b26e367f83bf33f19250a228ce75da6e967da2bc7"
+    },
+    {
+      "name": "memory-0.9.0.jar",
+      "sha256": "c7d22ca0298753de7a5c85edc9b926892936e978595fe44375159b8ada15fdfc"
+    },
+    {
+      "name": "commons-lang-2.4.jar",
+      "sha256": "2c73b940c91250bc98346926270f13a6a10bb6e29d2c9316a70d134e382c873e"
+    },
+    {
+      "name": "commons-pool2-2.12.0.jar",
+      "sha256": "6d3bd18df8410f3e31b031aca582cc109342358a62a2759ebd0c4cdf30d06f8b"
+    },
+    {
+      "name": "jakarta.transaction-api-1.3.3.jar",
+      "sha256": "0b02a194dd04ee2e192dc9da9579e10955dd6e8ac707adfc91d92f119b0e67ab"
+    },
+    {
+      "name": "netty-common-4.1.116.Final.jar",
+      "sha256": "2145bcff843828e437e0c663739670f919fd7c24f3c02f260945435a887ca94b"
+    },
+    {
+      "name": "netty-buffer-4.1.116.Final.jar",
+      "sha256": "d4aabdb51bab5d1e9a83166615482ab391ad78506d69e91e37fe11a0ff8196fe"
+    },
+    {
+      "name": "netty-resolver-4.1.116.Final.jar",
+      "sha256": "cac96a9e1f4a1d9b5d7082ae408d0cc0a448412d7cd72565fc99e4ab3242da71"
+    },
+    {
+      "name": "netty-transport-native-unix-common-4.1.116.Final.jar",
+      "sha256": "f7861e0c54984c031a0fbde94c96e8ad1c9e79a17ab401b34583cab309444e52"
+    },
+    {
+      "name": "netty-codec-4.1.116.Final.jar",
+      "sha256": "484f618f007eae70ef81b1f763e2ede9ddeba531a70a4618b8599355cad23a40"
+    },
+    {
+      "name": "jnr-constants-0.10.4.jar",
+      "sha256": "9a5b8cf9798d9d0331b8d8966c5235a22c4307676e35803a24659e6d76096f78"
+    },
+    {
+      "name": "jnr-ffi-2.2.15.jar",
+      "sha256": "a34ef74dc7d44d1575e522b47ab41116953c3128a61f9a35a6a9fd4a9d47a195"
+    },
+    {
+      "name": "asn-one-0.6.0.jar",
+      "sha256": "e4f70fd92849b52240048b8ebace0c9a17d3bb7b9c882b3c7778cec3458495f5"
+    },
+    {
+      "name": "jackson-jakarta-rs-base-2.21.2.jar",
+      "sha256": "40f4c57a2e6f34505338da188724e7ace7b343dde3964b76a12c993cdedad1af"
+    },
+    {
+      "name": "jackson-module-jakarta-xmlbind-annotations-2.21.2.jar",
+      "sha256": "f507551c823b137c8487275fc171652a78a4f083732e349e1d3cb42e568dd7e4"
+    },
+    {
+      "name": "jersey-container-servlet-core-3.1.10.jar",
+      "sha256": "fd15e7e37215d772ccdae8d4076c41a11ad3fec9ca88a1f8a8f6dacf4663bb69"
+    },
+    {
+      "name": "jersey-common-3.1.10.jar",
+      "sha256": "b8df5de87d48d6abf555f340755a056c8cb29a660af958e959db8a4cb3552b54"
+    },
+    {
+      "name": "jersey-server-3.1.10.jar",
+      "sha256": "1b33a9be417b72f7ceef3afe9780781b66122b0f1db78f2f82502988072cfab0"
+    },
+    {
+      "name": "hk2-locator-3.0.6.jar",
+      "sha256": "e2664d21b017c3aa1518b913264602bea604edc54d356103c10afba99abd04fc"
+    },
+    {
+      "name": "javassist-3.30.2-GA.jar",
+      "sha256": "eba37290994b5e4868f3af98ff113f6244a6b099385d9ad46881307d3cb01aaf"
+    },
+    {
+      "name": "javax.activation-api-1.2.0.jar",
+      "sha256": "43fdef0b5b6ceb31b0424b208b930c74ab58fac2ceeb7b3f6fd3aeb8b5ca4393"
+    },
+    {
+      "name": "jetty-http-12.0.34.jar",
+      "sha256": "63890ecc5bb8bf26c4dd0952ef2d0d3dd3f7434b37b21e51f7ea8dfbe96b9dc0"
+    },
+    {
+      "name": "jetty-io-12.0.34.jar",
+      "sha256": "3704daeb82b39041ee5e6f810636c2fcb9a10476cdbf0fd067e584ed3110d66a"
+    },
+    {
+      "name": "jakarta.servlet-api-6.0.0.jar",
+      "sha256": "c034eb1afb158987dbb53a5fea0cadf611c8dae8daadd59c44d9d5ab70129cef"
+    },
+    {
+      "name": "jetty-security-12.0.34.jar",
+      "sha256": "e9a595eff775859a5461c0ce05e27ace5182ee1fdc1b17016453fa41ca0e1560"
+    },
+    {
+      "name": "jetty-session-12.0.34.jar",
+      "sha256": "a161ae531c5d6a695f17a547fdf90746dcd929f1abac5c60c7061a6fb20d346f"
+    },
+    {
+      "name": "jetty-util-12.0.34.jar",
+      "sha256": "3f8906cd72428d87dbbc0bd915192ce0f426e9db7805d3b0337588c1b6d7206e"
+    },
+    {
+      "name": "jetty-alpn-client-12.0.34.jar",
+      "sha256": "dde78ab533961bb853a8ce5a23a90d4dd54cd6522e9e7f90566ca7f44e035ef9"
+    },
+    {
+      "name": "plexus-utils-3.6.1.jar",
+      "sha256": "05a63effd67e2d6b9d610cc82e2bd7473289d34802e57a529b28110f28af5679"
+    },
+    {
+      "name": "httpcore5-h2-5.3.1.jar",
+      "sha256": "963e194a972aa3daf09287c921ed5a2dd4c3985c44185b0138002943025bed6a"
+    },
+    {
+      "name": "accessors-smart-2.5.0.jar",
+      "sha256": "12314fc6881d66a413fd66370787adba16e504fbf7e138690b0f3952e3fbd321"
+    },
+    {
+      "name": "jffi-1.3.12.jar",
+      "sha256": "d7ddb6e9f11133600894eb04f95a9d834caefa4acfc86ef9ad59e7555297bbd3"
+    },
+    {
+      "name": "jffi-1.3.12-native.jar",
+      "sha256": "c7b947702f27d2e432b561afc4a8cee01f03d43629e5d657b92d617f672bff90"
+    },
+    {
+      "name": "asm-9.3.jar",
+      "sha256": "1263369b59e29c943918de11d6d6152e2ec6085ce63e5710516f8c67d368e4bc"
+    },
+    {
+      "name": "asm-commons-9.2.jar",
+      "sha256": "be4ce53138a238bb522cd781cf91f3ba5ce2f6ca93ec62d46a162a127225e0a6"
+    },
+    {
+      "name": "asm-analysis-9.2.jar",
+      "sha256": "878fbe521731c072d14d2d65b983b1beae6ad06fda0007b6a8bae81f73f433c4"
+    },
+    {
+      "name": "asm-tree-9.2.jar",
+      "sha256": "aabf9bd23091a4ebfc109c1f3ee7cf3e4b89f6ba2d3f51c5243f16b3cffae011"
+    },
+    {
+      "name": "asm-util-9.2.jar",
+      "sha256": "ff5b3cd331ae8a9a804768280da98f50f424fef23dd3c788bb320e08c94ee598"
+    },
+    {
+      "name": "jnr-a64asm-1.0.0.jar",
+      "sha256": "53ae5ea7fa5c284e8279aa348e7b9de4548b0cae10bfd058fa217c791875e4cf"
+    },
+    {
+      "name": "jnr-x86asm-1.0.2.jar",
+      "sha256": "39f3675b910e6e9b93825f8284bec9f4ad3044cd20a6f7c8ff9e2f8695ebf21e"
+    },
+    {
+      "name": "jakarta.xml.bind-api-3.0.1.jar",
+      "sha256": "b8fb4bee3ff5b5c1ef77144d8411316018d7bbd41fcf1ede0646f7978546b867"
+    },
+    {
+      "name": "jakarta.activation-api-2.1.0.jar",
+      "sha256": "56e8d994095fe49c28138c60291482f66f18d12ac2b720e938697dce6a3135c7"
+    },
+    {
+      "name": "jakarta.inject-api-2.0.1.jar",
+      "sha256": "f7dc98062fccf14126abb751b64fab12c312566e8cbdc8483598bffcea93af7c"
+    },
+    {
+      "name": "jakarta.annotation-api-2.1.1.jar",
+      "sha256": "5f65fdaf424eee2b55e1d882ba9bb376be93fb09b37b808be6e22e8851c909fe"
+    },
+    {
+      "name": "osgi-resource-locator-1.0.3.jar",
+      "sha256": "aab5d7849f7cfcda2cc7c541ba1bd365151d42276f151c825387245dfde3dd74"
+    },
+    {
+      "name": "jersey-client-3.1.10.jar",
+      "sha256": "96cf86c23b515da20a30a39633a920f12a420d1e5f02c55ef5577ca2694d11c6"
+    },
+    {
+      "name": "jakarta.validation-api-3.0.2.jar",
+      "sha256": "291c25e6910cc6a7ebd96d4c6baebf6d7c37676c5482c2d96146e901b62c1fc9"
+    },
+    {
+      "name": "aopalliance-repackaged-3.0.6.jar",
+      "sha256": "a82b6d1a348324ef88dc807c7cd7aaf633985cbff7b30036fb61a1b86981d840"
+    },
+    {
+      "name": "hk2-api-3.0.6.jar",
+      "sha256": "c049a21a9fd9316c7e291a2bc28835f70d25affb623dc1599a83b6b84ec83a4f"
+    },
+    {
+      "name": "hk2-utils-3.0.6.jar",
+      "sha256": "fc84d85a0744b576d9ec7db5845eeb998ed532a9450dd19c8c922c3ee6926206"
+    },
+    {
+      "name": "jakarta.activation-2.0.1.jar",
+      "sha256": "b9e24b7dd6e07495562ea96531be3130c96dba4d78e1dfd88adbbdebf4332871"
+    }
+  ]
+}

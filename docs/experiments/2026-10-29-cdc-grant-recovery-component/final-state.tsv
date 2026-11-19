@@ -1,0 +1,14 @@
+platform_id	owner_attempt	status	updated_at
+default	attempt-final	STOPPED	16
+grant_id	task_id	owner_attempt	pool	status	created_at	finished_at
+3af03af7-f970-4aa7-9984-4b2dae784e4c	22c4e38c40108e77e317025089a719c9b9c90f218e1107414647a1400e5c5661	attempt-old	SNAPSHOT	RELEASED	4	7
+6510bc48-15fd-4fde-b401-ad38831d3e6c	22c4e38c40108e77e317025089a719c9b9c90f218e1107414647a1400e5c5661	attempt-final	SNAPSHOT	RELEASED	14	15
+owner_attempt	permit_id	task_id	capture_id	offset_json	marker_present	table_name	generation	operation_id	claimed_by	consumed	created_at
+attempt-old	6dedd344-dbe8-4358-b7cf-bf7d487f896d	22c4e38c40108e77e317025089a719c9b9c90f218e1107414647a1400e5c5661	grant_f9b5f4f52b9c	{"file":"mysql-bin.000001","pos":110}	0	rows	g1	operation-old-boot	attempt-new	1	7
+attempt-new	be26ae94-4e05-4778-9182-7a48cee4eb3c	22c4e38c40108e77e317025089a719c9b9c90f218e1107414647a1400e5c5661	grant_f9b5f4f52b9c	{"file":"mysql-bin.000001","pos":110}	0	rows	g1	operation-new-boot	attempt-final	1	12
+task_id	capture_id	desired_state	phase	journal_revision	execution_id	release_status	failure_code	grant_id	grant_owner	schedulable
+22c4e38c40108e77e317025089a719c9b9c90f218e1107414647a1400e5c5661	grant_f9b5f4f52b9c	RUNNING	PAUSED	0	NULL	RELEASED	TEST_COMPLETE	NULL	NULL	0
+seq	kind	subscription_id	payload	digest
+1	SCHEMA		{}	d978383f1bdc962c9efea7b6d8e3736ef4f4fa5b25ce1509c2a647a02e2ebb81
+2	ACK		{"offset":{"file":"mysql-bin.000001","pos":110},"parent":null,"references":[]}	d66372aadc16e830349745620a9c1f3e0142e4b3d39764aa46a161105a7e3cb6
+3	B_INTENT	22c4e38c40108e77e317025089a719c9b9c90f218e1107414647a1400e5c5661	{"ack":2,"digest":"d66372aadc16e830349745620a9c1f3e0142e4b3d39764aa46a161105a7e3cb6","generation":"g1","offset":{"file":"mysql-bin.000001","pos":110},"requestId":"22c4e38c40108e77e317025089a719c9b9c90f218e1107414647a1400e5c5661","version":1}	5d1bf5194bf5cf366dd3f5f3b345a3d690490a5d573d594052a20bfc14467544

@@ -1,0 +1,498 @@
+{
+  "candidate": "fixed source lineage + db + table + file + source.pos + source.row + op",
+  "candidate_status": "passed_within_fixture_not_a_production_identity_spec",
+  "comparisons": {
+    "original-16": {
+      "records": 39,
+      "identities_and_normalized_content_equal": true,
+      "sourceOffset_differences": 0,
+      "source_metadata_differences": 0,
+      "processing_timestamp_differences": 0
+    },
+    "restart-16": {
+      "records": 39,
+      "identities_and_normalized_content_equal": true,
+      "sourceOffset_differences": 0,
+      "source_metadata_differences": 0,
+      "processing_timestamp_differences": 39
+    },
+    "split-1": {
+      "records": 39,
+      "identities_and_normalized_content_equal": true,
+      "sourceOffset_differences": 0,
+      "source_metadata_differences": 0,
+      "processing_timestamp_differences": 39
+    },
+    "merge-64": {
+      "records": 39,
+      "identities_and_normalized_content_equal": true,
+      "sourceOffset_differences": 0,
+      "source_metadata_differences": 0,
+      "processing_timestamp_differences": 39
+    },
+    "advance-prefix-10": {
+      "records": 39,
+      "identities_and_normalized_content_equal": true,
+      "sourceOffset_differences": 0,
+      "source_metadata_differences": 0,
+      "processing_timestamp_differences": 39
+    },
+    "inside-split-1": {
+      "records": 29,
+      "identities_and_normalized_content_equal": true,
+      "sourceOffset_differences": 0,
+      "source_metadata_differences": 0,
+      "processing_timestamp_differences": 29
+    },
+    "inside-merge-64": {
+      "records": 29,
+      "identities_and_normalized_content_equal": true,
+      "sourceOffset_differences": 0,
+      "source_metadata_differences": 0,
+      "processing_timestamp_differences": 29
+    },
+    "pk-advance-delete": {
+      "records": 29,
+      "identities_and_normalized_content_equal": true,
+      "sourceOffset_differences": 0,
+      "source_metadata_differences": 0,
+      "processing_timestamp_differences": 29
+    }
+  },
+  "actual_callback_sizes": {
+    "original-16": [
+      16,
+      16,
+      7
+    ],
+    "restart-16": [
+      16,
+      16,
+      7
+    ],
+    "split-1": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "merge-64": [
+      39
+    ],
+    "advance-prefix-10": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "inside-split-1": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "inside-merge-64": [
+      29
+    ],
+    "pk-advance-delete": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "pk-component-resume": [
+      1
+    ]
+  },
+  "pids": {
+    "original-16": 29407,
+    "restart-16": 29423,
+    "split-1": 29446,
+    "merge-64": 29451,
+    "advance-prefix-10": 29469,
+    "inside-split-1": 29488,
+    "inside-merge-64": 29502,
+    "pk-advance-delete": 29514,
+    "pk-component-resume": 29530
+  },
+  "same_transaction_gtid": [
+    "bea7878f-cb14-11f1-94fa-b60c4ea2ac04:27"
+  ],
+  "same_key_updates": 4,
+  "multi_row_event_rows": 32,
+  "pk_component_ack_boundary": {
+    "only_delete_component_acknowledged": true,
+    "delete_create_offsets_equal": true,
+    "expected_unacknowledged_logical_records": 2,
+    "actual_replayed_records": 1,
+    "missing_logical_records": [
+      {
+        "key": {
+          "id": 150
+        },
+        "identity": [
+          "bea7878f-cb14-11f1-94fa-b60c4ea2ac04",
+          "pekko_test_identity_eff08bdb5c78",
+          "source_rows",
+          "mysql-bin.000003",
+          24040,
+          0,
+          "c"
+        ]
+      }
+    ],
+    "scope": "source-only ACK boundary probe, not target data-loss or repaired-protocol validation"
+  },
+  "pk_change_components": [
+    {
+      "key": {
+        "id": 50
+      },
+      "op": "d",
+      "source": {
+        "gtid": "bea7878f-cb14-11f1-94fa-b60c4ea2ac04:27",
+        "name": "identity_eff08bdb5c78",
+        "pos": 24040,
+        "db": "pekko_test_identity_eff08bdb5c78",
+        "query": null,
+        "row": 0,
+        "thread": 22,
+        "connector": "mysql",
+        "file": "mysql-bin.000003",
+        "ts_us": 1792342549993060,
+        "ts_ns": 1792342549993060000,
+        "table": "source_rows",
+        "server_id": 186019,
+        "version": "3.6.1.Final",
+        "snapshot": null,
+        "ts_ms": 1792342549993,
+        "sequence": null
+      },
+      "headers": [
+        {
+          "key": "__debezium.newkey",
+          "schema": {
+            "fields": [
+              {
+                "name": "id",
+                "schema": {
+                  "fields": [],
+                  "keySchema": null,
+                  "name": null,
+                  "optional": false,
+                  "parameters": null,
+                  "type": "INT64",
+                  "valueSchema": null,
+                  "version": null
+                }
+              }
+            ],
+            "keySchema": null,
+            "name": "identity_eff08bdb5c78.pekko_test_identity_eff08bdb5c78.source_rows.Key",
+            "optional": false,
+            "parameters": null,
+            "type": "STRUCT",
+            "valueSchema": null,
+            "version": null
+          },
+          "value": {
+            "id": 150
+          }
+        },
+        {
+          "key": "__debezium.context.connectorLogicalName",
+          "schema": {
+            "fields": [],
+            "keySchema": null,
+            "name": null,
+            "optional": false,
+            "parameters": null,
+            "type": "STRING",
+            "valueSchema": null,
+            "version": null
+          },
+          "value": "identity_eff08bdb5c78"
+        },
+        {
+          "key": "__debezium.context.taskId",
+          "schema": {
+            "fields": [],
+            "keySchema": null,
+            "name": null,
+            "optional": false,
+            "parameters": null,
+            "type": "STRING",
+            "valueSchema": null,
+            "version": null
+          },
+          "value": "0"
+        },
+        {
+          "key": "__debezium.context.connectorName",
+          "schema": {
+            "fields": [],
+            "keySchema": null,
+            "name": null,
+            "optional": false,
+            "parameters": null,
+            "type": "STRING",
+            "valueSchema": null,
+            "version": null
+          },
+          "value": "mysql"
+        },
+        {
+          "key": "__debezium.context.runId",
+          "schema": {
+            "fields": [],
+            "keySchema": null,
+            "name": null,
+            "optional": false,
+            "parameters": null,
+            "type": "STRING",
+            "valueSchema": null,
+            "version": null
+          },
+          "value": "01a14ff0-dd96-7d01-94b8-8500deed0710"
+        }
+      ]
+    },
+    {
+      "key": {
+        "id": 150
+      },
+      "op": "c",
+      "source": {
+        "gtid": "bea7878f-cb14-11f1-94fa-b60c4ea2ac04:27",
+        "name": "identity_eff08bdb5c78",
+        "pos": 24040,
+        "db": "pekko_test_identity_eff08bdb5c78",
+        "query": null,
+        "row": 0,
+        "thread": 22,
+        "connector": "mysql",
+        "file": "mysql-bin.000003",
+        "ts_us": 1792342549993060,
+        "ts_ns": 1792342549993060000,
+        "table": "source_rows",
+        "server_id": 186019,
+        "version": "3.6.1.Final",
+        "snapshot": null,
+        "ts_ms": 1792342549993,
+        "sequence": null
+      },
+      "headers": [
+        {
+          "key": "__debezium.oldkey",
+          "schema": {
+            "fields": [
+              {
+                "name": "id",
+                "schema": {
+                  "fields": [],
+                  "keySchema": null,
+                  "name": null,
+                  "optional": false,
+                  "parameters": null,
+                  "type": "INT64",
+                  "valueSchema": null,
+                  "version": null
+                }
+              }
+            ],
+            "keySchema": null,
+            "name": "identity_eff08bdb5c78.pekko_test_identity_eff08bdb5c78.source_rows.Key",
+            "optional": false,
+            "parameters": null,
+            "type": "STRUCT",
+            "valueSchema": null,
+            "version": null
+          },
+          "value": {
+            "id": 50
+          }
+        },
+        {
+          "key": "__debezium.context.connectorLogicalName",
+          "schema": {
+            "fields": [],
+            "keySchema": null,
+            "name": null,
+            "optional": false,
+            "parameters": null,
+            "type": "STRING",
+            "valueSchema": null,
+            "version": null
+          },
+          "value": "identity_eff08bdb5c78"
+        },
+        {
+          "key": "__debezium.context.taskId",
+          "schema": {
+            "fields": [],
+            "keySchema": null,
+            "name": null,
+            "optional": false,
+            "parameters": null,
+            "type": "STRING",
+            "valueSchema": null,
+            "version": null
+          },
+          "value": "0"
+        },
+        {
+          "key": "__debezium.context.connectorName",
+          "schema": {
+            "fields": [],
+            "keySchema": null,
+            "name": null,
+            "optional": false,
+            "parameters": null,
+            "type": "STRING",
+            "valueSchema": null,
+            "version": null
+          },
+          "value": "mysql"
+        },
+        {
+          "key": "__debezium.context.runId",
+          "schema": {
+            "fields": [],
+            "keySchema": null,
+            "name": null,
+            "optional": false,
+            "parameters": null,
+            "type": "STRING",
+            "valueSchema": null,
+            "version": null
+          },
+          "value": "01a14ff0-dd96-7d01-94b8-8500deed0710"
+        }
+      ]
+    }
+  ],
+  "unique_ids_without_op": 38,
+  "unique_ids_without_row": 8,
+  "identical_before_after_payloads_have_distinct_positions": true,
+  "scope": "Real MySQL SourceRecord observation using production engine/config. No Actor, Journal, Sink, new protocol or end-to-end correctness proof."
+}

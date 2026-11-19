@@ -1,0 +1,32 @@
+{
+  "evidence_level": "finite_abstract_model_not_runtime_protocol",
+  "events": 6,
+  "original_partitions": 32,
+  "checked_schedules": 7696,
+  "final_state": {
+    "b": 8,
+    "a": 3
+  },
+  "all_schedules_pass": true,
+  "counterexamples": [
+    "old_after_image_regresses_new_value",
+    "max_completed_skips_gap",
+    "receipt_gc_admits_old_duplicate"
+  ],
+  "same_identity_payload_conflict_rejected": true,
+  "assumptions": [
+    "stable unique supplied IDs",
+    "atomic target transactions",
+    "single ordered writer",
+    "retained receipts",
+    "replay starts at d <= committed prefix k"
+  ],
+  "not_modeled": [
+    "real SourceRecord identity extraction",
+    "J persistence and reply loss",
+    "D storage",
+    "concurrency/fencing",
+    "DDL/snapshot",
+    "MySQL/Actor runtime"
+  ]
+}

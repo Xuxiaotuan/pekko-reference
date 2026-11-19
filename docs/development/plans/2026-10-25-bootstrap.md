@@ -1,0 +1,48 @@
+# LOW/HIGH bootstrap implementation plan
+
+**Goal:** Approved phase two: exclusive initially empty target, capture B, per-Split LOW/read/HIGH, immutable normalized windows, replay all table groups (B,F], activate only after T/J proof, tail after F. Dynamic add/cancel, real I01–I24, preserve old serialization and evidence. NO commit/push, DDL evolution, automatic takeover or GC.
+**Baseline:** 00ad18e624568ef595bd90e2d6ac00008bd235a0. Existing clean feature checkout reused; no attached worktree. Existing JDK17 and dedicated disposable native MySQL13365/13366, never3306.
+**Spec:** approved design in preceding conversation. First profile: fixed database/schema, InnoDB, ROW/FULL, integral single PK (mutable), target no external writes/secondary uniqueness/FK/business triggers. Metadata, source identity and capacity failures pause.
+
+## Tasks
+
+1. Tests RED then GREEN for durable LOW/HIGH/F intent/coverage and bounded L reads. Modify only shared capture models/store/Reader; preserve B/K and raw ACK order. Control marker own transaction and same operation identity under uncertainty.
+2. Tests RED then GREEN for bounded fold and bootstrap Journal state. New bootstrap package: versioned journal actor, immutable page/window store, short RR snapshot reader/typed codec, target transaction receipts, bounded coordinator/service. Unsealed restart repeats whole window; sealed input never rereads source.
+3. Real disposable MySQL worker and matrix. I01 dynamic5+2; I02 empty; I03 sparse/tail; I04/I05 DML window; I06/I07 transaction boundaries; I08 PK crossings; I09 disappearing boundaries; I10 source marker COMMIT ambiguity; I11 spool/crash; I12 RR loss; I13 high coverage/D lag; I14 fold interruption; I15 corrupt input; I16 T-before-J; I17 target COMMIT outcomes; I18 rejection/budget/release; I19 F boundary; I20 replay rebatching; I21 activation gap/tail; I22 cancel; I23 generation race; I24 schema/lineage/capacity/resource safety. Each variant separately evidenced.
+4. Freeze final sources/classes, run complete matrix and old capture/recovery regressions, full-field recomputation, layout/package. Fresh whole-change review, one focused fix pass. Preserve failed attempts, expose unverified boundaries. Leave changes uncommitted.
+
+## Interfaces and invariants
+
+- L is source durability only. Bootstrap store owns sealed immutable material; J owns accepted execution decisions. T receipts arbitrate replay. Control fence readiness requires original callback-prefix coverage, not marker existence or actual D flush.
+- Snapshot normal form never claims original CDC group IDs. Global replay ignores per-Split HIGH filtering. No source reads after F capture; no stream apply before durable activation.
+- New Journal events/state have new FQNs. Old SnapshotSplitState/CheckpointModels/WorkflowEvents fields retain meanings. The phase-two service is explicitly installed, not a silent change to old DSL.
+- Only admitted tables hold resources; one active read window per table. Physical close/transaction uncertainty retains reservations. No automatic reuse of partial target across generations.
+
+## Review focus
+
+Late source/store/target COMMIT results; empty F cursor; lost RR view; PK moves across completed ranges; canceled generation late callbacks; data/schema/lineage proof removal; target uniqueness and typed values; original ACK/D independence; global rather than reset-per-window recovery budget; readiness is not atomic visibility to raw SQL clients.
+
+## Ledger
+
+- Preflight: snapshot output -> immutable spool -> target receipt -> J; marker source intent -> capture fence -> ACK proof; old static executor cannot consume the new phases. No interface conflicts require changing old serialized types.
+- Ruling: use the existing clean feature checkout rather than a second checkout; no unrelated dirty files or managed artifacts exist.
+- Ruling: new coordinator is an explicit service with a new persistent journal actor; existing workflow serialized types and static-snapshot HA stay untouched. No UI/REST/product startup claim.
+
+- Task 1: durable fences and ACK ancestry implemented; old B/K tests retained. Task 2: bounded window/store/target/Journal/coordinator present. Source window restart boundary deletion reproduced a protocol defect (I11 RED), fixed by retaining original range across attempts (I11 GREEN).
+- Task 3: real matrix base24 executed; 22 passed, one test server-id collision and one generation-fixture error retained. Extended COMMIT/coverage/rejection/corruption variants underway. 60 related tests passed at unit-all-1792928820993003000.
+- Ruling: review-package requires a nonempty committed range; user prohibits commits, so preserve its refusal and generate target/bootstrap-review.diff from tracked diff plus new source files. Reviewer inspects actual uncommitted working tree.
+- Final review: fresh read-only reviewer bootstrap_final_review examined actual working tree. Three accepted findings: replay Future timeout/close suppression; actual TIMESTAMP accepted as DATETIME; missing spool registry resets capacity. Tests reproduced all three before fixes. Replay timeout now retains writer/run admission and pauses; wrapper reuses original group DML/ledger but requires actual close confirmation. Physical DATETIME checked; orphan/recovering storage registration rejected.
+- Final: fixed temporal profile and missing registry — BootstrapTargetSpec/BootstrapStoreSpec RED (unit-all-1792929336525353000) -> GREEN (unit-all-1792929482500739000), 62/62. Fixed replay timeout — actual COMMIT reply held without driver timeout, cancel, 40s wait RED (matrix-I18-replay-timeout-1792929393292450000) -> GREEN (matrix-I18-replay-1792929525741255000); includes actual close-confirmation loss and retained admission, 2/2. Final complete suite still required.
+- Final: registry anti-reset fix exposed concurrent empty-key gap-lock deadlocks in dynamic 5+2 (matrix-all-1792929629587802000/I01). Short database registration admission plus insert-before-read target claim removes absent-row lock upgrade; I01 GREEN at matrix-I01-1792929770918372000. Complete matrix re-frozen; not a reason to discard that failure.
+- Final: Ruling: ACTIVATE is an internal T receipt, while durable noncanceled STREAMING decides publication. No public ready/SQL atomic swap API in this phase — cost if misinterpreted: a caller can expose a canceled/partial target.
+- Final: Ruling: raw SQL can observe partial baseline; the approved empty exclusive target must remain unpublished until readiness — cost if violated: business readers observe temporary replay regressions.
+- Final: Ruling: recovery revalidates source metadata but never rereads sealed snapshot row data — cost if metadata checking were treated as harmless under DDL: execution must pause instead of evolving Schema.
+- Final: Ruling: deliberate rewriting of data and all matching hashes, external target writers, DDL evolution, HA takeover, GC and UI/REST/startup remain outside scope — cost: no safety/capacity claim for those cases.
+- Final: Ruling: full ACK ancestry and retained-material audits remain unoptimized in this bounded first version — cost: restart/verification CPU and disk costs grow; 700k live-table scalability is not established.
+- Final: Ruling: matrix labels and earlier passing counts establish no final-version result; only a matching frozen manifest plus raw final evidence supports final claims — cost if ignored: stale tests would be mistaken for current correctness.
+- Final complete bootstrap verification: serial matrix-all-1792931094818574000, 61/61, independent verify.py completeMatrix=true/pass=true; 17,874 required-equal fields plus two separately checked new-generation targets. Related 80/80 at unit-all-1792931497196243000. Exact whole-source manifest (including tests/resources): c71f260870325aa54bb6818200a875689afaace93d10dc8496a11c99e5f362da. Backend nonexternal suite: 593/593, excluding exact known ActorSpec and external tag; package/layout passed.
+- Retained diagnostic failures: parallel old regression introduced source transaction-metadata load into bootstrap matrices; stop only its owned process tree and preserve 10 partial case directories. Final suites run serially. I13 D-lag gate refined to F_BOUND before prefix coverage; actual durable STREAMING while D=209713316 and F=209713529 independently verified. This does not assert new callbacks always arrive while SDK offset I/O is blocked.
+- Final: Ruling: legacy R02's real startup failure is retained rather than changing the original recovery protocol or adding a fixture wait to hide it. Actual D=snapshot INITIAL at 211714068; B row at 211714759/COMMIT end 211714909; Debezium re-snapshot chooses 211714909 and B never binds. Cost: some initial-Schema restart subscriptions remain stuck; whole-project acceptance is evidence_incomplete. Active-B plus INITIAL recovery remains unverified, not a demonstrated row-loss result.
+- Final: no further review dispatch; accepted findings verified by reproducing tests and final matrix. No deferred minor findings. User's explicit no-commit/no-push instruction overrides integration menus; preserve current working tree and all evidence.
+
+- Final regression: regression-all-1792931511367223000, 57/58 passed, R02 failed. All three final external runs have identical c71f2608… source manifest. Extracted actual B binlog ROW/COMMIT proves startup ordering. 13 archives preserve 2,630 entries; every embedded SHA/size and archive checksum verified. Final native instances: no experiment sessions, no open transactions, no worker JVMs; services left running. Overall remains evidence_incomplete, not a clean completion/merge gate.

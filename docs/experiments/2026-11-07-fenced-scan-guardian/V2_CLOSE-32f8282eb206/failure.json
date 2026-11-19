@@ -1,0 +1,38 @@
+{
+  "class": "java.lang.IllegalArgumentException",
+  "message": "requirement failed: condition timed out: controller close fault",
+  "mode": "V2_CLOSE",
+  "proxy": [{
+    "batch": {
+      "stage": "B"
+    },
+    "connectionId": 77,
+    "kind": "PROXY_COMMIT_FORWARDED",
+    "mode": "C1"
+  }, {
+    "batch": {
+      "stage": "B"
+    },
+    "connectionId": 77,
+    "kind": "PROXY_COMMIT_OK_HELD",
+    "mode": "C1"
+  }, {
+    "batch": {
+      "stage": "B"
+    },
+    "connectionId": 77,
+    "kind": "CUTPOINT",
+    "mode": "C1"
+  }, {
+    "batch": {
+      "stage": "B"
+    },
+    "connectionId": 77,
+    "kind": "PROXY_COMMIT_OK_DROPPED",
+    "mode": "C1"
+  }, {
+    "command": 3,
+    "connectionId": 104,
+    "kind": "FENCE_UPDATE_OBSERVED"
+  }]
+}

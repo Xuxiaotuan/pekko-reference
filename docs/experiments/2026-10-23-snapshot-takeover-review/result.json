@@ -1,0 +1,317 @@
+{
+  "baselineCommit": "7ec75d716779d760972ab76f925465dbf953e7c0",
+  "branch": "feature/pekkosync-mvp-cleanup-datafusion",
+  "capturedBeforeCommit": true,
+  "runtimes": [
+    "matrix-1792735386583866000",
+    "matrix-1792735687223463000",
+    "trigger-cleanup-1792735333276332000",
+    "trigger-cleanup-1792735379982308000",
+    "trigger-cleanup-1792735681020572000"
+  ],
+  "matrixRuntime": "matrix-1792735386583866000",
+  "matrixBatch": {
+    "passed": 21,
+    "failed": 1,
+    "failureClassification": "evidence_incomplete: post-exit target session not sampled alongside transaction"
+  },
+  "matrixRetryRuntime": "matrix-1792735687223463000",
+  "matrixRetry": {
+    "passed": 1,
+    "failed": 0,
+    "case": "KILL_DB_TARGET_WAIT"
+  },
+  "singleBatch22of22": false,
+  "triggerRuntime": "trigger-cleanup-1792735681020572000",
+  "triggerCases": [
+    {
+      "case": "commit_not_sent",
+      "archivePrefix": "cases/commit_not_sent-aa27cac2fe61",
+      "directory": "target/scheduled-trigger-cleanup/commit_not_sent-aa27cac2fe61",
+      "schema": "pekko_test_cdc_window_aa27cac2fe61"
+    },
+    {
+      "case": "commit_reply_lost",
+      "archivePrefix": "cases/commit_reply_lost-38250972904c",
+      "directory": "target/scheduled-trigger-cleanup/commit_reply_lost-38250972904c",
+      "schema": "pekko_test_cdc_window_38250972904c"
+    },
+    {
+      "case": "delayed_release",
+      "archivePrefix": "cases/delayed_release-8a820362fa6a",
+      "directory": "target/scheduled-trigger-cleanup/delayed_release-8a820362fa6a",
+      "schema": "pekko_test_cdc_window_8a820362fa6a"
+    },
+    {
+      "case": "readback_unavailable",
+      "archivePrefix": "cases/readback_unavailable-ae6bcc30274a",
+      "directory": "target/scheduled-trigger-cleanup/readback_unavailable-ae6bcc30274a",
+      "schema": "pekko_test_cdc_window_ae6bcc30274a"
+    },
+    {
+      "case": "reject",
+      "archivePrefix": "cases/reject-2ae5cc3e3f7f",
+      "directory": "target/scheduled-trigger-cleanup/reject-2ae5cc3e3f7f",
+      "schema": "pekko_test_cdc_window_2ae5cc3e3f7f"
+    },
+    {
+      "case": "stale_reject",
+      "archivePrefix": "cases/stale_reject-ff4721632203",
+      "directory": "target/scheduled-trigger-cleanup/stale_reject-ff4721632203",
+      "schema": "pekko_test_cdc_window_ff4721632203"
+    },
+    {
+      "case": "stale_release",
+      "archivePrefix": "cases/stale_release-19392d76eeb4",
+      "directory": "target/scheduled-trigger-cleanup/stale_release-19392d76eeb4",
+      "schema": "pekko_test_cdc_window_19392d76eeb4"
+    },
+    {
+      "case": "yield",
+      "archivePrefix": "cases/yield-74184784b08f",
+      "directory": "target/scheduled-trigger-cleanup/yield-74184784b08f",
+      "schema": "pekko_test_cdc_window_74184784b08f"
+    }
+  ],
+  "cases": [
+    {
+      "case": "B_RECOVERY_CRASH",
+      "archivePrefix": "cases/B_RECOVERY_CRASH-30d81486c11f",
+      "directory": "target/snapshot-takeover/B_RECOVERY_CRASH-30d81486c11f",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_30d81486c11f"
+    },
+    {
+      "case": "COMPETING_CANDIDATES",
+      "archivePrefix": "cases/COMPETING_CANDIDATES-1236594c1094",
+      "directory": "target/snapshot-takeover/COMPETING_CANDIDATES-1236594c1094",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_1236594c1094"
+    },
+    {
+      "case": "COORDINATOR_RESTART",
+      "archivePrefix": "cases/COORDINATOR_RESTART-fdee6f8056fa",
+      "directory": "target/snapshot-takeover/COORDINATOR_RESTART-fdee6f8056fa",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_fdee6f8056fa"
+    },
+    {
+      "case": "CRON_RECOVERY",
+      "archivePrefix": "cases/CRON_RECOVERY-06a512cb901c",
+      "directory": "target/snapshot-takeover/CRON_RECOVERY-06a512cb901c",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_06a512cb901c"
+    },
+    {
+      "case": "DRAIN_COMMIT_REPLY_LOST",
+      "archivePrefix": "cases/DRAIN_COMMIT_REPLY_LOST-2dd735568f33",
+      "directory": "target/snapshot-takeover/DRAIN_COMMIT_REPLY_LOST-2dd735568f33",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_2dd735568f33"
+    },
+    {
+      "case": "FENCE_COMMIT_REPLY_LOST",
+      "archivePrefix": "cases/FENCE_COMMIT_REPLY_LOST-8c8579ccbf3a",
+      "directory": "target/snapshot-takeover/FENCE_COMMIT_REPLY_LOST-8c8579ccbf3a",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_8c8579ccbf3a"
+    },
+    {
+      "case": "KILL_BOOTSTRAP",
+      "archivePrefix": "cases/KILL_BOOTSTRAP-b121b5aa8d09",
+      "directory": "target/snapshot-takeover/KILL_BOOTSTRAP-b121b5aa8d09",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_b121b5aa8d09"
+    },
+    {
+      "case": "KILL_DB_JOURNAL_WAIT",
+      "archivePrefix": "cases/KILL_DB_JOURNAL_WAIT-93b41de27dd8",
+      "directory": "target/snapshot-takeover/KILL_DB_JOURNAL_WAIT-93b41de27dd8",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_93b41de27dd8"
+    },
+    {
+      "case": "KILL_DB_SNAPSHOT_WAIT",
+      "archivePrefix": "cases/KILL_DB_SNAPSHOT_WAIT-a31acd40c781",
+      "directory": "target/snapshot-takeover/KILL_DB_SNAPSHOT_WAIT-a31acd40c781",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_a31acd40c781"
+    },
+    {
+      "case": "KILL_DB_TARGET_WAIT",
+      "archivePrefix": "cases/KILL_DB_TARGET_WAIT-53404b19ac2e",
+      "directory": "target/snapshot-takeover/KILL_DB_TARGET_WAIT-53404b19ac2e",
+      "runtime": "matrix-1792735687223463000",
+      "schema": "pekko_test_cdc_window_53404b19ac2e"
+    },
+    {
+      "case": "KILL_J_AFTER_STORE",
+      "archivePrefix": "cases/KILL_J_AFTER_STORE-b3f148e51527",
+      "directory": "target/snapshot-takeover/KILL_J_AFTER_STORE-b3f148e51527",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_b3f148e51527"
+    },
+    {
+      "case": "KILL_READ",
+      "archivePrefix": "cases/KILL_READ-92532d632812",
+      "directory": "target/snapshot-takeover/KILL_READ-92532d632812",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_92532d632812"
+    },
+    {
+      "case": "KILL_TARGET_TX",
+      "archivePrefix": "cases/KILL_TARGET_TX-d62eea112049",
+      "directory": "target/snapshot-takeover/KILL_TARGET_TX-d62eea112049",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_d62eea112049"
+    },
+    {
+      "case": "KILL_T_BEFORE_J",
+      "archivePrefix": "cases/KILL_T_BEFORE_J-6b8d67cb40ce",
+      "directory": "target/snapshot-takeover/KILL_T_BEFORE_J-6b8d67cb40ce",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_6b8d67cb40ce"
+    },
+    {
+      "case": "OBSERVER_DENIED",
+      "archivePrefix": "cases/OBSERVER_DENIED-1ad3d4708e5c",
+      "directory": "target/snapshot-takeover/OBSERVER_DENIED-1ad3d4708e5c",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_1ad3d4708e5c"
+    },
+    {
+      "case": "OBSERVER_SEPARATE_ACCOUNT",
+      "archivePrefix": "cases/OBSERVER_SEPARATE_ACCOUNT-193a5a56723a",
+      "directory": "target/snapshot-takeover/OBSERVER_SEPARATE_ACCOUNT-193a5a56723a",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_193a5a56723a"
+    },
+    {
+      "case": "QUOTA_COMMIT_REPLY_LOST",
+      "archivePrefix": "cases/QUOTA_COMMIT_REPLY_LOST-288093ef5de0",
+      "directory": "target/snapshot-takeover/QUOTA_COMMIT_REPLY_LOST-288093ef5de0",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_288093ef5de0"
+    },
+    {
+      "case": "REVOKE_COMMIT_REPLY_LOST",
+      "archivePrefix": "cases/REVOKE_COMMIT_REPLY_LOST-ba8011a4c1f7",
+      "directory": "target/snapshot-takeover/REVOKE_COMMIT_REPLY_LOST-ba8011a4c1f7",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_ba8011a4c1f7"
+    },
+    {
+      "case": "SIGSTOP_READ",
+      "archivePrefix": "cases/SIGSTOP_READ-e0d1ae672810",
+      "directory": "target/snapshot-takeover/SIGSTOP_READ-e0d1ae672810",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_e0d1ae672810"
+    },
+    {
+      "case": "STALE_GRANT",
+      "archivePrefix": "cases/STALE_GRANT-8b8979d05194",
+      "directory": "target/snapshot-takeover/STALE_GRANT-8b8979d05194",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_8b8979d05194"
+    },
+    {
+      "case": "STARTUP_COMMIT_REPLY_LOST",
+      "archivePrefix": "cases/STARTUP_COMMIT_REPLY_LOST-7f4b8e37a248",
+      "directory": "target/snapshot-takeover/STARTUP_COMMIT_REPLY_LOST-7f4b8e37a248",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_7f4b8e37a248"
+    },
+    {
+      "case": "WRONG_ISOLATION_RECEIPT",
+      "archivePrefix": "cases/WRONG_ISOLATION_RECEIPT-ef1747fa9f05",
+      "directory": "target/snapshot-takeover/WRONG_ISOLATION_RECEIPT-ef1747fa9f05",
+      "runtime": "matrix-1792735386583866000",
+      "schema": "pekko_test_cdc_window_ef1747fa9f05"
+    }
+  ],
+  "backendTests": 562,
+  "backendSuites": 104,
+  "packageSucceeded": true,
+  "comparedRows": 220,
+  "fieldsPerRow": 6,
+  "D": "N/A",
+  "productionManifestMatchesEveryLiveRuntime": true,
+  "cleanup": {
+    "container": "pekko-owner-takeover-20261023",
+    "host": "127.0.0.1",
+    "port": 32815,
+    "priorPort": 32814,
+    "mappingChangedOnRestart": true,
+    "mysqlReady": true,
+    "clients": 0,
+    "transactions": 0,
+    "temporaryAccounts": 0,
+    "schemaCount": 191,
+    "newSchemas": [
+      "pekko_test_cdc_window_06a512cb901c",
+      "pekko_test_cdc_window_1236594c1094",
+      "pekko_test_cdc_window_19392d76eeb4",
+      "pekko_test_cdc_window_193a5a56723a",
+      "pekko_test_cdc_window_1ad3d4708e5c",
+      "pekko_test_cdc_window_288093ef5de0",
+      "pekko_test_cdc_window_2ae5cc3e3f7f",
+      "pekko_test_cdc_window_2dd735568f33",
+      "pekko_test_cdc_window_30d81486c11f",
+      "pekko_test_cdc_window_30eb41c71426",
+      "pekko_test_cdc_window_38250972904c",
+      "pekko_test_cdc_window_53404b19ac2e",
+      "pekko_test_cdc_window_5377fb28a25e",
+      "pekko_test_cdc_window_562763ef2ea4",
+      "pekko_test_cdc_window_69f9329a9505",
+      "pekko_test_cdc_window_6b8d67cb40ce",
+      "pekko_test_cdc_window_74184784b08f",
+      "pekko_test_cdc_window_782971904f78",
+      "pekko_test_cdc_window_7f4b8e37a248",
+      "pekko_test_cdc_window_8a820362fa6a",
+      "pekko_test_cdc_window_8b8979d05194",
+      "pekko_test_cdc_window_8c8579ccbf3a",
+      "pekko_test_cdc_window_92532d632812",
+      "pekko_test_cdc_window_93b41de27dd8",
+      "pekko_test_cdc_window_9e2e3a71ef83",
+      "pekko_test_cdc_window_a09c3566557e",
+      "pekko_test_cdc_window_a31acd40c781",
+      "pekko_test_cdc_window_aa27cac2fe61",
+      "pekko_test_cdc_window_ae6bcc30274a",
+      "pekko_test_cdc_window_b121b5aa8d09",
+      "pekko_test_cdc_window_b3f148e51527",
+      "pekko_test_cdc_window_ba8011a4c1f7",
+      "pekko_test_cdc_window_c217066163ff",
+      "pekko_test_cdc_window_d62eea112049",
+      "pekko_test_cdc_window_e0d1ae672810",
+      "pekko_test_cdc_window_ef1747fa9f05",
+      "pekko_test_cdc_window_fdee6f8056fa",
+      "pekko_test_cdc_window_ff4721632203"
+    ],
+    "schemasRetained": true,
+    "serverUuid": "444cc89b-ce8f-11f1-96d4-3e2f453aa504",
+    "mysqlVersion": "8.4.11",
+    "stopped": true,
+    "containerAndVolumeRetained": true,
+    "workerJvmsRemaining": 0,
+    "imageId": "sha256:cc52b8b5900d106bc482241091cfa7496d830280868e19aca8a24e8e7086568e"
+  },
+  "originalFailuresPreserved": true,
+  "historicalSplitAndCdcRegressionsRerunThisTurn": false,
+  "privateCredentialScan": {
+    "logicalFiles": 367,
+    "nestedZipMembersChecked": true,
+    "privateCredentialFound": false
+  },
+  "unverified": [
+    "CDC multi-owner takeover",
+    "whole supervisor JVM restart adoption",
+    "remote isolation",
+    "multiple physical MySQL instance drain",
+    "database failover",
+    "DDL",
+    "shared CDC",
+    "700000 physical tables",
+    "long-running heap or RSS measurement",
+    "permanent JDBC stalls"
+  ]
+}

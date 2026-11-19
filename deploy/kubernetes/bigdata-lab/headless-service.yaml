@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pekko-workflow-headless
+  namespace: bigdata-lab
+  labels:
+    app: pekko-workflow
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: pekko-workflow
+  ports:
+    - name: artery
+      port: 2551
+      targetPort: artery

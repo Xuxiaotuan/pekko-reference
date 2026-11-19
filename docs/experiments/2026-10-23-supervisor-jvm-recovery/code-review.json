@@ -1,0 +1,39 @@
+{
+  "reviewMode": "read-only whole-change review followed by one author fix pass",
+  "reviewer": "supervisor_recovery_review",
+  "criticalFindings": 0,
+  "importantFindingsAtReview": 3,
+  "postFixReviewerApproval": false,
+  "findings": [
+    {
+      "issue": "Active owner session records could accumulate to the4096 entry limit",
+      "authorResolution": "Prune only ended session IDs from complete instance observations under current controller fencing",
+      "evidence": "review-red.log failing near-bound fixture; review-green.log36/36,4096 injected records retain12 live registrations; incomplete observations preserve all records",
+      "evidenceLevel": "H2 fixture and source review; not4096 real concurrent connections"
+    },
+    {
+      "issue": "Control JDBC parameter append assumed a query delimiter already existed",
+      "authorResolution": "Shared helper chooses ? or & and rejects preexisting connectionAttributes",
+      "evidence": "review-red.log followed by review-green.log; actual production-main smoke exercises bare control JDBC URL",
+      "evidenceLevel": "unit fixture plus independent main smoke"
+    },
+    {
+      "issue": "Managed worker could bypass ticket gate by disabling HA",
+      "authorResolution": "Require HA/table scheduling and matching deployment/control database in worker preflight; managed bootstrap refuses HA opt-out",
+      "evidence": "review-red.log followed by review-green.log; actual invalid profile exits before fork",
+      "evidenceLevel": "unit fixture plus actual process rejection"
+    }
+  ],
+  "authorFollowup": {
+    "semanticFalsePositive": "Independent verifier rejected S11 despite runner exit0; C did not bind and generation remained2",
+    "facilityFix": "Scope post-COMMIT readback timing gate to failure thread before next SQL; require C identity, generation3 and two retired predecessors",
+    "pilot": "matrix-1792746809536672000 passed1/1 with independent semantic verification",
+    "furtherProductionSourceChangesAfterFixPass": false
+  },
+  "deferredBoundaries": [
+    "guardian/host restart and cross-host leadership",
+    "host compromise or malicious same-uid process",
+    "runtime, packaging and full matrix require completed run evidence",
+    "immutable runtime artifacts required; classpath string hash is not full JAR attestation"
+  ]
+}

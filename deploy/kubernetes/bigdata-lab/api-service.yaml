@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pekko-workflow-api
+  namespace: bigdata-lab
+  labels:
+    app: pekko-workflow
+spec:
+  type: ClusterIP
+  selector:
+    app: pekko-workflow
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

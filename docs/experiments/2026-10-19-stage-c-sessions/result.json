@@ -1,0 +1,169 @@
+{
+  "artifactVerification": "PASS",
+  "scenarioObservations": 8,
+  "converged": 7,
+  "automaticRecoveryFailures": 1,
+  "scope": "fixed-schema single-writer real MySQL/Actor JDBC Journal/production Source and Sink; C2 is a retained recovery failure",
+  "scenarios": [
+    {
+      "scenario": "N0",
+      "sourceRows": 64,
+      "targetRows": 64,
+      "missingKeys": 0,
+      "extraKeys": 0,
+      "fieldDifferences": 0,
+      "cutTargetGroups": 70,
+      "cutJSequence": 5,
+      "finalTargetGroups": 74,
+      "finalJSequence": 7,
+      "finalAuditRows": 140,
+      "firstRecoveryGroups": 3,
+      "originalRawAckOrder": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "automaticRecovery": "PASS",
+      "evidenceConsistent": true
+    },
+    {
+      "scenario": "J1",
+      "sourceRows": 64,
+      "targetRows": 64,
+      "missingKeys": 0,
+      "extraKeys": 0,
+      "fieldDifferences": 0,
+      "cutTargetGroups": 17,
+      "cutJSequence": 1,
+      "finalTargetGroups": 74,
+      "finalJSequence": 74,
+      "finalAuditRows": 140,
+      "firstRecoveryGroups": 1,
+      "originalRawAckOrder": [
+        0
+      ],
+      "automaticRecovery": "PASS",
+      "evidenceConsistent": true
+    },
+    {
+      "scenario": "J2",
+      "sourceRows": 64,
+      "targetRows": 64,
+      "missingKeys": 0,
+      "extraKeys": 0,
+      "fieldDifferences": 0,
+      "cutTargetGroups": 2,
+      "cutJSequence": 1,
+      "finalTargetGroups": 74,
+      "finalJSequence": 3,
+      "finalAuditRows": 140,
+      "firstRecoveryGroups": 72,
+      "originalRawAckOrder": [
+        0,
+        1
+      ],
+      "automaticRecovery": "PASS",
+      "evidenceConsistent": true
+    },
+    {
+      "scenario": "C1",
+      "sourceRows": 64,
+      "targetRows": 64,
+      "missingKeys": 0,
+      "extraKeys": 0,
+      "fieldDifferences": 0,
+      "cutTargetGroups": 17,
+      "cutJSequence": 0,
+      "finalTargetGroups": 74,
+      "finalJSequence": 73,
+      "finalAuditRows": 140,
+      "firstRecoveryGroups": 1,
+      "originalRawAckOrder": [
+        0
+      ],
+      "automaticRecovery": "PASS",
+      "evidenceConsistent": true
+    },
+    {
+      "scenario": "C2",
+      "sourceRows": 64,
+      "targetRows": 64,
+      "missingKeys": 2,
+      "extraKeys": 2,
+      "fieldDifferences": 212,
+      "cutTargetGroups": 17,
+      "cutJSequence": 0,
+      "finalTargetGroups": 17,
+      "finalJSequence": 0,
+      "finalAuditRows": 82,
+      "firstRecoveryGroups": null,
+      "originalRawAckOrder": [
+        0
+      ],
+      "automaticRecovery": "FAIL_TERMINAL",
+      "evidenceConsistent": true
+    },
+    {
+      "scenario": "C0",
+      "sourceRows": 64,
+      "targetRows": 64,
+      "missingKeys": 0,
+      "extraKeys": 0,
+      "fieldDifferences": 0,
+      "cutTargetGroups": 1,
+      "cutJSequence": 0,
+      "finalTargetGroups": 74,
+      "finalJSequence": 73,
+      "finalAuditRows": 140,
+      "firstRecoveryGroups": 1,
+      "originalRawAckOrder": [
+        0
+      ],
+      "automaticRecovery": "PASS",
+      "evidenceConsistent": true
+    },
+    {
+      "scenario": "K1",
+      "sourceRows": 64,
+      "targetRows": 64,
+      "missingKeys": 0,
+      "extraKeys": 0,
+      "fieldDifferences": 0,
+      "cutTargetGroups": 2,
+      "cutJSequence": 1,
+      "finalTargetGroups": 6,
+      "finalJSequence": 5,
+      "finalAuditRows": 72,
+      "firstRecoveryGroups": 1,
+      "originalRawAckOrder": [
+        0,
+        1
+      ],
+      "automaticRecovery": "PASS",
+      "evidenceConsistent": true
+    },
+    {
+      "scenario": "K2",
+      "sourceRows": 64,
+      "targetRows": 64,
+      "missingKeys": 0,
+      "extraKeys": 0,
+      "fieldDifferences": 0,
+      "cutTargetGroups": 2,
+      "cutJSequence": 1,
+      "finalTargetGroups": 6,
+      "finalJSequence": 3,
+      "finalAuditRows": 72,
+      "firstRecoveryGroups": 4,
+      "originalRawAckOrder": [
+        0,
+        1
+      ],
+      "automaticRecovery": "PASS",
+      "evidenceConsistent": true
+    }
+  ]
+}

@@ -1,0 +1,3273 @@
+--- before/pekko-server/src/main/resources/application-prod.conf
++++ after/pekko-server/src/main/resources/application-prod.conf
+@@ -108,6 +108,14 @@
+       keep-n-snapshots = ${?PEKKO_WORKFLOW_KEEP_SNAPSHOTS}
+     }
+ 
++    session-close-dispatcher {
++      type = Dispatcher
++      executor = "thread-pool-executor"
++      thread-pool-executor.fixed-pool-size = 2
++      throughput = 1
++    }
++    session-control-wait-timeout = 10s
++
+     jdbc-dispatcher {
+       type = Dispatcher
+       executor = "thread-pool-executor"
+--- before/pekko-server/src/main/resources/application.conf
++++ after/pekko-server/src/main/resources/application.conf
+@@ -105,6 +105,14 @@
+       keep-n-snapshots = 2
+     }
+ 
++    session-close-dispatcher {
++      type = Dispatcher
++      executor = "thread-pool-executor"
++      thread-pool-executor.fixed-pool-size = 2
++      throughput = 1
++    }
++    session-control-wait-timeout = 10s
++
+     jdbc-dispatcher {
+       type = Dispatcher
+       executor = "thread-pool-executor"
+--- before/pekko-server/src/main/resources/application-dev.conf
++++ after/pekko-server/src/main/resources/application-dev.conf
+@@ -58,6 +58,14 @@
+       keep-n-snapshots = 2
+     }
+ 
++    session-close-dispatcher {
++      type = Dispatcher
++      executor = "thread-pool-executor"
++      thread-pool-executor.fixed-pool-size = 2
++      throughput = 1
++    }
++    session-control-wait-timeout = 10s
++
+     jdbc-dispatcher {
+       type = Dispatcher
+       executor = "thread-pool-executor"
+--- before/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala
+@@ -195,10 +195,10 @@
+     if (recoveryGate.get() && !allowedDuringRecovery(command)) Effect.stash()
+     else command match {
+     case DefineWorkflow(_, _, replyTo) if state.currentExecution.nonEmpty => immediate(replyTo, AlreadyRunning(state.currentExecution.get.executionId))
+-    case DefineWorkflow(workflowJson, expectedRevision, replyTo) => validateDefinition(workflowId, state, workflowJson, expectedRevision, replyTo)
++    case DefineWorkflow(workflowJson, expectedRevision, replyTo) => validateDefinition(workflowId, state, workflowJson, expectedRevision, replyTo, executionEngine.nodeRegistry)
+     case Initialize(workflowJson, replyTo) =>
+       if (state.revision != 0L) { replyTo ! InitializeResponse(workflowId, "initialized"); Effect.none }
+-      else canonicalAndValidateJson(workflowJson) match {
++      else canonicalAndValidateJson(workflowJson, executionEngine.nodeRegistry) match {
+         case Left(_) => replyTo ! InitializeResponse(workflowId, "rejected"); Effect.none
+         case Right(json) => Effect.persist(WorkflowDefined(json, 1L, now())).thenReply(replyTo)(_ => InitializeResponse(workflowId, "initialized"))
+       }
+@@ -255,9 +255,9 @@
+     case _ => Effect.none
+     }
+ 
+-  private def validateDefinition(workflowId: String, state: WorkflowState, workflowJson: String, expectedRevision: Long, replyTo: ActorRef[Reply]): Effect[WorkflowEvent, WorkflowState] =
++  private def validateDefinition(workflowId: String, state: WorkflowState, workflowJson: String, expectedRevision: Long, replyTo: ActorRef[Reply], registry: NodeRegistry): Effect[WorkflowEvent, WorkflowState] =
+     if (expectedRevision != state.revision) { replyTo ! RevisionConflict(workflowId, expectedRevision, state.revision); Effect.none }
+-    else canonicalAndValidateJson(workflowJson) match {
++    else canonicalAndValidateJson(workflowJson, registry) match {
+       case Left(errors) => replyTo ! DefinitionRejected(workflowId, errors); Effect.none
+       case Right(json) =>
+         val revision = state.revision + 1L
+@@ -291,7 +291,7 @@
+       case Left(_) => replyTo ! ExecutionResponse("", "definition_invalid"); Effect.none
+       case Right(workflow) =>
+         val executionId = newExecutionId()
+-        Effect.persist(executionStarted(state, workflow, executionId, manualTrigger(s"legacy-$executionId")))
++        Effect.persist(executionStarted(state, workflow, executionId, manualTrigger(s"legacy-$executionId"), executionEngine.nodeRegistry))
+           .thenRun((newState: WorkflowState) => newState.currentExecution
+             .filter(_.executionId == executionId)
+             .foreach(execution => runEngine(workflow, execution, executionEngine, context, activeEngineExecutionId)))
+@@ -303,22 +303,22 @@
+     case Left(errors) => immediate(replyTo, DefinitionRejected(workflowId, errors))
+     case Right(workflow) =>
+       val executionId = newExecutionId()
+-      Effect.persist(executionStarted(state, workflow, executionId, trigger))
++      Effect.persist(executionStarted(state, workflow, executionId, trigger, executionEngine.nodeRegistry))
+         .thenRun((newState: WorkflowState) => newState.currentExecution
+           .filter(_.executionId == executionId)
+           .foreach(execution => runEngine(workflow, execution, executionEngine, context, activeEngineExecutionId)))
+         .thenReply(replyTo)((_: WorkflowState) => ExecutionAccepted(executionId))
+   }
+ 
+-  private def executionStarted(state: WorkflowState, workflow: WorkflowDSL.Workflow, executionId: String, trigger: ExecutionTrigger): WorkflowEvent =
+-    if (isReliable(workflow)) ResumableExecutionStarted(executionId, trigger, state.revision, now())
++  private def executionStarted(state: WorkflowState, workflow: WorkflowDSL.Workflow, executionId: String, trigger: ExecutionTrigger, registry: NodeRegistry): WorkflowEvent =
++    if (isReliable(workflow, registry)) ResumableExecutionStarted(executionId, trigger, state.revision, now())
+     else ExecutionStarted(executionId, trigger, now())
+ 
+-  private def isReliable(workflow: WorkflowDSL.Workflow): Boolean = {
++  private def isReliable(workflow: WorkflowDSL.Workflow, registry: NodeRegistry): Boolean = {
+     val source = workflow.nodes.find(_.`type` == "source")
+     val sink = workflow.nodes.find(_.`type` == "sink")
+-    source.flatMap(node => NodeRegistry.findSource(node.nodeType)).exists(_.isInstanceOf[CheckpointedNodeSource]) &&
+-      sink.flatMap(node => NodeRegistry.findSink(node.nodeType)).exists(_.isInstanceOf[CheckpointedNodeSink])
++    source.flatMap(node => registry.findSource(node.nodeType)).exists(_.isInstanceOf[CheckpointedNodeSource]) &&
++      sink.flatMap(node => registry.findSink(node.nodeType)).exists(_.isInstanceOf[CheckpointedNodeSink])
+   }
+ 
+   private def initializeSnapshot(state: WorkflowState, executionId: String, boundary: SnapshotBoundary, replyTo: ActorRef[Reply]): Effect[WorkflowEvent, WorkflowState] =
+@@ -404,7 +404,7 @@
+     activeEngineExecutionId: AtomicReference[String]
+   ): Unit = state.currentExecution.foreach { execution =>
+     if (activeEngineExecutionId.compareAndSet(execution.executionId, null)) {
+-      try executionEngine.cancel(execution.executionId)
++      try executionEngine.cancelWithin(execution.executionId)
+       catch { case NonFatal(_) => () }
+     }
+   }
+@@ -569,7 +569,7 @@
+     case JsArray(values) => values.map(canonicalJson).mkString("[", ",", "]")
+     case other => other.compactPrint
+   }
+-  private def canonicalAndValidate(workflow: WorkflowDSL.Workflow): Either[Vector[String], String] = {
++  private def canonicalAndValidate(workflow: WorkflowDSL.Workflow, registry: NodeRegistry): Either[Vector[String], String] = {
+     val json = canonicalWorkflowJson(workflow)
+     try {
+       import WorkflowDSL.workflowFormat
+@@ -578,18 +578,18 @@
+         Option.when(decoded.nodes.size > MaxWorkflowNodes)(s"workflow node count exceeds $MaxWorkflowNodes"),
+         Option.when(utf8Bytes(json) > MaxWorkflowJsonBytes)(s"workflow canonical JSON exceeds $MaxWorkflowJsonBytes bytes")
+       ).flatten
+-      val validation = WorkflowValidator.validate(decoded).left.map(_.map(_.message))
++      val validation = WorkflowValidator.validate(decoded, registry).left.map(_.map(_.message))
+       if (bounds.nonEmpty) Left(bounds) else validation.map(_ => json)
+     } catch {
+       case error: Exception => Left(Vector(Option(error.getMessage).getOrElse(error.getClass.getSimpleName)))
+     }
+   }
+-  private def canonicalAndValidateJson(workflowJson: String): Either[Vector[String], String] =
++  private def canonicalAndValidateJson(workflowJson: String, registry: NodeRegistry): Either[Vector[String], String] =
+     if (utf8Bytes(workflowJson) > MaxWorkflowJsonBytes) Left(Vector(s"workflow canonical JSON exceeds $MaxWorkflowJsonBytes bytes"))
+     else {
+       try {
+         import WorkflowDSL.workflowFormat
+-        canonicalAndValidate(workflowJson.parseJson.convertTo[WorkflowDSL.Workflow])
++        canonicalAndValidate(workflowJson.parseJson.convertTo[WorkflowDSL.Workflow], registry)
+       } catch {
+         case error: Exception => Left(Vector(Option(error.getMessage).getOrElse(error.getClass.getSimpleName)))
+       }
+--- before/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/WorkflowValidator.scala
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/WorkflowValidator.scala
+@@ -14,7 +14,7 @@
+ object WorkflowValidator {
+   private val supportedTransformTypes = TransformExecutor.supportedTypes
+ 
+-  def validate(workflow: Workflow): Either[Vector[WorkflowValidationError], ValidatedPipeline] = {
++  def validate(workflow: Workflow, registry: NodeRegistry = NodeRegistry.builtins()): Either[Vector[WorkflowValidationError], ValidatedPipeline] = {
+     val errors = mutable.ArrayBuffer.empty[WorkflowValidationError]
+     val nodesById = workflow.nodes.groupBy(_.id)
+ 
+@@ -37,13 +37,13 @@
+     workflow.nodes.filterNot(node => knownRoles.contains(node.`type`)).foreach { node =>
+       errors += WorkflowValidationError("unsupported_node_role", s"Unsupported node role: ${node.`type`}")
+     }
+-    sources.filterNot(node => NodeRegistry.supportedSourceTypes.contains(node.nodeType)).foreach { node =>
++    sources.filterNot(node => registry.supportedSourceTypes.contains(node.nodeType)).foreach { node =>
+       errors += WorkflowValidationError("unsupported_node_type", s"Unsupported source type: ${node.nodeType}")
+     }
+     transforms.filterNot(node => supportedTransformTypes.contains(node.nodeType)).foreach { node =>
+       errors += WorkflowValidationError("unsupported_node_type", s"Unsupported transform type: ${node.nodeType}")
+     }
+-    sinks.filterNot(node => NodeRegistry.supportedSinkTypes.contains(node.nodeType)).foreach { node =>
++    sinks.filterNot(node => registry.supportedSinkTypes.contains(node.nodeType)).foreach { node =>
+       errors += WorkflowValidationError("unsupported_node_type", s"Unsupported sink type: ${node.nodeType}")
+     }
+ 
+--- before/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/WorkflowExecutionEngine.scala
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/WorkflowExecutionEngine.scala
+@@ -5,7 +5,7 @@
+ import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+ import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Node, Workflow}
+ import cn.xuyinyin.magic.workflow.nodes.JdbcPasswordResolver
+-import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, CheckpointedNodeSource}
++import cn.xuyinyin.magic.workflow.nodes.base.{BatchSourceSession, CheckpointedNodeSink, CheckpointedNodeSource}
+ import com.typesafe.scalalogging.Logger
+ import org.apache.pekko.{Done, NotUsed}
+ import org.apache.pekko.actor.typed.{ActorSystem, DispatcherSelector}
+@@ -17,9 +17,12 @@
+ import scala.collection.mutable
+ import scala.concurrent.{ExecutionContext, Future, Promise}
+ import scala.util.control.NonFatal
++import scala.concurrent.duration._
++import scala.util.{Failure, Success, Try}
+ 
+ class WorkflowExecutionEngine(
+-  getenv: String => Option[String] = sys.env.get
++  getenv: String => Option[String] = sys.env.get,
++  val nodeRegistry: NodeRegistry = NodeRegistry.builtins()
+ )(implicit system: ActorSystem[_], ec: ExecutionContext) {
+   private val logger = Logger(getClass)
+   private val JdbcPasswordNodeTypes = Set(
+@@ -27,13 +30,16 @@
+   )
+   private implicit val materializer: Materializer = SystemMaterializer(system).materializer
+ 
+-  private val sourceExecutor = new SourceExecutor()
++  private val sourceExecutor = new SourceExecutor(nodeRegistry)
+   private val transformExecutor = new TransformExecutor()
+-  private val sinkExecutor = new SinkExecutor()
++  private val sinkExecutor = new SinkExecutor(nodeRegistry)
+   private val activeReliableExecutions = mutable.Map.empty[String, Vector[ReliableExecutionControl]]
+   private val activeReliableExecutionsLock = new AnyRef
+   private lazy val jdbcBlockingEc: ExecutionContext =
+     system.dispatchers.lookup(DispatcherSelector.fromConfig("pekko.workflow.jdbc-dispatcher"))
++
++  private lazy val closeEc: ExecutionContext =
++    system.dispatchers.lookup(DispatcherSelector.fromConfig("pekko.workflow.session-close-dispatcher"))
+ 
+   def execute(workflow: Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
+     executeInternal(workflow, executionId, None, None, onLog)
+@@ -44,9 +50,16 @@
+         val execution = try executeInternal(workflow, runContext.executionId, Some(runContext), Some(control), onLog)
+         catch { case NonFatal(exception) => Future.failed(exception) }
+         execution
+-      }.transform { outcome =>
+-        releaseReliableExecution(runContext.executionId, control)
+-        outcome
++      }.transformWith { outcome =>
++        control.drainAndClose().transform {
++          case Success(_) =>
++            releaseReliableExecution(runContext.executionId, control)
++            outcome
++          case Failure(error) =>
++            val safe = control.sanitizeCloseFailure(error)
++            control.closeFailure.set(safe)
++            Failure(safe)
++        }
+       }
+     }
+ 
+@@ -56,6 +69,28 @@
+     }
+     if (releases.isEmpty) Future.successful(Done)
+     else Future.sequence(releases).map(_ => Done)
++  }
++
++  /** A timeout is an observation, never permission to replace an unreleased session. */
++  def cancelWithin(executionId: String, timeout: FiniteDuration =
++    system.settings.config.getDuration("pekko.workflow.session-control-wait-timeout").toMillis.millis
++  ): Future[WorkflowExecutionEngine.ReleaseStatus] = {
++    import WorkflowExecutionEngine._
++    val controls = activeReliableExecutionsLock.synchronized {
++      activeReliableExecutions.getOrElse(executionId, Vector.empty)
++    }
++    val result = Promise[ReleaseStatus]()
++    val timer = system.scheduler.scheduleOnce(timeout, new Runnable {
++      def run(): Unit = {
++        val status = if (controls.exists(_.closeFailure.get() != null)) CloseFailed else TimedOut
++        if (result.trySuccess(status)) logger.warn(s"Execution session not released: executionId=$executionId status=$status")
++      }
++    })(ec)
++    cancel(executionId).onComplete {
++      case Success(_) => if (result.trySuccess(Released)) timer.cancel()
++      case Failure(_) => if (result.trySuccess(CloseFailed)) timer.cancel()
++    }
++    result.future
+   }
+ 
+   private[engine] def activeReliableExecutionCount: Int =
+@@ -72,7 +107,7 @@
+     logger.info(s"Starting workflow execution: ${workflow.id}")
+     onLog(s"开始执行工作流: ${workflow.name}")
+ 
+-    WorkflowValidator.validate(workflow) match {
++    WorkflowValidator.validate(workflow, nodeRegistry) match {
+       case Left(errors) =>
+         val message = errors.map(_.message).mkString("; ")
+         onLog(s"执行失败: $message")
+@@ -165,6 +200,7 @@
+         return Future.successful(runtimeFailureResult(workflow, pipeline, pipeline.sink, exception, startTime, onLog))
+     }
+     val runtimeSecrets = Vector(preparedSource, preparedSink).flatMap(runtimePassword)
++    control.sanitizeCloseFailure = error => sanitizeRuntimeFailure(error, runtimeSecrets)
+     val runtimeOnLog: String => Unit = message => onLog(redactRuntimeSecrets(message, runtimeSecrets))
+     val latestSourceCheckpoint = runContext.checkpoints
+       .filter(_.sourceNodeId == pipeline.source.id)
+@@ -179,7 +215,8 @@
+         case Some(existing) => Future.successful(existing)
+         case None =>
+           nodeFuture(pipeline.source)(source.discoverBoundary(preparedSource, latestSourceCheckpoint, runtimeOnLog)(jdbcBlockingEc))
+-            .flatMap(boundary => workflowFuture(runContext.initializeBoundary(boundary)).map(_ => boundary))
++            .flatMap(boundary => control.continueIfActive()
++              .flatMap(_ => workflowFuture(runContext.initializeBoundary(boundary))).map(_ => boundary))
+       }
+       _ <- control.continueIfActive()
+       _ <- nodeFuture(pipeline.sink)(sink.validateSourceBoundary(preparedSink, boundary, runtimeOnLog)(jdbcBlockingEc))
+@@ -191,14 +228,16 @@
+           .lastOption
+         val transforms = createTransforms(pipeline.transforms, runtimeOnLog)
+         val batches = try {
+-          source.createBatches(preparedSource, runContext.executionId, boundary, resumeFrom, runtimeOnLog)(jdbcBlockingEc)
+-            .mapError(wrapRuntimeFailure(pipeline.source))
++          val session = source.openBatches(preparedSource, runContext.executionId, boundary, resumeFrom, runtimeOnLog, closeEc)(jdbcBlockingEc)
++          control.installSession(session)
++          session.source
++                      .mapError(wrapRuntimeFailure(pipeline.source))
+         } catch {
+           case NonFatal(ex) => Source.failed(NodeRuntimeFailure(pipeline.source, ex))
+         }
+         val (killSwitch, rows) = batches
+           .viaMat(KillSwitches.single)(Keep.right)
+-          .mapAsync(1)(batch => processBatch(
++          .mapAsync(1)(batch => control.processBatch(processBatch(
+             workflow,
+             pipeline,
+             preparedSource,
+@@ -209,7 +248,7 @@
+             runContext,
+             batch,
+             runtimeOnLog
+-          ))
++          )))
+           .toMat(Sink.fold(0L)(_ + _))(Keep.both)
+           .run()
+         control.install(killSwitch)
+@@ -255,6 +294,49 @@
+     private val killSwitch = new AtomicReference[UniqueKillSwitch]()
+     private val shutdownStarted = new AtomicBoolean(false)
+     private val released = Promise[Done]()
++    val closeFailure = new AtomicReference[Throwable]()
++    @volatile var sanitizeCloseFailure: Throwable => Throwable = error => error
++    private var sessions = Vector.empty[BatchSourceSession]
++    private var inFlight = Set.empty[Promise[Done]]
++    private var draining = false
++
++    def installSession(session: BatchSourceSession): Unit = synchronized {
++      require(!draining, "execution session is draining")
++      sessions :+= session
++    }
++
++    def processBatch(work: => Future[Long]): Future[Long] = {
++      val finished = Promise[Done]()
++      val admitted = synchronized {
++        if (cancelled.get() || draining) false
++        else { inFlight += finished; true }
++      }
++      if (!admitted) Future.successful(0L)
++      else {
++        val running = try work catch { case NonFatal(e) => Future.failed(e) }
++        running.transform { outcome =>
++          synchronized { inFlight -= finished; finished.trySuccess(Done) }
++          outcome
++        }
++      }
++    }
++
++    def drainAndClose(): Future[Done] = {
++      val (pending, resources) = synchronized {
++        draining = true
++        inFlight.toVector.map(_.future) -> sessions
++      }
++      Future.sequence(pending).flatMap { _ =>
++        Future.sequence(resources.map(s => s.close().map[Either[Throwable, Done]](Right(_))
++          .recover { case NonFatal(e) => Left(e) })).flatMap { outcomes =>
++          outcomes.collectFirst { case Left(e) => e } match {
++            case Some(e) => Future.failed(e)
++            case None => Future.successful(Done)
++          }
++        }
++      }
++    }
++
+ 
+     def cancel(): Future[Done] = {
+       cancelled.set(true)
+@@ -357,10 +439,10 @@
+     new IllegalStateException(redactRuntimeSecrets(Option(cause.getMessage).getOrElse(cause.getClass.getSimpleName), secrets))
+ 
+   private def checkpointedSource(node: Option[Node]): Option[CheckpointedNodeSource] =
+-    node.flatMap(value => NodeRegistry.findSource(value.nodeType)).collect { case source: CheckpointedNodeSource => source }
++    node.flatMap(value => nodeRegistry.findSource(value.nodeType)).collect { case source: CheckpointedNodeSource => source }
+ 
+   private def checkpointedSink(node: Option[Node]): Option[CheckpointedNodeSink] =
+-    node.flatMap(value => NodeRegistry.findSink(value.nodeType)).collect { case sink: CheckpointedNodeSink => sink }
++    node.flatMap(value => nodeRegistry.findSink(value.nodeType)).collect { case sink: CheckpointedNodeSink => sink }
+ 
+   private def capabilityFailure(
+     workflow: Workflow,
+@@ -534,3 +616,10 @@
+   private final case class NodeSetupFailure(node: Node, cause: Throwable)
+     extends RuntimeException(cause)
+ }
++
++object WorkflowExecutionEngine {
++  sealed trait ReleaseStatus
++  case object Released extends ReleaseStatus
++  case object TimedOut extends ReleaseStatus
++  case object CloseFailed extends ReleaseStatus
++}
+--- before/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/executors/SinkExecutor.scala
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/executors/SinkExecutor.scala
+@@ -15,16 +15,16 @@
+  * @author : Xuxiaotuan
+  * @since : 2024-11-15
+  */
+-class SinkExecutor extends NodeExecutor {
++class SinkExecutor(registry: NodeRegistry = NodeRegistry.builtins()) extends NodeExecutor {
+   
+-  override def supportedTypes: Set[String] = NodeRegistry.supportedSinkTypes
++  override def supportedTypes: Set[String] = registry.supportedSinkTypes
+   
+   /**
+    * 创建Sink (使用NodeRegistry)
+    */
+   def createSink(node: WorkflowDSL.Node, onLog: String => Unit)
+                 (implicit ec: ExecutionContext): Sink[String, Future[Done]] = {
+-    NodeRegistry.findSink(node.nodeType) match {
++    registry.findSink(node.nodeType) match {
+       case Some(nodeSink) =>
+         nodeSink.createSink(node, onLog)
+       case None =>
+--- before/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/executors/SourceExecutor.scala
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/executors/SourceExecutor.scala
+@@ -13,15 +13,15 @@
+  * @author : Xuxiaotuan
+  * @since : 2024-11-15
+  */
+-class SourceExecutor extends NodeExecutor {
++class SourceExecutor(registry: NodeRegistry = NodeRegistry.builtins()) extends NodeExecutor {
+   
+-  override def supportedTypes: Set[String] = NodeRegistry.supportedSourceTypes
++  override def supportedTypes: Set[String] = registry.supportedSourceTypes
+   
+   /**
+    * 创建Source (使用NodeRegistry)
+    */
+   def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] = {
+-    NodeRegistry.findSource(node.nodeType) match {
++    registry.findSource(node.nodeType) match {
+       case Some(nodeSource) =>
+         nodeSource.createSource(node, onLog)
+       case None =>
+--- before/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/registry/NodeRegistry.scala
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/registry/NodeRegistry.scala
+@@ -4,123 +4,24 @@
+ import cn.xuyinyin.magic.workflow.nodes.sources._
+ import cn.xuyinyin.magic.workflow.nodes.sinks._
+ 
+-import scala.collection.mutable
++/** Immutable runtime catalog. Adapters are stable; their execution resources are session scoped. */
++final class NodeRegistry private (
++  val getSources: Map[String, NodeSource],
++  val getSinks: Map[String, NodeSink]
++) {
++  def findSource(nodeType: String): Option[NodeSource] = getSources.get(nodeType)
++  def findSink(nodeType: String): Option[NodeSink] = getSinks.get(nodeType)
++  def supportedSourceTypes: Set[String] = getSources.keySet
++  def supportedSinkTypes: Set[String] = getSinks.keySet
++  def withSource(source: NodeSource): NodeRegistry = new NodeRegistry(getSources.updated(source.nodeType, source), getSinks)
++  def withSink(sink: NodeSink): NodeRegistry = new NodeRegistry(getSources, getSinks.updated(sink.nodeType, sink))
++}
+ 
+-/**
+- * 节点注册中心
+- * 
+- * 管理所有可用的节点实现
+- * 支持动态注册和加载连接器
+- * 
+- * @author : Xuxiaotuan
+- * @since : 2024-11-15
+- */
+ object NodeRegistry {
+-  
+-  // 可变的注册表，支持运行时动态注册
+-  private val dynamicSources = mutable.Map[String, NodeSource]()
+-  private val dynamicSinks = mutable.Map[String, NodeSink]()
+-  
+-  // 内置Source节点实例（懒加载）
+-  private lazy val builtinSourceInstances: Map[String, NodeSource] = {
+-    val sources = List(
+-      new RandomNumbersSource(),
+-      new SequenceSource(),
+-      new MemorySource(),
+-      new KafkaSource(),
+-      new MySQLCdcSourceNode(),
+-      new MySQLSnapshotSourceNode(),
+-      new MySQLSourceNode()  // MySQL连接器（真实JDBC实现）
+-      // SqlSource已移除（DataFusion依赖）
+-    )
+-    sources.map(s => s.nodeType -> s).toMap
++  def builtins(): NodeRegistry = {
++    val sources: List[NodeSource] = List(new RandomNumbersSource(), new SequenceSource(), new MemorySource(),
++      new KafkaSource(), new MySQLCdcSourceNode(), new MySQLSnapshotSourceNode(), new MySQLSourceNode())
++    val sinks: List[NodeSink] = List(new ConsoleLogSink(), new FileTextSink(), new MySQLCdcApplySinkNode(), new MySQLSinkNode())
++    new NodeRegistry(sources.map(s => s.nodeType -> s).toMap, sinks.map(s => s.nodeType -> s).toMap)
+   }
+-  
+-  // 内置Sink节点实例（懒加载）
+-  private lazy val builtinSinkInstances: Map[String, NodeSink] = {
+-    val sinks = List(
+-      new ConsoleLogSink(),
+-      new FileTextSink(),
+-      new MySQLCdcApplySinkNode(),
+-      new MySQLSinkNode()  // MySQL连接器（真实JDBC实现）
+-    )
+-    sinks.map(s => s.nodeType -> s).toMap
+-  }
+-  
+-  /**
+-   * 动态注册Source节点
+-   * 用于在运行时注册pekko-connectors中的连接器
+-   */
+-  def registerSource(source: NodeSource): Unit = {
+-    dynamicSources.put(source.nodeType, source)
+-  }
+-
+-  /**
+-   * 仅在当前注册实例与期望实例匹配时移除运行时数据源。
+-   */
+-  private[engine] def unregisterSource(nodeType: String, expected: NodeSource): Unit = {
+-    dynamicSources.get(nodeType)
+-      .filter(current => current eq expected)
+-      .foreach(_ => dynamicSources.remove(nodeType))
+-  }
+-  
+-  /**
+-   * 动态注册Sink节点
+-   * 用于在运行时注册pekko-connectors中的连接器
+-   */
+-  def registerSink(sink: NodeSink): Unit = {
+-    dynamicSinks.put(sink.nodeType, sink)
+-  }
+-
+-  /**
+-   * 仅在当前注册实例与期望实例匹配时移除运行时 Sink。
+-   */
+-  private[engine] def unregisterSink(nodeType: String, expected: NodeSink): Unit = {
+-    dynamicSinks.get(nodeType)
+-      .filter(current => current eq expected)
+-      .foreach(_ => dynamicSinks.remove(nodeType))
+-  }
+-  
+-  // 合并内置和动态注册的节点（动态注册的优先级更高）
+-  private def sourceInstances: Map[String, NodeSource] = {
+-    builtinSourceInstances ++ dynamicSources
+-  }
+-  
+-  private def sinkInstances: Map[String, NodeSink] = {
+-    builtinSinkInstances ++ dynamicSinks
+-  }
+-  
+-  /**
+-   * 获取所有Source节点
+-   */
+-  def getSources: Map[String, NodeSource] = sourceInstances
+-  
+-  /**
+-   * 获取所有Sink节点
+-   */
+-  def getSinks: Map[String, NodeSink] = sinkInstances
+-  
+-  /**
+-   * 根据类型查找Source
+-   */
+-  def findSource(nodeType: String): Option[NodeSource] = {
+-    sourceInstances.get(nodeType)
+-  }
+-  
+-  /**
+-   * 根据类型查找Sink
+-   */
+-  def findSink(nodeType: String): Option[NodeSink] = {
+-    sinkInstances.get(nodeType)
+-  }
+-  
+-  /**
+-   * 获取所有支持的Source类型
+-   */
+-  def supportedSourceTypes: Set[String] = sourceInstances.keySet
+-  
+-  /**
+-   * 获取所有支持的Sink类型
+-   */
+-  def supportedSinkTypes: Set[String] = sinkInstances.keySet
+ }
+--- before/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLSnapshotSourceNode.scala
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLSnapshotSourceNode.scala
+@@ -2,7 +2,7 @@
+ 
+ import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
+ import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+-import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSource, NodeSource}
++import cn.xuyinyin.magic.workflow.nodes.base.{BatchSourceSession, CheckpointedNodeSource, NodeSource, SourceAcquisitionCleanupFailed}
+ import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
+ import org.apache.pekko.{Done, NotUsed}
+ import org.apache.pekko.stream.scaladsl.Source
+@@ -49,22 +49,34 @@
+     boundary: SnapshotBoundary,
+     resumeFrom: Option[BatchCheckpoint],
+     onLog: String => Unit
+-  )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
++  )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] =
++    batchSession(node, executionId, boundary, resumeFrom, onLog, blockingEc, managed = false).source
++
++  override def openBatches(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
++    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext)
++    (implicit blockingEc: ExecutionContext): BatchSourceSession =
++    batchSession(node, executionId, boundary, resumeFrom, onLog, closeEc, managed = true)
++
++  private def batchSession(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
++    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext, managed: Boolean)
++    (implicit blockingEc: ExecutionContext): BatchSourceSession = {
+     val config = MySQLSnapshotSourceConfig.parse(node, getenv)
+     validateBoundary(node, boundary, resumeFrom)
+ 
+     boundary.upperBound match {
+-      case None => Source.empty
++      case None => BatchSourceSession(Source.empty, () => Future.successful(Done))
+       case Some(upperBound) =>
+         val initialCursor = resumeFrom.map(_.cursor.value)
+         val initialSequence = resumeFrom.map(_.batchSequence + 1L).getOrElse(0L)
+-        Source.unfoldResourceAsync[SourceBatch, BatchReader](
++        BatchSourceSession.resource[BatchReader](
+           create = () => Future(openBatchReader(config, upperBound, initialCursor, initialSequence))(blockingEc),
+           read = reader => Future(reader.nextBatch(node.id, executionId))(blockingEc),
+-          close = reader => Future {
++          closeResource = reader => Future {
+             reader.close()
+             Done
+-          }(blockingEc)
++          }(closeEc),
++          managed = managed,
++          drainReads = true
+         )
+     }
+   }
+@@ -103,8 +115,12 @@
+       new BatchReader(config, projection, dataSource, connection, upperBound, cursor, sequence)
+     } catch {
+       case error: Throwable =>
+-        close(connection)
+-        close(dataSource)
++        var cleanup: Exception = null
++        Vector[AutoCloseable](connection, dataSource).filter(_ != null).foreach { resource =>
++          try resource.close()
++          catch { case e: Exception => if (cleanup == null) cleanup = e else cleanup.addSuppressed(e) }
++        }
++        if (cleanup != null) throw new SourceAcquisitionCleanupFailed(error, cleanup)
+         throw error
+     }
+   }
+@@ -327,8 +343,12 @@
+     }
+ 
+     override def close(): Unit = {
+-      close(connection)
+-      close(dataSource)
++      var failure: Exception = null
++      Vector[AutoCloseable](connection, dataSource).filter(_ != null).foreach { resource =>
++        try resource.close()
++        catch { case e: Exception => if (failure == null) failure = e else failure.addSuppressed(e) }
++      }
++      if (failure != null) throw failure
+     }
+ 
+     private def rowAsJson(resultSet: ResultSet): String = {
+--- before/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/KafkaSource.scala
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/KafkaSource.scala
+@@ -2,7 +2,7 @@
+ 
+ import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
+ import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+-import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSource, NodeSource}
++import cn.xuyinyin.magic.workflow.nodes.base.{BatchSourceSession, SourceResourceScope, CheckpointedNodeSource, NodeSource}
+ import org.apache.kafka.clients.consumer.OffsetOutOfRangeException
+ import org.apache.pekko.NotUsed
+ import org.apache.pekko.stream.{Attributes, FlowShape, Inlet, Outlet}
+@@ -67,7 +67,19 @@
+     boundary: SnapshotBoundary,
+     resumeFrom: Option[BatchCheckpoint],
+     onLog: String => Unit
+-  )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
++  )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] =
++    batches(node, executionId, boundary, resumeFrom, onLog, clientAccess)
++
++  override def openBatches(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
++    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext)
++    (implicit blockingEc: ExecutionContext): BatchSourceSession = {
++    val resources = new SourceResourceScope
++    BatchSourceSession(batches(node, executionId, boundary, resumeFrom, onLog, clientAccess.inSession(resources)), () => resources.close())
++  }
++
++  private def batches(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
++    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, access: KafkaClientAccess)
++    (implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
+     val config = KafkaSourceConfig.parse(node)
+     val encodedBoundary = boundary.upperBound.getOrElse(
+       throw new IllegalArgumentException("Kafka boundary is missing its upper bound"))
+@@ -98,7 +110,7 @@
+       val events = Source(decodedBoundary.partitions.sortBy(_.partition))
+         .flatMapConcat { partition =>
+           val start = initial.nextOffsets(partition.partition)
+-          clientAccess.records(resolved, partition.partition, start, partition.endOffset)
++          access.records(resolved, partition.partition, start, partition.endOffset)
+             .mapError {
+               case failure: OffsetOutOfRangeException =>
+                 val translated = new OffsetOutOfRangeException(
+--- before/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/KafkaClientAccess.scala
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/KafkaClientAccess.scala
+@@ -1,6 +1,10 @@
+ package cn.xuyinyin.magic.workflow.nodes.sources
+ 
+ import com.typesafe.config.ConfigFactory
++import cn.xuyinyin.magic.workflow.nodes.base.{SourceAcquisitionCleanupFailed, SourceResourceScope}
++import org.apache.pekko.Done
++import scala.concurrent.Promise
++import scala.util.control.NonFatal
+ import org.apache.kafka.clients.consumer.ConsumerConfig
+ import org.apache.kafka.common.TopicPartition
+ import org.apache.kafka.common.serialization.StringDeserializer
+@@ -17,6 +21,8 @@
+ final case class KafkaRecord(partition: Int, offset: Long, value: String)
+ 
+ private[sources] trait KafkaClientAccess {
++  def inSession(resources: SourceResourceScope): KafkaClientAccess = this
++
+   def partitionOffsets(topic: ResolvedKafkaTopic, reset: KafkaOffsetReset)
+     (implicit ec: ExecutionContext): Future[Vector[KafkaPartitionBoundary]]
+ 
+@@ -67,7 +73,8 @@
+       }
+     } catch {
+       case failure: Throwable =>
+-        consumer.close(settings.getCloseTimeout)
++        try consumer.close(settings.getCloseTimeout)
++        catch { case NonFatal(cleanup) => throw new SourceAcquisitionCleanupFailed(failure, cleanup) }
+         throw failure
+     }
+   }
+@@ -79,8 +86,11 @@
+ )
+ 
+ private[sources] final class PekkoKafkaClientAccess(
+-  pollerFactory: KafkaPartitionPollerFactory = DefaultKafkaPartitionPollerFactory
++  pollerFactory: KafkaPartitionPollerFactory = DefaultKafkaPartitionPollerFactory,
++  resources: Option[SourceResourceScope] = None
+ ) extends KafkaClientAccess {
++  override def inSession(scope: SourceResourceScope): KafkaClientAccess = new PekkoKafkaClientAccess(pollerFactory, Some(scope))
++
+   override def partitionOffsets(topic: ResolvedKafkaTopic, reset: KafkaOffsetReset)
+     (implicit ec: ExecutionContext): Future[Vector[KafkaPartitionBoundary]] = Future {
+     val settings = consumerSettings(topic, clientId = s"${groupId(topic)}-metadata")
+@@ -115,10 +125,26 @@
+       val settings = consumerSettings(topic, clientId = s"${groupId(topic)}-$partition")
+       val topicPartition = new TopicPartition(topic.topic, partition)
+       Source.unfoldResource[Vector[KafkaRecord], KafkaPollingState](
+-        create = () => new KafkaPollingState(
+-          pollerFactory.open(settings, topicPartition, startOffset),
+-          startOffset
+-        ),
++        create = () => {
++          val closed = Promise[Done]()
++          // Reserve before opening; close stays on the poller's own stream thread.
++          resources.foreach { scope =>
++            scope.acquire(() => Future.successful(closed), (p: Promise[Done]) => p.future).value.foreach(_.get)
++          }
++          try {
++            val underlying = pollerFactory.open(settings, topicPartition, startOffset)
++            new KafkaPollingState(new KafkaPartitionPoller {
++              def poll(): KafkaPoll = underlying.poll()
++              def close(): Unit = try {
++                underlying.close()
++                closed.trySuccess(Done)
++              } catch { case NonFatal(e) => closed.tryFailure(e); throw e }
++            }, startOffset)
++          } catch {
++            case e: SourceAcquisitionCleanupFailed => closed.tryFailure(e); throw e
++            case NonFatal(e) => closed.trySuccess(Done); throw e
++          }
++        },
+         read = state => {
+           if (state.position >= endOffset) None
+           else {
+--- before/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/DebeziumBatchBridge.scala
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/DebeziumBatchBridge.scala
+@@ -1,6 +1,7 @@
+ package cn.xuyinyin.magic.workflow.nodes.sources
+ 
+ import java.util.concurrent.{ArrayBlockingQueue, CompletableFuture, ExecutionException}
++import scala.concurrent.{Future, Promise}
+ 
+ trait CdcBatchCommitHandle {
+   def markProcessedAndFinished(): Unit
+@@ -40,6 +41,29 @@
+   private var claimed = Option.empty[BatchEntry]
+   private var taking = false
+   private var nextToken = 1L
++  private var asyncTaker = Option.empty[Promise[BridgedCdcBatch]]
++
++  /** Empty CDC streams retain a promise, never a JDBC worker thread. */
++  def takeAsync(): Future[BridgedCdcBatch] = monitor.synchronized {
++    if (closed) return Future.failed(closedFailure())
++    require(asyncTaker.isEmpty && !taking, "a Debezium reader is already waiting")
++    val waiter = Promise[BridgedCdcBatch]()
++    asyncTaker = Some(waiter)
++    deliverAsync()
++    waiter.future
++  }
++
++  private def deliverAsync(): Unit = {
++    if (asyncTaker.nonEmpty && active.isEmpty && claimed.isEmpty && !taking) {
++      Option(queue.poll()).flatten.foreach { entry =>
++        val waiter = asyncTaker.get
++        asyncTaker = None
++        active = Some(entry)
++        monitor.notifyAll()
++        waiter.trySuccess(BridgedCdcBatch(entry.deliveryToken, entry.batchId, entry.rows, entry.cursorValue))
++      }
++    }
++  }
+ 
+   def publish(
+     batchId: String,
+@@ -66,6 +90,7 @@
+           pending -= entry.deliveryToken
+           throw new IllegalStateException("Debezium queue capacity was lost during admission")
+         }
++        deliverAsync()
+       }
+     } catch {
+       case error: InterruptedException =>
+@@ -112,6 +137,7 @@
+         monitor.synchronized {
+           taking = false
+           monitor.notifyAll()
++          deliverAsync()
+         }
+         Thread.currentThread().interrupt()
+         throw new IllegalStateException("interrupted while taking Debezium batch", error)
+@@ -138,6 +164,7 @@
+           claimed = None
+           entry.completion.complete(())
+           monitor.notifyAll()
++          deliverAsync()
+         }
+       }
+     } catch {
+@@ -147,6 +174,7 @@
+             claimed = None
+             entry.completion.completeExceptionally(error)
+             monitor.notifyAll()
++            deliverAsync()
+           }
+         }
+         throw error
+@@ -170,12 +198,15 @@
+       if (!closed) {
+         closed = true
+         val cause = closedFailure()
++        asyncTaker.foreach(_.tryFailure(cause))
++        asyncTaker = None
+         pending.values.foreach(_.completion.completeExceptionally(cause))
+         pending = Map.empty
+         active = None
+         queue.clear()
+         queue.offer(None)
+         monitor.notifyAll()
++        deliverAsync()
+       }
+     }
+   }
+@@ -198,6 +229,7 @@
+         queue.remove(Some(entry))
+         entry.completion.completeExceptionally(cause)
+         monitor.notifyAll()
++        deliverAsync()
+       }
+     }
+ 
+--- before/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcSourceNode.scala
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcSourceNode.scala
+@@ -2,7 +2,7 @@
+ 
+ import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
+ import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+-import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSource, NodeSource}
++import cn.xuyinyin.magic.workflow.nodes.base.{BatchSourceSession, CheckpointedNodeSource, NodeSource, SourceAcquisitionCleanupFailed}
+ import cn.xuyinyin.magic.workflow.nodes.cdc.{MySQLCdcEnvelope, MySQLCdcGroupProtocol}
+ import com.typesafe.config.ConfigFactory
+ import org.apache.kafka.connect.source.SourceRecord
+@@ -172,7 +172,17 @@
+     boundary: SnapshotBoundary,
+     resumeFrom: Option[BatchCheckpoint],
+     onLog: String => Unit
+-  )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
++  )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] =
++    batchSession(node, executionId, boundary, resumeFrom, onLog, blockingEc, managed = false).source
++
++  override def openBatches(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
++    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext)
++    (implicit blockingEc: ExecutionContext): BatchSourceSession =
++    batchSession(node, executionId, boundary, resumeFrom, onLog, closeEc, managed = true)
++
++  private def batchSession(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
++    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext, managed: Boolean)
++    (implicit blockingEc: ExecutionContext): BatchSourceSession = {
+     val config = parseConfig(node)
+     validateBoundary(node, config, boundary, resumeFrom)
+     val state = loadStateConfig()
+@@ -187,7 +197,7 @@
+       case None => 0L
+     }
+ 
+-    Source.unfoldResourceAsync[SourceBatch, CdcResource](
++    BatchSourceSession.resource[CdcResource](
+       create = () => Future {
+         var connection: Connection = null
+         try {
+@@ -204,11 +214,12 @@
+         onLog(s"MySQL CDC engine starting connectorId=${config.connectorId} database=${config.database} table=${config.table}")
+         new CdcResource(node.id, executionId, config, identity, firstSequence, properties, onLog)
+       }(blockingEc),
+-      read = resource => Future(resource.nextBatch())(blockingEc),
+-      close = resource => Future {
++      read = resource => resource.nextBatchAsync(),
++      closeResource = resource => Future {
+         resource.close()
+         Done
+-      }(blockingEc)
++      }(closeEc),
++      managed = managed
+     )
+   }
+ 
+@@ -294,7 +305,7 @@
+         assembler.foreach(_.close())
+         bridge.close()
+         try engine.close()
+-        catch { case NonFatal(_) => () }
++        catch { case NonFatal(cleanup) => throw new SourceAcquisitionCleanupFailed(error, cleanup) }
+         throw error
+     }
+ 
+@@ -309,9 +320,8 @@
+       bridge.close()
+     }(ExecutionContext.parasitic)
+ 
+-    def nextBatch(): Option[SourceBatch] = {
+-      try {
+-        val bridged = bridge.take()
++    def nextBatchAsync(): Future[Option[SourceBatch]] = {
++      bridge.takeAsync().map { bridged =>
+         val sequence = outputSequence.get()
+         val expectedBatchId = BatchId.sha256(
+           executionId,
+@@ -343,7 +353,7 @@
+           rows = bridged.rows,
+           acknowledgementId = Option.when(assembler.nonEmpty)(acknowledgementKey)
+         ))
+-      } catch {
++      }(ExecutionContext.parasitic).recover {
+         case error: IllegalStateException =>
+           terminal.get() match {
+             case Failure(cause) => throw cause
+@@ -351,7 +361,7 @@
+             case null if closed.get() => None
+             case _ => throw error
+           }
+-      }
++      }(ExecutionContext.parasitic)
+     }
+ 
+     override def close(): Unit = {
+--- before/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/base/CheckpointedNodes.scala
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/base/CheckpointedNodes.scala
+@@ -29,6 +29,13 @@
+     onLog: String => Unit
+   )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed]
+ 
++  /** Sources with asynchronous resource cleanup override this execution-session entry point. */
++  def openBatches(
++    node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
++    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext
++  )(implicit blockingEc: ExecutionContext): BatchSourceSession =
++    BatchSourceSession(createBatches(node, executionId, boundary, resumeFrom, onLog), () => Future.successful(Done))
++
+   def acknowledgeCommittedBatch(
+     node: WorkflowDSL.Node,
+     batch: SourceBatch,
+--- before/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/base/BatchSourceSession.scala
++++ after/pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/base/BatchSourceSession.scala
+@@ -0,0 +1,91 @@
++package cn.xuyinyin.magic.workflow.nodes.base
++
++import cn.xuyinyin.magic.workflow.checkpoint.SourceBatch
++import org.apache.pekko.{Done, NotUsed}
++import org.apache.pekko.stream.scaladsl.Source
++import scala.concurrent.{ExecutionContext, Future, Promise}
++import scala.util.{Failure, Success}
++import scala.util.control.NonFatal
++
++/** Execution-local resources, deliberately absent from checkpoints and source identities. */
++final case class BatchSourceSession(source: Source[SourceBatch, NotUsed], close: () => Future[Done])
++
++final class SourceAcquisitionCleanupFailed(cause: Throwable, cleanup: Throwable)
++  extends IllegalStateException("source acquisition failed and resource release is unconfirmed", cause) {
++  addSuppressed(cleanup)
++}
++
++object BatchSourceSession {
++  /** Managed streams defer physical close until the Engine has drained its in-flight batch. */
++  def resource[R](create: () => Future[R], read: R => Future[Option[SourceBatch]],
++    closeResource: R => Future[Done], managed: Boolean, drainReads: Boolean = false): BatchSourceSession = {
++    val scope = new SourceResourceScope
++    val readLock = new AnyRef
++    var pendingReads = Set.empty[Promise[Done]]
++    var stopping = false
++    def close(): Future[Done] = {
++      val pending = readLock.synchronized { stopping = true; pendingReads.toVector.map(_.future) }
++      implicit val ec: ExecutionContext = ExecutionContext.parasitic
++      Future.sequence(pending).flatMap(_ => scope.close())
++    }
++    def readTracked(resource: R): Future[Option[SourceBatch]] = {
++      if (!drainReads) return read(resource)
++      val finished = Promise[Done]()
++      val admitted = readLock.synchronized {
++        if (stopping) false else { pendingReads += finished; true }
++      }
++      if (!admitted) Future.successful(None)
++      else {
++        val running = try read(resource) catch { case NonFatal(e) => Future.failed(e) }
++        running.transform { result =>
++          readLock.synchronized { pendingReads -= finished; finished.trySuccess(Done) }
++          result
++        }(ExecutionContext.parasitic)
++      }
++    }
++    val source = Source.unfoldResourceAsync[SourceBatch, R](
++      () => scope.acquire(create, closeResource), readTracked,
++      _ => if (managed) Future.successful(Done) else close())
++    BatchSourceSession(source, () => close())
++  }
++}
++
++/** Reserves ownership before asynchronous acquisition; late resources cannot escape close. */
++final class SourceResourceScope {
++  private var closers = Vector.empty[() => Future[Done]]
++  private var closing = false
++  private val released = Promise[Done]()
++
++  def acquire[R](create: () => Future[R], closeResource: R => Future[Done]): Future[R] = {
++    val opened = Promise[R]()
++    synchronized {
++      if (closing) return Future.failed(new IllegalStateException("source session is closing"))
++      closers :+= (() => opened.future.transformWith {
++        case Success(resource) => try closeResource(resource) catch { case NonFatal(e) => Future.failed(e) }
++        case Failure(e: SourceAcquisitionCleanupFailed) => Future.failed(e)
++        case Failure(_) => Future.successful(Done)
++      }(ExecutionContext.parasitic))
++    }
++    try create().onComplete(opened.tryComplete)(ExecutionContext.parasitic)
++    catch { case NonFatal(e) => opened.tryFailure(e) }
++    opened.future
++  }
++
++  def close(): Future[Done] = {
++    val pending = synchronized {
++      if (closing) None else { closing = true; Some(closers) }
++    }
++    pending.foreach { entries =>
++      implicit val ec: ExecutionContext = ExecutionContext.parasitic
++      // Observe all closes, including when one fails; never short-circuit release accounting.
++      Future.sequence(entries.map(f => f().map[Either[Throwable, Done]](Right(_)).recover { case NonFatal(e) => Left(e) }))
++        .foreach { outcomes =>
++          outcomes.collectFirst { case Left(e) => e } match {
++            case Some(error) => released.tryFailure(error)
++            case None => released.trySuccess(Done)
++          }
++        }
++    }
++    released.future
++  }
++}
+--- before/pekko-server/src/test/resources/application-test.conf
++++ after/pekko-server/src/test/resources/application-test.conf
+@@ -85,6 +85,13 @@
+       keep-n-snapshots = 2
+     }
+ 
++    session-close-dispatcher {
++      type = Dispatcher
++      executor = "thread-pool-executor"
++      thread-pool-executor.fixed-pool-size = 2
++      throughput = 1
++    }
++    session-control-wait-timeout = 10s
+     jdbc-dispatcher {
+       type = Dispatcher
+       executor = "thread-pool-executor"
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/TestNodeRegistry.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/TestNodeRegistry.scala
+@@ -0,0 +1,20 @@
++package cn.xuyinyin.magic.workflow
++
++import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
++import cn.xuyinyin.magic.workflow.nodes.base.{NodeSource, NodeSink}
++
++/** Suite-local fixture builder; Engines receive immutable snapshots, never this mutable builder. */
++final class TestNodeRegistry {
++  private val builtins = NodeRegistry.builtins()
++  private var sources = Map.empty[String, NodeSource]
++  private var sinks = Map.empty[String, NodeSink]
++  def snapshot: NodeRegistry = sinks.values.foldLeft(sources.values.foldLeft(builtins)(_.withSource(_)))(_.withSink(_))
++  def registerSource(s: NodeSource): Unit = { sources += s.nodeType -> s }
++  def registerSink(s: NodeSink): Unit = { sinks += s.nodeType -> s }
++  def unregisterSource(t: String, expected: NodeSource): Unit = if (sources.get(t).exists(_ eq expected)) sources -= t
++  def unregisterSink(t: String, expected: NodeSink): Unit = if (sinks.get(t).exists(_ eq expected)) sinks -= t
++  def unregister(s: NodeSource): Unit = unregisterSource(s.nodeType, s)
++  def unregister(s: NodeSink): Unit = unregisterSink(s.nodeType, s)
++  def findSource(t: String): Option[NodeSource] = snapshot.findSource(t)
++  def findSink(t: String): Option[NodeSink] = snapshot.findSink(t)
++}
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcSessionReleaseSpec.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcSessionReleaseSpec.scala
+@@ -0,0 +1,101 @@
++package cn.xuyinyin.magic.workflow.integration
++
++import cn.xuyinyin.magic.tags.ExternalIntegration
++import org.scalatest.matchers.should.Matchers
++import org.scalatest.wordspec.AnyWordSpec
++import spray.json._
++import java.nio.file.{Files, Path}
++import java.util.UUID
++import scala.concurrent.duration._
++
++/** Real Source/Actor Journal/Sink; only the return after successful T is held. */
++class RealMySQLCdcSessionReleaseSpec extends AnyWordSpec with Matchers {
++  import CdcJournalWindowSupport._
++  "managed CDC sessions" should {
++    for (fault <- Vector("none", "cancel-T")) {
++      s"confirm physical release with $fault and retain full field evidence" taggedAs ExternalIntegration in {
++        if (!sys.env.get("RUN_MYSQL_CDC_RECOVERY_WINDOWS").contains("1")) cancel("external_blocked: isolated MySQL required")
++        val settings = Settings.environment()
++        val suffix = UUID.randomUUID().toString.replace("-", "").take(12)
++        val schema = s"pekko_test_cdc_window_$suffix"
++        val connector = s"release_$suffix"
++        val dir = Path.of("target", "cdc-session-release", s"$fault-$suffix").toAbsolutePath
++        Files.createDirectories(dir)
++        initialize(settings, schema)
++        withConnection(settings, schema) { c =>
++          val text = scala.io.Source.fromResource("db/mysql/pekko-sync-cdc-group-ledger-schema.sql")
++          try text.mkString.split(";").map(_.trim).filter(_.nonEmpty).foreach(executeSql(c, _)) finally text.close()
++        }
++        val lineage = withConnection(settings, schema)(query(_, "SELECT @@server_uuid AS uuid")).elements.head.asJsObject.fields("uuid").convertTo[String]
++        def start(mode: String, log: String): Child = {
++          val cp = System.getProperty("java.class.path")
++          val b = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin", "java").toString,
++            "-Xmx512m", "-Duser.timezone=UTC", "-cp", cp,
++            RealMySQLCdcGroupRecoveryProcess.getClass.getName.stripSuffix("$"), mode, schema, connector, "16", fault, lineage)
++          b.redirectError(dir.resolve(log + ".stderr").toFile)
++          b.environment().put("CDC_WINDOW_MYSQL_HOST", settings.host)
++          b.environment().put("CDC_WINDOW_MYSQL_PORT", settings.port.toString)
++          b.environment().put("CDC_WINDOW_MYSQL_USER", settings.user)
++          b.environment().put("CDC_WINDOW_MYSQL_PASSWORD", settings.password)
++          new Child(b.start(), dir.resolve(log))
++        }
++        var bootstrap: Child = null
++        var child: Child = null
++        def capture(c: Child): JsObject = JsObject("T" -> withConnection(settings, schema)(query(_, "SELECT * FROM pekko_sync_cdc_group_ledger ORDER BY group_id")),
++          "J" -> c.state(), "D" -> offsetState(settings, schema, connector), "comparison" -> comparison(settings, schema))
++        try {
++          bootstrap = start("bootstrap", "bootstrap.log")
++          bootstrap.awaitEvent("PROCESS_READY")
++          awaitCondition("bootstrap equality", 180.seconds) { comparison(settings, schema).fields("equal") == JsBoolean(true) }
++          withConnection(settings, schema)(executeSql(_, "UPDATE source_rows SET label='trusted-streaming-baseline' WHERE id=64"))
++          awaitCondition("durable bootstrap streaming D") {
++            val state = bootstrap.state()
++            comparison(settings, schema).fields("equal") == JsBoolean(true) &&
++              offsetState(settings, schema, connector).elements.exists(r =>
++                r.asJsObject.fields("offset_val").convertTo[String].parseJson == journalCheckpoint(state).fields("cursor").asJsObject.fields("offset")) &&
++              journalCheckpoint(state).fields("cursor").asJsObject.fields("offset").asJsObject.fields.get("snapshot")
++                .forall(v => v == JsBoolean(false) || v == JsString("false"))
++          }
++          bootstrap.send("CRASH"); bootstrap.exit() shouldBe 86
++          child = start("fresh", "session.log")
++          child.awaitEvent("PROCESS_READY")
++          child.awaitEvent("ENGINE_CONFIG")
++          withConnection(settings, schema)(executeSql(_, "UPDATE source_rows SET note='v2-baseline' WHERE id=64"))
++          awaitCondition("group baseline T/J/D aligned") {
++            val state = child.state()
++            state.fields("actorCheckpoints").asInstanceOf[JsArray].elements.nonEmpty &&
++              comparison(settings, schema).fields("equal") == JsBoolean(true) &&
++              offsetState(settings, schema, connector).elements.exists(r =>
++                r.asJsObject.fields("offset_val").convertTo[String].parseJson == journalCheckpoint(state).fields("cursor").asJsObject.fields("offset"))
++          }
++          val baseline = capture(child); write(dir, "baseline.json", baseline)
++          if (fault == "cancel-T") {
++            child.send("ARM"); child.awaitEvent("ARMED")
++            withConnection(settings, schema)(executeSql(_, "UPDATE source_rows SET label='cancel-committed',revision=revision+1 WHERE id=1"))
++            val cut = child.awaitEvent("CUTPOINT"); write(dir, "cut-event.json", cut)
++            val atCut = capture(child); write(dir, "cutpoint.json", atCut)
++            atCut.fields("T") should not be baseline.fields("T")
++            journalCheckpoint(atCut.fields("J").asJsObject) shouldBe journalCheckpoint(baseline.fields("J").asJsObject)
++            child.send("CANCEL")
++            val pending = child.awaitEvent("CANCEL_RESULT"); write(dir, "cancel-pending.json", pending)
++            pending.fields("status") shouldBe JsString("TimedOut")
++            child.events.exists(_.fields("kind") == JsString("ENGINE_CLOSED")) shouldBe false
++            child.send("RELEASE_T"); child.awaitEvent("T_RELEASED")
++          }
++          child.send("AWAIT_RELEASE")
++          val released = child.awaitEvent("CANCEL_RESULT"); write(dir, "released.json", released)
++          released.fields("status") shouldBe JsString("Released")
++          released.fields("liveRunners") shouldBe JsNumber(0)
++          child.events.count(_.fields("kind") == JsString("ENGINE_CLOSED")) shouldBe 1
++          val end = capture(child); write(dir, "final.json", end)
++          end.fields("comparison").asJsObject.fields("equal") shouldBe JsBoolean(true)
++          if (fault == "cancel-T") journalCheckpoint(end.fields("J").asJsObject).fields("sequence").convertTo[Long] should
++            be > journalCheckpoint(baseline.fields("J").asJsObject).fields("sequence").convertTo[Long]
++          write(dir, "outcome.json", JsObject("physicalRelease" -> JsBoolean(true), "allFieldsEqual" -> JsBoolean(true),
++            "schema" -> JsString(schema), "fault" -> JsString(fault), "events" -> JsArray(child.events)))
++          println(s"CDC_SESSION_RELEASE_OBSERVED fault=$fault evidence=$dir")
++        } finally { if (bootstrap != null) bootstrap.kill(); if (child != null) child.kill() }
++      }
++    }
++  }
++}
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/ResumableFullSyncRecoverySpec.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/ResumableFullSyncRecoverySpec.scala
+@@ -1,18 +1,8 @@
+-package cn.xuyinyin.magic.workflow.engine {
+-  import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+-  import cn.xuyinyin.magic.workflow.nodes.base.{NodeSink, NodeSource}
+-
+-  private[workflow] object ResumableRecoveryRegistryCleanup {
+-    def unregister(source: NodeSource): Unit = NodeRegistry.unregisterSource(source.nodeType, source)
+-    def unregister(sink: NodeSink): Unit = NodeRegistry.unregisterSink(sink.nodeType, sink)
+-  }
+-}
+-
+ package cn.xuyinyin.magic.workflow.integration {
+ 
+ import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
+ import cn.xuyinyin.magic.workflow.checkpoint.{AlreadyCommitted, BatchCheckpoint, BatchCommitResult, Committed, SourceBatch}
+-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
++import cn.xuyinyin.magic.workflow.TestNodeRegistry
+ import cn.xuyinyin.magic.workflow.engine.{ExecutionResult, ReliableRunContext, WorkflowExecutionEngine}
+ import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Edge, Node, Position, Workflow, WorkflowMetadata}
+ import cn.xuyinyin.magic.workflow.nodes.sinks.MySQLSinkNode
+@@ -46,6 +36,8 @@
+ }
+ 
+ class ResumableFullSyncRecoverySpec extends AnyWordSpec with Matchers with Eventually {
++  private val testRegistry = new TestNodeRegistry
++
+   import ResumableFullSyncRecoverySpec._
+ 
+   implicit val patience: PatienceConfig = PatienceConfig(timeout = Span(45, Seconds), interval = Span(250, Millis))
+@@ -60,8 +52,8 @@
+       val sourceRows = Vector(1 -> "row-1", 2 -> "row-2", 5 -> "row-5", 9 -> "row-9", 12 -> "row-12")
+       val source = new H2SnapshotSource
+       val sink = new H2ObservingSink
+-      val originalSource = NodeRegistry.findSource(source.nodeType).get
+-      val originalSink = NodeRegistry.findSink(sink.nodeType).get
++      val originalSource = testRegistry.findSource(source.nodeType).get
++      val originalSink = testRegistry.findSink(sink.nodeType).get
+       val sequenceZeroCommitted = Promise[BatchCheckpoint]()
+       val finalCheckpointPersisted = Promise[BatchCheckpoint]()
+       val releaseFinalCheckpoint = Promise[Done]()
+@@ -73,8 +65,8 @@
+       try {
+         initializeSource(sourceUrl, sourceRows)
+         initializeTarget(targetUrl)
+-        NodeRegistry.registerSource(source)
+-        NodeRegistry.registerSink(sink)
++        testRegistry.registerSource(source)
++        testRegistry.registerSink(sink)
+ 
+         Vector(database.url, sourceUrl, targetUrl).foreach { url =>
+           url should startWith("jdbc:h2:file:")
+@@ -137,6 +129,11 @@
+         )
+ 
+         val node1Address = Cluster(node1.system).selfMember.address
++        // The artificial J gate must abort when its owner stops, as a failed Actor ask would.
++        // Keep the ActorSystem alive until Engine resource release has actually completed.
++        region1 ! ShardingEnvelope(workflowId, EventSourcedWorkflowActor.Stop)
++        Await.result(node1Engine.ownerRelease.future, 10.seconds)
++        source.openDataSources shouldBe 0
+         MultiNodeTestSupport.terminate(node1)
+         MultiNodeTestSupport.downFrom(node2, node1Address)
+         eventually {
+@@ -202,16 +199,16 @@
+             sink.openDataSources shouldBe 0
+           }
+         } finally {
+-          cn.xuyinyin.magic.workflow.engine.ResumableRecoveryRegistryCleanup.unregister(source)
+-          cn.xuyinyin.magic.workflow.engine.ResumableRecoveryRegistryCleanup.unregister(sink)
++          testRegistry.unregister(source)
++          testRegistry.unregister(sink)
+           MultiNodeTestSupport.cleanupDatabase(database)
+         }
+       }
+ 
+       node1.system.whenTerminated.isCompleted shouldBe true
+       node2.system.whenTerminated.isCompleted shouldBe true
+-      NodeRegistry.findSource(source.nodeType).get should be theSameInstanceAs originalSource
+-      NodeRegistry.findSink(sink.nodeType).get should be theSameInstanceAs originalSink
++      testRegistry.findSource(source.nodeType).get should be theSameInstanceAs originalSource
++      testRegistry.findSink(sink.nodeType).get should be theSameInstanceAs originalSink
+       source.openDataSources shouldBe 0
+       sink.openDataSources shouldBe 0
+       Files.exists(database.directory) shouldBe false
+@@ -222,8 +219,15 @@
+   private final class BeforeCheckpointGateEngine(signal: Promise[BatchCheckpoint])(
+     implicit system: ActorSystem[_],
+     executionContext: ExecutionContext
+-  ) extends WorkflowExecutionEngine() {
++  ) extends WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+     private val blocked = Promise[Done]()
++    val ownerRelease = Promise[Done]()
++    override def cancel(executionId: String): Future[Done] = {
++      val released = super.cancel(executionId)
++      blocked.tryFailure(new IllegalStateException("test owner stopped before checkpoint confirmation"))
++      released.onComplete(ownerRelease.tryComplete)(ExecutionContext.parasitic)
++      released
++    }
+     private val intercepted = new AtomicBoolean(false)
+ 
+     override def execute(
+@@ -252,7 +256,7 @@
+   )(
+     implicit system: ActorSystem[_],
+     executionContext: ExecutionContext
+-  ) extends WorkflowExecutionEngine() {
++  ) extends WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+     private val intercepted = new AtomicBoolean(false)
+ 
+     override def execute(
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcGroupRecoveryProcess.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcGroupRecoveryProcess.scala
+@@ -3,7 +3,7 @@
+ import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
+ import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchCommitResult, SnapshotBoundary, SourceBatch}
+ import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
+-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
++import cn.xuyinyin.magic.workflow.TestNodeRegistry
+ import cn.xuyinyin.magic.workflow.events.WorkflowEvents.ExecutionCheckpointAdvanced
+ import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
+ import cn.xuyinyin.magic.workflow.nodes.sinks.{MySQLCdcApplySinkNode, MySQLCdcApplyConfig}
+@@ -29,6 +29,8 @@
+   * bootstrap establishes a trusted initialized target and durable streaming D using the legacy path.
+   */
+ object RealMySQLCdcGroupRecoveryProcess {
++  private val testRegistry = new TestNodeRegistry
++
+   import CdcJournalWindowSupport._
+ 
+   def main(args: Array[String]): Unit = {
+@@ -40,6 +42,9 @@
+     val settings = Settings.environment()
+     val workflowId = s"workflow-$connector-${if (mode == "bootstrap") "bootstrap" else "groups"}"
+     val armed = new AtomicBoolean(false)
++    val cancelCommitGate = Promise[BatchCommitResult]()
++    val cancelCommitResult = new java.util.concurrent.atomic.AtomicReference[BatchCommitResult]()
++    var observedExecutionId = ""
+     val rawGate = new CountDownLatch(1)
+     val proxy = if (mode == "fresh" && Set("C0", "C1", "C2").contains(fault))
+       Some(new MySQLCommitResponseProxy(settings.host, settings.port, (kind, fields) => emit(kind, fields.fields.toSeq: _*))) else None
+@@ -89,22 +94,23 @@
+                 emit("RAW_CALLBACK_RETURNED", "callback" -> JsNumber(id))
+               }
+             })
+-          override def close(): Unit = delegate.close()
++          override def close(): Unit = { delegate.close(); emit("ENGINE_CLOSED") }
+         }
+       }
+     }
+-    NodeRegistry.registerSource(new MySQLCdcSourceNode(observedFactory, () =>
++    testRegistry.registerSource(new MySQLCdcSourceNode(observedFactory, () =>
+       MySQLCdcStateConfig(settings.url(schema), settings.user, settings.password,
+         "debezium_offset_storage", "debezium_database_history", 0)) {
+-      override def createBatches(node: Node, executionId: String, boundary: SnapshotBoundary,
+-        resumeFrom: Option[BatchCheckpoint], onLog: String => Unit)
+-        (implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
++      override def openBatches(node: Node, executionId: String, boundary: SnapshotBoundary,
++        resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext)
++        (implicit blockingEc: ExecutionContext): cn.xuyinyin.magic.workflow.nodes.base.BatchSourceSession = {
+         emit("READER_RESUME", "executionId" -> JsString(executionId),
+           "checkpoint" -> resumeFrom.map(checkpointJson).getOrElse(JsNull))
+-        super.createBatches(node, executionId, boundary, resumeFrom, onLog).map { batch =>
++        val session = super.openBatches(node, executionId, boundary, resumeFrom, onLog, closeEc)
++        session.copy(source = session.source.map { batch =>
+           emit("SOURCE_BATCH", "batch" -> batchJson(batch))
+           batch
+-        }
++        })
+       }
+       override def acknowledgeCommittedBatch(node: Node, batch: SourceBatch, onLog: String => Unit)
+         (implicit blockingEc: ExecutionContext): Future[Done] = {
+@@ -119,7 +125,7 @@
+         }
+       }
+     })
+-    NodeRegistry.registerSink(new MySQLCdcApplySinkNode {
++    testRegistry.registerSink(new MySQLCdcApplySinkNode {
+       override def openConnection(config: MySQLCdcApplyConfig): java.sql.Connection =
+         super.openConnection(proxy.fold(config)(p => config.copy(host = "127.0.0.1", port = p.port)))
+       override def commitBatch(node: Node, workflowId: String, executionId: String, batch: SourceBatch,
+@@ -136,14 +142,18 @@
+                 .takeWhile(_ != null).take(8).map(e => JsString(e.getClass.getName)).toVector))
+           }
+           .flatMap { result =>
+-            if (fault == "after-T" && armed.compareAndSet(true, false)) {
++            if (fault == "cancel-T" && armed.compareAndSet(true, false)) {
++              cancelCommitResult.set(result)
++              emit("CUTPOINT", "batch" -> batchJson(batch), "fault" -> JsString(fault))
++              cancelCommitGate.future
++            } else if (fault == "after-T" && armed.compareAndSet(true, false)) {
+               emit("CUTPOINT", "batch" -> batchJson(batch))
+               Promise[BatchCommitResult]().future // The real engine cannot ask AdvanceCheckpoint yet.
+             } else Future.successful(result)
+           }
+       }
+     })
+-    val engine = new WorkflowExecutionEngine()(kit.system, ec)
++    lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)(kit.system, ec)
+     val actor = kit.spawn(EventSourcedWorkflowActor(workflowId, engine)(ec), "workflow")
+     if (mode != "recover") {
+       val replies = kit.createTestProbe[EventSourcedWorkflowActor.Reply]()
+@@ -151,12 +161,22 @@
+       require(replies.receiveMessage(30.seconds).isInstanceOf[EventSourcedWorkflowActor.Defined])
+       actor ! EventSourcedWorkflowActor.ExecuteManual("initial", replies.ref)
+       val accepted = replies.receiveMessage(30.seconds).asInstanceOf[EventSourcedWorkflowActor.ExecutionAccepted]
++      observedExecutionId = accepted.executionId
+       emit("STARTED", "executionId" -> JsString(accepted.executionId))
+     }
+     emit("PROCESS_READY", "pid" -> JsNumber(ProcessHandle.current().pid()), "mode" -> JsString(mode),
+       "jvmTimezone" -> JsString(java.util.TimeZone.getDefault.getID))
+     try {
+       Iterator.continually(StdIn.readLine()).takeWhile(_ != null).foreach {
++        case "CANCEL" | "AWAIT_RELEASE" =>
++          val budget = if (cancelCommitResult.get() != null && !cancelCommitGate.isCompleted) 100.millis else 10.seconds
++          val status = scala.concurrent.Await.result(engine.cancelWithin(observedExecutionId, budget), budget + 5.seconds)
++          emit("CANCEL_RESULT", "status" -> JsString(status.toString),
++            "liveRunners" -> JsNumber(Thread.getAllStackTraces.keySet().asScala.count(t =>
++              t.isAlive && t.getName.startsWith("mysql-cdc-debezium-engine-"))))
++        case "RELEASE_T" =>
++          require(cancelCommitResult.get() != null, "no committed batch at cancellation gate")
++          cancelCommitGate.trySuccess(cancelCommitResult.get()); emit("T_RELEASED")
+         case "ARM" => armed.set(true); emit("ARMED")
+         case "DROP_RESPONSE" => proxy.get.dropHeldResponse()
+         case "CRASH" => System.out.flush(); Runtime.getRuntime.halt(86)
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcJournalWindowProcess.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcJournalWindowProcess.scala
+@@ -3,7 +3,7 @@
+ import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
+ import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchCommitResult, SnapshotBoundary, SourceBatch}
+ import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
+-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
++import cn.xuyinyin.magic.workflow.TestNodeRegistry
+ import cn.xuyinyin.magic.workflow.events.WorkflowEvents.ExecutionCheckpointAdvanced
+ import cn.xuyinyin.magic.workflow.model.WorkflowDSL._
+ import cn.xuyinyin.magic.workflow.nodes.sinks.MySQLCdcApplySinkNode
+@@ -28,6 +28,8 @@
+   * and a recovery max.batch.size override live in this separate test JVM.
+   */
+ object RealMySQLCdcJournalWindowProcess {
++  private val testRegistry = new TestNodeRegistry
++
+   import CdcJournalWindowSupport._
+ 
+   def main(args: Array[String]): Unit = {
+@@ -61,18 +63,19 @@
+         DebeziumEngineFactory.real.create(properties)
+       }
+     }
+-    NodeRegistry.registerSource(new MySQLCdcSourceNode(observedFactory, () =>
++    testRegistry.registerSource(new MySQLCdcSourceNode(observedFactory, () =>
+       MySQLCdcStateConfig(settings.url(schema), settings.user, settings.password,
+         "debezium_offset_storage", "debezium_database_history", 0)) {
+-      override def createBatches(node: Node, executionId: String, boundary: SnapshotBoundary,
+-        resumeFrom: Option[BatchCheckpoint], onLog: String => Unit)
+-        (implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
++      override def openBatches(node: Node, executionId: String, boundary: SnapshotBoundary,
++        resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext)
++        (implicit blockingEc: ExecutionContext): cn.xuyinyin.magic.workflow.nodes.base.BatchSourceSession = {
+         emit("READER_RESUME", "executionId" -> JsString(executionId),
+           "checkpoint" -> resumeFrom.map(checkpointJson).getOrElse(JsNull))
+-        super.createBatches(node, executionId, boundary, resumeFrom, onLog).map { batch =>
++        val session = super.openBatches(node, executionId, boundary, resumeFrom, onLog, closeEc)
++        session.copy(source = session.source.map { batch =>
+           emit("SOURCE_BATCH", "batch" -> batchJson(batch))
+           batch
+-        }
++        })
+       }
+       override def acknowledgeCommittedBatch(node: Node, batch: SourceBatch, onLog: String => Unit)
+         (implicit blockingEc: ExecutionContext): Future[Done] = {
+@@ -83,7 +86,7 @@
+         }
+       }
+     })
+-    NodeRegistry.registerSink(new MySQLCdcApplySinkNode {
++    testRegistry.registerSink(new MySQLCdcApplySinkNode {
+       override def commitBatch(node: Node, workflowId: String, executionId: String, batch: SourceBatch,
+         transformedRows: Vector[String], onLog: String => Unit)
+         (implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = {
+@@ -103,7 +106,7 @@
+           }
+       }
+     })
+-    val engine = new WorkflowExecutionEngine()(kit.system, ec)
++    lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)(kit.system, ec)
+     val actor = kit.spawn(EventSourcedWorkflowActor(workflowId, engine)(ec), "workflow")
+     if (mode == "fresh") {
+       val replies = kit.createTestProbe[EventSourcedWorkflowActor.Reply]()
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/BoundedKafkaRecoverySpec.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/BoundedKafkaRecoverySpec.scala
+@@ -1,13 +1,3 @@
+-package cn.xuyinyin.magic.workflow.engine {
+-  import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+-  import cn.xuyinyin.magic.workflow.nodes.base.{NodeSink, NodeSource}
+-
+-  private[workflow] object BoundedKafkaRecoveryRegistryCleanup {
+-    def unregister(source: NodeSource): Unit = NodeRegistry.unregisterSource(source.nodeType, source)
+-    def unregister(sink: NodeSink): Unit = NodeRegistry.unregisterSink(sink.nodeType, sink)
+-  }
+-}
+-
+ package cn.xuyinyin.magic.workflow.nodes.sources {
+   import org.apache.pekko.NotUsed
+   import org.apache.pekko.stream.scaladsl.Source
+@@ -71,8 +61,8 @@
+ 
+ import cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor
+ import cn.xuyinyin.magic.workflow.checkpoint._
+-import cn.xuyinyin.magic.workflow.engine.{BoundedKafkaRecoveryRegistryCleanup, WorkflowExecutionEngine}
+-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
++import cn.xuyinyin.magic.workflow.engine.WorkflowExecutionEngine
++import cn.xuyinyin.magic.workflow.TestNodeRegistry
+ import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+ import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, CheckpointedNodeSource, NodeSink}
+ import cn.xuyinyin.magic.workflow.nodes.sources.{InMemoryKafkaFixture, KafkaRecord}
+@@ -137,13 +127,15 @@
+     with AnyWordSpecLike
+     with OptionValues
+     with Matchers {
++  private val testRegistry = new TestNodeRegistry
++
+   import BoundedKafkaRecoverySpec._
+ 
+   private implicit val ec: ExecutionContext = system.executionContext
+ 
+   "bounded Kafka reliable execution" should {
+     "replay a committed unacknowledged batch and seed only new records into the next schedule" in {
+-      val builtIn = NodeRegistry.findSource("kafka.consumer").value
++      val builtIn = testRegistry.findSource("kafka.consumer").value
+       builtIn shouldBe a[CheckpointedNodeSource]
+       val legacyFailure = intercept[UnsupportedOperationException] {
+         Await.result(builtIn.createSource(kafkaNode, _ => ()).runWith(Sink.seq), 2.seconds)
+@@ -152,14 +144,14 @@
+ 
+       val kafka = new InMemoryKafkaFixture(initialRecords)
+       val sink = new CheckpointLedgerSink
+-      NodeRegistry.registerSource(kafka.source)
+-      NodeRegistry.registerSink(sink)
++      testRegistry.registerSource(kafka.source)
++      testRegistry.registerSink(sink)
+ 
+       var firstEntity: Option[org.apache.pekko.actor.typed.ActorRef[EventSourcedWorkflowActor.Command]] = None
+       var recoveredEntity: Option[org.apache.pekko.actor.typed.ActorRef[EventSourcedWorkflowActor.Command]] = None
+       try {
+         val workflowId = s"bounded-kafka-${java.util.UUID.randomUUID()}"
+-        val engine = new WorkflowExecutionEngine()
++        lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
+         val first = spawn(EventSourcedWorkflowActor(workflowId, engine), s"$workflowId-before-crash")
+         firstEntity = Some(first)
+         val replies = createTestProbe[EventSourcedWorkflowActor.Reply]()
+@@ -242,8 +234,8 @@
+         firstEntity.foreach(entity => testKit.stop(entity))
+         recoveredEntity.foreach(entity => testKit.stop(entity))
+         sink.releaseSecondBatch()
+-        BoundedKafkaRecoveryRegistryCleanup.unregister(kafka.source)
+-        BoundedKafkaRecoveryRegistryCleanup.unregister(sink)
++        testRegistry.unregister(kafka.source)
++        testRegistry.unregister(sink)
+       }
+     }
+   }
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcProcess.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcProcess.scala
+@@ -1,7 +1,7 @@
+ package cn.xuyinyin.magic.workflow.integration
+ 
+ import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, SnapshotBoundary, SourceCursor}
+-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
++import cn.xuyinyin.magic.workflow.TestNodeRegistry
+ import cn.xuyinyin.magic.workflow.engine.{ExecutionResult, ReliableRunContext, WorkflowExecutionEngine}
+ import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Edge, Node, Position, Workflow, WorkflowMetadata}
+ import cn.xuyinyin.magic.workflow.nodes.sources.{MySQLCdcSourceNode, MySQLCdcStateConfig}
+@@ -21,6 +21,8 @@
+ 
+ /** Separate JVM used by [[RealMySQLCdcRecoverySpec]]. */
+ object RealMySQLCdcProcess {
++  private val testRegistry = new TestNodeRegistry
++
+   private val SourceNodeId = "source-1"
+ 
+   private final case class Arguments(
+@@ -75,8 +77,8 @@
+           settings.offsetFlushIntervalMillis
+         )
+       )
+-      NodeRegistry.registerSource(source)
+-      engine = new WorkflowExecutionEngine()(system, executionContext)
++      testRegistry.registerSource(source)
++      engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)(system, executionContext)
+       val checkpoint = arguments.mode match {
+         case "snapshot-and-stream" => None
+         case _ => Some(loadCheckpoint(settings, arguments))
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala
+@@ -1,20 +1,10 @@
+-package cn.xuyinyin.magic.workflow.engine {
+-  import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+-  import cn.xuyinyin.magic.workflow.nodes.base.{NodeSink, NodeSource}
+-
+-  private[workflow] object RecoverySpecNodeRegistryCleanup {
+-    def unregister(source: NodeSource): Unit = NodeRegistry.unregisterSource(source.nodeType, source)
+-    def unregister(sink: NodeSink): Unit = NodeRegistry.unregisterSink(sink.nodeType, sink)
+-  }
+-}
+-
+ package cn.xuyinyin.magic.workflow.actors {
+ 
+ import cn.xuyinyin.magic.workflow.WorkflowFixtures
+ import cn.xuyinyin.magic.common.CborSerializable
+ import cn.xuyinyin.magic.workflow.checkpoint._
+ import cn.xuyinyin.magic.workflow.engine.{ExecutionResult, NodeExecutionResult, ReliableRunContext, WorkflowExecutionEngine}
+-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
++import cn.xuyinyin.magic.workflow.TestNodeRegistry
+ import cn.xuyinyin.magic.workflow.events.WorkflowEvents.ExecutionTrigger
+ import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+ import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, CheckpointedNodeSource, NodeSink, NodeSource}
+@@ -156,6 +146,8 @@
+     with AnyWordSpecLike
+     with OptionValues
+     with Matchers {
++  private val testRegistry = new TestNodeRegistry
++
+ 
+   private implicit val executionContext: scala.concurrent.ExecutionContext = system.executionContext
+   private val result = ExecutionResult(
+@@ -311,7 +303,7 @@
+     override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] = Sink.ignore
+   }
+ 
+-  private def engine: WorkflowExecutionEngine = new WorkflowExecutionEngine() {
++  private def engine: WorkflowExecutionEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+     override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
+       Future.successful(result)
+   }
+@@ -372,13 +364,13 @@
+ 
+   "EventSourcedWorkflowActor recovery" should {
+     "keep a MySQL CDC manual execution running and reject a concurrent manual start" in {
+-      NodeRegistry.registerSource(ControllableCdcSource)
+-      NodeRegistry.registerSink(ControllableCdcSink)
++      testRegistry.registerSource(ControllableCdcSource)
++      testRegistry.registerSink(ControllableCdcSink)
+       val reliableInvocation = Promise[ReliableRunContext]()
+       val pending = Promise[ExecutionResult]()
+       val cancellation = Promise[Done]()
+       val cancelCalls = new AtomicInteger(0)
+-      val cdcEngine = new WorkflowExecutionEngine() {
++      lazy val cdcEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+         override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
+           Future.failed(new AssertionError("MySQL CDC entered legacy execution"))
+         override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = {
+@@ -417,18 +409,18 @@
+         cancelCalls.get shouldBe 1
+       } finally {
+         testKit.stop(entity)
+-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(ControllableCdcSource)
+-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(ControllableCdcSink)
++        testRegistry.unregister(ControllableCdcSource)
++        testRegistry.unregister(ControllableCdcSink)
+       }
+     }
+ 
+     "release the old MySQL CDC source before recovering the same execution in-process" in {
+       RestartAwareCdcSource.reset()
+-      NodeRegistry.registerSource(RestartAwareCdcSource)
+-      NodeRegistry.registerSink(ControllableCdcSink)
+-      val executionEngine = new WorkflowExecutionEngine(name =>
++      testRegistry.registerSource(RestartAwareCdcSource)
++      testRegistry.registerSink(ControllableCdcSink)
++      lazy val executionEngine = new WorkflowExecutionEngine(name =>
+         Option.when(Set("MYSQL_CDC_PASSWORD", "DB_PASSWORD").contains(name))("actor-runtime-secret")
+-      )
++      , nodeRegistry = testRegistry.snapshot)
+       val workflowId = "mysql-cdc-in-process-recovery"
+       val first = spawn(EventSourcedWorkflowActor(workflowId, executionEngine), s"$workflowId-before")
+       val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
+@@ -461,8 +453,8 @@
+         }
+       } finally {
+         if (!firstStopped) testKit.stop(first)
+-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(RestartAwareCdcSource)
+-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(ControllableCdcSink)
++        testRegistry.unregister(RestartAwareCdcSource)
++        testRegistry.unregister(ControllableCdcSink)
+       }
+     }
+ 
+@@ -499,11 +491,11 @@
+     }
+ 
+     "select reliable execution from the currently registered source and sink capabilities" in {
+-      NodeRegistry.registerSource(CustomCheckpointSource)
+-      NodeRegistry.registerSink(CustomCheckpointSink)
++      testRegistry.registerSource(CustomCheckpointSource)
++      testRegistry.registerSink(CustomCheckpointSink)
+       val reliableInvocation = Promise[ReliableRunContext]()
+       val pending = Promise[ExecutionResult]()
+-      val capabilityEngine = new WorkflowExecutionEngine() {
++      lazy val capabilityEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+         override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
+           Future.failed(new AssertionError("custom checkpoint nodes entered legacy execution"))
+         override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = {
+@@ -529,18 +521,18 @@
+         state.receiveMessage().currentExecution.value.resumable shouldBe true
+       } finally {
+         testKit.stop(entity)
+-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(CustomCheckpointSource)
+-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(CustomCheckpointSink)
++        testRegistry.unregister(CustomCheckpointSource)
++        testRegistry.unregister(CustomCheckpointSink)
+       }
+     }
+ 
+     "fail a recovered resumable execution when its registered source loses checkpoint capability" in {
+       CapabilityLostLegacySource.reset()
+-      NodeRegistry.registerSource(CustomCheckpointSource)
+-      NodeRegistry.registerSink(CustomCheckpointSink)
++      testRegistry.registerSource(CustomCheckpointSource)
++      testRegistry.registerSink(CustomCheckpointSink)
+       val initialContext = Promise[ReliableRunContext]()
+       val initialPending = Promise[ExecutionResult]()
+-      val initialEngine = new WorkflowExecutionEngine() {
++      lazy val initialEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+         override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = {
+           initialContext.trySuccess(runContext)
+           initialPending.future
+@@ -571,8 +563,8 @@
+         testKit.stop(entity)
+         entityStopped = true
+ 
+-        NodeRegistry.registerSource(CapabilityLostLegacySource)
+-        val recovered = spawn(EventSourcedWorkflowActor(workflowId, new WorkflowExecutionEngine()), "after-source-capability-loss")
++        testRegistry.registerSource(CapabilityLostLegacySource)
++        val recovered = spawn(EventSourcedWorkflowActor(workflowId, new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)), "after-source-capability-loss")
+         try {
+           eventuallySummary(recovered) { summary =>
+             summary.status shouldBe EventSourcedWorkflowActor.Failed
+@@ -583,18 +575,18 @@
+         } finally testKit.stop(recovered)
+       } finally {
+         if (!entityStopped) testKit.stop(entity)
+-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(CustomCheckpointSource)
+-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(CapabilityLostLegacySource)
+-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(CustomCheckpointSink)
++        testRegistry.unregister(CustomCheckpointSource)
++        testRegistry.unregister(CapabilityLostLegacySource)
++        testRegistry.unregister(CustomCheckpointSink)
+       }
+     }
+ 
+     "keep builtin names non-resumable when the current registrations are legacy nodes" in {
+-      NodeRegistry.registerSource(BuiltinNamedLegacySource)
+-      NodeRegistry.registerSink(BuiltinNamedLegacySink)
++      testRegistry.registerSource(BuiltinNamedLegacySource)
++      testRegistry.registerSink(BuiltinNamedLegacySink)
+       val legacyInvocation = Promise[String]()
+       val pending = Promise[ExecutionResult]()
+-      val routingEngine = new WorkflowExecutionEngine() {
++      lazy val routingEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+         override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] = {
+           legacyInvocation.trySuccess(executionId)
+           pending.future
+@@ -619,7 +611,7 @@
+         entityStopped = true
+ 
+         val recoveryCalls = new AtomicInteger(0)
+-        val recoveryEngine = new WorkflowExecutionEngine() {
++        lazy val recoveryEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+           override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] = {
+             recoveryCalls.incrementAndGet()
+             Future.successful(result)
+@@ -636,8 +628,8 @@
+         } finally testKit.stop(recovered)
+       } finally {
+         if (!entityStopped) testKit.stop(entity)
+-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(BuiltinNamedLegacySource)
+-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(BuiltinNamedLegacySink)
++        testRegistry.unregister(BuiltinNamedLegacySource)
++        testRegistry.unregister(BuiltinNamedLegacySink)
+       }
+     }
+ 
+@@ -678,7 +670,7 @@
+       val persistenceId = s"workflow-$workflowId"
+       val invocation = new java.util.concurrent.atomic.AtomicInteger(0)
+       val pending = Promise[ExecutionResult]()
+-      val snapshotEngine = new WorkflowExecutionEngine() {
++      lazy val snapshotEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+         override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
+           if (invocation.incrementAndGet() <= 49) Future.successful(result) else pending.future
+       }
+@@ -732,7 +724,7 @@
+ 
+     "turn an interrupted recovered execution into failed before accepting a new schedule run" in {
+       val pending = Promise[ExecutionResult]()
+-      val pendingEngine = new WorkflowExecutionEngine() {
++      lazy val pendingEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+         override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] = pending.future
+       }
+       val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
+@@ -757,7 +749,7 @@
+ 
+     "gate externally queued commands until recovered interruption is terminal" in {
+       val pending = Promise[ExecutionResult]()
+-      val pendingEngine = new WorkflowExecutionEngine() {
++      lazy val pendingEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+         override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] = pending.future
+       }
+       val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
+@@ -780,7 +772,7 @@
+       val workflowId = "resumable-recovery"
+       val initialContext = Promise[ReliableRunContext]()
+       val initialPending = Promise[ExecutionResult]()
+-      val initialEngine = new WorkflowExecutionEngine() {
++      lazy val initialEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+         override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = {
+           initialContext.trySuccess(runContext)
+           initialPending.future
+@@ -815,7 +807,7 @@
+       val recoveredContext = Promise[ReliableRunContext]()
+       val duplicateAck = Promise[Done]()
+       val recoveredPending = Promise[ExecutionResult]()
+-      val recoveryEngine = new WorkflowExecutionEngine() {
++      lazy val recoveryEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+         override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = {
+           recoveredContext.trySuccess(runContext)
+           val acknowledged = runContext.checkpointCommitted(checkpoint0)
+@@ -838,10 +830,10 @@
+     }
+ 
+     "reconstruct completed Kafka progress from journal events for the next run" in {
+-      NodeRegistry.registerSource(KafkaCheckpointSource)
++      testRegistry.registerSource(KafkaCheckpointSource)
+       val workflowId = "kafka-progress-recovery"
+       val firstCompletion = Promise[ExecutionResult]()
+-      val initialEngine = new WorkflowExecutionEngine() {
++      lazy val initialEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+         override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] =
+           firstCompletion.future
+       }
+@@ -877,7 +869,7 @@
+         entityStopped = true
+ 
+         val recoveredContext = Promise[ReliableRunContext]()
+-        val recoveryEngine = new WorkflowExecutionEngine() {
++        lazy val recoveryEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+           override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = {
+             recoveredContext.trySuccess(runContext)
+             secondCompletion.future
+@@ -900,7 +892,7 @@
+         firstCompletion.trySuccess(result)
+         secondCompletion.trySuccess(result)
+         if (!entityStopped) testKit.stop(entity)
+-        cn.xuyinyin.magic.workflow.engine.RecoverySpecNodeRegistryCleanup.unregister(KafkaCheckpointSource)
++        testRegistry.unregister(KafkaCheckpointSource)
+       }
+     }
+ 
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorSpec.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorSpec.scala
+@@ -1,18 +1,9 @@
+-package cn.xuyinyin.magic.workflow.engine {
+-  import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
+-  import cn.xuyinyin.magic.workflow.nodes.base.NodeSource
+-
+-  private[workflow] object ActorSpecNodeRegistryCleanup {
+-    def unregister(source: NodeSource): Unit = NodeRegistry.unregisterSource(source.nodeType, source)
+-  }
+-}
+-
+ package cn.xuyinyin.magic.workflow.actors {
+ 
+ import cn.xuyinyin.magic.workflow.WorkflowFixtures
+ import cn.xuyinyin.magic.workflow.checkpoint.{BatchCheckpoint, BatchId, SnapshotBoundary, SourceBatch, SourceCursor}
+ import cn.xuyinyin.magic.workflow.engine.{ExecutionResult, NodeExecutionResult, ReliableRunContext, WorkflowExecutionEngine}
+-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
++import cn.xuyinyin.magic.workflow.TestNodeRegistry
+ import cn.xuyinyin.magic.workflow.events.WorkflowEvents._
+ import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+ import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSource, NodeSource}
+@@ -61,6 +52,8 @@
+     with AnyWordSpecLike
+     with OptionValues
+     with Matchers {
++  private val testRegistry = new TestNodeRegistry
++
+ 
+   private implicit val executionContext: scala.concurrent.ExecutionContext = system.executionContext
+ 
+@@ -104,7 +97,7 @@
+     reliableWorkflow.nodes.updated(0, reliableWorkflow.nodes.head.copy(nodeType = TestKafkaSource.nodeType))
+   )
+ 
+-  private def engineReturning(result: ExecutionResult): WorkflowExecutionEngine = new WorkflowExecutionEngine() {
++  private def engineReturning(result: ExecutionResult): WorkflowExecutionEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+     override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
+       Future.successful(result)
+   }
+@@ -195,10 +188,10 @@
+     }
+ 
+     "persist one immutable boundary and monotonically advance reliable checkpoints" in {
+-      NodeRegistry.registerSource(TestSnapshotSource)
++      testRegistry.registerSource(TestSnapshotSource)
+       try {
+         val completion = Promise[ExecutionResult]()
+-        val pendingEngine = new WorkflowExecutionEngine() {
++        lazy val pendingEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+           override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] = completion.future
+           override def execute(workflow: WorkflowDSL.Workflow, runContext: ReliableRunContext, onLog: String => Unit): Future[ExecutionResult] = completion.future
+         }
+@@ -282,15 +275,15 @@
+         running.resumable shouldBe true
+         running.boundary shouldBe Some(boundary)
+         running.checkpoints shouldBe Vector(sequence1)
+-      } finally cn.xuyinyin.magic.workflow.engine.ActorSpecNodeRegistryCleanup.unregister(TestSnapshotSource)
++      } finally testRegistry.unregister(TestSnapshotSource)
+     }
+ 
+     "carry an accepted Kafka checkpoint from a failed execution into the next run" in {
+-      NodeRegistry.registerSource(TestKafkaSource)
++      testRegistry.registerSource(TestKafkaSource)
+       val firstCompletion = Promise[ExecutionResult]()
+       val secondCompletion = Promise[ExecutionResult]()
+       val completions = mutable.Queue(firstCompletion, secondCompletion)
+-      val pendingEngine = new WorkflowExecutionEngine() {
++      lazy val pendingEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+         private def nextResult(): Future[ExecutionResult] = completions.dequeue().future
+         override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
+           nextResult()
+@@ -334,16 +327,16 @@
+         firstCompletion.trySuccess(failed)
+         secondCompletion.trySuccess(succeeded)
+         testKit.stop(actor)
+-        cn.xuyinyin.magic.workflow.engine.ActorSpecNodeRegistryCleanup.unregister(TestKafkaSource)
++        testRegistry.unregister(TestKafkaSource)
+       }
+     }
+ 
+     "keep a MySQL checkpoint scoped to its execution" in {
+-      NodeRegistry.registerSource(TestSnapshotSource)
++      testRegistry.registerSource(TestSnapshotSource)
+       val firstCompletion = Promise[ExecutionResult]()
+       val secondCompletion = Promise[ExecutionResult]()
+       val completions = mutable.Queue(firstCompletion, secondCompletion)
+-      val pendingEngine = new WorkflowExecutionEngine() {
++      lazy val pendingEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+         private def nextResult(): Future[ExecutionResult] = completions.dequeue().future
+         override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
+           nextResult()
+@@ -385,16 +378,16 @@
+         firstCompletion.trySuccess(failed)
+         secondCompletion.trySuccess(succeeded)
+         testKit.stop(actor)
+-        cn.xuyinyin.magic.workflow.engine.ActorSpecNodeRegistryCleanup.unregister(TestSnapshotSource)
++        testRegistry.unregister(TestSnapshotSource)
+       }
+     }
+ 
+     "clear Kafka progress when a new workflow revision is defined" in {
+-      NodeRegistry.registerSource(TestKafkaSource)
++      testRegistry.registerSource(TestKafkaSource)
+       val firstCompletion = Promise[ExecutionResult]()
+       val secondCompletion = Promise[ExecutionResult]()
+       val completions = mutable.Queue(firstCompletion, secondCompletion)
+-      val pendingEngine = new WorkflowExecutionEngine() {
++      lazy val pendingEngine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+         private def nextResult(): Future[ExecutionResult] = completions.dequeue().future
+         override def execute(workflow: WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] =
+           nextResult()
+@@ -438,7 +431,7 @@
+         firstCompletion.trySuccess(failed)
+         secondCompletion.trySuccess(succeeded)
+         testKit.stop(actor)
+-        cn.xuyinyin.magic.workflow.engine.ActorSpecNodeRegistryCleanup.unregister(TestKafkaSource)
++        testRegistry.unregister(TestKafkaSource)
+       }
+     }
+ 
+@@ -464,7 +457,7 @@
+     }
+ 
+     "persist a definition before acknowledging it and reject execution before initialization" in {
+-      val emptyEntity = spawn(EventSourcedWorkflowActor("workflow-1", executionEngine = null), "empty-workflow")
++      val emptyEntity = spawn(EventSourcedWorkflowActor("workflow-1", executionEngine = engineReturning(succeeded)), "empty-workflow")
+       val executeReply = createTestProbe[EventSourcedWorkflowActor.Reply]()
+       emptyEntity ! EventSourcedWorkflowActor.ExecuteManual("request-1", executeReply.ref)
+       executeReply.expectMessage(EventSourcedWorkflowActor.NotInitialized("workflow-1"))
+@@ -573,7 +566,7 @@
+ 
+     "deduplicate retained manual requests and reject a concurrent schedule run" in {
+       val completion = Promise[ExecutionResult]()
+-      val engine = new WorkflowExecutionEngine() {
++      lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot) {
+         override def execute(workflow: cn.xuyinyin.magic.workflow.model.WorkflowDSL.Workflow, executionId: String, onLog: String => Unit): Future[ExecutionResult] = completion.future
+       }
+       val workflowId = "idempotency"
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/engine/RealMySQLReliableFullSyncSpec.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/engine/RealMySQLReliableFullSyncSpec.scala
+@@ -2,7 +2,7 @@
+ 
+ import cn.xuyinyin.magic.tags.ExternalIntegration
+ import cn.xuyinyin.magic.workflow.checkpoint.{AlreadyCommitted, BatchCheckpoint, BatchCommitResult, Committed, SnapshotBoundary, SourceBatch}
+-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
++import cn.xuyinyin.magic.workflow.TestNodeRegistry
+ import cn.xuyinyin.magic.workflow.model.WorkflowDSL.{Edge, Node, Position, Workflow, WorkflowMetadata}
+ import cn.xuyinyin.magic.workflow.nodes.sinks.MySQLSinkNode
+ import org.apache.pekko.Done
+@@ -43,6 +43,8 @@
+ }
+ 
+ class RealMySQLReliableFullSyncSpec extends AnyWordSpec with Matchers {
++  private val testRegistry = new TestNodeRegistry
++
+   import RealMySQLReliableFullSyncSpec._
+ 
+   "the reliable full-sync path" should {
+@@ -63,10 +65,10 @@
+       createSchema(settings, schema)
+       try {
+         initializeSchema(settings, schema, sourceRows)
+-        NodeRegistry.registerSink(observingSink)
++        testRegistry.registerSink(observingSink)
+         testKit = ActorTestKit(s"real-mysql-reliable-${UUID.randomUUID()}")
+         implicit val executionContext: ExecutionContext = testKit.system.executionContext
+-        val engine = new WorkflowExecutionEngine()(testKit.system, executionContext)
++        lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)(testKit.system, executionContext)
+         val workflow = fullSyncWorkflow(workflowId, settings, schema)
+ 
+         val interrupted = Await.result(
+@@ -132,7 +134,7 @@
+         )
+       } finally {
+         if (testKit != null) testKit.shutdownTestKit()
+-        NodeRegistry.unregisterSink(observingSink.nodeType, observingSink)
++        testRegistry.unregisterSink(observingSink.nodeType, observingSink)
+         dropSchema(settings, schema)
+       }
+     }
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/engine/WorkflowExecutionEngineSpec.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/engine/WorkflowExecutionEngineSpec.scala
+@@ -3,7 +3,7 @@
+ import cn.xuyinyin.magic.testkit.STSpec
+ import cn.xuyinyin.magic.workflow.WorkflowFixtures
+ import cn.xuyinyin.magic.workflow.checkpoint._
+-import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
++import cn.xuyinyin.magic.workflow.TestNodeRegistry
+ import cn.xuyinyin.magic.workflow.model.WorkflowDSL
+ import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, CheckpointedNodeSource, NodeSink, NodeSource}
+ import cn.xuyinyin.magic.workflow.nodes.sinks.MySQLCdcApplySinkNode
+@@ -21,6 +21,8 @@
+ import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+ 
+ class WorkflowExecutionEngineSpec extends STSpec {
++  private val testRegistry = new TestNodeRegistry
++
+   private var registeredSource: Option[NodeSource] = None
+   private implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](
+     Behaviors.empty[Nothing],
+@@ -39,7 +41,7 @@
+   }
+ 
+   override protected def afterEach(): Unit = {
+-    try registeredSource.foreach(source => NodeRegistry.unregisterSource(source.nodeType, source))
++    try registeredSource.foreach(source => testRegistry.unregisterSource(source.nodeType, source))
+     finally {
+       registeredSource = None
+       FailingSource.reset()
+@@ -53,8 +55,8 @@
+ 
+   "WorkflowExecutionEngine" should {
+     "register the built-in MySQL CDC source and apply sink" in {
+-      NodeRegistry.findSource("mysql.cdc").get shouldBe a[MySQLCdcSourceNode]
+-      NodeRegistry.findSink("mysql.cdc.apply").get shouldBe a[MySQLCdcApplySinkNode]
++      testRegistry.findSource("mysql.cdc").get shouldBe a[MySQLCdcSourceNode]
++      testRegistry.findSink("mysql.cdc.apply").get shouldBe a[MySQLCdcApplySinkNode]
+     }
+ 
+     "inject MySQL CDC passwords only into runtime nodes without exposing them" in {
+@@ -72,13 +74,13 @@
+         _ => Future.successful(Done),
+         _ => Future.successful(Done)
+       )
+-      val engine = new WorkflowExecutionEngine(name => {
++      lazy val engine = new WorkflowExecutionEngine(name => {
+         environmentLookups += name
+         Some(secret)
+-      })
+-
+-      NodeRegistry.registerSource(source)
+-      NodeRegistry.registerSink(sink)
++      }, nodeRegistry = testRegistry.snapshot)
++
++      testRegistry.registerSource(source)
++      testRegistry.registerSink(sink)
+       try {
+         val result = Await.result(engine.execute(workflow, context, message => {
+           logs += message
+@@ -97,8 +99,8 @@
+         result.toString should not include secret
+         logs.mkString("\n") should not include secret
+       } finally {
+-        NodeRegistry.unregisterSource(source.nodeType, source)
+-        NodeRegistry.unregisterSink(sink.nodeType, sink)
++        testRegistry.unregisterSource(source.nodeType, source)
++        testRegistry.unregisterSink(sink.nodeType, sink)
+       }
+     }
+ 
+@@ -116,10 +118,10 @@
+         _ => Future.successful(Done),
+         _ => Future.successful(Done)
+       )
+-      val engine = new WorkflowExecutionEngine(_ => Some(secret))
+-
+-      NodeRegistry.registerSource(source)
+-      NodeRegistry.registerSink(sink)
++      lazy val engine = new WorkflowExecutionEngine(_ => Some(secret), nodeRegistry = testRegistry.snapshot)
++
++      testRegistry.registerSource(source)
++      testRegistry.registerSink(sink)
+       try {
+         val result = Await.result(engine.execute(workflow, context, message => {
+           logs += message
+@@ -132,8 +134,8 @@
+         result.toString should not include secret
+         logs.mkString("\n") should not include secret
+       } finally {
+-        NodeRegistry.unregisterSource(source.nodeType, source)
+-        NodeRegistry.unregisterSink(sink.nodeType, sink)
++        testRegistry.unregisterSource(source.nodeType, source)
++        testRegistry.unregisterSink(sink.nodeType, sink)
+       }
+     }
+ 
+@@ -152,13 +154,13 @@
+         _ => Future.successful(Done),
+         _ => Future.successful(Done)
+       )
+-      val engine = new WorkflowExecutionEngine(name => {
++      lazy val engine = new WorkflowExecutionEngine(name => {
+         environmentLookups += name
+         Some(environmentValue)
+-      })
+-
+-      NodeRegistry.registerSource(source)
+-      NodeRegistry.registerSink(sink)
++      }, nodeRegistry = testRegistry.snapshot)
++
++      testRegistry.registerSource(source)
++      testRegistry.registerSink(sink)
+       try {
+         val result = Await.result(engine.execute(workflow, context, message => {
+           logs += message
+@@ -180,13 +182,13 @@
+         logs.mkString("\\n") should not include "runtime-secret"
+         logs.mkString("\\n") should not include "changed-secret"
+       } finally {
+-        NodeRegistry.unregisterSource(source.nodeType, source)
+-        NodeRegistry.unregisterSink(sink.nodeType, sink)
++        testRegistry.unregisterSource(source.nodeType, source)
++        testRegistry.unregisterSink(sink.nodeType, sink)
+       }
+     }
+ 
+     "report the failing Sink node without converting the execution to success" in {
+-      val engine = new WorkflowExecutionEngine()
++      lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
+ 
+       val result = Await.result(engine.execute(WorkflowFixtures.failingSinkWorkflow, "exec-1", _ => ()), 5.seconds)
+ 
+@@ -197,7 +199,7 @@
+ 
+     "attribute an asynchronous Source failure and preserve all pipeline node results" in {
+       register(FailingSource)
+-      val engine = new WorkflowExecutionEngine()
++      lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
+       FailingSource.reset()
+ 
+       val result = Await.result(engine.execute(
+@@ -213,7 +215,7 @@
+     }
+ 
+     "return ordered conservative results when validation prevents execution" in {
+-      val engine = new WorkflowExecutionEngine()
++      lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
+ 
+       val result = Await.result(engine.execute(WorkflowFixtures.branchedWorkflow, "exec-3", _ => ()), 5.seconds)
+ 
+@@ -224,37 +226,37 @@
+ 
+     "keep a replacement Source registered when cleanup expects the previous instance" in {
+       register(FailingSource)
+-      NodeRegistry.registerSource(ReplacementSource)
+-
+-      NodeRegistry.unregisterSource(FailingSource.nodeType, FailingSource)
+-
+-      NodeRegistry.findSource(FailingSource.nodeType) shouldBe Some(ReplacementSource)
++      testRegistry.registerSource(ReplacementSource)
++
++      testRegistry.unregisterSource(FailingSource.nodeType, FailingSource)
++
++      testRegistry.findSource(FailingSource.nodeType) shouldBe Some(ReplacementSource)
+       registeredSource = Some(ReplacementSource)
+     }
+ 
+     "keep an equal but distinct replacement Source registered during cleanup" in {
+       register(FailingSource)
+-      NodeRegistry.registerSource(EqualReplacementSource)
++      testRegistry.registerSource(EqualReplacementSource)
+       registeredSource = Some(EqualReplacementSource)
+ 
+-      NodeRegistry.unregisterSource(FailingSource.nodeType, FailingSource)
+-
+-      NodeRegistry.findSource(FailingSource.nodeType) shouldBe Some(EqualReplacementSource)
++      testRegistry.unregisterSource(FailingSource.nodeType, FailingSource)
++
++      testRegistry.findSource(FailingSource.nodeType) shouldBe Some(EqualReplacementSource)
+     }
+ 
+     "keep an equal but distinct replacement Sink registered during cleanup" in {
+-      NodeRegistry.registerSink(LegacySink)
+-      NodeRegistry.registerSink(EqualReplacementSink)
+-
+-      NodeRegistry.unregisterSink(LegacySink.nodeType, LegacySink)
+-
+-      NodeRegistry.findSink(LegacySink.nodeType) shouldBe Some(EqualReplacementSink)
+-      NodeRegistry.unregisterSink(EqualReplacementSink.nodeType, EqualReplacementSink)
++      testRegistry.registerSink(LegacySink)
++      testRegistry.registerSink(EqualReplacementSink)
++
++      testRegistry.unregisterSink(LegacySink.nodeType, LegacySink)
++
++      testRegistry.findSink(LegacySink.nodeType) shouldBe Some(EqualReplacementSink)
++      testRegistry.unregisterSink(EqualReplacementSink.nodeType, EqualReplacementSink)
+     }
+ 
+     "run supplied-boundary batches sequentially from the latest checkpoint" in {
+       register(ReliableSource)
+-      NodeRegistry.registerSink(ReliableSink)
++      testRegistry.registerSink(ReliableSink)
+       val boundary = SnapshotBoundary("source-1", "pk-range-0", Some("9"))
+       val checkpoint0 = checkpoint("exec-reliable", 0L, "2", sourceRows = 2L, targetRows = 2L)
+       ReliableSource.batches = Vector(
+@@ -273,7 +275,7 @@
+         }
+       )
+ 
+-      val result = Await.result(new WorkflowExecutionEngine().execute(reliableWorkflow(), context, _ => ()), 5.seconds)
++      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+ 
+       result.success shouldBe true
+       result.rowsProcessed shouldBe None
+@@ -288,7 +290,7 @@
+ 
+     "acknowledge a source batch only after sink commit and actor checkpoint persistence" in {
+       register(ReliableSource)
+-      NodeRegistry.registerSink(ReliableSink)
++      testRegistry.registerSink(ReliableSink)
+       ReliableSource.batches = Vector(batch("exec-ack-order", 0L, "9", Vector("one")))
+       val order = ListBuffer.empty[String]
+       ReliableSink.onCommit = _ => order.synchronized(order += "sink")
+@@ -308,7 +310,7 @@
+         }
+       )
+ 
+-      val result = Await.result(new WorkflowExecutionEngine().execute(reliableWorkflow(), context, _ => ()), 5.seconds)
++      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+ 
+       result.success shouldBe true
+       order.synchronized(order.toVector) shouldBe Vector("sink", "actor", "source")
+@@ -316,7 +318,7 @@
+ 
+     "not acknowledge the source when actor checkpoint persistence fails" in {
+       register(ReliableSource)
+-      NodeRegistry.registerSink(ReliableSink)
++      testRegistry.registerSink(ReliableSink)
+       ReliableSource.batches = Vector(batch("exec-actor-failure", 0L, "9", Vector("one")))
+       val acknowledged = new AtomicBoolean(false)
+       ReliableSource.onAcknowledge = _ => {
+@@ -332,7 +334,7 @@
+         _ => Future.failed(new IllegalStateException("actor checkpoint unavailable"))
+       )
+ 
+-      val result = Await.result(new WorkflowExecutionEngine().execute(reliableWorkflow(), context, _ => ()), 5.seconds)
++      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+ 
+       result.success shouldBe false
+       acknowledged.get shouldBe false
+@@ -341,7 +343,7 @@
+ 
+     "attribute source acknowledgement failure after one sink commit and actor checkpoint" in {
+       register(ReliableSource)
+-      NodeRegistry.registerSink(ReliableSink)
++      testRegistry.registerSink(ReliableSink)
+       ReliableSource.batches = Vector(batch("exec-ack-failure", 0L, "9", Vector("one")))
+       var actorCheckpoints = 0
+       ReliableSource.onAcknowledge = _ => Future.failed(new IllegalStateException("source acknowledgement unavailable"))
+@@ -357,7 +359,7 @@
+         }
+       )
+ 
+-      val result = Await.result(new WorkflowExecutionEngine().execute(reliableWorkflow(), context, _ => ()), 5.seconds)
++      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+ 
+       result.success shouldBe false
+       result.nodeResults.find(_.nodeId == "source-1").map(_.status) shouldBe Some("failed")
+@@ -367,7 +369,7 @@
+ 
+     "validate the source boundary before creating and committing batches" in {
+       register(ReliableSource)
+-      NodeRegistry.registerSink(ReliableSink)
++      testRegistry.registerSink(ReliableSink)
+       ReliableSource.batches = Vector(batch("exec-boundary-order", 0L, "9", Vector("one")))
+       val order = ListBuffer.empty[String]
+       ReliableSink.onReady = () => order.synchronized(order += "sink-ready")
+@@ -393,7 +395,7 @@
+         }
+       )
+ 
+-      val result = Await.result(new WorkflowExecutionEngine().execute(reliableWorkflow(), context, _ => ()), 5.seconds)
++      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+ 
+       result.success shouldBe true
+       order.synchronized(order.toVector) shouldBe Vector(
+@@ -408,7 +410,7 @@
+ 
+     "attribute boundary validation failure to the sink before creating or committing batches" in {
+       register(ReliableSource)
+-      NodeRegistry.registerSink(ReliableSink)
++      testRegistry.registerSink(ReliableSink)
+       ReliableSource.batches = Vector(batch("exec-boundary-failure", 0L, "9", Vector("one")))
+       ReliableSink.onValidateBoundary = _ => Future.failed(new IllegalArgumentException("source boundary rejected"))
+       val context = ReliableRunContext(
+@@ -420,7 +422,7 @@
+         _ => Future.successful(Done)
+       )
+ 
+-      val result = Await.result(new WorkflowExecutionEngine().execute(reliableWorkflow(), context, _ => ()), 5.seconds)
++      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+ 
+       result.success shouldBe false
+       result.nodeResults.find(_.nodeId == "sink-1").map(_.status) shouldBe Some("failed")
+@@ -430,7 +432,7 @@
+ 
+     "pass the latest source checkpoint to boundary discovery" in {
+       register(ReliableSource)
+-      NodeRegistry.registerSink(ReliableSink)
++      testRegistry.registerSink(ReliableSink)
+       val older = checkpoint("exec-previous", 1L, "2", sourceRows = 2L, targetRows = 2L)
+       val latest = checkpoint("exec-previous", 3L, "9", sourceRows = 4L, targetRows = 4L)
+       val unrelated = latest.copy(sourceNodeId = "other-source", batchSequence = 99L)
+@@ -443,7 +445,7 @@
+         _ => Future.successful(Done)
+       )
+ 
+-      val result = Await.result(new WorkflowExecutionEngine().execute(reliableWorkflow(), context, _ => ()), 5.seconds)
++      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+ 
+       result.success shouldBe true
+       ReliableSource.discoveryResumeFrom shouldBe Some(latest)
+@@ -477,7 +479,7 @@
+ 
+     "report a representable target row count for a new reliable execution" in {
+       register(ReliableSource)
+-      NodeRegistry.registerSink(ReliableSink)
++      testRegistry.registerSink(ReliableSink)
+       ReliableSource.batches = Vector(
+         batch("exec-counted", 0L, "2", Vector("one", "two")),
+         batch("exec-counted", 1L, "9", Vector("three"))
+@@ -491,7 +493,7 @@
+         _ => Future.successful(Done)
+       )
+ 
+-      val result = Await.result(new WorkflowExecutionEngine().execute(reliableWorkflow(), context, _ => ()), 5.seconds)
++      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+ 
+       result.success shouldBe true
+       result.rowsProcessed shouldBe Some(3)
+@@ -499,7 +501,7 @@
+ 
+     "complete with no target row count when durable commits exceed Int range" in {
+       register(ReliableSource)
+-      NodeRegistry.registerSink(ReliableSink)
++      testRegistry.registerSink(ReliableSink)
+       ReliableSource.batches = Vector(
+         batch("exec-large-count", 0L, "2", Vector("one")),
+         batch("exec-large-count", 1L, "9", Vector("two"))
+@@ -518,7 +520,7 @@
+         }
+       )
+ 
+-      val result = Await.result(new WorkflowExecutionEngine().execute(reliableWorkflow(), context, _ => ()), 5.seconds)
++      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+ 
+       result.status shouldBe "completed"
+       result.success shouldBe true
+@@ -529,7 +531,7 @@
+ 
+     "persist a discovered boundary before committing an empty transformed batch" in {
+       register(ReliableSource)
+-      NodeRegistry.registerSink(ReliableSink)
++      testRegistry.registerSink(ReliableSink)
+       ReliableSource.batches = Vector(batch("exec-empty", 0L, "9", Vector("1")))
+       val context = ReliableRunContext(
+         "exec-empty",
+@@ -546,7 +548,7 @@
+         }
+       )
+ 
+-      val result = Await.result(new WorkflowExecutionEngine().execute(reliableWorkflow("filter", "condition", "value > 10"), context, _ => ()), 5.seconds)
++      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow("filter", "condition", "value > 10"), context, _ => ()), 5.seconds)
+ 
+       result.success shouldBe true
+       result.rowsProcessed shouldBe Some(0)
+@@ -566,11 +568,11 @@
+ 
+     "stop before boundary discovery when reliable sink readiness fails" in {
+       register(ReliableSource)
+-      NodeRegistry.registerSink(ReliableSink)
++      testRegistry.registerSink(ReliableSink)
+       ReliableSink.readinessFailure = Some(new IllegalStateException("ledger unavailable"))
+       val context = ReliableRunContext("exec-not-ready", 1L, None, Vector.empty, _ => Future.successful(Done), _ => Future.successful(Done))
+ 
+-      val result = Await.result(new WorkflowExecutionEngine().execute(reliableWorkflow(), context, _ => ()), 5.seconds)
++      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+ 
+       result.success shouldBe false
+       result.nodeResults.find(_.nodeId == "sink-1").map(_.status) shouldBe Some("failed")
+@@ -581,11 +583,11 @@
+ 
+     "attribute reliable transform setup failures to the transform node" in {
+       register(ReliableSource)
+-      NodeRegistry.registerSink(ReliableSink)
++      testRegistry.registerSink(ReliableSink)
+       val boundary = SnapshotBoundary("source-1", "pk-range-0", Some("9"))
+       val context = ReliableRunContext("exec-transform-failure", 1L, Some(boundary), Vector.empty, _ => Future.successful(Done), _ => Future.successful(Done))
+ 
+-      val result = Await.result(new WorkflowExecutionEngine().execute(
++      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(
+         reliableWorkflow(transformConfigKey = "missing-expression"),
+         context,
+         _ => ()
+@@ -597,10 +599,10 @@
+ 
+     "reject a checkpoint-aware source paired with a legacy sink" in {
+       register(ReliableSource)
+-      NodeRegistry.registerSink(LegacySink)
++      testRegistry.registerSink(LegacySink)
+       val context = ReliableRunContext("exec-mismatch", 1L, None, Vector.empty, _ => Future.successful(Done), _ => Future.successful(Done))
+ 
+-      val result = Await.result(new WorkflowExecutionEngine().execute(reliableWorkflow(sinkType = LegacySink.nodeType), context, _ => ()), 5.seconds)
++      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(sinkType = LegacySink.nodeType), context, _ => ()), 5.seconds)
+ 
+       result.success shouldBe false
+       result.message should include("ReliableRunContext capability loss")
+@@ -613,9 +615,9 @@
+ 
+     "keep a legacy source on the row stream when its sink is checkpoint-aware" in {
+       register(LegacySource)
+-      NodeRegistry.registerSink(CapableLegacySink)
+-
+-      val result = Await.result(new WorkflowExecutionEngine().execute(legacyCapableSinkWorkflow, "exec-legacy", _ => ()), 5.seconds)
++      testRegistry.registerSink(CapableLegacySink)
++
++      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(legacyCapableSinkWorkflow, "exec-legacy", _ => ()), 5.seconds)
+ 
+       result.success shouldBe true
+       LegacySource.legacyCreates shouldBe 1
+@@ -626,7 +628,7 @@
+ 
+     "fail closed when a reliable run context loses its source capability" in {
+       register(LegacySource)
+-      NodeRegistry.registerSink(CapableLegacySink)
++      testRegistry.registerSink(CapableLegacySink)
+       val context = ReliableRunContext(
+         "exec-lost-source-capability",
+         1L,
+@@ -636,7 +638,7 @@
+         _ => Future.successful(Done)
+       )
+ 
+-      val result = Await.result(new WorkflowExecutionEngine().execute(legacyCapableSinkWorkflow, context, _ => ()), 5.seconds)
++      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(legacyCapableSinkWorkflow, context, _ => ()), 5.seconds)
+ 
+       result.success shouldBe false
+       result.message should include("ReliableRunContext")
+@@ -649,8 +651,8 @@
+     }
+ 
+     "register mysql.snapshot separately from mysql.query" in {
+-      val snapshot = NodeRegistry.findSource("mysql.snapshot").get
+-      val query = NodeRegistry.findSource("mysql.query").get
++      val snapshot = testRegistry.findSource("mysql.snapshot").get
++      val query = testRegistry.findSource("mysql.query").get
+ 
+       snapshot.nodeType shouldBe "mysql.snapshot"
+       query.nodeType shouldBe "mysql.query"
+@@ -669,10 +671,10 @@
+       val source = new CancellationSource("test.cancel-before-source")
+       val readiness = Promise[Done]()
+       val sink = new CancellationSink("test.cancel-before-sink", readiness.future)
+-      val engine = new WorkflowExecutionEngine()
++      lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
+       val context = reliableContext("cancel-before-materialization")
+-      NodeRegistry.registerSource(source)
+-      NodeRegistry.registerSink(sink)
++      testRegistry.registerSource(source)
++      testRegistry.registerSink(sink)
+       try {
+         val execution = engine.execute(cancellationWorkflow(source.nodeType, sink.nodeType), context, _ => ())
+         Await.result(sink.readyCalled.future, 2.seconds)
+@@ -686,18 +688,18 @@
+         source.createCalls.get shouldBe 0
+         engine.activeReliableExecutionCount shouldBe 0
+       } finally {
+-        NodeRegistry.unregisterSource(source.nodeType, source)
+-        NodeRegistry.unregisterSink(sink.nodeType, sink)
++        testRegistry.unregisterSource(source.nodeType, source)
++        testRegistry.unregisterSink(sink.nodeType, sink)
+       }
+     }
+ 
+     "cancel a materialized reliable source exactly once and remove its active control" in {
+       val source = new CancellationSource("test.cancel-materialized-source")
+       val sink = new CancellationSink("test.cancel-materialized-sink", Future.successful(Done))
+-      val engine = new WorkflowExecutionEngine()
++      lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
+       val context = reliableContext("cancel-materialized")
+-      NodeRegistry.registerSource(source)
+-      NodeRegistry.registerSink(sink)
++      testRegistry.registerSource(source)
++      testRegistry.registerSink(sink)
+       try {
+         val execution = engine.execute(cancellationWorkflow(source.nodeType, sink.nodeType), context, _ => ())
+         Await.result(source.firstMaterialized.future, 2.seconds)
+@@ -711,19 +713,19 @@
+         source.closed.get shouldBe 1
+         engine.activeReliableExecutionCount shouldBe 0
+       } finally {
+-        NodeRegistry.unregisterSource(source.nodeType, source)
+-        NodeRegistry.unregisterSink(sink.nodeType, sink)
++        testRegistry.unregisterSource(source.nodeType, source)
++        testRegistry.unregisterSink(sink.nodeType, sink)
+       }
+     }
+ 
+     "release an old execution before restarting the same durable execution ID" in {
+       val source = new CancellationSource("test.cancel-recovery-source")
+       val sink = new CancellationSink("test.cancel-recovery-sink", Future.successful(Done))
+-      val engine = new WorkflowExecutionEngine()
++      lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
+       val context = reliableContext("same-recovered-execution")
+       val workflow = cancellationWorkflow(source.nodeType, sink.nodeType)
+-      NodeRegistry.registerSource(source)
+-      NodeRegistry.registerSink(sink)
++      testRegistry.registerSource(source)
++      testRegistry.registerSink(sink)
+       try {
+         val firstExecution = engine.execute(workflow, context, _ => ())
+         awaitCondition("first reliable source materialization") { source.eventsSnapshot.contains("open-1") }
+@@ -739,21 +741,21 @@
+         source.closed.get shouldBe 2
+         engine.activeReliableExecutionCount shouldBe 0
+       } finally {
+-        NodeRegistry.unregisterSource(source.nodeType, source)
+-        NodeRegistry.unregisterSink(sink.nodeType, sink)
++        testRegistry.unregisterSource(source.nodeType, source)
++        testRegistry.unregisterSink(sink.nodeType, sink)
+       }
+     }
+ 
+     "cancel every queued generation while the old execution is still releasing" in {
+       val source = new CancellationSource("test.cancel-queued-source", finite = true)
+       val sink = new CancellationSink("test.cancel-queued-sink", Future.successful(Done))
+-      val engine = new WorkflowExecutionEngine()
++      lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
+       val context = reliableContext("cancel-queued-generations")
+       val workflow = cancellationWorkflow(source.nodeType, sink.nodeType)
+       val oldReleaseStarted = Promise[Unit]()
+       val releaseOld = Promise[Done]()
+-      NodeRegistry.registerSource(source)
+-      NodeRegistry.registerSink(sink)
++      testRegistry.registerSource(source)
++      testRegistry.registerSink(sink)
+       try {
+         val firstExecution = engine.execute(workflow, context, message => {
+           if (message.startsWith("工作流执行成功完成")) {
+@@ -785,18 +787,18 @@
+         engine.activeReliableExecutionCount shouldBe 0
+       } finally {
+         releaseOld.trySuccess(Done)
+-        NodeRegistry.unregisterSource(source.nodeType, source)
+-        NodeRegistry.unregisterSink(sink.nodeType, sink)
++        testRegistry.unregisterSource(source.nodeType, source)
++        testRegistry.unregisterSink(sink.nodeType, sink)
+       }
+     }
+ 
+     "remove the active execution control after normal completion" in {
+       val source = new CancellationSource("test.normal-completion-source", finite = true)
+       val sink = new CancellationSink("test.normal-completion-sink", Future.successful(Done))
+-      val engine = new WorkflowExecutionEngine()
++      lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
+       val context = reliableContext("normal-control-cleanup")
+-      NodeRegistry.registerSource(source)
+-      NodeRegistry.registerSink(sink)
++      testRegistry.registerSource(source)
++      testRegistry.registerSink(sink)
+       try {
+         Await.result(engine.execute(cancellationWorkflow(source.nodeType, sink.nodeType), context, _ => ()), 2.seconds).success shouldBe true
+ 
+@@ -804,15 +806,15 @@
+         Await.result(engine.cancel(context.executionId), 2.seconds) shouldBe Done
+         source.closed.get shouldBe 1
+       } finally {
+-        NodeRegistry.unregisterSource(source.nodeType, source)
+-        NodeRegistry.unregisterSink(sink.nodeType, sink)
++        testRegistry.unregisterSource(source.nodeType, source)
++        testRegistry.unregisterSink(sink.nodeType, sink)
+       }
+     }
+   }
+ 
+   private def register(source: NodeSource): Unit = {
+     registeredSource = Some(source)
+-    NodeRegistry.registerSource(source)
++    testRegistry.registerSource(source)
+   }
+ 
+   private def reliableWorkflow(
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/engine/SessionBoundarySpec.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/engine/SessionBoundarySpec.scala
+@@ -0,0 +1,281 @@
++package cn.xuyinyin.magic.workflow.engine
++
++import cn.xuyinyin.magic.testkit.STSpec
++import cn.xuyinyin.magic.workflow.WorkflowFixtures
++import cn.xuyinyin.magic.workflow.checkpoint._
++import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
++import cn.xuyinyin.magic.workflow.model.WorkflowDSL
++import cn.xuyinyin.magic.workflow.nodes.base._
++import cn.xuyinyin.magic.workflow.nodes.sources.DebeziumBatchBridge
++import com.typesafe.config.ConfigFactory
++import org.apache.pekko.{Done, NotUsed}
++import org.apache.pekko.actor.typed.ActorSystem
++import org.apache.pekko.actor.typed.scaladsl.Behaviors
++import org.apache.pekko.stream.scaladsl.{Sink, Source}
++import scala.concurrent.{Await, ExecutionContext, Future, Promise}
++import scala.concurrent.duration._
++import java.util.concurrent.{ConcurrentLinkedQueue, Executors}
++import java.util.concurrent.atomic.AtomicInteger
++import scala.jdk.CollectionConverters._
++
++class SessionBoundarySpec extends STSpec {
++  private implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](Behaviors.empty, "session-boundaries",
++    ConfigFactory.parseString("pekko.actor.provider=local").withFallback(ConfigFactory.load("application-test")))
++  private implicit val ec: ExecutionContext = system.executionContext
++  override def afterAll(): Unit = { system.terminate(); Await.result(system.whenTerminated, 10.seconds); super.afterAll() }
++  private def await[A](f: Future[A]): A = Await.result(f, 5.seconds)
++
++  "instance catalogs" should {
++    "keep overrides and validator decisions isolated, with stable adapter identity" in {
++      val original = NodeRegistry.builtins()
++      val extra = new ProbeSource { override val nodeType = "test.private" }
++      val modified = original.withSource(extra)
++      modified.findSource(extra.nodeType).get should be theSameInstanceAs extra
++      original.findSource(extra.nodeType) shouldBe None
++      NodeRegistry.builtins().findSource(extra.nodeType) shouldBe None
++      val workflow = WorkflowFixtures.mysqlCdcWorkflow.copy(nodes = WorkflowFixtures.mysqlCdcWorkflow.nodes.map(n =>
++        if (n.`type` == "source") n.copy(nodeType = extra.nodeType) else n.copy(nodeType = "console.log")))
++      WorkflowValidator.validate(workflow, original).isLeft shouldBe true
++      WorkflowValidator.validate(workflow, modified).isRight shouldBe true
++      (original.findSource("mysql.cdc").get eq NodeRegistry.builtins().findSource("mysql.cdc").get) shouldBe false
++    }
++  }
++
++  "asynchronous bridge reads" should {
++    "wake a queued asynchronous read after the previous ACK completes" in {
++      val bridge = new DebeziumBatchBridge
++      val handle = new cn.xuyinyin.magic.workflow.nodes.sources.CdcBatchCommitHandle {
++        def markProcessedAndFinished(): Unit = ()
++      }
++      val first = Future { bridge.publish("one", Vector("1"), "1", handle) }
++      val delivered = await(bridge.takeAsync())
++      val second = Promise[Done]()
++      val publisher = new Thread(() => {
++        try { bridge.publish("two", Vector("2"), "2", handle); second.success(Done) }
++        catch { case e: Throwable => second.tryFailure(e) }
++      }, "queued-publisher")
++      publisher.setDaemon(true); publisher.start()
++      val deadline = 3.seconds.fromNow
++      while (deadline.hasTimeLeft() && !publisher.getStackTrace.exists(_.getMethodName == "awaitCompletion")) Thread.`yield`()
++      publisher.getStackTrace.exists(_.getMethodName == "awaitCompletion") shouldBe true
++      val next = bridge.takeAsync()
++      try {
++        bridge.acknowledge(delivered.deliveryToken, "one")
++        val two = await(next)
++        two.batchId shouldBe "two"
++        bridge.acknowledge(two.deliveryToken, "two")
++        await(first); await(second.future)
++      } finally bridge.close()
++    }
++    "leave a single worker available with sixteen idle readers and release all waiters on close" in {
++      val executor = Executors.newSingleThreadExecutor()
++      val worker = ExecutionContext.fromExecutor(executor)
++      val bridges = Vector.fill(16)(new DebeziumBatchBridge)
++      try {
++        val pending = await(Future(bridges.map(_.takeAsync()))(worker))
++        await(Future(42)(worker)) shouldBe 42
++        pending.forall(!_.isCompleted) shouldBe true
++        bridges.foreach(_.close())
++        pending.foreach(f => await(f.failed).getMessage should include("closed"))
++      } finally { bridges.foreach(_.close()); executor.shutdownNow() }
++    }
++  }
++
++  "resource ownership" should {
++    "drain a resource read before starting physical close" in {
++      val reading = Promise[Done]()
++      val read = Promise[Option[SourceBatch]]()
++      val closeStarted = Promise[Done]()
++      val session = BatchSourceSession.resource[Unit](() => Future.successful(()),
++        _ => { reading.trySuccess(Done); read.future },
++        _ => { closeStarted.trySuccess(Done); Future.successful(Done) }, managed = true, drainReads = true)
++      val (kill, done) = session.source.viaMat(org.apache.pekko.stream.KillSwitches.single)(org.apache.pekko.stream.scaladsl.Keep.right)
++        .toMat(Sink.ignore)(org.apache.pekko.stream.scaladsl.Keep.both).run()
++      await(reading.future)
++      kill.shutdown()
++      await(done)
++      val closed = session.close()
++      try {
++        closeStarted.isCompleted shouldBe false
++        closed.isCompleted shouldBe false
++        read.success(None)
++        await(closed) shouldBe Done
++      } finally read.trySuccess(None)
++    }
++    "wait for late acquisition, close once, and preserve a close failure" in {
++      val scope = new SourceResourceScope
++      val opened = Promise[String]()
++      val closeGate = Promise[Done]()
++      val calls = new AtomicInteger
++      scope.acquire(() => opened.future, (_: String) => { calls.incrementAndGet(); closeGate.future })
++      val closing = scope.close()
++      closing.isCompleted shouldBe false
++      opened.success("late")
++      calls.get() shouldBe 1
++      closing.isCompleted shouldBe false
++      val failure = new IllegalStateException("close failed")
++      closeGate.failure(failure)
++      await(closing.failed) shouldBe failure
++      await(scope.close().failed) shouldBe failure
++      calls.get() shouldBe 1
++      await(scope.acquire(() => Future.successful("forbidden"), (_: String) => Future.successful(Done)).failed)
++        .getMessage should include("closing")
++    }
++  }
++
++  "execution cancellation" should {
++    "redact runtime secrets from asynchronous resource close failures" in {
++      val secret = "stage-c-runtime-close-secret"
++      val source = new ProbeSource
++      val engine = new WorkflowExecutionEngine(_ => Some(secret), NodeRegistry.builtins().withSource(source).withSink(new ProbeSink))
++      val context = runContext("secret-close")
++      val running = engine.execute(WorkflowFixtures.mysqlCdcWorkflow, context, _ => ())
++      await(source.opened.future)
++      engine.cancel(context.executionId)
++      await(source.closeStarted.future)
++      source.closeGate.failure(new IllegalStateException(s"close failed: $secret"))
++      await(running.failed).getMessage should not include secret
++      await(engine.cancelWithin(context.executionId, 100.millis)) shouldBe WorkflowExecutionEngine.CloseFailed
++    }
++
++    "avoid initializing a boundary returned after cancellation" in {
++      val discovery = Promise[SnapshotBoundary]()
++      val discoveryStarted = Promise[Done]()
++      val initialized = new AtomicInteger
++      val source = new ProbeSource {
++        override def discoverBoundary(n: WorkflowDSL.Node, cp: Option[BatchCheckpoint], log: String => Unit)
++          (implicit ec: ExecutionContext): Future[SnapshotBoundary] = {
++          discoveryStarted.success(Done); discovery.future
++        }
++      }
++      val engine = new WorkflowExecutionEngine(_ => Some("test"), NodeRegistry.builtins().withSource(source).withSink(new ProbeSink))
++      val context = runContext("cancel-discovery").copy(boundary = None,
++        initializeBoundary = _ => { initialized.incrementAndGet(); Future.successful(Done) })
++      val running = engine.execute(WorkflowFixtures.mysqlCdcWorkflow, context, _ => ())
++      await(discoveryStarted.future)
++      await(engine.cancelWithin(context.executionId, 100.millis)) shouldBe WorkflowExecutionEngine.TimedOut
++      discovery.success(SnapshotBoundary("source-1", "p", Some("b")))
++      await(running).success shouldBe false
++      await(engine.cancel(context.executionId)) shouldBe Done
++      initialized.get shouldBe 0
++      source.opens.get shouldBe 0
++    }
++
++    "drain T then J then ACK before closing, and return a bounded observation while blocked" in {
++      val source = new ProbeSource
++      val commit = Promise[BatchCommitResult]()
++      val j = Promise[Done]()
++      val tStarted = Promise[Done]()
++      val jStarted = Promise[Done]()
++      val events = new ConcurrentLinkedQueue[String]()
++      source.events = events
++      source.emit = true
++      val sink = new ProbeSink {
++        override def commitBatch(n: WorkflowDSL.Node, w: String, e: String, b: SourceBatch, rows: Vector[String], log: String => Unit)
++          (implicit ec: ExecutionContext): Future[BatchCommitResult] = {
++          events.add("T.begin"); tStarted.success(Done); commit.future
++        }
++      }
++      val engine = new WorkflowExecutionEngine(_ => Some("test"), NodeRegistry.builtins().withSource(source).withSink(sink))
++      val context = runContext("drain").copy(checkpointCommitted = _ => {
++        events.add("J.begin"); jStarted.success(Done); j.future.map { d => events.add("J.done"); d }
++      })
++      val running = engine.execute(WorkflowFixtures.mysqlCdcWorkflow, context, _ => ())
++      try {
++        await(tStarted.future)
++        await(engine.cancelWithin("drain", 100.millis)) shouldBe WorkflowExecutionEngine.TimedOut
++        source.closeStarted.isCompleted shouldBe false
++        val batch = source.batch("drain")
++        events.add("T.done")
++        commit.success(Committed(BatchCheckpoint(batch.sourceNodeId, batch.partitionId, 0, batch.batchId, batch.cursor, 1, 1)))
++        await(jStarted.future)
++        await(engine.cancelWithin("drain", 100.millis)) shouldBe WorkflowExecutionEngine.TimedOut
++        events.asScala should not contain "ACK"
++        source.closeStarted.isCompleted shouldBe false
++        j.success(Done)
++        await(source.closeStarted.future)
++        await(engine.cancelWithin("drain", 100.millis)) shouldBe WorkflowExecutionEngine.TimedOut
++        source.closeGate.success(Done)
++        await(running)
++        await(engine.cancel("drain")) shouldBe Done
++        events.asScala.toVector shouldBe Vector("T.begin", "T.done", "J.begin", "J.done", "ACK", "close")
++      } finally { commit.tryFailure(new IllegalStateException("cleanup")); j.trySuccess(Done); source.closeGate.trySuccess(Done) }
++    }
++
++    "hold replacement materialization until physical release, including repeated cancellation" in {
++      val source = new ProbeSource
++      val engine = new WorkflowExecutionEngine(_ => Some("test"), NodeRegistry.builtins().withSource(source).withSink(new ProbeSink))
++      val context = runContext("replace")
++      val old = engine.execute(WorkflowFixtures.mysqlCdcWorkflow, context, _ => ())
++      await(source.opened.future)
++      await(engine.cancelWithin("replace", 100.millis)) shouldBe WorkflowExecutionEngine.TimedOut
++      val replacement = engine.execute(WorkflowFixtures.mysqlCdcWorkflow, context, _ => ())
++      try {
++        await(source.closeStarted.future)
++        source.opens.get shouldBe 1
++        engine.activeReliableExecutionCount shouldBe 2
++        source.closeGate.success(Done)
++        await(old)
++        await(source.secondOpened.future)
++        source.opens.get shouldBe 2
++        await(engine.cancel("replace")) shouldBe Done
++        await(replacement)
++        engine.activeReliableExecutionCount shouldBe 0
++      } finally { source.closeGate.trySuccess(Done); engine.cancel("replace") }
++    }
++
++    "keep a failed close fenced instead of reporting release or launching a replacement" in {
++      val source = new ProbeSource
++      val engine = new WorkflowExecutionEngine(_ => Some("test"), NodeRegistry.builtins().withSource(source).withSink(new ProbeSink))
++      val context = runContext("failed-close")
++      val running = engine.execute(WorkflowFixtures.mysqlCdcWorkflow, context, _ => ())
++      await(source.opened.future)
++      engine.cancel("failed-close")
++      await(source.closeStarted.future)
++      source.closeGate.failure(new IllegalStateException("close failed"))
++      await(running.failed).getMessage shouldBe "close failed"
++      await(engine.cancelWithin("failed-close", 100.millis)) shouldBe WorkflowExecutionEngine.CloseFailed
++      val replacement = engine.execute(WorkflowFixtures.mysqlCdcWorkflow, context, _ => ())
++      await(engine.cancelWithin("failed-close", 100.millis)) shouldBe WorkflowExecutionEngine.CloseFailed
++      replacement.isCompleted shouldBe false
++      source.opens.get shouldBe 1
++    }
++  }
++
++  private def runContext(id: String): ReliableRunContext = ReliableRunContext(id, 1,
++    Some(SnapshotBoundary("source-1", "p", Some("b"))), Vector.empty, _ => Future.successful(Done), _ => Future.successful(Done))
++
++  private class ProbeSource extends NodeSource with CheckpointedNodeSource {
++    val nodeType = "mysql.cdc"
++    var emit = false
++    var events = new ConcurrentLinkedQueue[String]()
++    val opened = Promise[Done](); val secondOpened = Promise[Done]()
++    val closeStarted = Promise[Done](); val closeGate = Promise[Done]()
++    val opens = new AtomicInteger
++    def batch(id: String): SourceBatch = SourceBatch("source-1", "p", 0, BatchId.sha256(id, "source-1", "p", 0),
++      SourceCursor("test", "0", "b"), Vector("row"))
++    def createSource(n: WorkflowDSL.Node, log: String => Unit): Source[String, NotUsed] = Source.empty
++    def createBatches(n: WorkflowDSL.Node, id: String, b: SnapshotBoundary, cp: Option[BatchCheckpoint], log: String => Unit)
++      (implicit ec: ExecutionContext): Source[SourceBatch, NotUsed] = session(id, false).source
++    override def openBatches(n: WorkflowDSL.Node, id: String, b: SnapshotBoundary, cp: Option[BatchCheckpoint], log: String => Unit,
++      closeEc: ExecutionContext)(implicit ec: ExecutionContext): BatchSourceSession = session(id, true)
++    private def session(id: String, managed: Boolean): BatchSourceSession = {
++      var sent = false
++      val idle = Promise[Option[SourceBatch]]()
++      BatchSourceSession.resource[Unit](
++        () => { if (opens.incrementAndGet() == 1) opened.trySuccess(Done) else secondOpened.trySuccess(Done); Future.successful(()) },
++        _ => if (emit && !sent) { sent = true; Future.successful(Some(batch(id))) } else idle.future,
++        _ => { events.add("close"); idle.trySuccess(None); closeStarted.trySuccess(Done); closeGate.future }, managed)
++    }
++    override def acknowledgeCommittedBatch(n: WorkflowDSL.Node, b: SourceBatch, log: String => Unit)
++      (implicit ec: ExecutionContext): Future[Done] = { events.add("ACK"); Future.successful(Done) }
++  }
++
++  private class ProbeSink extends NodeSink with CheckpointedNodeSink {
++    val nodeType = "mysql.cdc.apply"
++    def createSink(n: WorkflowDSL.Node, log: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] = Sink.ignore
++    def validateReady(n: WorkflowDSL.Node, log: String => Unit)(implicit ec: ExecutionContext): Future[Done] = Future.successful(Done)
++    def commitBatch(n: WorkflowDSL.Node, w: String, e: String, b: SourceBatch, rows: Vector[String], log: String => Unit)
++      (implicit ec: ExecutionContext): Future[BatchCommitResult] = Future.failed(new AssertionError("unexpected batch"))
++  }
++}
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/engine/SourceResourceLifecycleSpec.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/engine/SourceResourceLifecycleSpec.scala
+@@ -0,0 +1,68 @@
++package cn.xuyinyin.magic.workflow.engine
++
++import cn.xuyinyin.magic.testkit.STSpec
++import cn.xuyinyin.magic.workflow.WorkflowFixtures
++import cn.xuyinyin.magic.workflow.checkpoint._
++import cn.xuyinyin.magic.workflow.TestNodeRegistry
++import cn.xuyinyin.magic.workflow.model.WorkflowDSL
++import cn.xuyinyin.magic.workflow.nodes.base._
++import com.typesafe.config.ConfigFactory
++import org.apache.pekko.{Done, NotUsed}
++import org.apache.pekko.actor.typed.ActorSystem
++import org.apache.pekko.actor.typed.scaladsl.Behaviors
++import org.apache.pekko.stream.scaladsl.{Sink, Source}
++import scala.concurrent.{Await, ExecutionContext, Future, Promise}
++import scala.concurrent.duration._
++
++class SourceResourceLifecycleSpec extends STSpec {
++  private val testRegistry = new TestNodeRegistry
++
++  private implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](Behaviors.empty[Nothing], "source-lifecycle",
++    ConfigFactory.parseString("pekko.actor.provider=local").withFallback(ConfigFactory.load("application-test")))
++  private implicit val ec: ExecutionContext = system.executionContext
++  override def afterAll(): Unit = { system.terminate(); Await.result(system.whenTerminated, 10.seconds); super.afterAll() }
++
++  "execution release" should {
++    "wait for asynchronous resource close after stream cancellation" in {
++      val opened = Promise[Done]()
++      val closeStarted = Promise[Done]()
++      val closeFinished = Promise[Done]()
++      val source = new NodeSource with CheckpointedNodeSource {
++        val nodeType = "mysql.cdc"
++        def createSource(n: WorkflowDSL.Node, log: String => Unit): Source[String, NotUsed] = Source.empty
++        private def session(managed: Boolean): BatchSourceSession = BatchSourceSession.resource[Unit](
++          () => { opened.trySuccess(Done); Future.successful(()) },
++          _ => Promise[Option[SourceBatch]]().future,
++          _ => { closeStarted.trySuccess(Done); closeFinished.future }, managed)
++        override def createBatches(n: WorkflowDSL.Node, id: String, b: SnapshotBoundary, cp: Option[BatchCheckpoint], log: String => Unit)
++          (implicit ec: ExecutionContext): Source[SourceBatch, NotUsed] = session(false).source
++        override def openBatches(n: WorkflowDSL.Node, id: String, b: SnapshotBoundary, cp: Option[BatchCheckpoint], log: String => Unit,
++          closeEc: ExecutionContext)(implicit ec: ExecutionContext): BatchSourceSession = session(true)
++
++      }
++      val sink = new NodeSink with CheckpointedNodeSink {
++        val nodeType = "mysql.cdc.apply"
++        def createSink(n: WorkflowDSL.Node, log: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] = Sink.ignore
++        def validateReady(n: WorkflowDSL.Node, log: String => Unit)(implicit ec: ExecutionContext): Future[Done] = Future.successful(Done)
++        def commitBatch(n: WorkflowDSL.Node, w: String, e: String, b: SourceBatch, rows: Vector[String], log: String => Unit)
++          (implicit ec: ExecutionContext): Future[BatchCommitResult] = Future.failed(new AssertionError("no data"))
++      }
++      testRegistry.registerSource(source); testRegistry.registerSink(sink)
++      lazy val engine = new WorkflowExecutionEngine(_ => Some("test"), nodeRegistry = testRegistry.snapshot)
++      val context = ReliableRunContext("close-proof", 1L, Some(SnapshotBoundary("source-1", "p", Some("b"))), Vector.empty,
++        _ => Future.successful(Done), _ => Future.successful(Done))
++      try {
++        val running = engine.execute(WorkflowFixtures.mysqlCdcWorkflow, context, _ => ())
++        Await.result(opened.future, 3.seconds)
++        val cancellation = engine.cancel(context.executionId)
++        Await.result(closeStarted.future, 3.seconds)
++        intercept[java.util.concurrent.TimeoutException] { Await.ready(cancellation, 300.millis) }
++        closeFinished.success(Done)
++        Await.result(cancellation, 3.seconds) shouldBe Done
++      } finally {
++        closeFinished.trySuccess(Done)
++        testRegistry.unregisterSource(source.nodeType, source); testRegistry.unregisterSink(sink.nodeType, sink)
++      }
++    }
++  }
++}
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/nodes/sources/KafkaSourceSpec.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/nodes/sources/KafkaSourceSpec.scala
+@@ -37,6 +37,19 @@
+   }
+ 
+   "KafkaSource" should {
++    "retain unconfirmed cleanup when opening a session poller fails" in {
++      val scope = new cn.xuyinyin.magic.workflow.nodes.base.SourceResourceScope
++      val failure = new cn.xuyinyin.magic.workflow.nodes.base.SourceAcquisitionCleanupFailed(
++        new IllegalStateException("seek failed"), new IllegalStateException("consumer close failed"))
++      val factory = new KafkaPartitionPollerFactory {
++        def open(settings: org.apache.pekko.kafka.ConsumerSettings[String, String],
++          partition: org.apache.kafka.common.TopicPartition, start: Long): KafkaPartitionPoller = throw failure
++      }
++      val access = new PekkoKafkaClientAccess(factory).inSession(scope)
++      val stream = access.records(ResolvedKafkaTopic("topic", "127.0.0.1:9092"), 0, 0, 1).runWith(Sink.ignore)
++      Await.result(stream.failed, 3.seconds) shouldBe failure
++      Await.result(scope.close().failed, 3.seconds) shouldBe failure
++    }
+     "consume partitions in numeric order and emit deterministic batches" in {
+       val access = FakeKafkaClientAccess(
+         boundaries = Vector(
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLSnapshotSourceNodeSpec.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLSnapshotSourceNodeSpec.scala
+@@ -43,6 +43,29 @@
+     super.afterAll()
+   }
+ 
++  "managed snapshot resource close" should {
++    "preserve cleanup failure after acquiring a connection but rejecting metadata" in {
++      withFixture(Vector(1 -> "a")) { fixture =>
++        val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 3.seconds)
++        fixture.failClose = true
++        val node = fixture.snapshotNode("table" -> JsString("missing_table"))
++        val session = fixture.node.openBatches(node, "partial-acquire", boundary, None, _ => (), ec)
++        intercept[Exception] { Await.result(session.source.runWith(Sink.ignore), 3.seconds) }
++        Await.result(session.close().failed, 3.seconds) shouldBe a[cn.xuyinyin.magic.workflow.nodes.base.SourceAcquisitionCleanupFailed]
++      }
++    }
++    "report a datasource close exception rather than declaring release" in {
++      withFixture(Vector(1 -> "a")) { fixture =>
++        val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 3.seconds)
++        fixture.failClose = true
++        val session = fixture.node.openBatches(fixture.snapshotNode(), "close-failure", boundary, None, _ => (), ec)
++        Await.result(session.source.take(1).runWith(Sink.seq), 3.seconds).size shouldBe 1
++        Await.result(session.close().failed, 3.seconds).getMessage shouldBe "test datasource close failure"
++        fixture.lastDataSource.isClosed shouldBe true
++      }
++    }
++  }
++
+   "MySQLSnapshotSourceConfig" should {
+     "resolve an environment-backed password without persisting it in the workflow node" in {
+       val node = environmentPasswordSnapshotNode()
+@@ -503,6 +526,7 @@
+     private val jdbcUrl = s"jdbc:h2:mem:mysql_snapshot_${UUID.randomUUID().toString.replace('-', '_')};MODE=MySQL;DB_CLOSE_DELAY=0$h2Options"
+     Class.forName("org.h2.Driver")
+     private val inspectionConnection: Connection = DriverManager.getConnection(jdbcUrl, "sa", "")
++    var failClose = false
+     private var dataSources = Vector.empty[HikariDataSource]
+     private var nextCreation: Option[Promise[HikariDataSource]] = None
+ 
+@@ -539,7 +563,12 @@
+       config.setPassword("")
+       config.setMaximumPoolSize(1)
+       config.setMinimumIdle(0)
+-      val dataSource = new HikariDataSource(config)
++      val dataSource = new HikariDataSource(config) {
++        override def close(): Unit = {
++          super.close()
++          if (failClose) throw new IllegalStateException("test datasource close failure")
++        }
++      }
+       dataSources :+= dataSource
+       nextCreation.foreach(_.trySuccess(dataSource))
+       nextCreation = None
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcSourceNodeSpec.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcSourceNodeSpec.scala
+@@ -281,6 +281,103 @@
+     }
+   }
+ 
++  "managed MySQL CDC sessions" should {
++    "keep the JDBC worker available with sixteen idle materialized CDC readers" in {
++      val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
++      val worker = ExecutionContext.fromExecutor(executor)
++      val factory = new FakeEngineFactory(Vector.fill(16)(EnginePlan(Vector.empty)))
++      val source = testSource(factory, () => validMetadata.connection())
++      val sessions = Vector.tabulate(16)(i => source.openBatches(cdcNode(), s"idle-$i", expectedBoundary, None, _ => (), ec)(worker))
++      val queues = sessions.map(_.source.runWith(Sink.queue()))
++      val reads = queues.map(_.pull())
++      try {
++        eventually(factory.createCalls.get == 16)
++        Await.result(Future(42)(worker), 2.seconds) shouldBe 42
++        reads.forall(!_.isCompleted) shouldBe true
++        queues.foreach(_.cancel())
++        Await.result(Future.sequence(sessions.map(_.close())), 5.seconds)
++        factory.engines.foreach(_.closed.get shouldBe true)
++        reads.foreach(f => Await.ready(f, 2.seconds))
++      } finally { queues.foreach(_.cancel()); sessions.foreach(_.close()); executor.shutdownNow() }
++    }
++
++    for (halfOnly <- Vector(false, true)) {
++      s"release safely when cancellation meets ${if (halfOnly) "a PK half" else "a claimed raw ACK"}" in {
++        import cn.xuyinyin.magic.workflow.checkpoint.{BatchCommitResult, Committed}
++        import cn.xuyinyin.magic.workflow.engine.{ReliableRunContext, WorkflowExecutionEngine}
++        import cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
++        import cn.xuyinyin.magic.workflow.nodes.base.{CheckpointedNodeSink, NodeSink}
++        val d = record("d", Some(row(42, "old")), None, snapshot = false, position = 200)
++        val base = record("c", None, Some(row(43, "old")), snapshot = false, position = 200)
++        val newKey = new Struct(keySchema).put("id", 43)
++        val c = new SourceRecord(base.sourcePartition(), base.sourceOffset(), base.topic(), keySchema,
++          newKey, base.valueSchema(), base.value())
++        d.headers().add("__debezium.newkey", newKey, keySchema)
++        c.headers().add("__debezium.oldkey", d.key(), keySchema)
++        val ackEntered = Promise[Done]()
++        val releaseAck = new CountDownLatch(1)
++        val halfRetained = Promise[Done]()
++        val factory = new FakeEngineFactory(Vector(EnginePlan(
++          if (halfOnly) Vector(Vector(d)) else Vector(Vector(d), Vector(c)),
++          onAck = () => { ackEntered.trySuccess(Done); releaseAck.await() })))
++        val source = testSource(factory, () => validMetadata.connection())
++        val protocol = JsObject("replicationId" -> JsString("orders"), "generation" -> JsString("g1"),
++          "sourceLineage" -> JsString("fixed-server-uuid"), "initializedTarget" -> JsBoolean(true))
++        val node = cdcNode().copy(config = JsObject(cdcNode().config.fields + ("groupProtocol" -> protocol)))
++        val boundary = expectedBoundary.copy(upperBound = Some(canonical(JsObject(
++          expectedStreamIdentity.parseJson.asJsObject.fields ++ Map("version" -> JsNumber(2),
++            "groupProtocol" -> JsObject((protocol.fields - "initializedTarget") + ("version" -> JsNumber(1))))))))
++        val commits = new AtomicInteger
++        val sink = new NodeSink with CheckpointedNodeSink {
++          val nodeType = "mysql.cdc.apply"
++          def createSink(n: WorkflowDSL.Node, log: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] = Sink.ignore
++          def validateReady(n: WorkflowDSL.Node, log: String => Unit)(implicit ec: ExecutionContext): Future[Done] = Future.successful(Done)
++          def commitBatch(n: WorkflowDSL.Node, w: String, e: String, b: SourceBatch, rows: Vector[String], log: String => Unit)
++            (implicit ec: ExecutionContext): Future[BatchCommitResult] = {
++            commits.incrementAndGet()
++            Future.successful(Committed(BatchCheckpoint(b.sourceNodeId, b.partitionId, b.batchSequence, b.batchId, b.cursor, 2, 2)))
++          }
++        }
++        val engine = new WorkflowExecutionEngine(_ => Some(sourceSecret), NodeRegistry.builtins().withSource(source).withSink(sink))
++        val workflow = cn.xuyinyin.magic.workflow.WorkflowFixtures.mysqlCdcWorkflow.copy(nodes = List(node,
++          cn.xuyinyin.magic.workflow.WorkflowFixtures.mysqlCdcWorkflow.nodes.last))
++        val context = ReliableRunContext(s"managed-$halfOnly", 1, Some(boundary), Vector.empty,
++          _ => Future.successful(Done), _ => Future.successful(Done))
++        val running = engine.execute(workflow, context, message => {
++          if (message.startsWith("CDC primary-key half retained")) halfRetained.trySuccess(Done)
++          ()
++        })
++        try {
++          if (halfOnly) Await.result(halfRetained.future, 3.seconds) else Await.result(ackEntered.future, 3.seconds)
++          if (!halfOnly) {
++            Await.result(engine.cancelWithin(context.executionId, 100.millis), 3.seconds) shouldBe WorkflowExecutionEngine.TimedOut
++            factory.engines.head.closed.get shouldBe false
++          }
++          releaseAck.countDown()
++          Await.result(engine.cancelWithin(context.executionId, 3.seconds), 5.seconds) shouldBe WorkflowExecutionEngine.Released
++          Await.result(running, 3.seconds)
++          factory.engines.head.closed.get shouldBe true
++          commits.get shouldBe (if (halfOnly) 0 else 1)
++          if (halfOnly) factory.engines.head.handles.asScala.foreach(_.calls.get shouldBe 0)
++          else factory.engines.head.handles.asScala.foreach(_.calls.get should be <= 1)
++        } finally { releaseAck.countDown(); engine.cancel(context.executionId) }
++      }
++    }
++
++    "preserve failed cleanup when engine startup throws before returning its resource" in {
++      val factory = new DebeziumEngineFactory {
++        def create(p: Properties): DebeziumEngineAccess = new DebeziumEngineAccess {
++          def start(c: DebeziumBatchConsumer): Future[Done] = throw new IllegalStateException("startup failed")
++          def close(): Unit = throw new IllegalStateException("cleanup failed")
++        }
++      }
++      val source = testSource(factory, () => validMetadata.connection())
++      val session = source.openBatches(cdcNode(), "startup-failure", expectedBoundary, None, _ => (), ec)
++      intercept[IllegalStateException] { Await.result(session.source.runWith(Sink.ignore), 3.seconds) }
++      Await.result(session.close().failed, 3.seconds) shouldBe a[cn.xuyinyin.magic.workflow.nodes.base.SourceAcquisitionCleanupFailed]
++    }
++  }
++
+   "MySQLCdcSourceNode streaming" should {
+     "assemble a PK group across callbacks before delivery and release only the covered raw prefix" in {
+       val d = record("d", Some(row(42, "old")), None, snapshot = false, position = 200)
+@@ -1113,15 +1210,17 @@
+   private final class EnginePlan(
+     val batches: Vector[Vector[SourceRecord]],
+     val terminalFailure: Option[Throwable],
+-    val completesWithoutClose: Boolean
++    val completesWithoutClose: Boolean,
++    val onAck: () => Unit
+   )
+ 
+   private object EnginePlan {
+     def apply(
+       batches: Vector[Vector[SourceRecord]],
+       terminalFailure: Option[Throwable] = None,
+-      completesWithoutClose: Boolean = false
+-    ): EnginePlan = new EnginePlan(batches, terminalFailure, completesWithoutClose)
++      completesWithoutClose: Boolean = false,
++      onAck: () => Unit = () => ()
++    ): EnginePlan = new EnginePlan(batches, terminalFailure, completesWithoutClose, onAck)
+   }
+ 
+   private final class FakeEngineFactory(plans: Vector[EnginePlan]) extends DebeziumEngineFactory {
+@@ -1159,7 +1258,7 @@
+               case _ => ()
+             }
+             plan.batches.foreach { records =>
+-              val handle = new FakeCommitHandle
++              val handle = new FakeCommitHandle(plan.onAck)
+               handles.add(handle)
+               consumer.handleBatch(records, handle)
+             }
+@@ -1193,11 +1292,11 @@
+     }
+   }
+ 
+-  private final class FakeCommitHandle extends CdcBatchCommitHandle {
++  private final class FakeCommitHandle(onAck: () => Unit = () => ()) extends CdcBatchCommitHandle {
+     val calls = new AtomicInteger(0)
+     override def markProcessedAndFinished(): Unit = {
+       calls.incrementAndGet()
+-      ()
++      onAck()
+     }
+   }
+ 
+--- before/pekko-server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/MySQLBatchSyncIntegrationTest.scala
++++ after/pekko-server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/MySQLBatchSyncIntegrationTest.scala
+@@ -57,12 +57,12 @@
+ 
+   "NodeRegistry" should "包含MySQL连接器" taggedAs(ExternalIntegration) in {
+     // 验证Source连接器已注册
+-    val sourceOpt = cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry.findSource("mysql.query")
++    val sourceOpt = cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry.builtins().findSource("mysql.query")
+     sourceOpt shouldBe defined
+     sourceOpt.get.getClass.getName should include("MySQLSourceNode")
+     
+     // 验证Sink连接器已注册
+-    val sinkOpt = cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry.findSink("mysql.write")
++    val sinkOpt = cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry.builtins().findSink("mysql.write")
+     sinkOpt shouldBe defined
+     sinkOpt.get.getClass.getName should include("MySQLSinkNode")
+     
+@@ -70,7 +70,7 @@
+   }
+ 
+   "MySQLSourceNode" should "读取数据库数据" taggedAs(ExternalIntegration) in {
+-    val source = cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry
++    val source = cn.xuyinyin.magic.workflow.engine.registry.NodeRegistry.builtins()
+       .findSource("mysql.query")
+       .getOrElse(fail("MySQL Source未找到"))
+     

@@ -1,0 +1,39 @@
+{
+  "reviewedAt": "2026-10-20T16:47:31.838442+00:00",
+  "baselineHead": "d046cce2dc850ea60bc3513db84378484b0a1043",
+  "recommendation": "no blocking findings within reviewed scope",
+  "independentSourceReview": "no actionable blocking findings; source review is not runtime proof",
+  "productionCodeChangedDuringReview": false,
+  "currentStructureDocumentCorrected": true,
+  "backend": {
+    "tests": 488,
+    "suites": 79,
+    "failed": 0,
+    "aborted": 0,
+    "package": true,
+    "testJvmShutdownWait": "60s; repository default unchanged",
+    "command": "sbt -java-home /Users/xujiawei/Library/Java/JavaVirtualMachines/ms-17.0.14/Contents/Home -J-Xmx3G -Dpekko.actor.testkit.typed.system-shutdown-default=60s pekko-server/test pekko-server/package"
+  },
+  "realMySql": {
+    "rerunThisReview": false,
+    "reason": "current 215 source/build hashes equal the completed 26-case formal MySQL run; fresh offline verification performed",
+    "sourceManifestFiles": 215,
+    "autoConverged": 10,
+    "safelyBlocked": 7,
+    "historicalConverged": 7,
+    "releaseCases": 2
+  },
+  "priorExperimentalFilesUnchanged": 146,
+  "checksumsOfThreePendingEvidenceDirectories": "PASS",
+  "productionJar": {
+    "path": "pekko-server/target/scala-2.13/pekko-reference_2.13-0.1.jar",
+    "sha256": "23d856b30a079462a5b4f2d59ea525875112f2652f07ccd3ec840339600210d0",
+    "testFixturesPackaged": false
+  },
+  "remainingBoundaries": [
+    "manual reviewed resume/abandon API absent",
+    "new journal events not guaranteed readable by old binary",
+    "historical terminal C2 not resurrected",
+    "DDL, multiowner, shared reader, new snapshot, 700k tables and production failure domains unverified"
+  ]
+}

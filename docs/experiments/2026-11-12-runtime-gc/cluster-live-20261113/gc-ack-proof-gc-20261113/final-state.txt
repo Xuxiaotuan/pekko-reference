@@ -1,0 +1,19 @@
+--api--
+{"activeSteps":0,"enabled":true,"maxActiveSteps":4,"ownerState":"ACTIVE","reason":null}
+{"items":[{"captureId":"primary","operation":null,"phase":"BLOCKED","reason":"actual D proof pending"}]}
+--source--
+4	gc-final-update	14.2500	gc-live	2026-11-13 05:48:00.123456	4
+6	gc-final-insert	15.5000	row-six	2026-11-13 05:48:01.123456	0
+--sessions--
+49104	pekko_cdc_runtime	192.168.31.251:9306	NULL	Binlog Dump	3568	Source has sent all binlog to replica; waiting for more updates
+49183	pekko_cdc_runtime	192.168.31.251:16800	pekko_cdc_runtime_acceptance	Query	0	executing
+--trx--
+--target-and-proof--
+4	gc-final-update	14.2500	gc-live	2026-11-13 05:48:00.123456	4
+6	gc-final-insert	15.5000	row-six	2026-11-13 05:48:01.123456	0
+primary	READY	1	13041	13050	0	0	0	NULL
+f777e7d3976898c021f3819976137345fee42c3c9c045155b8b732e44a03871c	13052	NULL
+VERIFY	1	408	NULL
+13041
+13050
+primary	BLOCKED	actual D proof pending	NULL

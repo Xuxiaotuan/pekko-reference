@@ -1,0 +1,14 @@
+{
+  "mysql": "9.5.0",
+  "source_sha256": {
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyMySqlAccountLock.scala": "e61601dafa930afe42cd36d5ebda5f1e90ba5d822a8987e3efc8492462b0e5e6",
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyAccountLockIntent.scala": "a56193a98bc4fb5ae4be4e837470b7cf821a3787f9f8f7e00e935e9de4b94c94",
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/CutoverAccountMySqlSpec.scala": "4461797ee026175d1383a9e3964e59a766fb295adb596c7e1e9b4b07c09b04cf",
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyIntentCrashProbe.scala": "f590d3b1f5af61e622dcb8ddeb986b824e841ba1fafca8db1a092779b12e8131",
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotGuardianSpec.scala": "0f02e975b5712d94f1f73fb586093f477e174de8d9af895fb2ba295c3959cad5"
+  },
+  "tests_passed": 32,
+  "controlled_admin_assumption": "user accepted that privileged administrators are trusted and a single managed controller exclusively controls account and proxy changes",
+  "observed": "global UPDATE and schema EXECUTE privilege refused; unknown wildcard proxy refused; four old-account DEFINER types refused; exact account lock persisted across a test-only JVM halt",
+  "boundary": "exclusive administration is assumed, not enforced; actual proxied login, guardian drain, persisted cutover barrier, database lock and quota migration, and end-to-end Workflow recovery not validated"
+}

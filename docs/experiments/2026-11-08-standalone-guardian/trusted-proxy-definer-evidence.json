@@ -1,0 +1,13 @@
+{
+  "mysql": "9.5.0",
+  "source_sha256": {
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyMySqlAccountLock.scala": "42026d76e7f6a7f64e12478de77fd38a9da0dc6ae7c32d89d3c35e7947abdd29",
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyAccountLockIntent.scala": "a56193a98bc4fb5ae4be4e837470b7cf821a3787f9f8f7e00e935e9de4b94c94",
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/CutoverAccountMySqlSpec.scala": "ce55b0c80b206a1108c465ce6df84039097574c56ba940a8c9da03665b9a7542",
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyIntentCrashProbe.scala": "f590d3b1f5af61e622dcb8ddeb986b824e841ba1fafca8db1a092779b12e8131"
+  },
+  "tests_passed": 20,
+  "controlled_admin_assumption": "operator ensures exclusive control of CREATE/ALTER USER, proxy grants, privilege and authentication-plugin changes throughout cutover",
+  "observed": "untrusted wildcard proxy refused; trusted root wildcard accepted; four legacy DEFINER object types refused; insufficient global inventory privilege refused; independent test JVM halted after DDL, replacement rechecked after unlock",
+  "boundary": "actual proxied login, enforcement of exclusive administration, guardian drain, database lock and quota cutover, and end-to-end Workflow recovery not validated"
+}

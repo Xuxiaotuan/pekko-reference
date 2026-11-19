@@ -1,0 +1,46 @@
+{
+  "disk": "Filesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on\n/dev/disk3s5   460Gi   306Gi   125Gi    72%    5.1M  1.3G    0%   /System/Volumes/Data\n",
+  "instances": [
+    {
+      "pid": 2059,
+      "process": "2059  14368 mysqld --defaults-file=/private/tmp/cdc-lab-pool-20261025-attempt2/a/source/server.cnf --daemonize",
+      "role": "source",
+      "slot": "a"
+    },
+    {
+      "pid": 2170,
+      "process": "2170  14336 mysqld --defaults-file=/private/tmp/cdc-lab-pool-20261025-attempt2/a/state/server.cnf --daemonize",
+      "role": "state",
+      "slot": "a"
+    },
+    {
+      "pid": 2300,
+      "process": "2300  21056 mysqld --defaults-file=/private/tmp/cdc-lab-pool-20261025-attempt2/b/source/server.cnf --daemonize",
+      "role": "source",
+      "slot": "b"
+    },
+    {
+      "pid": 2421,
+      "process": "2421  26336 mysqld --defaults-file=/private/tmp/cdc-lab-pool-20261025-attempt2/b/state/server.cnf --daemonize",
+      "role": "state",
+      "slot": "b"
+    }
+  ],
+  "physical_memory_bytes": 25769803776,
+  "pool_disk_kib": "556192\t/private/tmp/cdc-lab-pool-20261025-attempt2",
+  "protected_listeners_untouched": [
+    {
+      "listeners": "COMMAND  PID     USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME\nmysqld  5260 xujiawei   31u  IPv4 0x50cd3c59d6cbf1e1      0t0  TCP 127.0.0.1:3306 (LISTEN)\n",
+      "port": 3306
+    },
+    {
+      "listeners": "COMMAND   PID     USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME\nmysqld  72398 xujiawei   38u  IPv4 0x9fac7a6295cad229      0t0  TCP 127.0.0.1:13365 (LISTEN)\n",
+      "port": 13365
+    },
+    {
+      "listeners": "COMMAND   PID     USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME\nmysqld  72397 xujiawei  146u  IPv4 0x2bfde317b55d82d8      0t0  TCP 127.0.0.1:13366 (LISTEN)\n",
+      "port": 13366
+    }
+  ],
+  "recorded_ns": 1792934791669313000
+}

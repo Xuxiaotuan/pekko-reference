@@ -1,0 +1,48 @@
+{
+  "baseCommit": "22746916a61c9411434a258cf96fd7a50c871154",
+  "workingTree": "uncommitted production changes; no commit or push performed",
+  "sourceSha256": {
+    "pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/checkpoint/CheckpointModels.scala": "f18636e157e34764b62cd25beca5e1f5ba12357bd4ee5800d081841079ac2bb5",
+    "pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/cdc/MySQLCdcGroup.scala": "ed93cebd90ca4f97d4de2a8ca2e9087b6ddf7f111124bd8c75223de695f45a7e",
+    "pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/cdc/MySQLCdcEnvelope.scala": "fb436a6f4da950c85211e3c60c8781cb65864bf76cbe9a071fc16be249af8f85",
+    "pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcSourceNode.scala": "2274a262f062a79d388799dca66652ea99eda81ad05dcaba5815e56a15a8f0b8",
+    "pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcSourceConfig.scala": "d2f8ae6762f37ee1f8efba8b996e6d33db89b516929a116de4b8f0dd946b143e",
+    "pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcGroupAssembler.scala": "1c323cfdb60bead07050cd32672603cb2c9a6ec4fd6b5e849a0f63a3e689e4bd",
+    "pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/DebeziumBatchBridge.scala": "4692e16ce9d61dd21d9baf27d0325adf7866f1cd68ef4059145aec14fde49641",
+    "pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/DebeziumEngineAccess.scala": "f7d2e591c061ee73d953d2dc9a7deecbcbee43cf72a7b227e248374d5d091c52",
+    "pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sinks/MySQLCdcApplySinkNode.scala": "0c51843637ee99392aa3b0b058191e148842f7576b60518a26ab5819873b694b",
+    "pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/engine/WorkflowExecutionEngine.scala": "d78003bb973af0985a8b5847856deaa34f69898cb41080577683a635277fd2bf",
+    "pekko-server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala": "d4dd6e738e49392a0ba88347995efd30209eccbc91f95bbe9bd2197ed2bd8242",
+    "pekko-server/src/main/resources/db/mysql/pekko-sync-cdc-group-ledger-schema.sql": "0ed28dd5a86608504fb3167d633cf7341120453416626942ad786ceb8dad6a67",
+    "pekko-server/src/main/resources/db/mysql/pekko-sync-ledger-schema.sql": "ff4200f801b51ae7f33a638c7d48c8372653f1df02f54d165d0043991060ead9",
+    "pekko-server/src/main/resources/db/mysql/pekko-persistence-schema.sql": "592fe543079ceddf97744d1537ff6838970f7bf858ed0d2432e8b8b48ba59f15",
+    "pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcGroupRecoverySpec.scala": "22b17ef2262618137bcf8a633673f4cb2cb972c1d74ae6c6d2bf82d7a146bc7b",
+    "pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcGroupRecoveryProcess.scala": "9ef9b51b1089a44ed7c7df845cfd44421b54e896576c1542279304d5507f7885",
+    "pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcJournalWindowSpec.scala": "6c571ee019c79e020472f4934b04d39ad9a90fe0a36dd465631f4d53c53c1d63",
+    "pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/nodes/sinks/MySQLCdcApplySinkNodeSpec.scala": "f48da59a82da8a2780628fad61b76e476009551f63cc48848529439c091be6dc",
+    "pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcStreamingStateSpec.scala": "bef92b6194e2ee86d47161b9bccc6ef682fdcd1d2eb2800175bfc9b4e2d812df",
+    "pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/nodes/sources/RealMySQLSourceRecordIdentityProbe.scala": "cf58bbc30ebb07f33866b503389b9d188c55e43060910754479151c0d46082c9",
+    "pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcSourceConfigSpec.scala": "b5a49788ee50904cdd64ebef824fe10a9b66e73af766cb6a60703c9cc1315351",
+    "pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcSourceNodeSpec.scala": "5b1186b86191c9210a3d8f65bb132ff88fea2812adc79ebdf91e376c300d8c63",
+    "pekko-server/src/test/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLCdcGroupAssemblerSpec.scala": "bc9ade024e9e0de43c4eb1ff9150574f6400a8c4e6a98c9547e3ab7b3b6e9062"
+  },
+  "formalRuns": {
+    "split-gap": "split-gap-2a6f40ed111b",
+    "merge-gap": "merge-gap-9a84d5cec6d7",
+    "pk-gap": "pk-gap-aa9f3abc4925"
+  },
+  "runtime": {
+    "MySQL": "8.4.11",
+    "Debezium": "3.6.1.Final",
+    "Pekko": "1.1.3",
+    "MySQL JDBC": "8.0.33",
+    "Java": "17.0.14",
+    "JVMTimezone": "UTC"
+  },
+  "testEvidence": {
+    "targeted": "102 passed on final sources",
+    "real": "4 passed on final sources, including three independent recovery scenarios",
+    "fullSuite": "414 passed, 2 Calcite suites aborted: missing com/google/protobuf/GeneratedMessageV3; run before final ACK binding guard; final targeted and real suites rerun"
+  },
+  "sourceScope": "single table/partition, one active writer, fixed schema and server UUID with unreset binlog history, operator-established durable streaming baseline"
+}

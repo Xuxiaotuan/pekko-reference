@@ -1,0 +1,81 @@
+package cn.xuyinyin.magic.cdc.guardian
+
+import cn.xuyinyin.magic.cdc.control.CdcManagedControlStore
+
+import cn.xuyinyin.magic.cdc.control.{SnapshotOwnerJdbc, SnapshotOwnerJdbcDriver}
+
+import cn.xuyinyin.magic.cdc.guardian.SnapshotSupervisorSettings
+
+import cn.xuyinyin.magic.cdc.control.SchedulingLimits
+
+
+
+import cn.xuyinyin.magic.cdc.control.{CredentialBindingPlan}
+import cn.xuyinyin.magic.cdc.guardian.{SnapshotOwnerIdentity}
+import com.typesafe.config.{Config,ConfigFactory}
+import com.zaxxer.hikari.{HikariConfig,HikariDataSource}
+import java.sql.DriverManager
+import scala.jdk.CollectionConverters._
+
+/** Explicit opt-in. Schema provisioning and a quiescent migration baseline are operator prerequisites. */
+object SnapshotOwnerBootstrap {
+  def enabled(config:Config):Boolean=config.hasPath("pekko.workflow.snapshot-ha.enabled") && config.getBoolean("pekko.workflow.snapshot-ha.enabled")
+  def bindingPlans(config:Config):Vector[CredentialBindingPlan]=if(!config.hasPath("pekko.workflow.snapshot-ha.credential-bindings"))Vector.empty else {
+    config.getConfigList("pekko.workflow.snapshot-ha.credential-bindings").asScala.toVector.map { c=>
+      CredentialBindingPlan(c.getString("workflow-id"),c.getString("node-id"),c.getString("node-role"),c.getString("operation-id"),c.getString("host-id"),
+        c.getString("endpoint"),c.getString("database"),c.getString("legacy-user"),c.getString("runtime-user"),c.getString("password-env"),c.getString("definition-hash"))
+    }
+  }
+  def prepare(config:Config):Config={
+    require(!config.hasPath("pekko.workflow.snapshot-ha.supervisor-config") || enabled(config),"managed launch cannot disable snapshot HA bootstrap")
+    if(!enabled(config))return config
+    SnapshotSupervisorSettings.workerMain(config) // Reject legacy Workflow workers before allocating a pool.
+    require(config.getString("pekko.cluster.downing-provider-class").isEmpty,"HA requires externally proven retirement; automatic downing is unsupported")
+    require(config.getString("pekko.cluster.auto-down-unreachable-after")=="off","automatic downing bypasses the isolation proof")
+    val boot=config.getString("pekko.workflow.snapshot-ha.owner-id")
+    val identity=SnapshotOwnerIdentity(boot,config.getString("pekko.workflow.snapshot-ha.deployment-id"),ProcessHandle.current().pid(),ProcessHandle.current().info().startInstant().orElseThrow().toString)
+    if(config.hasPath("pekko.workflow.snapshot-ha.supervisor-config")) {
+      val supervisor=new SnapshotSupervisorSettings(java.nio.file.Path.of(config.getString("pekko.workflow.snapshot-ha.supervisor-config")))
+      try {
+        val deadline=System.nanoTime()+10000000000L
+        while(supervisor.metadata.launch(boot).exists(_.phase=="dispatching") && System.nanoTime()<deadline)Thread.sleep(10)
+        supervisor.metadata.verifyWorker(boot,identity,config.getString("pekko.workflow.snapshot-ha.launch-profile"))
+      } finally supervisor.close()
+    }
+    val scheduling=config.getConfig("pekko.workflow.table-scheduling")
+    val db=scheduling.getConfig("jdbc")
+    val pool=new HikariConfig();pool.setJdbcUrl(SnapshotOwnerJdbc.taggedUrl(db.getString("url"),identity,"control"))
+    pool.setUsername(db.getString("username"));pool.setPassword(db.getString("password"));pool.setMaximumPoolSize(4);pool.setMinimumIdle(0);pool.setConnectionTimeout(5000)
+    val ds=new HikariDataSource(pool)
+    try {
+      val limits=SchedulingLimits(scheduling.getInt("max-active-tables"),scheduling.getInt("max-active-tables-per-node"),scheduling.getInt("max-connections-per-instance"),scheduling.getInt("max-concurrent-starts"),scheduling.getBytes("max-page-reservation"),scheduling.getInt("candidate-page"))
+      val cutover=SnapshotSupervisorSettings.cutoverIdentity(config)
+      val store=new CdcManagedControlStore(ds,limits,cutover)
+      val ha=store.ownership
+      ha.registerBootstrapOwner(identity)
+      val journal=config.getConfig("pekko-persistence-jdbc.shared-databases.slick.db")
+      val endpoints=Vector((db.getString("url"),db.getString("username"),db.getString("password")),
+        (journal.getString("url"),journal.getString("user"),journal.getString("password"))) ++
+        config.getConfigList("pekko.workflow.snapshot-ha.instances").asScala.map(c=>(c.getString("url"),c.getString("username"),c.getString("password")))
+      val routes=endpoints.map { case (url,user,password)=>
+        val c=DriverManager.getConnection(SnapshotOwnerJdbc.taggedUrl(url,identity,"control"),user,password)
+        try {val (uuid,started,id)=SnapshotOwnerJdbc.databaseIdentity(c)
+          if(url==journal.getString("url")) {
+            Vector("event_journal","event_tag","snapshot").foreach { table=>
+              val q=c.prepareStatement("SELECT ENGINE FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=?")
+              try {q.setString(1,table);val r=q.executeQuery();try require(r.next() && r.getString(1)=="InnoDB","managed Journal/Snapshot tables must be InnoDB")finally r.close()}finally q.close()
+            }
+          }
+          ha.registerSession(boot,SnapshotOwnerJdbc.endpoint(url),uuid,started,id,"control",SnapshotOwnerJdbc.databaseUser(c));SnapshotOwnerJdbc.endpoint(url)->uuid}finally c.close()
+      }.toMap
+      SnapshotOwnerJdbc.installForBootstrap(SnapshotOwnerJdbc.Context(identity,store,ha,routes,()=>ds.close(),bindingPlans(config)))
+      ConfigFactory.parseMap(Map[String,AnyRef](
+        "pekko-persistence-jdbc.shared-databases.slick.db.driver"->classOf[SnapshotOwnerJdbcDriver].getName,
+        "pekko-persistence-jdbc.shared-databases.slick.db.url"->SnapshotOwnerJdbc.taggedUrl(journal.getString("url"),identity,"journal"),
+        "pekko.cluster.sharding.remember-entities"->java.lang.Boolean.FALSE,
+        "pekko.cluster.sharding.buffer-size"->Int.box(64),
+        "pekko.cluster.roles"->(config.getStringList("pekko.cluster.roles").asScala.toVector:+("snapshot-owner-"+boot)).asJava
+      ).asJava).withFallback(config)
+    } catch {case e:Exception=>ds.close();throw e}
+  }
+}

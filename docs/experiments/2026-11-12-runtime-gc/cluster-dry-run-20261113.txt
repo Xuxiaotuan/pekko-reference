@@ -1,0 +1,16 @@
+Cluster deployment boundary (2026-11-13 Asia/Shanghai)
+
+Observed through the existing SSH/kubectl access on host xjw:
+
+  pekko-cdc-single   image=pekko-reference:mysql-cdc-single-20260831   ready=1
+  pekko-workflow     image=pekko-reference:cluster-bootstrap-20260830  ready=2
+
+The new isolated kustomization was rendered with image
+`ghcr.io/xuxiaotuan/pekko-reference/cdc-runtime:81dc930` and accepted by the
+remote API server with `kubectl apply --dry-run=server`. No live resource was
+created and neither legacy StatefulSet was changed.
+
+Runtime rollout remains `external_blocked`: the cluster has not provisioned the
+required `pekko-cdc-runtime-config` Secret with separate Source/State lineage
+and exclusive accounts. Reusing the legacy single MySQL/Workflow credentials
+would not prove the CDC Runtime contract, so this run stops at server dry-run.

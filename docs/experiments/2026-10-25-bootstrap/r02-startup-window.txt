@@ -1,0 +1,65 @@
+# The proper term is pseudo_replica_mode, but we use this compatibility alias
+# to make the statement usable on server versions 8.0.24 and older.
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=1*/;
+/*!50003 SET @OLD_COMPLETION_TYPE=@@COMPLETION_TYPE,COMPLETION_TYPE=0*/;
+DELIMITER /*!*/;
+# at 198
+#261025 19:27:01 server id 20261025  end_log_pos 127 CRC32 0x8e431b4d 	Start: binlog v 4, server v 9.5.0 created 261025 19:27:01 at startup
+ROLLBACK/*!*/;
+# at 211714068
+#261025 20:32:09 server id 20261025  end_log_pos 211714147 CRC32 0xdbde254c 	GTID	last_committed=136004	sequence_number=136005	rbr_only=no	original_committed_timestamp=1792931529390115	immediate_commit_timestamp=1792931529390115	transaction_length=399
+# original_commit_timestamp=1792931529390115 (2026-10-25 20:32:09.390115 CST)
+# immediate_commit_timestamp=1792931529390115 (2026-10-25 20:32:09.390115 CST)
+/*!80001 SET @@session.original_commit_timestamp=1792931529390115*//*!*/;
+/*!80014 SET @@session.original_server_version=90500*//*!*/;
+/*!80014 SET @@session.immediate_server_version=90500*//*!*/;
+SET @@SESSION.GTID_NEXT= '0e4f53da-d042-11f1-ae2b-08f9cb0ddc2a:453630'/*!*/;
+# at 211714147
+#261025 20:32:09 server id 20261025  end_log_pos 211714467 CRC32 0x128f73c1 	Query	thread_id=16045	exec_time=0	error_code=0
+use `pekko_test_cdc_window_bbf6cab03f90`/*!*/;
+SET TIMESTAMP=1792931529/*!*/;
+SET @@session.pseudo_thread_id=16045/*!*/;
+SET @@session.foreign_key_checks=1, @@session.sql_auto_is_null=0, @@session.unique_checks=1, @@session.autocommit=1/*!*/;
+SET @@session.sql_mode=1168113696/*!*/;
+SET @@session.auto_increment_increment=1, @@session.auto_increment_offset=1/*!*/;
+/*!\C utf8mb4 *//*!*/;
+SET @@session.character_set_client=255,@@session.collation_connection=255,@@session.collation_server=255/*!*/;
+SET @@session.lc_time_names=0/*!*/;
+SET @@session.collation_database=DEFAULT/*!*/;
+/*!80011 SET @@session.default_collation_for_utf8mb4=255*//*!*/;
+/*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+CREATE TABLE IF NOT EXISTS pekko_capture_control(operation_id VARCHAR(128) PRIMARY KEY,action VARCHAR(32) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL)
+/*!*/;
+# at 211714467
+#261025 20:32:09 server id 20261025  end_log_pos 211714546 CRC32 0xec15b7f7 	GTID	last_committed=136005	sequence_number=136006	rbr_only=yes	original_committed_timestamp=1792931529684500	immediate_commit_timestamp=1792931529684500	transaction_length=442
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1792931529684500 (2026-10-25 20:32:09.684500 CST)
+# immediate_commit_timestamp=1792931529684500 (2026-10-25 20:32:09.684500 CST)
+/*!80001 SET @@session.original_commit_timestamp=1792931529684500*//*!*/;
+/*!80014 SET @@session.original_server_version=90500*//*!*/;
+/*!80014 SET @@session.immediate_server_version=90500*//*!*/;
+SET @@SESSION.GTID_NEXT= '0e4f53da-d042-11f1-ae2b-08f9cb0ddc2a:453631'/*!*/;
+# at 211714546
+#261025 20:32:09 server id 20261025  end_log_pos 211714651 CRC32 0x85aec8fb 	Query	thread_id=16047	exec_time=0	error_code=0
+SET TIMESTAMP=1792931529/*!*/;
+BEGIN
+/*!*/;
+# at 211714651
+#261025 20:32:09 server id 20261025  end_log_pos 211714759 CRC32 0xd5dc34e7 	Table_map: `pekko_test_cdc_window_bbf6cab03f90`.`pekko_capture_control` mapped to number 41801
+# has_generated_invisible_primary_key=0
+# at 211714759
+#261025 20:32:09 server id 20261025  end_log_pos 211714878 CRC32 0x095d9388 	Write_rows: table id 41801 flags: STMT_END_F
+### INSERT INTO `pekko_test_cdc_window_bbf6cab03f90`.`pekko_capture_control`
+### SET
+###   @1='be7519893731fef2b4c2de9acddf5ce9995a34f2f8f4d5d80075d751113087c4'
+###   @2='SUBSCRIBE'
+###   @3='a'
+###   @4='g1'
+# at 211714878
+#261025 20:32:09 server id 20261025  end_log_pos 211714909 CRC32 0x9f295ea8 	Xid = 586695
+COMMIT/*!*/;
+SET @@SESSION.GTID_NEXT= 'AUTOMATIC' /* added by mysqlbinlog */ /*!*/;
+DELIMITER ;
+# End of log file
+/*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;

@@ -1,0 +1,92 @@
+{
+  "candidate_sha256": "178b9d9f219c4ed256816015f398aa747637018cf56b17686766615fb43f4cdc",
+  "leases": {
+    "b": {
+      "acquired_ns": 1792935361951995000,
+      "released_ns": 1792935363012885000,
+      "status": "released"
+    }
+  },
+  "results": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "-c",
+        "import json,pathlib,time;start=time.time_ns();time.sleep(.4);pathlib.Path(\"worker.json\").write_text(json.dumps({\"started_ns\":start,\"finished_ns\":time.time_ns()}))"
+      ],
+      "attempt": "/Users/xujiawei/magic/scala-workbench/pekko-reference/docs/experiments/2026-10-25-cdc-lab-pool/review-budget-runner-b-attempt-1/budget-b",
+      "candidate_sha256": "178b9d9f219c4ed256816015f398aa747637018cf56b17686766615fb43f4cdc",
+      "case_id": "budget",
+      "cleanup": {
+        "confirmed_exited": true,
+        "finished_ns": 1792935363009372000,
+        "group": 9469,
+        "kill_sent": false,
+        "phases": [],
+        "remaining_live": [],
+        "term_sent": false
+      },
+      "environment": {
+        "credentials_ref": "/private/tmp/cdc-lab-pool-review-budget-20261025/b/credentials.json",
+        "id": "b",
+        "source": {
+          "datadir": "/private/tmp/cdc-lab-pool-review-budget-20261025/b/source/data",
+          "port": 14375,
+          "uuid": "25f1bd7d-2d3d-4562-87d7-a933e2650c75"
+        },
+        "state": {
+          "datadir": "/private/tmp/cdc-lab-pool-review-budget-20261025/b/state/data",
+          "port": 14376,
+          "uuid": "9cbe829e-8416-4e03-a3c6-daca180e3721"
+        }
+      },
+      "evidence_files": {
+        "runner.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "worker.json": "8b86890a3779eea5c40e662bd408528e2f6bf6050c2b82c752e747385113551f"
+      },
+      "exit_code": 0,
+      "finished_ns": 1792935363010417000,
+      "instance_admission": {
+        "admitted": true,
+        "checked_ns": 1792935361952390000,
+        "finished_ns": 1792935362553534000,
+        "instances": {
+          "source": {
+            "actual": {
+              "datadir": "/private/tmp/cdc-lab-pool-review-budget-20261025/b/source/data",
+              "port": 14375,
+              "uuid": "25f1bd7d-2d3d-4562-87d7-a933e2650c75"
+            },
+            "expected": {
+              "datadir": "/private/tmp/cdc-lab-pool-review-budget-20261025/b/source/data",
+              "port": 14375,
+              "uuid": "25f1bd7d-2d3d-4562-87d7-a933e2650c75"
+            },
+            "matches": true
+          },
+          "state": {
+            "actual": {
+              "datadir": "/private/tmp/cdc-lab-pool-review-budget-20261025/b/state/data",
+              "port": 14376,
+              "uuid": "9cbe829e-8416-4e03-a3c6-daca180e3721"
+            },
+            "expected": {
+              "datadir": "/private/tmp/cdc-lab-pool-review-budget-20261025/b/state/data",
+              "port": 14376,
+              "uuid": "9cbe829e-8416-4e03-a3c6-daca180e3721"
+            },
+            "matches": true
+          }
+        }
+      },
+      "private_raw_log": "/private/tmp/cdc-lab-pool-review-budget-20261025/b/raw-0a5cdb8794b64b5b04d2d526.log",
+      "runner_tool_sha256": "952290582466d205f61dc0ad3d9857371140bc29ce2cd0d5f776e912dc61f1fd",
+      "slot": "b",
+      "source_sha256": "4785f702f2483f9da1f3840410695ea2554bd93e1e78fb80de0788587596f3fe",
+      "started_ns": 1792935361952101000,
+      "test_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    }
+  ],
+  "runner_tool_sha256": "952290582466d205f61dc0ad3d9857371140bc29ce2cd0d5f776e912dc61f1fd",
+  "source_sha256": "4785f702f2483f9da1f3840410695ea2554bd93e1e78fb80de0788587596f3fe"
+}

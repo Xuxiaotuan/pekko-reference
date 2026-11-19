@@ -1,0 +1,54 @@
+{
+  "id": "mysql-xjwtest-sync",
+  "name": "MySQL xjwtest批量同步测试",
+  "description": "从xjwtest表同步数据到xjwtest1表",
+  "version": "1.0",
+  "author": "xujiawei",
+  "tags": ["mysql", "batch-sync", "test"],
+  "nodes": [
+    {
+      "id": "mysql-source",
+      "type": "source",
+      "nodeType": "mysql.query",
+      "label": "MySQL Source - xjwtest",
+      "position": {"x": 100, "y": 100},
+      "config": {
+        "host": "100.82.226.63",
+        "port": 31765,
+        "database": "test",
+        "username": "root",
+        "password": "asd123456",
+        "sql": "SELECT id, name FROM xjwtest",
+        "fetchSize": 1000
+      }
+    },
+    {
+      "id": "mysql-sink",
+      "type": "sink",
+      "nodeType": "mysql.write",
+      "label": "MySQL Sink - xjwtest1",
+      "position": {"x": 400, "y": 100},
+      "config": {
+        "host": "100.82.226.63",
+        "port": 31765,
+        "database": "test",
+        "table": "xjwtest1",
+        "username": "root",
+        "password": "asd123456",
+        "batchSize": 1000,
+        "mode": "insert"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": "mysql-source",
+      "target": "mysql-sink"
+    }
+  ],
+  "metadata": {
+    "createdAt": "2026-03-22T19:27:00Z",
+    "updatedAt": "2026-03-22T19:27:00Z"
+  }
+}

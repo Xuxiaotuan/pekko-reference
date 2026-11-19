@@ -1,0 +1,871 @@
+{
+  "base": "b24762f367596abac15a8a40fe044aab1c35edcc",
+  "branch": "feature/pekkosync-mvp-cleanup-datafusion",
+  "scope": "static snapshot cross-table scheduling review; no CDC data recovery protocol change",
+  "runtimes": [
+    "tables-1792676911869209000",
+    "tables-1792677542500206000",
+    "tables-1792679078624263000",
+    "snapshot-regression-1792677585223417000",
+    "cdc-regression-1792677814263091000",
+    "request-identity-1792679114302514000"
+  ],
+  "metadataReusedComponents": [
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingModels.scala",
+    "server/src/main/resources/db/mysql/pekko-table-scheduling-schema.sql",
+    "server/src/main/resources/db/h2/pekko-table-scheduling-schema.sql"
+  ],
+  "multiTable": {
+    "scenarios": [
+      {
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "scenario": "BASELINE",
+        "directory": "BASELINE-a05cebd2b98b",
+        "archivePrefix": "experiments/table-scheduling/BASELINE-a05cebd2b98b",
+        "runtime": "tables-1792679078624263000"
+      },
+      {
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "scenario": "BIND_REPLY_LOST",
+        "directory": "BIND_REPLY_LOST-28c832c7d87a",
+        "archivePrefix": "experiments/table-scheduling/BIND_REPLY_LOST-28c832c7d87a",
+        "runtime": "tables-1792676911869209000"
+      },
+      {
+        "classification": "quarantined",
+        "equalTables": 15,
+        "sourceRows": 1167,
+        "targetRows": 914,
+        "missingKeys": 253,
+        "fieldDifferences": 0,
+        "maxReaders": 6,
+        "maxAttached": 4,
+        "scenario": "CLOSE_UNKNOWN",
+        "directory": "CLOSE_UNKNOWN-7858b299e639",
+        "archivePrefix": "experiments/table-scheduling/CLOSE_UNKNOWN-7858b299e639",
+        "runtime": "tables-1792676911869209000"
+      },
+      {
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "scenario": "COORDINATOR_RESTART",
+        "directory": "COORDINATOR_RESTART-dffb80bd8637",
+        "archivePrefix": "experiments/table-scheduling/COORDINATOR_RESTART-dffb80bd8637",
+        "runtime": "tables-1792676911869209000"
+      },
+      {
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "scenario": "GRANT_REPLY_LOST",
+        "directory": "GRANT_REPLY_LOST-fd42a696ba07",
+        "archivePrefix": "experiments/table-scheduling/GRANT_REPLY_LOST-fd42a696ba07",
+        "runtime": "tables-1792676911869209000"
+      },
+      {
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "scenario": "HELD_REDELIVERY",
+        "directory": "HELD_REDELIVERY-5eaf348267d5",
+        "archivePrefix": "experiments/table-scheduling/HELD_REDELIVERY-5eaf348267d5",
+        "runtime": "tables-1792676911869209000"
+      },
+      {
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "scenario": "J_REPLY_LOST",
+        "directory": "J_REPLY_LOST-027790d91563",
+        "archivePrefix": "experiments/table-scheduling/J_REPLY_LOST-027790d91563",
+        "runtime": "tables-1792676911869209000"
+      },
+      {
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "scenario": "READ_T",
+        "directory": "READ_T-b2cc0e3f928c",
+        "archivePrefix": "experiments/table-scheduling/READ_T-b2cc0e3f928c",
+        "runtime": "tables-1792676911869209000"
+      },
+      {
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "scenario": "RELEASE_REPLY_HELD",
+        "directory": "RELEASE_REPLY_HELD-41f27f2829fb",
+        "archivePrefix": "experiments/table-scheduling/RELEASE_REPLY_HELD-41f27f2829fb",
+        "runtime": "tables-1792676911869209000"
+      },
+      {
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "scenario": "RELEASE_REPLY_LOST",
+        "directory": "RELEASE_REPLY_LOST-12e225e2f08b",
+        "archivePrefix": "experiments/table-scheduling/RELEASE_REPLY_LOST-12e225e2f08b",
+        "runtime": "tables-1792676911869209000"
+      },
+      {
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "scenario": "STALE_DISPOSITION",
+        "directory": "STALE_DISPOSITION-88200129e2cd",
+        "archivePrefix": "experiments/table-scheduling/STALE_DISPOSITION-88200129e2cd",
+        "runtime": "tables-1792676911869209000"
+      },
+      {
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "scenario": "STOP_READ_T",
+        "directory": "STOP_READ_T-ed975be0e7cf",
+        "archivePrefix": "experiments/table-scheduling/STOP_READ_T-ed975be0e7cf",
+        "runtime": "tables-1792676911869209000"
+      },
+      {
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "scenario": "STOP_RELEASE_RETRY",
+        "directory": "STOP_RELEASE_RETRY-5629f0ffc45b",
+        "archivePrefix": "experiments/table-scheduling/STOP_RELEASE_RETRY-5629f0ffc45b",
+        "runtime": "tables-1792677542500206000"
+      },
+      {
+        "classification": "converged",
+        "equalTables": 16,
+        "sourceRows": 1167,
+        "targetRows": 1167,
+        "missingKeys": 0,
+        "fieldDifferences": 0,
+        "maxReaders": 8,
+        "maxAttached": 4,
+        "scenario": "T_J_CRASH",
+        "directory": "T_J_CRASH-84df0ea2ae6d",
+        "archivePrefix": "experiments/table-scheduling/T_J_CRASH-84df0ea2ae6d",
+        "runtime": "tables-1792676911869209000"
+      }
+    ],
+    "runtimes": {
+      "tables-1792676911869209000": {
+        "runner": {
+          "exitCode": 0,
+          "seconds": 629.1394538879395
+        },
+        "productionDifferencesFromCurrent": [
+          "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingStore.scala"
+        ],
+        "testSourceDifferencesFromCurrent": [
+          "server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLSchedulingRequestIdentitySpec.scala",
+          "server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLTableSchedulingProcess.scala",
+          "server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLTableSchedulingSpec.scala",
+          "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingStoreSpec.scala"
+        ]
+      },
+      "tables-1792677542500206000": {
+        "runner": {
+          "exitCode": 0,
+          "seconds": 40.96356010437012
+        },
+        "productionDifferencesFromCurrent": [
+          "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingStore.scala"
+        ],
+        "testSourceDifferencesFromCurrent": [
+          "server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLSchedulingRequestIdentitySpec.scala",
+          "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingStoreSpec.scala"
+        ]
+      },
+      "tables-1792679078624263000": {
+        "runner": {
+          "exitCode": 0,
+          "seconds": 34.82939696311951
+        },
+        "productionDifferencesFromCurrent": [],
+        "testSourceDifferencesFromCurrent": []
+      }
+    },
+    "productionIdenticalToCurrent": false
+  },
+  "snapshotRegression": {
+    "scenarios": [
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "scenario": "BASELINE",
+        "directory": "BASELINE-f1ef2584aa2e",
+        "archivePrefix": "experiments/snapshot-splits/BASELINE-f1ef2584aa2e",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 65,
+        "targetRows": 60,
+        "scenario": "CHANGED",
+        "directory": "CHANGED-f796b530b3a4",
+        "archivePrefix": "experiments/snapshot-splits/CHANGED-f796b530b3a4",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "scenario": "COMMIT_ABSENT",
+        "directory": "COMMIT_ABSENT-ce83c145ddb2",
+        "archivePrefix": "experiments/snapshot-splits/COMMIT_ABSENT-ce83c145ddb2",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "scenario": "COMMIT_LOST",
+        "directory": "COMMIT_LOST-a319a476f17b",
+        "archivePrefix": "experiments/snapshot-splits/COMMIT_LOST-a319a476f17b",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 0,
+        "targetRows": 0,
+        "scenario": "EMPTY",
+        "directory": "EMPTY-878a2ae3c9f6",
+        "archivePrefix": "experiments/snapshot-splits/EMPTY-878a2ae3c9f6",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "scenario": "EOF",
+        "directory": "EOF-1fe5b6a80ad0",
+        "archivePrefix": "experiments/snapshot-splits/EOF-1fe5b6a80ad0",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "scenario": "EOF_J_LOST",
+        "directory": "EOF_J_LOST-a472aac364bf",
+        "archivePrefix": "experiments/snapshot-splits/EOF_J_LOST-a472aac364bf",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "scenario": "J_LOST",
+        "directory": "J_LOST-0daec1c90023",
+        "archivePrefix": "experiments/snapshot-splits/J_LOST-0daec1c90023",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 65,
+        "targetRows": 0,
+        "scenario": "PAGE_BYTES",
+        "directory": "PAGE_BYTES-c3f2bc387751",
+        "archivePrefix": "experiments/snapshot-splits/PAGE_BYTES-c3f2bc387751",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "scenario": "PLAN",
+        "directory": "PLAN-cdd56fba6fe9",
+        "archivePrefix": "experiments/snapshot-splits/PLAN-cdd56fba6fe9",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "scenario": "QUERY_TIMEOUT",
+        "directory": "QUERY_TIMEOUT-fe29f16082a1",
+        "archivePrefix": "experiments/snapshot-splits/QUERY_TIMEOUT-fe29f16082a1",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "scenario": "READ_T",
+        "directory": "READ_T-1653e928d5de",
+        "archivePrefix": "experiments/snapshot-splits/READ_T-1653e928d5de",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "scenario": "REGISTER_BEFORE",
+        "directory": "REGISTER_BEFORE-92f48a93001a",
+        "archivePrefix": "experiments/snapshot-splits/REGISTER_BEFORE-92f48a93001a",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 65,
+        "targetRows": 60,
+        "scenario": "REJECT_J",
+        "directory": "REJECT_J-c76631e014ff",
+        "archivePrefix": "experiments/snapshot-splits/REJECT_J-c76631e014ff",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 65,
+        "targetRows": 60,
+        "scenario": "RETRY_EXHAUSTED",
+        "directory": "RETRY_EXHAUSTED-c5f2aa78fc2e",
+        "archivePrefix": "experiments/snapshot-splits/RETRY_EXHAUSTED-c5f2aa78fc2e",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "scenario": "SNAPSHOT_RECOVERY",
+        "directory": "SNAPSHOT_RECOVERY-52eaf0bcc9f4",
+        "archivePrefix": "experiments/snapshot-splits/SNAPSHOT_RECOVERY-52eaf0bcc9f4",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "scenario": "STOP_READ_T",
+        "directory": "STOP_READ_T-b153f0d9b9ac",
+        "archivePrefix": "experiments/snapshot-splits/STOP_READ_T-b153f0d9b9ac",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "scenario": "STOP_T",
+        "directory": "STOP_T-fd1e8cb192a1",
+        "archivePrefix": "experiments/snapshot-splits/STOP_T-fd1e8cb192a1",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 65,
+        "targetRows": 6,
+        "scenario": "TARGET_CLOSE",
+        "directory": "TARGET_CLOSE-d6db5cd5f480",
+        "archivePrefix": "experiments/snapshot-splits/TARGET_CLOSE-d6db5cd5f480",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "scenario": "T_J",
+        "directory": "T_J-29ac25e5ef4a",
+        "archivePrefix": "experiments/snapshot-splits/T_J-29ac25e5ef4a",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 65,
+        "targetRows": 57,
+        "scenario": "WIDE_PAGE",
+        "directory": "WIDE_PAGE-7afbce49a845",
+        "archivePrefix": "experiments/snapshot-splits/WIDE_PAGE-7afbce49a845",
+        "runtime": "snapshot-regression-1792677585223417000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 65,
+        "targetRows": 65,
+        "scenario": "WINDOWS",
+        "directory": "WINDOWS-fe1bc03b8f2e",
+        "archivePrefix": "experiments/snapshot-splits/WINDOWS-fe1bc03b8f2e",
+        "runtime": "snapshot-regression-1792677585223417000"
+      }
+    ],
+    "runtimes": {
+      "snapshot-regression-1792677585223417000": {
+        "runner": {
+          "exitCode": 0,
+          "seconds": 225.83648991584778
+        },
+        "productionDifferencesFromCurrent": [
+          "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingStore.scala"
+        ],
+        "testSourceDifferencesFromCurrent": [
+          "server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLSchedulingRequestIdentitySpec.scala",
+          "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingStoreSpec.scala"
+        ]
+      }
+    },
+    "productionIdenticalToCurrent": false
+  },
+  "cdcRegression": {
+    "scenarios": [
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "AUTO-A",
+        "directory": "AUTO-A-755376549a73",
+        "archivePrefix": "experiments/cdc-automatic-recovery/AUTO-A-755376549a73",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "AUTO-B",
+        "directory": "AUTO-B-1372394e27cb",
+        "archivePrefix": "experiments/cdc-automatic-recovery/AUTO-B-1372394e27cb",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "AUTO-D",
+        "directory": "AUTO-D-98e5b0e9a650",
+        "archivePrefix": "experiments/cdc-automatic-recovery/AUTO-D-98e5b0e9a650",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "AUTO-E",
+        "directory": "AUTO-E-31fa1e3a744e",
+        "archivePrefix": "experiments/cdc-automatic-recovery/AUTO-E-31fa1e3a744e",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "AUTO-F",
+        "directory": "AUTO-F-7d8e9d09ceb5",
+        "archivePrefix": "experiments/cdc-automatic-recovery/AUTO-F-7d8e9d09ceb5",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "C0",
+        "directory": "C0-58aa871dd0a2",
+        "archivePrefix": "experiments/cdc-recovery-windows/C0-58aa871dd0a2",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "C1",
+        "directory": "C1-77343e853b63",
+        "archivePrefix": "experiments/cdc-recovery-windows/C1-77343e853b63",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "J1",
+        "directory": "J1-d5a1e6e6ea3b",
+        "archivePrefix": "experiments/cdc-recovery-windows/J1-d5a1e6e6ea3b",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "J2",
+        "directory": "J2-7e34bf173330",
+        "archivePrefix": "experiments/cdc-recovery-windows/J2-7e34bf173330",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "K1",
+        "directory": "K1-4be9fb4f8967",
+        "archivePrefix": "experiments/cdc-recovery-windows/K1-4be9fb4f8967",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "K2",
+        "directory": "K2-bef7ac1c6a0d",
+        "archivePrefix": "experiments/cdc-recovery-windows/K2-bef7ac1c6a0d",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "LATE_COMMIT",
+        "directory": "LATE_COMMIT-049378effbbe",
+        "archivePrefix": "experiments/cdc-automatic-recovery/LATE_COMMIT-049378effbbe",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "LATE_ROLLBACK",
+        "directory": "LATE_ROLLBACK-1f0a7bf1538f",
+        "archivePrefix": "experiments/cdc-automatic-recovery/LATE_ROLLBACK-1f0a7bf1538f",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "N0",
+        "directory": "N0-eff7da03e5b4",
+        "archivePrefix": "experiments/cdc-recovery-windows/N0-eff7da03e5b4",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "R1",
+        "directory": "R1-f02b0d9976af",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R1-f02b0d9976af",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "R2",
+        "directory": "R2-3ec6202806ec",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R2-3ec6202806ec",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "R3",
+        "directory": "R3-0d1185c3f10d",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R3-0d1185c3f10d",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "R4",
+        "directory": "R4-ef7fddb3631c",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R4-ef7fddb3631c",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "R5",
+        "directory": "R5-7d16f596f734",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R5-7d16f596f734",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "R6",
+        "directory": "R6-8dfd7979f698",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R6-8dfd7979f698",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "R7-D",
+        "directory": "R7-D-f62089df2d6a",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R7-D-f62089df2d6a",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "R7-PK",
+        "directory": "R7-PK-509a56c52d52",
+        "archivePrefix": "experiments/cdc-automatic-recovery/R7-PK-509a56c52d52",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "REJECT-J",
+        "directory": "REJECT-J-1fe9eb0639ca",
+        "archivePrefix": "experiments/cdc-automatic-recovery/REJECT-J-1fe9eb0639ca",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "safe_pause",
+        "equal": false,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "REJECT-J-RETRY",
+        "directory": "REJECT-J-RETRY-b38107d6ca2e",
+        "archivePrefix": "experiments/cdc-automatic-recovery/REJECT-J-RETRY-b38107d6ca2e",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "cancel-T",
+        "directory": "cancel-T-cc4f721b7d3b",
+        "archivePrefix": "experiments/cdc-session-release/cancel-T-cc4f721b7d3b",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "none",
+        "directory": "none-4aa4c71ee10b",
+        "archivePrefix": "experiments/cdc-session-release/none-4aa4c71ee10b",
+        "runtime": "cdc-regression-1792677814263091000"
+      },
+      {
+        "classification": "converged",
+        "equal": true,
+        "sourceRows": 64,
+        "targetRows": 64,
+        "scenario": "stop-T",
+        "directory": "stop-T-858d72bfc387",
+        "archivePrefix": "experiments/cdc-session-release/stop-T-858d72bfc387",
+        "runtime": "cdc-regression-1792677814263091000"
+      }
+    ],
+    "runtimes": {
+      "cdc-regression-1792677814263091000": {
+        "runner": {
+          "exitCode": 0,
+          "seconds": 1208.5009007453918
+        },
+        "productionDifferencesFromCurrent": [
+          "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingStore.scala"
+        ],
+        "testSourceDifferencesFromCurrent": [
+          "server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLSchedulingRequestIdentitySpec.scala",
+          "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingStoreSpec.scala"
+        ]
+      }
+    },
+    "productionIdenticalToCurrent": false
+  },
+  "backend": {
+    "tests": 533,
+    "suites": 96,
+    "failed": 0,
+    "package": true,
+    "command": "JAVA_HOME=Java17 sbt -J-Xmx4g 'project pekko-server' test package"
+  },
+  "legacyPersistence": {
+    "historicalCborFixtures": 18,
+    "sameManifestDecodeAndByteIdenticalReencode": true,
+    "nonemptyAdmissionGrantRoundTrip": true,
+    "mixedVersionUpgradeVerified": false,
+    "oldBinaryDowngradeVerified": false
+  },
+  "retainedFailures": [
+    {
+      "file": "review/disposition-red-execution.log",
+      "classification": "behavior-regression-red"
+    },
+    {
+      "file": "review/disposition-red-explicit-constructor.log",
+      "classification": "test-facility-compilation-or-preparation-failure"
+    },
+    {
+      "file": "review/disposition-red-final.log",
+      "classification": "test-facility-compilation-or-preparation-failure"
+    },
+    {
+      "file": "review/disposition-red-named.log",
+      "classification": "test-facility-compilation-or-preparation-failure"
+    },
+    {
+      "file": "review/disposition-red-typed.log",
+      "classification": "test-facility-compilation-or-preparation-failure"
+    },
+    {
+      "file": "review/disposition-red.log",
+      "classification": "test-facility-compilation-or-preparation-failure"
+    },
+    {
+      "file": "review/lost-reply-red.log",
+      "classification": "behavior-regression-red"
+    },
+    {
+      "file": "review/revision-request-red.log",
+      "classification": "behavior-regression-red"
+    }
+  ],
+  "retainedIncompleteRunners": [
+    {
+      "runtime": "cdc-regression-1792676439234129000",
+      "result": {
+        "exitCode": 143,
+        "seconds": 327.2944481372833
+      }
+    },
+    {
+      "runtime": "snapshot-regression-1792676448842804000",
+      "result": {
+        "exitCode": 143,
+        "seconds": 318.83288192749023
+      }
+    },
+    {
+      "runtime": "tables-1792676327603651000",
+      "result": {
+        "exitCode": 1,
+        "seconds": 0.9393398761749268
+      }
+    },
+    {
+      "runtime": "tables-1792676383379803000",
+      "result": {
+        "exitCode": 143,
+        "seconds": 384.6127738952637
+      }
+    }
+  ],
+  "requestIdentity": {
+    "runtime": "request-identity-1792679114302514000",
+    "archivePrefix": "experiments/table-scheduling-request-identity/pekko_test_cdc_window_d69f5ce3e2a2",
+    "scope": "real MySQL SQL contract with seeded completed state; not Source/Actor/Sink execution"
+  },
+  "metadataVersionBoundary": "Original 700000-row load/inspect preserved at the initial version; only Store.enqueue gained an identity rejection guard. No new metadata-scale run in this review."
+}

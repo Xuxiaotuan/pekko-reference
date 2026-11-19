@@ -1,0 +1,76 @@
+{
+  "date": "2026-10-19",
+  "timezone": "UTC test JVMs; Asia/Shanghai build logs",
+  "java": "Microsoft OpenJDK 17.0.14",
+  "container": "pekko-cdc-stage-a-20261019",
+  "image": "sha256:cc52b8b5900d106bc482241091cfa7496d830280868e19aca8a24e8e7086568e",
+  "containerArguments": [
+    "--server-id=20261021",
+    "--log-bin=mysql-bin",
+    "--binlog-format=ROW",
+    "--binlog-row-image=FULL",
+    "--gtid-mode=ON",
+    "--enforce-gtid-consistency=ON"
+  ],
+  "formalRuns": [
+    {
+      "scenario": "N0",
+      "runDirectory": "N0-df4333205121",
+      "schema": "pekko_test_cdc_window_df4333205121",
+      "originalBatchSize": 16,
+      "recoveredBatchSize": 16
+    },
+    {
+      "scenario": "J1",
+      "runDirectory": "J1-4b0d0ef23869",
+      "schema": "pekko_test_cdc_window_4b0d0ef23869",
+      "originalBatchSize": 16,
+      "recoveredBatchSize": 1
+    },
+    {
+      "scenario": "J2",
+      "runDirectory": "J2-ba2cd266f920",
+      "schema": "pekko_test_cdc_window_ba2cd266f920",
+      "originalBatchSize": 1,
+      "recoveredBatchSize": 128
+    },
+    {
+      "scenario": "C1",
+      "runDirectory": "C1-e5f9e1c510a1",
+      "schema": "pekko_test_cdc_window_e5f9e1c510a1",
+      "originalBatchSize": 16,
+      "recoveredBatchSize": 1
+    },
+    {
+      "scenario": "C2",
+      "runDirectory": "C2-569d5a036181",
+      "schema": "pekko_test_cdc_window_569d5a036181",
+      "originalBatchSize": 16,
+      "recoveredBatchSize": 1
+    },
+    {
+      "scenario": "C0",
+      "runDirectory": "C0-728e0b47782c",
+      "schema": "pekko_test_cdc_window_728e0b47782c",
+      "originalBatchSize": 16,
+      "recoveredBatchSize": 1
+    },
+    {
+      "scenario": "K1",
+      "runDirectory": "K1-2b9924dd1d2d",
+      "schema": "pekko_test_cdc_window_2b9924dd1d2d",
+      "originalBatchSize": 1,
+      "recoveredBatchSize": 1
+    },
+    {
+      "scenario": "K2",
+      "runDirectory": "K2-dc97a84cb6ee",
+      "schema": "pekko_test_cdc_window_dc97a84cb6ee",
+      "originalBatchSize": 1,
+      "recoveredBatchSize": 128
+    }
+  ],
+  "formalJvms": 24,
+  "verification": "8 observations passed; 7 converged, C2 FAIL_TERMINAL preserved",
+  "unchangedMaterials": "252 protected files match pre-Stage-A SHA256; see preservation-manifest.json"
+}

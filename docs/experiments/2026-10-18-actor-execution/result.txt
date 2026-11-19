@@ -1,0 +1,13 @@
+CONFIG application.conf remember=true configuredIdle=30m effective=NoPassivationStrategy rememberOff=IdlePassivationStrategy(1800000 milliseconds,15 minutes) jdbcWorkers=8 recovery=all
+CONFIG application-dev.conf remember=true configuredIdle=5m effective=NoPassivationStrategy rememberOff=IdlePassivationStrategy(300000 milliseconds,150 seconds) jdbcWorkers=4 recovery=all
+CONFIG application-prod.conf remember=true configuredIdle=1h effective=NoPassivationStrategy rememberOff=IdlePassivationStrategy(3600000 milliseconds,30 minutes) jdbcWorkers=16 recovery=all
+ACTORS residents=10000 messages=40000 handlerThreads=2 maxConcurrent=2 perActorOverlap=0 orderErrors=0 idle300msExtraHandlers=0
+ACTOR_THREADS [actor-mechanism-probe-probe-dispatcher-7, actor-mechanism-probe-probe-dispatcher-8]
+BLOCKING occupiedWorkers=2 thirdHandlerDuring300ms=false
+BLOCKING thirdHandlerAfterRelease=true
+BRIDGE emptyReaders=8 stackConfirmedQueueTake=8 sharedPoolSentinelDuring300ms=false defaultDispatcherControl=true
+BRIDGE externalCloseReleasedReaders=true sharedPoolSentinelAfterClose=true
+RESULT all mechanism assertions passed; no CDC E2E or 700000-table capacity claim
+SLF4J(W): A number (1) of logging calls during the initialization phase have been intercepted and are
+SLF4J(W): now being replayed. These are subject to the filtering rules of the underlying logging system.
+SLF4J(W): See also https://www.slf4j.org/codes.html#replay

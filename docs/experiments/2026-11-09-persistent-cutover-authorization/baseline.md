@@ -1,0 +1,190 @@
+# Persistent Cutover Authorization Baseline
+
+- Captured: 2026-11-09
+- Branch: `feature/pekkosync-mvp-cleanup-datafusion`
+- HEAD: `68b0a1d refactor(cdc): clarify capture and bootstrap flow`
+- Dirty paths: `160`; all pre-existing modifications and untracked experiment materials are retained.
+
+## Persistence boundaries
+
+- Actor Journal/Snapshot persistence IDs and event serializers remain in the existing `pekko-persistence-jdbc` path. No event payload migration is authorized.
+- `pekko_table_admission_lock` is the shared old/new admission lock and currently carries the old policy hash.
+- `pekko_snapshot_owners`, owner instances/sessions, writer permissions and ownership audit store guardian/owner state.
+- `pekko_snapshot_worker_launches` stores launch identity, operation and signed isolation proof.
+- `pekko_legacy_account_lock_intent` stores only the old account identity and lock observation; it is not itself an isolation or drain permit.
+- The new cutover policy identity and credential-binding records are implemented only as a tested control-store foundation; the production authorizer and worker rebinding are still pending.
+
+## Current evidence
+
+- Account-drain observation: `docs/experiments/2026-11-08-standalone-guardian/account-drain-proof-20261109/`. Real MySQL observed an old transaction after disconnect for a short interval; unknown attribution was refused until it disappeared.
+- Old Workflow takeover failure: `docs/experiments/2026-11-08-standalone-guardian/real-workflow-locked-account-failure-20261109/`. The old username was rejected after account lock; source had 10 rows and target had 2 before cleanup.
+- Policy migration foundation: `migrated-policy-final.log` in the account-drain evidence directory. The test explicitly changed the policy row, then old storage rejected and a recreated new store read/released fixture quota. This is not a guardian/Journal/Sink end-to-end result.
+
+## Current boundary
+
+`passed`: focused control-store, account-lock and split compatibility tests.
+`failed`: the real old Workflow takeover after old-account lock.
+`evidence_incomplete`: persistent authorization binding, runtime credential rebinding, independent guardian plus Journal/Sink recovery, and final five-article publication.
+
+## Dirty paths (snapshot)
+
+- ` M README.md`
+- ` M build.sbt`
+- ` M docs/articles/cdc-design/01-why-pekko-for-resident-cdc.md`
+- ` M docs/articles/cdc-design/02-source-and-recovery-contract.md`
+- ` M docs/articles/cdc-design/03-real-mysql-journal-failure.md`
+- ` M docs/articles/cdc-design/04-protocol-and-validation.md`
+- ` M docs/articles/cdc-design/05-pekko-vs-flink-cdc.md`
+- ` M docs/articles/cdc-design/README.md`
+- ` M scripts/README.md`
+- ` M server/src/main/scala/cn/xuyinyin/magic/PekkoServer.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplyConfig.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNode.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumEngineAccess.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureReleaseGuard.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CapturedLogSource.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/MySQLCaptureStore.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapJournal.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapProtocol.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapReplaySink.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapRunner.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapStep.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapStore.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapTarget.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcBootstrapKernel.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcManagedPendingB.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcManagedRecovery.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcPlatformExtension.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcPlatformRuntime.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcPlatformSettings.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcTaskModels.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcTaskStore.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/execution/ReliableRunContext.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/ManagedJvmIsolation.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/MySqlOwnerDrainObserver.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotGuardianService.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotGuardianWire.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotOwnerBootstrap.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotOwnerJdbc.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotOwnershipStore.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorProcesses.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorRuntime.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorStore.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingRuntime.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingStore.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/snapshot/SnapshotSplitExecutor.scala`
+- ` M server/src/main/scala/cn/xuyinyin/magic/workflow/spi/CheckpointedNodes.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/CaptureReleaseGuardSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumTerminationEvidenceSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/SharedCaptureReaderSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureAckProofSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapJournalSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapStepAdmissionSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapTargetSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcManagedMatrixWorker.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcPlatformSettingsSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcTaskStoreSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/execution/SnapshotSplitExecutorSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/execution/SnapshotSplitStateSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/integration/BootstrapMatrixSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/integration/BootstrapMatrixWorker.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/integration/BootstrapStepViewRecoverySpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/integration/CdcManagedUnknownBSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/integration/CdcPlatformMatrixSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/integration/ManagedBootstrapJournalRecoverySpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/integration/MySQLCommitResponseProxy.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLSnapshotTakeoverSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotGuardianSpec.scala`
+- ` M server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorStoreSpec.scala`
+- `?? docs/experiments/2026-10-29-proof-cursor-snapshot/`
+- `?? docs/experiments/2026-11-06-filtered-marker-transaction/`
+- `?? docs/experiments/2026-11-06-marker-transaction/`
+- `?? docs/experiments/2026-11-06-source-version-probe/`
+- `?? docs/experiments/2026-11-06-version-guardian-pfs-regression/`
+- `?? docs/experiments/2026-11-06-version-guardian-regression/`
+- `?? docs/experiments/2026-11-06-version-lock-probe/`
+- `?? docs/experiments/2026-11-07-capture-archive/`
+- `?? docs/experiments/2026-11-07-control-fence-candidate/`
+- `?? docs/experiments/2026-11-07-fenced-scan-guardian/`
+- `?? docs/experiments/2026-11-07-journal-permit-binding/`
+- `?? docs/experiments/2026-11-07-marker-same-connection/`
+- `?? docs/experiments/2026-11-07-marker-version-reentry/`
+- `?? docs/experiments/2026-11-07-recovery-fence/`
+- `?? docs/experiments/2026-11-07-source-fence-writer/`
+- `?? docs/experiments/2026-11-07-version-permit-race/`
+- `?? docs/experiments/2026-11-08-cdc-standalone-entry/`
+- `?? docs/experiments/2026-11-08-standalone-guardian/`
+- `?? docs/superpowers/`
+- `?? server/src/main/resources/db/h2/pekko-legacy-lock-intent-schema.sql`
+- `?? server/src/main/resources/db/mysql/pekko-legacy-lock-intent-schema.sql`
+- `?? server/src/main/scala/cn/xuyinyin/magic/CdcStandalone.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/cdc/CdcReplaySink.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureAckPaging.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureConsumerIdentity.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureControlFence.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureGroupTombstone.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureLedgerGuard.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureNamespaceBirth.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CapturedLogReader.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CdcCapturedBatchWorkflowAdapter.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalProgressVerifier.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapJournalProgressVerifier.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/workflow/bootstrap/CdcReplaySink.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcCaptureFenceVerifier.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcFenceRecoverySession.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcJournalFenceVerifier.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcTargetConfig.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcTargetNodeAdapter.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/CdcManagedControlStore.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyAccountLockIntent.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyMySqlAccountLock.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/ManagedControlTransactions.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/ManagedOwnerRegistry.scala`
+- `?? server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/ManagedOwnerStore.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/CdcStandaloneRoutesSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/CdcStandaloneShutdownSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/SourceFencePrimitiveProbe.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/ControlFenceProcedureReaderProbeSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/FilteredMarkerTransactionProbeSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MarkerSameConnectionProbeSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MarkerTransactionProbeSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MarkerVersionReentryProbeSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/SourceVersionProbeSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/VersionLockProbeSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureAckLongMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureArchiveMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureControlFenceMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureControlFenceTriggerMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureFenceGrantSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureGroupTombstoneSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureLedgerGuardMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureNamespaceBirthMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CdcCapturedBatchWorkflowAdapterSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/ReaderRecoveryGateSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SourceFenceLockOrderMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SourceFenceMarkerWriter.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SourceFenceMarkerWriterMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowJournalFloorMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapActivationFenceMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapAuditTamperMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapJournalFloorMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapMaterialAppendOnlyMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapReplayClaimMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/bootstrap/BootstrapTargetTamperMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcEndOwnerMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcJournalFenceMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcKernelDowngradeMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcProgressCompatibilitySpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcRecoveryFenceStorageSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcTargetNodeAdapterSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcVersionPermitRaceProbeSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/integration/SourceFenceCommitUnknownSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/CdcControlStoreMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/CutoverAccountMySqlSpec.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyAccountProbeAccess.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyIntentCrashProbe.scala`
+- `?? server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/MaterialOwnerDrainMySqlSpec.scala`

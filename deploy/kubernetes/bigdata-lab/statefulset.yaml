@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pekko-workflow
+  namespace: bigdata-lab
+spec:
+  serviceName: pekko-workflow-headless
+  replicas: 2
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: OnDelete
+    rollingUpdate: null
+  selector:
+    matchLabels: {app: pekko-workflow}
+  template:
+    metadata:
+      labels: {app: pekko-workflow}
+    spec:
+      serviceAccountName: pekko-workflow
+      terminationGracePeriodSeconds: 60
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels: {app: pekko-workflow}
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: pekko-workflow
+          image: pekko-reference:cluster-bootstrap-20260830
+          imagePullPolicy: Never
+          command: ["/bin/sh", "-c"]
+          args:
+            - >-
+              export PEKKO_HOSTNAME="${POD_NAME}.pekko-workflow-headless.bigdata-lab.svc.cluster.local";
+              exec /opt/docker/bin/pekko-reference
+          env:
+            - name: POD_NAME
+              valueFrom: {fieldRef: {fieldPath: metadata.name}}
+            - name: POD_IP
+              valueFrom: {fieldRef: {fieldPath: status.podIP}}
+            - name: PEKKO_PORT
+              value: "2551"
+            - name: HTTP_PORT
+              value: "8080"
+            - name: JAVA_OPTS
+              value: "-Dconfig.file=/opt/docker/conf/application-k8s.conf"
+            - name: DB_HOST
+              value: mysql
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_NAME
+              value: pekko_workflow
+            - name: DB_USER
+              value: pekko_workflow
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: pekko-workflow-db, key: password}}
+            - name: WORKFLOW_DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: pekko-workflow-db, key: password}}
+          ports:
+            - {name: artery, containerPort: 2551}
+            - {name: http, containerPort: 8080}
+            - {name: management, containerPort: 7626}
+          volumeMounts:
+            - {name: application-k8s, mountPath: /opt/docker/conf/application-k8s.conf, subPath: application-k8s.conf, readOnly: true}
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {cpu: "1", memory: 1Gi}
+          livenessProbe:
+            httpGet: {path: /health/live, port: http}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: {path: /health/ready, port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          lifecycle:
+            preStop:
+              exec: {command: ["/bin/sh", "-c", "sleep 10"]}
+      volumes:
+        - name: application-k8s
+          configMap: {name: pekko-workflow-config}

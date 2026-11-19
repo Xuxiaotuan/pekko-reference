@@ -1,0 +1,141 @@
+# The proper term is pseudo_replica_mode, but we use this compatibility alias
+# to make the statement usable on server versions 8.0.24 and older.
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=1*/;
+/*!50003 SET @OLD_COMPLETION_TYPE=@@COMPLETION_TYPE,COMPLETION_TYPE=0*/;
+DELIMITER /*!*/;
+# at 198
+#261025 21:20:15 server id 14375  end_log_pos 127 CRC32 0x9aae09b8 	Start: binlog v 4, server v 9.5.0 created 261025 21:20:15 at startup
+# Warning: this binlog is either in use or was not closed properly.
+ROLLBACK/*!*/;
+# at 194970
+#261025 21:30:13 server id 14375  end_log_pos 195049 CRC32 0xc3c8e44e 	GTID	last_committed=468	sequence_number=469	rbr_only=yes	original_committed_timestamp=1792935013439269	immediate_commit_timestamp=1792935013439269	transaction_length=442
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1792935013439269 (2026-10-25 21:30:13.439269 CST)
+# immediate_commit_timestamp=1792935013439269 (2026-10-25 21:30:13.439269 CST)
+/*!80001 SET @@session.original_commit_timestamp=1792935013439269*//*!*/;
+/*!80014 SET @@session.original_server_version=90500*//*!*/;
+/*!80014 SET @@session.immediate_server_version=90500*//*!*/;
+SET @@SESSION.GTID_NEXT= '561ae360-2c2c-4de9-bf01-3b913e7226a6:487'/*!*/;
+# at 195049
+#261025 21:30:13 server id 14375  end_log_pos 195154 CRC32 0x8a261980 	Query	thread_id=239	exec_time=0	error_code=0
+SET TIMESTAMP=1792935013/*!*/;
+SET @@session.pseudo_thread_id=239/*!*/;
+SET @@session.foreign_key_checks=1, @@session.sql_auto_is_null=0, @@session.unique_checks=1, @@session.autocommit=1/*!*/;
+SET @@session.sql_mode=1168113696/*!*/;
+SET @@session.auto_increment_increment=1, @@session.auto_increment_offset=1/*!*/;
+/*!\C utf8mb4 *//*!*/;
+SET @@session.character_set_client=255,@@session.collation_connection=255,@@session.collation_server=255/*!*/;
+SET @@session.lc_time_names=0/*!*/;
+SET @@session.collation_database=DEFAULT/*!*/;
+/*!80011 SET @@session.default_collation_for_utf8mb4=255*//*!*/;
+BEGIN
+/*!*/;
+# at 195154
+#261025 21:30:13 server id 14375  end_log_pos 195262 CRC32 0xbf2f6a46 	Table_map: `pekko_test_cdc_window_0d00664ccfa7`.`pekko_capture_control` mapped to number 194
+# has_generated_invisible_primary_key=0
+# at 195262
+#261025 21:30:13 server id 14375  end_log_pos 195381 CRC32 0xd4ab1603 	Write_rows: table id 194 flags: STMT_END_F
+### INSERT INTO `pekko_test_cdc_window_0d00664ccfa7`.`pekko_capture_control`
+### SET
+###   @1='f9c17ad7716c9db8e822218953812601b83ff88fcd5df8af1b67f5c083d13f40' /* VARSTRING(512) meta=512 nullable=0 is_null=0 */
+###   @2='SUBSCRIBE' /* VARSTRING(128) meta=128 nullable=0 is_null=0 */
+###   @3='a' /* VARSTRING(512) meta=512 nullable=0 is_null=0 */
+###   @4='g1' /* VARSTRING(512) meta=512 nullable=0 is_null=0 */
+# at 195381
+#261025 21:30:13 server id 14375  end_log_pos 195412 CRC32 0x8028259f 	Xid = 2519
+COMMIT/*!*/;
+# at 195412
+#261025 21:30:13 server id 14375  end_log_pos 195491 CRC32 0x5501184a 	GTID	last_committed=468	sequence_number=470	rbr_only=yes	original_committed_timestamp=1792935013997196	immediate_commit_timestamp=1792935013997196	transaction_length=481
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1792935013997196 (2026-10-25 21:30:13.997196 CST)
+# immediate_commit_timestamp=1792935013997196 (2026-10-25 21:30:13.997196 CST)
+/*!80001 SET @@session.original_commit_timestamp=1792935013997196*//*!*/;
+/*!80014 SET @@session.original_server_version=90500*//*!*/;
+/*!80014 SET @@session.immediate_server_version=90500*//*!*/;
+SET @@SESSION.GTID_NEXT= '561ae360-2c2c-4de9-bf01-3b913e7226a6:488'/*!*/;
+# at 195491
+#261025 21:30:13 server id 14375  end_log_pos 195613 CRC32 0x8b262be0 	Query	thread_id=240	exec_time=0	error_code=0
+SET TIMESTAMP=1792935013/*!*/;
+SET @@session.time_zone='+00:00'/*!*/;
+BEGIN
+/*!*/;
+# at 195613
+#261025 21:30:13 server id 14375  end_log_pos 195705 CRC32 0xe2e7572a 	Table_map: `pekko_test_cdc_window_0d00664ccfa7`.`a` mapped to number 185
+# has_generated_invisible_primary_key=0
+# at 195705
+#261025 21:30:13 server id 14375  end_log_pos 195862 CRC32 0x0e5db616 	Update_rows: table id 185 flags: STMT_END_F
+### UPDATE `pekko_test_cdc_window_0d00664ccfa7`.`a`
+### WHERE
+###   @1=1 /* LONGINT meta=0 nullable=0 is_null=0 */
+###   @2='初始-1' /* VARSTRING(512) meta=512 nullable=0 is_null=0 */
+###   @3=1.1200 /* DECIMAL(18,4) meta=4612 nullable=0 is_null=0 */
+###   @4='  中文🙂  ' /* VARSTRING(960) meta=960 nullable=1 is_null=0 */
+###   @5='2026-10-18 01:02:03.654321' /* DATETIME(6) meta=6 nullable=0 is_null=0 */
+###   @6=0 /* INT meta=0 nullable=0 is_null=0 */
+### SET
+###   @1=1 /* LONGINT meta=0 nullable=0 is_null=0 */
+###   @2='committed-between-B-and-restart' /* VARSTRING(512) meta=512 nullable=0 is_null=0 */
+###   @3=1.2450 /* DECIMAL(18,4) meta=4612 nullable=0 is_null=0 */
+###   @4='' /* VARSTRING(960) meta=960 nullable=1 is_null=0 */
+###   @5='2026-10-25 01:02:03.123456' /* DATETIME(6) meta=6 nullable=0 is_null=0 */
+###   @6=1 /* INT meta=0 nullable=0 is_null=0 */
+# at 195862
+#261025 21:30:13 server id 14375  end_log_pos 195893 CRC32 0x72bdcee7 	Xid = 2529
+COMMIT/*!*/;
+# at 195893
+#261025 21:30:15 server id 14375  end_log_pos 195972 CRC32 0x47cddc10 	GTID	last_committed=470	sequence_number=471	rbr_only=no	original_committed_timestamp=1792935015486352	immediate_commit_timestamp=1792935015486352	transaction_length=399
+# original_commit_timestamp=1792935015486352 (2026-10-25 21:30:15.486352 CST)
+# immediate_commit_timestamp=1792935015486352 (2026-10-25 21:30:15.486352 CST)
+/*!80001 SET @@session.original_commit_timestamp=1792935015486352*//*!*/;
+/*!80014 SET @@session.original_server_version=90500*//*!*/;
+/*!80014 SET @@session.immediate_server_version=90500*//*!*/;
+SET @@SESSION.GTID_NEXT= '561ae360-2c2c-4de9-bf01-3b913e7226a6:489'/*!*/;
+# at 195972
+#261025 21:30:15 server id 14375  end_log_pos 196292 CRC32 0x326656e6 	Query	thread_id=251	exec_time=0	error_code=0
+use `pekko_test_cdc_window_0d00664ccfa7`/*!*/;
+SET TIMESTAMP=1792935015/*!*/;
+/*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+CREATE TABLE IF NOT EXISTS pekko_capture_control(operation_id VARCHAR(128) PRIMARY KEY,action VARCHAR(32) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL)
+/*!*/;
+# at 196292
+#261025 21:30:16 server id 14375  end_log_pos 196371 CRC32 0x0a272cd8 	GTID	last_committed=471	sequence_number=472	rbr_only=yes	original_committed_timestamp=1792935016430914	immediate_commit_timestamp=1792935016430914	transaction_length=454
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1792935016430914 (2026-10-25 21:30:16.430914 CST)
+# immediate_commit_timestamp=1792935016430914 (2026-10-25 21:30:16.430914 CST)
+/*!80001 SET @@session.original_commit_timestamp=1792935016430914*//*!*/;
+/*!80014 SET @@session.original_server_version=90500*//*!*/;
+/*!80014 SET @@session.immediate_server_version=90500*//*!*/;
+SET @@SESSION.GTID_NEXT= '561ae360-2c2c-4de9-bf01-3b913e7226a6:490'/*!*/;
+# at 196371
+#261025 21:30:16 server id 14375  end_log_pos 196493 CRC32 0x7d261f87 	Query	thread_id=257	exec_time=0	error_code=0
+SET TIMESTAMP=1792935016/*!*/;
+BEGIN
+/*!*/;
+# at 196493
+#261025 21:30:16 server id 14375  end_log_pos 196585 CRC32 0x4b5468a5 	Table_map: `pekko_test_cdc_window_0d00664ccfa7`.`a` mapped to number 185
+# has_generated_invisible_primary_key=0
+# at 196585
+#261025 21:30:16 server id 14375  end_log_pos 196715 CRC32 0x3ce75885 	Update_rows: table id 185 flags: STMT_END_F
+### UPDATE `pekko_test_cdc_window_0d00664ccfa7`.`a`
+### WHERE
+###   @1=2 /* LONGINT meta=0 nullable=0 is_null=0 */
+###   @2='初始-2' /* VARSTRING(512) meta=512 nullable=0 is_null=0 */
+###   @3=2.1200 /* DECIMAL(18,4) meta=4612 nullable=0 is_null=0 */
+###   @4=NULL /* VARSTRING(960) meta=960 nullable=1 is_null=1 */
+###   @5='2026-10-18 01:02:03.654321' /* DATETIME(6) meta=6 nullable=0 is_null=0 */
+###   @6=0 /* INT meta=0 nullable=0 is_null=0 */
+### SET
+###   @1=2 /* LONGINT meta=0 nullable=0 is_null=0 */
+###   @2='post-restart-witness' /* VARSTRING(512) meta=512 nullable=0 is_null=0 */
+###   @3=2.2450 /* DECIMAL(18,4) meta=4612 nullable=0 is_null=0 */
+###   @4='' /* VARSTRING(960) meta=960 nullable=1 is_null=0 */
+###   @5='2026-10-25 01:02:03.123456' /* DATETIME(6) meta=6 nullable=0 is_null=0 */
+###   @6=1 /* INT meta=0 nullable=0 is_null=0 */
+# at 196715
+#261025 21:30:16 server id 14375  end_log_pos 196746 CRC32 0xc09cbe8b 	Xid = 2686
+COMMIT/*!*/;
+SET @@SESSION.GTID_NEXT= 'AUTOMATIC' /* added by mysqlbinlog */ /*!*/;
+DELIMITER ;
+# End of log file
+/*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;

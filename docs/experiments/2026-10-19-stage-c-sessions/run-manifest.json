@@ -1,0 +1,80 @@
+{
+  "date": "2026-10-19",
+  "java": "Microsoft OpenJDK 17.0.14",
+  "pekko": "1.1.3",
+  "debezium": "3.6.1.Final",
+  "container": "pekko-cdc-stage-c-20261019",
+  "image": "sha256:cc52b8b5900d106bc482241091cfa7496d830280868e19aca8a24e8e7086568e",
+  "containerArguments": [
+    "--server-id=170019",
+    "--log-bin=mysql-bin",
+    "--binlog-format=ROW",
+    "--binlog-row-image=FULL",
+    "--gtid-mode=ON",
+    "--enforce-gtid-consistency=ON"
+  ],
+  "formalRuns": [
+    {
+      "scenario": "N0",
+      "runDirectory": "N0-11e298644998",
+      "schema": "pekko_test_cdc_window_11e298644998"
+    },
+    {
+      "scenario": "J1",
+      "runDirectory": "J1-e7eeddd738d2",
+      "schema": "pekko_test_cdc_window_e7eeddd738d2"
+    },
+    {
+      "scenario": "J2",
+      "runDirectory": "J2-cd365ababaef",
+      "schema": "pekko_test_cdc_window_cd365ababaef"
+    },
+    {
+      "scenario": "C1",
+      "runDirectory": "C1-c559490050ba",
+      "schema": "pekko_test_cdc_window_c559490050ba"
+    },
+    {
+      "scenario": "C2",
+      "runDirectory": "C2-3711ce44561f",
+      "schema": "pekko_test_cdc_window_3711ce44561f"
+    },
+    {
+      "scenario": "C0",
+      "runDirectory": "C0-a21bd372e60b",
+      "schema": "pekko_test_cdc_window_a21bd372e60b"
+    },
+    {
+      "scenario": "K1",
+      "runDirectory": "K1-50d80e80aab3",
+      "schema": "pekko_test_cdc_window_50d80e80aab3"
+    },
+    {
+      "scenario": "K2",
+      "runDirectory": "K2-d0176a10844d",
+      "schema": "pekko_test_cdc_window_d0176a10844d"
+    },
+    {
+      "scenario": "sessions/none",
+      "runDirectory": "none-6b36a21ff96b",
+      "schema": "pekko_test_cdc_window_6b36a21ff96b"
+    },
+    {
+      "scenario": "sessions/cancel-T",
+      "runDirectory": "cancel-T-4905f2baf21b",
+      "schema": "pekko_test_cdc_window_4905f2baf21b"
+    }
+  ],
+  "formalJvmChildren": 28,
+  "earlierRounds": "two preliminary ten-case rounds preserved under exploratory; no extra coverage claimed",
+  "sourceFrozen": true,
+  "executionResult": {
+    "exitCode": 0,
+    "elapsedSeconds": 268.41740584373474,
+    "suites": [
+      "RealMySQLCdcSessionReleaseSpec",
+      "RealMySQLCdcRecoveryWindowsSpec"
+    ],
+    "sourceManifest": "final-source-manifest.json"
+  }
+}

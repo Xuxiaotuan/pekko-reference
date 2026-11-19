@@ -1,0 +1,177 @@
+{
+  "artifactVerification": "PASS",
+  "historicalRecovery": {
+    "artifactVerification": "PASS",
+    "scenarioObservations": 7,
+    "converged": 7,
+    "automaticRecoveryFailures": 0,
+    "scope": "seven historical windows rerun with new production code; old C2 failure artifacts unchanged",
+    "scenarios": [
+      {
+        "scenario": "N0",
+        "sourceRows": 64,
+        "targetRows": 64,
+        "missingKeys": 0,
+        "extraKeys": 0,
+        "fieldDifferences": 0,
+        "cutTargetGroups": 70,
+        "cutJSequence": 5,
+        "finalTargetGroups": 74,
+        "finalJSequence": 7,
+        "finalAuditRows": 140,
+        "firstRecoveryGroups": 3,
+        "originalRawAckOrder": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "automaticRecovery": "PASS",
+        "evidenceConsistent": true
+      },
+      {
+        "scenario": "J1",
+        "sourceRows": 64,
+        "targetRows": 64,
+        "missingKeys": 0,
+        "extraKeys": 0,
+        "fieldDifferences": 0,
+        "cutTargetGroups": 17,
+        "cutJSequence": 1,
+        "finalTargetGroups": 74,
+        "finalJSequence": 74,
+        "finalAuditRows": 140,
+        "firstRecoveryGroups": 1,
+        "originalRawAckOrder": [
+          0
+        ],
+        "automaticRecovery": "PASS",
+        "evidenceConsistent": true
+      },
+      {
+        "scenario": "J2",
+        "sourceRows": 64,
+        "targetRows": 64,
+        "missingKeys": 0,
+        "extraKeys": 0,
+        "fieldDifferences": 0,
+        "cutTargetGroups": 2,
+        "cutJSequence": 1,
+        "finalTargetGroups": 74,
+        "finalJSequence": 3,
+        "finalAuditRows": 140,
+        "firstRecoveryGroups": 72,
+        "originalRawAckOrder": [
+          0,
+          1
+        ],
+        "automaticRecovery": "PASS",
+        "evidenceConsistent": true
+      },
+      {
+        "scenario": "C1",
+        "sourceRows": 64,
+        "targetRows": 64,
+        "missingKeys": 0,
+        "extraKeys": 0,
+        "fieldDifferences": 0,
+        "cutTargetGroups": 17,
+        "cutJSequence": 0,
+        "finalTargetGroups": 74,
+        "finalJSequence": 73,
+        "finalAuditRows": 140,
+        "firstRecoveryGroups": 1,
+        "originalRawAckOrder": [
+          0
+        ],
+        "automaticRecovery": "PASS",
+        "evidenceConsistent": true
+      },
+      {
+        "scenario": "C0",
+        "sourceRows": 64,
+        "targetRows": 64,
+        "missingKeys": 0,
+        "extraKeys": 0,
+        "fieldDifferences": 0,
+        "cutTargetGroups": 1,
+        "cutJSequence": 0,
+        "finalTargetGroups": 74,
+        "finalJSequence": 73,
+        "finalAuditRows": 140,
+        "firstRecoveryGroups": 1,
+        "originalRawAckOrder": [
+          0
+        ],
+        "automaticRecovery": "PASS",
+        "evidenceConsistent": true
+      },
+      {
+        "scenario": "K1",
+        "sourceRows": 64,
+        "targetRows": 64,
+        "missingKeys": 0,
+        "extraKeys": 0,
+        "fieldDifferences": 0,
+        "cutTargetGroups": 2,
+        "cutJSequence": 1,
+        "finalTargetGroups": 6,
+        "finalJSequence": 5,
+        "finalAuditRows": 72,
+        "firstRecoveryGroups": 1,
+        "originalRawAckOrder": [
+          0,
+          1
+        ],
+        "automaticRecovery": "PASS",
+        "evidenceConsistent": true
+      },
+      {
+        "scenario": "K2",
+        "sourceRows": 64,
+        "targetRows": 64,
+        "missingKeys": 0,
+        "extraKeys": 0,
+        "fieldDifferences": 0,
+        "cutTargetGroups": 2,
+        "cutJSequence": 1,
+        "finalTargetGroups": 6,
+        "finalJSequence": 3,
+        "finalAuditRows": 72,
+        "firstRecoveryGroups": 4,
+        "originalRawAckOrder": [
+          0,
+          1
+        ],
+        "automaticRecovery": "PASS",
+        "evidenceConsistent": true
+      }
+    ]
+  },
+  "sessionRelease": [
+    {
+      "scenario": "none",
+      "physicalRelease": true,
+      "liveRunners": 0,
+      "auditRows": 66,
+      "sourceRows": 64,
+      "targetRows": 64,
+      "missingKeys": 0,
+      "extraKeys": 0,
+      "fieldDifferences": 0
+    },
+    {
+      "scenario": "cancel-T",
+      "physicalRelease": true,
+      "liveRunners": 0,
+      "auditRows": 67,
+      "sourceRows": 64,
+      "targetRows": 64,
+      "missingKeys": 0,
+      "extraKeys": 0,
+      "fieldDifferences": 0
+    }
+  ]
+}

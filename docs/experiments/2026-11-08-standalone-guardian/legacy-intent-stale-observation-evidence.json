@@ -1,0 +1,12 @@
+{
+  "mysql": "9.5.0",
+  "source_sha256": {
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyAccountLockIntent.scala": "3852705ee6af8c4fd6c52063d48c79ab1616c88e5b83d309b8cecbd7d74f5778",
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyMySqlAccountLock.scala": "8d635659bc12007e0efea0a9ff473ea11a8f99a276edaa9613f45c1c22b72734",
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyIntentCrashProbe.scala": "3160fb2c95ebbb8361e9b19642e1ebc629656e344e91daf573ad7d997d0c49d7",
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/CutoverAccountMySqlSpec.scala": "489796d7a9a78bc4d36372b9b48e64bccffb80d7117bba27310879ced4506424"
+  },
+  "tests_passed": 20,
+  "result": "child halted after account DDL; persisted intent remained INTENT; replacement recorded historical lock observation; external unlock left observation stale; retry relocked",
+  "boundary": "no proxy or administrator authority proof; not integrated with guardian or cutover; not old Workflow end-to-end"
+}

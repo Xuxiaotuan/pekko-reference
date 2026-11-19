@@ -1,0 +1,20 @@
+{
+  "scope": "real MySQL SDK state transaction observation; no source fencing fault injection",
+  "source_run": "shutdown-runtime5-runtime5-20261108.json",
+  "mysql_connection_id": 1328,
+  "pfs_thread_id": 1415,
+  "mysql_user": "stop_sdk_f8e7a7710b",
+  "owner_lock_connection_id": 1308,
+  "innodb_trx_id": "281505804850632",
+  "pfs_transaction_event_id": 6,
+  "trx_state_during_close": "RUNNING",
+  "autocommit": "NO",
+  "isolation": "REPEATABLE READ",
+  "at_15_seconds": "connection absent, innodb_trx RUNNING, owner UNKNOWN, JVM exited",
+  "at_20_seconds": "innodb_trx absent, owner UNKNOWN",
+  "last_observed_statement_category": "SELECT from connector schema history table on the same PFS thread",
+  "statement_event_id": 13,
+  "statement_transaction_nesting": "not captured; PFS history overwritten before independent query",
+  "data_reconciliation": "two rows and three fields each equal in both runs",
+  "inference_limit": "thread association does not establish exact statement-to-transaction nesting"
+}

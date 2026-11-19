@@ -1,0 +1,220 @@
+{
+  "date": "2026-10-25",
+  "baseline": "2fe7c253eea0d5499e3558f5ab1259a068df3f29",
+  "branch": "feature/pekkosync-mvp-cleanup-datafusion",
+  "productionOrOriginalTestModified": false,
+  "realMySqlMatrixRerunThisRound": false,
+  "runs": [
+    {
+      "name": "first-full",
+      "command": "sbt -J-Xmx3G -J-XX:+UseG1GC 'pekko-server/test' 'pekko-server/package'",
+      "javaHome": "/Users/xujiawei/Library/Java/JavaVirtualMachines/ms-17.0.14/Contents/Home",
+      "exitCode": 1,
+      "summary": [
+        "Tests: succeeded 585, failed 1",
+        "Suites: completed 111, aborted 0"
+      ],
+      "log": "logs/first-full.log",
+      "logSha256": "589f2b8d9627f39b02cb0a86c0eb23aae60b21412bc3d2898ad90cff939efdc4",
+      "packageExecuted": false
+    },
+    {
+      "name": "execution-suite",
+      "command": "sbt -J-Xmx3G -J-XX:+UseG1GC 'pekko-server/testOnly cn.xuyinyin.magic.workflow.execution.WorkflowExecutionEngineSpec'",
+      "javaHome": "/Users/xujiawei/Library/Java/JavaVirtualMachines/ms-17.0.14/Contents/Home",
+      "exitCode": 0,
+      "summary": [
+        "Tests: succeeded 38, failed 0",
+        "Suites: completed 1, aborted 0"
+      ],
+      "log": "logs/execution-suite.log",
+      "logSha256": "8040fc1db923c4c48ba910c3c0f2c4bc569325ffe6ef2d4f5b70b85cbef70ff8",
+      "packageExecuted": false
+    },
+    {
+      "name": "confirm-full",
+      "command": "sbt -J-Xmx3G -J-XX:+UseG1GC 'pekko-server/test' 'pekko-server/package'",
+      "javaHome": "/Users/xujiawei/Library/Java/JavaVirtualMachines/ms-17.0.14/Contents/Home",
+      "exitCode": 0,
+      "summary": [
+        "Tests: succeeded 586, failed 0",
+        "Suites: completed 111, aborted 0"
+      ],
+      "log": "logs/confirm-full.log",
+      "logSha256": "31abfb567667cae15db275f1244ac2b2055fc0d306790068524dc7e9a195e7d3",
+      "packageExecuted": true
+    }
+  ],
+  "existingEvidenceChecks": [
+    {
+      "command": [
+        "python3",
+        "docs/experiments/2026-10-24-guardian-os-restart/verify.py",
+        "--archived-source"
+      ],
+      "exitCode": 0,
+      "result": {
+        "validatedSelectedCases": 12,
+        "converged": 8,
+        "safePause": 4,
+        "rows": 80,
+        "fieldValues": 480,
+        "corruptionControlsRejected": 5,
+        "sameVersionFullMatrix": "external_blocked",
+        "backendFullSuite": "evidence_incomplete",
+        "resourceExitConfirmed": false,
+        "noLiveOperations": true
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "docs/experiments/2026-10-24-guardian-os-final-matrix/verify.py"
+      ],
+      "exitCode": 0,
+      "result": {
+        "sameFrozenVersion": "r-1792851860999716000",
+        "acceptedCases": 12,
+        "converged": 8,
+        "safePause": 4,
+        "rows": 80,
+        "fieldValues": 480,
+        "D": "N/A",
+        "resources": {
+          "probeProcesses": 0,
+          "probeConnections": 0,
+          "transactions": 0,
+          "failedUnitTombstones": 23,
+          "completedTaskGrantsCleared": 8,
+          "pausedTaskGrantsRetained": 4,
+          "newLabTicketsStillLaunched": 8,
+          "oldControlQuotaSnapshotsUnchanged": 29
+        },
+        "resourceCorruptionControlsRejected": 5,
+        "postCleanupTJournalAuditAndAllFieldsUnchanged": 12,
+        "backendTests": 586,
+        "backendSuitesAborted": 0,
+        "productionClasses": 859,
+        "productionGuardianRestartImplemented": false,
+        "actorSpecOriginalTimeoutReproducedThisRound": false,
+        "actorDiagnostics": [
+          {
+            "mode": "shared",
+            "messages": 100000,
+            "heapUsed": 33563520,
+            "shutdownMillis": 52
+          },
+          {
+            "mode": "shared",
+            "messages": 1000000,
+            "heapUsed": 146583552,
+            "shutdownMillis": 30
+          },
+          {
+            "mode": "per-message",
+            "messages": 100000,
+            "heapUsed": 202962432,
+            "shutdownMillis": 962
+          },
+          {
+            "mode": "per-message",
+            "messages": 1000000,
+            "heapUsed": 1513839104,
+            "shutdownMillis": 3327
+          }
+        ],
+        "noLiveOperations": true
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "docs/experiments/2026-10-24-guardian-os-final-matrix/verify.py",
+        "--archived-source"
+      ],
+      "exitCode": 0,
+      "result": {
+        "sameFrozenVersion": "r-1792851860999716000",
+        "acceptedCases": 12,
+        "converged": 8,
+        "safePause": 4,
+        "rows": 80,
+        "fieldValues": 480,
+        "D": "N/A",
+        "resources": {
+          "probeProcesses": 0,
+          "probeConnections": 0,
+          "transactions": 0,
+          "failedUnitTombstones": 23,
+          "completedTaskGrantsCleared": 8,
+          "pausedTaskGrantsRetained": 4,
+          "newLabTicketsStillLaunched": 8,
+          "oldControlQuotaSnapshotsUnchanged": 29
+        },
+        "resourceCorruptionControlsRejected": 5,
+        "postCleanupTJournalAuditAndAllFieldsUnchanged": 12,
+        "backendTests": 586,
+        "backendSuitesAborted": 0,
+        "productionClasses": 859,
+        "productionGuardianRestartImplemented": false,
+        "actorSpecOriginalTimeoutReproducedThisRound": false,
+        "actorDiagnostics": [
+          {
+            "mode": "shared",
+            "messages": 100000,
+            "heapUsed": 33563520,
+            "shutdownMillis": 52
+          },
+          {
+            "mode": "shared",
+            "messages": 1000000,
+            "heapUsed": 146583552,
+            "shutdownMillis": 30
+          },
+          {
+            "mode": "per-message",
+            "messages": 100000,
+            "heapUsed": 202962432,
+            "shutdownMillis": 962
+          },
+          {
+            "mode": "per-message",
+            "messages": 1000000,
+            "heapUsed": 1513839104,
+            "shutdownMillis": 3327
+          }
+        ],
+        "noLiveOperations": true
+      }
+    }
+  ],
+  "executionOrderDiagnosis": {
+    "status": "evidence_incomplete",
+    "fixed": false,
+    "firstFullFailurePreserved": true,
+    "hypothesis": "async termination observer scheduling is not awaited by the fixture default close future; exact cause requires a fixed-window probe"
+  },
+  "sourcesUnchangedFromBaseline": {
+    "server/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala": "e7551125576a5acc324daf230a4565248c2a4a1450dcc54352ea71c3a35421b9",
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/spi/CheckpointedNodes.scala": "36e0e41f5e26011401e68e0ba1607cfe88789489de6bb80915ffd0a10cd68218",
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/execution/ReliableExecutionControl.scala": "2f8fe7dbf8196eac9d2eec96069f4b4bb0d0f92655f265fb0efd91615fb6c010",
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/execution/ReliableExecutionSessions.scala": "211eeb3dc187c652e285b9a41bbd92cb68eeaa8cc1c055eefe14794680d8fb1e",
+    "server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala": "2eee46a5de47f93704ff07f3812bbccefb99ac03739e02b0046a7b3b9de13720"
+  },
+  "archive": {
+    "file": "evidence.tar.gz",
+    "bytes": 4705222,
+    "sha256": "3ab8f1578396f3ed66cc67c4f222ff6fb1c47286646ee2142c011c2569825a8d",
+    "files": {
+      "logs/first-full.log": "589f2b8d9627f39b02cb0a86c0eb23aae60b21412bc3d2898ad90cff939efdc4",
+      "logs/execution-suite.log": "8040fc1db923c4c48ba910c3c0f2c4bc569325ffe6ef2d4f5b70b85cbef70ff8",
+      "logs/confirm-full.log": "31abfb567667cae15db275f1244ac2b2055fc0d306790068524dc7e9a195e7d3",
+      "checks/offline.json": "e17aec0020bf0a13448bc5ceb8963be858a3b61a5b1f4ca10ebb63f50e092fbc",
+      "sources/server/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala": "e7551125576a5acc324daf230a4565248c2a4a1450dcc54352ea71c3a35421b9",
+      "sources/server/src/main/scala/cn/xuyinyin/magic/workflow/spi/CheckpointedNodes.scala": "36e0e41f5e26011401e68e0ba1607cfe88789489de6bb80915ffd0a10cd68218",
+      "sources/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/ReliableExecutionControl.scala": "2f8fe7dbf8196eac9d2eec96069f4b4bb0d0f92655f265fb0efd91615fb6c010",
+      "sources/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/ReliableExecutionSessions.scala": "211eeb3dc187c652e285b9a41bbd92cb68eeaa8cc1c055eefe14794680d8fb1e",
+      "sources/server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala": "2eee46a5de47f93704ff07f3812bbccefb99ac03739e02b0046a7b3b9de13720"
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "attempt_1": {
+    "pid": 7216,
+    "scope": "isolated v1 startup, status and stop only; no source fencing fault or data reconciliation",
+    "bound": true,
+    "port": 62759,
+    "http_status": 200,
+    "owner_state": "ACTIVE",
+    "status_reason": null,
+    "workflow_route_http": 404,
+    "schedules_route_http": 404,
+    "root_http": 404,
+    "captures_http": 200,
+    "workflow_scheduler_instances": [],
+    "jcmd_exit": 0,
+    "process_exit": 143
+  },
+  "attempt_2": {
+    "pid": 8588,
+    "scope": "isolated v1 startup, capture readiness and graceful stop; no source fencing fault or data reconciliation",
+    "bound": true,
+    "port": 63434,
+    "process_exit": 143,
+    "failure": "SDK offset table did not exist and connector repeatedly retried; no readiness obtained."
+  },
+  "attempt_3": {
+    "pid": 9797,
+    "scope": "isolated v1 startup with exact empty SDK tables; no source fencing fault or data reconciliation",
+    "bound": true,
+    "port": 53510,
+    "capture_samples": [
+      {
+        "readiness": "STARTING",
+        "runtimeHealth": "STARTING",
+        "reason": "CAPTURE_STARTING"
+      },
+      {
+        "readiness": "ADMISSION_READY",
+        "runtimeHealth": "HEALTHY",
+        "reason": null
+      }
+    ],
+    "ready": true,
+    "private_log_bytes": 32558,
+    "process_exit": 143,
+    "actual_d_nonnull_rows": 1,
+    "source_after_exit": "one Binlog Dump GTID session, server CLOSE_WAIT, no client PID",
+    "session_handling": "only isolated source session 32 terminated; transaction count zero, later other sessions zero"
+  },
+  "state_observations": {
+    "attempt1": {
+      "schema": "pekko_entry_a3c21b973a",
+      "owner_and_offset_table_count": [
+        "UNKNOWN",
+        "1"
+      ],
+      "query_exit": 0
+    },
+    "attempt2": {
+      "schema": "pekko_entry_74507adb3e",
+      "owner_and_offset_table_count": [
+        "UNKNOWN",
+        "0"
+      ],
+      "query_exit": 0
+    },
+    "attempt3": {
+      "schema": "pekko_entry_2f723486f0",
+      "owner_and_offset_table_count": [
+        "UNKNOWN",
+        "1"
+      ],
+      "query_exit": 0
+    }
+  },
+  "all_attempts_scope": "Entry start/status/stop only; no Source fault matrix, actor journal replay, sink, or field reconciliation.",
+  "cleanup": "Only owned isolated MySQL 25821/25822 stopped after checking no other sessions/transactions; exclusive slot released; schemas and users retained."
+}

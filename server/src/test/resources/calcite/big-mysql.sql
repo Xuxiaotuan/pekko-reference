@@ -1,0 +1,8 @@
+SELECT e.EMPNO,
+       e.ENAME,
+       d.DEPTNAME
+FROM EMP AS e
+INNER JOIN DEPT AS d ON e.EMPNO = d.DEPTNO
+WHERE e.EMPNO > 100
+  AND d.DEPTNAME IN ('Sales', 'Engineering')
+ORDER BY e.EMPNO

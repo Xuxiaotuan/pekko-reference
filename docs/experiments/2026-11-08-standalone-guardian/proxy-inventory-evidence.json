@@ -1,0 +1,21 @@
+{
+  "mysql": "9.5.0",
+  "check_proxy_users": "OFF",
+  "caching_sha2_password_proxy_users": "OFF",
+  "sha256_password_proxy_users": "OFF",
+  "existing_proxy_grants": [
+    {
+      "user": "root",
+      "host": "localhost",
+      "proxied_user": "",
+      "proxied_host": "",
+      "with_grant": true
+    }
+  ],
+  "direct_proxy_grant_attempt": {
+    "exit": 1,
+    "mysql_error_code": 1698
+  },
+  "scope": "two disposable users only; no grant was installed",
+  "not_proven": "actual proxy login, exclusive admin authority, concurrent grant or unlock resistance"
+}

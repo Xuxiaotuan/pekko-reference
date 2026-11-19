@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-19",
+  "timezone": "UTC for test JVMs",
+  "container": "pekko-cdc-eight-20261019",
+  "image": "sha256:cc52b8b5900d106bc482241091cfa7496d830280868e19aca8a24e8e7086568e",
+  "containerArguments": [
+    "--server-id=20261020",
+    "--log-bin=mysql-bin",
+    "--binlog-format=ROW",
+    "--binlog-row-image=FULL",
+    "--gtid-mode=ON",
+    "--enforce-gtid-consistency=ON"
+  ],
+  "formalRuns": [
+    {
+      "scenario": "N0",
+      "runDirectory": "N0-a1e6d690ffa8",
+      "schema": "pekko_test_cdc_window_a1e6d690ffa8",
+      "originalBatchSize": 16,
+      "recoveredBatchSize": 16
+    },
+    {
+      "scenario": "J1",
+      "runDirectory": "J1-65cb579dab76",
+      "schema": "pekko_test_cdc_window_65cb579dab76",
+      "originalBatchSize": 16,
+      "recoveredBatchSize": 1
+    },
+    {
+      "scenario": "J2",
+      "runDirectory": "J2-eb74cbeecdf6",
+      "schema": "pekko_test_cdc_window_eb74cbeecdf6",
+      "originalBatchSize": 1,
+      "recoveredBatchSize": 128
+    },
+    {
+      "scenario": "C1",
+      "runDirectory": "C1-fb2dcc8e5157",
+      "schema": "pekko_test_cdc_window_fb2dcc8e5157",
+      "originalBatchSize": 16,
+      "recoveredBatchSize": 1
+    },
+    {
+      "scenario": "C2",
+      "runDirectory": "C2-28962ae6eef6",
+      "schema": "pekko_test_cdc_window_28962ae6eef6",
+      "originalBatchSize": 16,
+      "recoveredBatchSize": 1
+    },
+    {
+      "scenario": "C0",
+      "runDirectory": "C0-eef5cb280005",
+      "schema": "pekko_test_cdc_window_eef5cb280005",
+      "originalBatchSize": 16,
+      "recoveredBatchSize": 1
+    },
+    {
+      "scenario": "K1",
+      "runDirectory": "K1-eb0c2746d395",
+      "schema": "pekko_test_cdc_window_eb0c2746d395",
+      "originalBatchSize": 1,
+      "recoveredBatchSize": 1
+    },
+    {
+      "scenario": "K2",
+      "runDirectory": "K2-f35577f7fe30",
+      "schema": "pekko_test_cdc_window_f35577f7fe30",
+      "originalBatchSize": 1,
+      "recoveredBatchSize": 128
+    }
+  ],
+  "formalJvms": 24,
+  "exploratoryNote": "First standalone N0 and first eight-case suite are retained but not added to coverage counts. Fixture observation fields evolved during discovery.",
+  "productionReference": "65ab5410c32933d0aa3d23510e6c62252d84009b",
+  "runtimeHead": "dca7d25cfcf7747d7d08231259c3353331755b84",
+  "workingTree": "test-only changes, not committed",
+  "checks": {
+    "realSuiteAssertions": 8,
+    "convergedScenarios": 7,
+    "automaticRecoveryFailures": 1,
+    "proxyUnitTests": 4,
+    "modulePassed": 418,
+    "moduleAborted": [
+      "MysqlSqlParserSpec",
+      "ComprehensiveCalciteTest"
+    ],
+    "moduleExitCode": 1
+  }
+}

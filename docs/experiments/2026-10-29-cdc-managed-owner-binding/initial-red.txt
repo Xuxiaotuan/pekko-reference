@@ -1,0 +1,5 @@
+Command: sbt 'pekko-server/testOnly *CdcPlatformRuntimeSpec'
+Exit code: 1
+Observed compile error (before revising the approach):
+CdcPlatformRuntimeSpec.scala:25:90: unknown parameter name: managedAttempt
+The candidate attempted to pass the worker boot identity as the runtime attempt. It was replaced before implementation because two runtimes in the same worker could then share an attempt. This was a test compilation failure, not a MySQL failure or end-to-end recovery result.

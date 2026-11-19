@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pekko-cdc-single-headless
+  namespace: bigdata-lab
+  labels:
+    app: pekko-cdc-single
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: pekko-cdc-single
+  ports:
+    - name: artery
+      port: 2551
+      targetPort: artery
+    - name: management
+      port: 7626
+      targetPort: management

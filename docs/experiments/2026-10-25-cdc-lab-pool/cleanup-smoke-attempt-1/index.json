@@ -1,0 +1,117 @@
+{
+  "candidate_sha256": "178b9d9f219c4ed256816015f398aa747637018cf56b17686766615fb43f4cdc",
+  "leases": {
+    "p": {
+      "acquired_ns": 1792934896951359000,
+      "released_ns": 1792934897636059000,
+      "status": "released"
+    }
+  },
+  "results": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "-c",
+        "import pathlib,subprocess,sys,time;subprocess.Popen([sys.executable,\"-c\",sys.argv[1]]);\nwhile not pathlib.Path(\"child.pid\").exists():time.sleep(.01)",
+        "import os,pathlib,signal,time;signal.signal(signal.SIGTERM,signal.SIG_IGN);pathlib.Path(\"child.pid\").write_text(str(os.getpid()));time.sleep(30)"
+      ],
+      "attempt": "/Users/xujiawei/magic/scala-workbench/pekko-reference/docs/experiments/2026-10-25-cdc-lab-pool/cleanup-smoke-attempt-1/parent-p",
+      "candidate_sha256": "178b9d9f219c4ed256816015f398aa747637018cf56b17686766615fb43f4cdc",
+      "case_id": "parent",
+      "cleanup": {
+        "confirmed_exited": true,
+        "finished_ns": 1792934897592187000,
+        "group": 6207,
+        "kill_sent": true,
+        "phases": [
+          {
+            "remaining_live": [
+              {
+                "pid": 6208,
+                "state": "S"
+              }
+            ],
+            "signal": "TERM"
+          },
+          {
+            "remaining_live": [],
+            "signal": "KILL"
+          }
+        ],
+        "remaining_live": [],
+        "term_sent": true
+      },
+      "environment": {
+        "credentials_ref": "/private/tmp/cdc-lab-runner-smoke-20261025/p/credentials.json",
+        "id": "p",
+        "source": {
+          "datadir": "/private/tmp/cdc-lab-runner-smoke-20261025/p/source/data",
+          "port": 14465,
+          "uuid": "52f35fb7-02ca-4ae4-8d77-e5eff69d1e25"
+        },
+        "state": {
+          "datadir": "/private/tmp/cdc-lab-runner-smoke-20261025/p/state/data",
+          "port": 14466,
+          "uuid": "8ca4847e-65dc-4efa-ada6-d12ed62d55e4"
+        }
+      },
+      "evidence_files": {
+        "child.pid": "b1bc831deff10f02e1b5e73384a6a68102b31eacfeed4ad5d1702f5a9c3e47b2",
+        "runner.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "exit_code": 0,
+      "finished_ns": 1792934897592724000,
+      "private_raw_log": "/private/tmp/cdc-lab-runner-smoke-20261025/p/raw-1c118329a7c2bc9402e7c386.log",
+      "slot": "p",
+      "source_sha256": "4785f702f2483f9da1f3840410695ea2554bd93e1e78fb80de0788587596f3fe",
+      "started_ns": 1792934896951515000,
+      "test_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "-c",
+        "import pathlib,subprocess,sys,json;pid=pathlib.Path(sys.argv[1]).read_text().strip();s=subprocess.run([\"ps\",\"-p\",pid,\"-o\",\"stat=\"],capture_output=True,text=True).stdout.strip();assert not s or s.startswith(\"Z\"),s;pathlib.Path(\"cleanup-observation.json\").write_text(json.dumps({\"previous_child_state\":s or \"absent\"}))",
+        "/Users/xujiawei/magic/scala-workbench/pekko-reference/docs/experiments/2026-10-25-cdc-lab-pool/cleanup-smoke-attempt-1/parent-p/child.pid"
+      ],
+      "attempt": "/Users/xujiawei/magic/scala-workbench/pekko-reference/docs/experiments/2026-10-25-cdc-lab-pool/cleanup-smoke-attempt-1/after-cleanup-p",
+      "candidate_sha256": "178b9d9f219c4ed256816015f398aa747637018cf56b17686766615fb43f4cdc",
+      "case_id": "after-cleanup",
+      "cleanup": {
+        "confirmed_exited": true,
+        "finished_ns": 1792934897634728000,
+        "group": 6219,
+        "kill_sent": false,
+        "phases": [],
+        "remaining_live": [],
+        "term_sent": false
+      },
+      "environment": {
+        "credentials_ref": "/private/tmp/cdc-lab-runner-smoke-20261025/p/credentials.json",
+        "id": "p",
+        "source": {
+          "datadir": "/private/tmp/cdc-lab-runner-smoke-20261025/p/source/data",
+          "port": 14465,
+          "uuid": "52f35fb7-02ca-4ae4-8d77-e5eff69d1e25"
+        },
+        "state": {
+          "datadir": "/private/tmp/cdc-lab-runner-smoke-20261025/p/state/data",
+          "port": 14466,
+          "uuid": "8ca4847e-65dc-4efa-ada6-d12ed62d55e4"
+        }
+      },
+      "evidence_files": {
+        "cleanup-observation.json": "f5c1af6ceae378833d2dc7b3c01b8b306bfa048f92b9e9e9d69e6b593cd15a85",
+        "runner.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "exit_code": 0,
+      "finished_ns": 1792934897635153000,
+      "private_raw_log": "/private/tmp/cdc-lab-runner-smoke-20261025/p/raw-2189d71ef186d79137d58619.log",
+      "slot": "p",
+      "source_sha256": "4785f702f2483f9da1f3840410695ea2554bd93e1e78fb80de0788587596f3fe",
+      "started_ns": 1792934897594167000,
+      "test_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    }
+  ],
+  "source_sha256": "4785f702f2483f9da1f3840410695ea2554bd93e1e78fb80de0788587596f3fe"
+}

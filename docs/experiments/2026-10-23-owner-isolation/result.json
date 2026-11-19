@@ -1,0 +1,410 @@
+{
+  "base": "7ec75d716779d760972ab76f925465dbf953e7c0",
+  "selectedRuntime": "isolation-1792722670696328000",
+  "sourceFiles": 259,
+  "mysql": "8.4.11",
+  "backend": {
+    "tests": 537,
+    "suites": 98,
+    "failed": 0,
+    "aborted": 0,
+    "packagePassed": true
+  },
+  "cases": [
+    {
+      "case": "KILL_DB_JOURNAL_WAIT",
+      "schema": "pekko_test_cdc_window_ba4c162dcc13",
+      "archivePrefix": "cases/KILL_DB_JOURNAL_WAIT-ba4c162dcc13",
+      "sourceRuntime": "isolation-1792722670696328000",
+      "sourceRows": 10,
+      "targetRows": 10,
+      "fields": 6,
+      "cutT": 1,
+      "cutJPages": 0,
+      "beforeRequeueT": 1,
+      "beforeRequeueJPages": 0,
+      "finalT": 5,
+      "finalJPages": 5,
+      "originalPid": 33169,
+      "recoveredPid": 33177,
+      "originalOwner": "b0606ebd-bf51-48d2-9a9c-2084587b57c4",
+      "recoveredOwner": "bd0d1ad6-dab0-40d9-906c-6aad69178435",
+      "postDeathSessions": 1,
+      "postDeathTransactions": 1,
+      "postDeathTransactionIds": [
+        "562948259770368"
+      ],
+      "remainingWorkSamples": 2,
+      "replayedTargetBatches": 1,
+      "firstRecoveredReader": {
+        "at": "2026-10-23T02:31:49.360983Z",
+        "kind": "READER_OPEN",
+        "resume": null,
+        "split": "190a8deb03a187ddec7c1692c68ac5d4870ccd23ecad2e2a50c21b36cefb052b:0"
+      },
+      "allFieldsEqual": true,
+      "automaticTakeover": false
+    },
+    {
+      "case": "KILL_DB_TARGET_WAIT",
+      "schema": "pekko_test_cdc_window_a9761429579d",
+      "archivePrefix": "cases/KILL_DB_TARGET_WAIT-a9761429579d",
+      "sourceRuntime": "isolation-1792722670696328000",
+      "sourceRows": 10,
+      "targetRows": 10,
+      "fields": 6,
+      "cutT": 0,
+      "cutJPages": 0,
+      "beforeRequeueT": 0,
+      "beforeRequeueJPages": 0,
+      "finalT": 5,
+      "finalJPages": 5,
+      "originalPid": 33152,
+      "recoveredPid": 33156,
+      "originalOwner": "df51663f-f49b-4f4f-bca6-f2de324da47e",
+      "recoveredOwner": "fe846758-5935-41c8-b85a-1fe1bd245690",
+      "postDeathSessions": 1,
+      "postDeathTransactions": 1,
+      "postDeathTransactionIds": [
+        "6393"
+      ],
+      "remainingWorkSamples": 2,
+      "replayedTargetBatches": 0,
+      "firstRecoveredReader": {
+        "at": "2026-10-23T02:31:43.964097Z",
+        "kind": "READER_OPEN",
+        "resume": null,
+        "split": "c3242796a1e472bba194f944e95870bcd50761be73b103465cde268a6e07466d:0"
+      },
+      "allFieldsEqual": true,
+      "automaticTakeover": false
+    },
+    {
+      "case": "KILL_J_AFTER_STORE",
+      "schema": "pekko_test_cdc_window_61ed4e9e6068",
+      "archivePrefix": "cases/KILL_J_AFTER_STORE-61ed4e9e6068",
+      "sourceRuntime": "isolation-1792722670696328000",
+      "sourceRows": 10,
+      "targetRows": 10,
+      "fields": 6,
+      "cutT": 1,
+      "cutJPages": 1,
+      "beforeRequeueT": 1,
+      "beforeRequeueJPages": 1,
+      "finalT": 5,
+      "finalJPages": 5,
+      "originalPid": 33142,
+      "recoveredPid": 33144,
+      "originalOwner": "64eb47de-4cdd-4093-a937-f17010d93554",
+      "recoveredOwner": "564952d8-aa3f-40e8-b2bf-6d6bb1b0e75c",
+      "postDeathSessions": 0,
+      "postDeathTransactions": 0,
+      "postDeathTransactionIds": [],
+      "remainingWorkSamples": 0,
+      "replayedTargetBatches": 0,
+      "firstRecoveredReader": {
+        "at": "2026-10-23T02:31:38.496110Z",
+        "kind": "READER_OPEN",
+        "resume": "1",
+        "split": "4b1df34307ac75ba6708c1f4b405c4595781e73691bac347ca75da0ea2c1e419:0"
+      },
+      "allFieldsEqual": true,
+      "automaticTakeover": false
+    },
+    {
+      "case": "KILL_READ",
+      "schema": "pekko_test_cdc_window_e15e513fc9b5",
+      "archivePrefix": "cases/KILL_READ-e15e513fc9b5",
+      "sourceRuntime": "isolation-1792722670696328000",
+      "sourceRows": 10,
+      "targetRows": 10,
+      "fields": 6,
+      "cutT": 0,
+      "cutJPages": 0,
+      "beforeRequeueT": 0,
+      "beforeRequeueJPages": 0,
+      "finalT": 5,
+      "finalJPages": 5,
+      "originalPid": 33092,
+      "recoveredPid": 33098,
+      "originalOwner": "a99204b2-b643-48f1-8977-93974c38349a",
+      "recoveredOwner": "e660bee1-fbe9-41b7-9abb-63bd11f61c17",
+      "postDeathSessions": 0,
+      "postDeathTransactions": 0,
+      "postDeathTransactionIds": [],
+      "remainingWorkSamples": 0,
+      "replayedTargetBatches": 0,
+      "firstRecoveredReader": {
+        "at": "2026-10-23T02:31:23.689890Z",
+        "kind": "READER_OPEN",
+        "resume": null,
+        "split": "411b62d379b98b2dcafca03970473d67ad7151f87990a6698533873dd3eb7b30:0"
+      },
+      "allFieldsEqual": true,
+      "automaticTakeover": false
+    },
+    {
+      "case": "KILL_TARGET_TX",
+      "schema": "pekko_test_cdc_window_da99bf213b9c",
+      "archivePrefix": "cases/KILL_TARGET_TX-da99bf213b9c",
+      "sourceRuntime": "isolation-1792722670696328000",
+      "sourceRows": 10,
+      "targetRows": 10,
+      "fields": 6,
+      "cutT": 0,
+      "cutJPages": 0,
+      "beforeRequeueT": 0,
+      "beforeRequeueJPages": 0,
+      "finalT": 5,
+      "finalJPages": 5,
+      "originalPid": 33110,
+      "recoveredPid": 33113,
+      "originalOwner": "c0ea171f-78b9-4e18-8fbf-031b90ddca56",
+      "recoveredOwner": "39f202af-d6db-4e5d-86df-cfa7562470e8",
+      "postDeathSessions": 0,
+      "postDeathTransactions": 0,
+      "postDeathTransactionIds": [],
+      "remainingWorkSamples": 0,
+      "replayedTargetBatches": 0,
+      "firstRecoveredReader": {
+        "at": "2026-10-23T02:31:28.629807Z",
+        "kind": "READER_OPEN",
+        "resume": null,
+        "split": "0b55db9d648c167ad7cba473e1d05cfd49cb5f5f6dfabb71b01c1981226202e8:0"
+      },
+      "allFieldsEqual": true,
+      "automaticTakeover": false
+    },
+    {
+      "case": "KILL_T_BEFORE_J",
+      "schema": "pekko_test_cdc_window_08b0b60dc215",
+      "archivePrefix": "cases/KILL_T_BEFORE_J-08b0b60dc215",
+      "sourceRuntime": "isolation-1792722670696328000",
+      "sourceRows": 10,
+      "targetRows": 10,
+      "fields": 6,
+      "cutT": 1,
+      "cutJPages": 0,
+      "beforeRequeueT": 1,
+      "beforeRequeueJPages": 0,
+      "finalT": 5,
+      "finalJPages": 5,
+      "originalPid": 33131,
+      "recoveredPid": 33133,
+      "originalOwner": "24b9593d-f2f8-44f5-97a0-7520ce58affa",
+      "recoveredOwner": "631618b7-3a92-4381-9695-2ae24ed6d1e5",
+      "postDeathSessions": 0,
+      "postDeathTransactions": 0,
+      "postDeathTransactionIds": [],
+      "remainingWorkSamples": 0,
+      "replayedTargetBatches": 1,
+      "firstRecoveredReader": {
+        "at": "2026-10-23T02:31:33.735273Z",
+        "kind": "READER_OPEN",
+        "resume": null,
+        "split": "cbdc9571be0a026c549e49481f98e63f29f5eef3658ab98556bd8b6f94811703:0"
+      },
+      "allFieldsEqual": true,
+      "automaticTakeover": false
+    },
+    {
+      "case": "OBSERVER_DENIED",
+      "schema": "pekko_test_cdc_window_5ffddbe78371",
+      "archivePrefix": "cases/OBSERVER_DENIED-5ffddbe78371",
+      "sourceRuntime": "isolation-1792722670696328000",
+      "sourceRows": 10,
+      "targetRows": 10,
+      "fields": 6,
+      "cutT": 0,
+      "cutJPages": 0,
+      "beforeRequeueT": 0,
+      "beforeRequeueJPages": 0,
+      "finalT": 5,
+      "finalJPages": 5,
+      "originalPid": 33194,
+      "recoveredPid": 33197,
+      "originalOwner": "0b40872e-5eff-4961-9a2b-5b77d87f3a5f",
+      "recoveredOwner": "04f937b3-f2e6-4d65-9924-8b73c67dbdab",
+      "postDeathSessions": 0,
+      "postDeathTransactions": 0,
+      "postDeathTransactionIds": [],
+      "remainingWorkSamples": 0,
+      "replayedTargetBatches": 0,
+      "firstRecoveredReader": {
+        "at": "2026-10-23T02:31:54.414366Z",
+        "kind": "READER_OPEN",
+        "resume": null,
+        "split": "d58bb7d98dc51820ca2534870f446e7fd87928271b954d82e6c979486cfecdae:0"
+      },
+      "allFieldsEqual": true,
+      "automaticTakeover": false
+    },
+    {
+      "case": "SIGSTOP_READ",
+      "schema": "pekko_test_cdc_window_f92403f21e26",
+      "archivePrefix": "cases/SIGSTOP_READ-f92403f21e26",
+      "sourceRuntime": "isolation-1792722670696328000",
+      "sourceRows": 10,
+      "targetRows": 10,
+      "fields": 6,
+      "cutT": 0,
+      "cutJPages": 0,
+      "beforeRequeueT": 0,
+      "beforeRequeueJPages": 0,
+      "finalT": 5,
+      "finalJPages": 5,
+      "originalPid": 33058,
+      "recoveredPid": 33065,
+      "originalOwner": "983d9625-c4ec-4175-a23f-683857adfc05",
+      "recoveredOwner": "ab9540fc-5b37-4487-9ed2-2c9257822e00",
+      "postDeathSessions": 0,
+      "postDeathTransactions": 0,
+      "postDeathTransactionIds": [],
+      "remainingWorkSamples": 0,
+      "replayedTargetBatches": 0,
+      "firstRecoveredReader": {
+        "at": "2026-10-23T02:31:18.560371Z",
+        "kind": "READER_OPEN",
+        "resume": null,
+        "split": "ddda0f7e72d2dfdac7dc3680dddc9e887acb9530138b492bb09c770c602077a3:0"
+      },
+      "allFieldsEqual": true,
+      "automaticTakeover": false
+    }
+  ],
+  "allTrials": 18,
+  "preservedFailures": [
+    {
+      "case": "KILL_DB_TARGET_WAIT-c601c5d6ad6e",
+      "failure": {
+        "class": "org.scalatest.exceptions.TestFailedException",
+        "message": "Vector(\"control\", \"journal\", \"journal\", \"target\") did not contain element \"source\""
+      }
+    }
+  ],
+  "schemaDumps": [
+    {
+      "case": "KILL_DB_JOURNAL_WAIT-b9d880efd29b",
+      "schema": "pekko_test_cdc_window_b9d880efd29b",
+      "file": "KILL_DB_JOURNAL_WAIT-b9d880efd29b.sql.gz",
+      "rawBytes": 36834
+    },
+    {
+      "case": "KILL_DB_JOURNAL_WAIT-ba4c162dcc13",
+      "schema": "pekko_test_cdc_window_ba4c162dcc13",
+      "file": "KILL_DB_JOURNAL_WAIT-ba4c162dcc13.sql.gz",
+      "rawBytes": 36829
+    },
+    {
+      "case": "KILL_DB_TARGET_WAIT-a9761429579d",
+      "schema": "pekko_test_cdc_window_a9761429579d",
+      "file": "KILL_DB_TARGET_WAIT-a9761429579d.sql.gz",
+      "rawBytes": 36825
+    },
+    {
+      "case": "KILL_DB_TARGET_WAIT-ab67816cc4bd",
+      "schema": "pekko_test_cdc_window_ab67816cc4bd",
+      "file": "KILL_DB_TARGET_WAIT-ab67816cc4bd.sql.gz",
+      "rawBytes": 36849
+    },
+    {
+      "case": "KILL_DB_TARGET_WAIT-c601c5d6ad6e",
+      "schema": "pekko_test_cdc_window_c601c5d6ad6e",
+      "file": "KILL_DB_TARGET_WAIT-c601c5d6ad6e.sql.gz",
+      "rawBytes": 25176
+    },
+    {
+      "case": "KILL_J_AFTER_STORE-40c5667368a1",
+      "schema": "pekko_test_cdc_window_40c5667368a1",
+      "file": "KILL_J_AFTER_STORE-40c5667368a1.sql.gz",
+      "rawBytes": 36849
+    },
+    {
+      "case": "KILL_J_AFTER_STORE-61ed4e9e6068",
+      "schema": "pekko_test_cdc_window_61ed4e9e6068",
+      "file": "KILL_J_AFTER_STORE-61ed4e9e6068.sql.gz",
+      "rawBytes": 36827
+    },
+    {
+      "case": "KILL_READ-0de3a30feb3f",
+      "schema": "pekko_test_cdc_window_0de3a30feb3f",
+      "file": "KILL_READ-0de3a30feb3f.sql.gz",
+      "rawBytes": 36825
+    },
+    {
+      "case": "KILL_READ-e15e513fc9b5",
+      "schema": "pekko_test_cdc_window_e15e513fc9b5",
+      "file": "KILL_READ-e15e513fc9b5.sql.gz",
+      "rawBytes": 36822
+    },
+    {
+      "case": "KILL_READ-f91ccf1afe7b",
+      "schema": "pekko_test_cdc_window_f91ccf1afe7b",
+      "file": "KILL_READ-f91ccf1afe7b.sql.gz",
+      "rawBytes": 36823
+    },
+    {
+      "case": "KILL_TARGET_TX-04d12628b874",
+      "schema": "pekko_test_cdc_window_04d12628b874",
+      "file": "KILL_TARGET_TX-04d12628b874.sql.gz",
+      "rawBytes": 36829
+    },
+    {
+      "case": "KILL_TARGET_TX-da99bf213b9c",
+      "schema": "pekko_test_cdc_window_da99bf213b9c",
+      "file": "KILL_TARGET_TX-da99bf213b9c.sql.gz",
+      "rawBytes": 36826
+    },
+    {
+      "case": "KILL_T_BEFORE_J-08b0b60dc215",
+      "schema": "pekko_test_cdc_window_08b0b60dc215",
+      "file": "KILL_T_BEFORE_J-08b0b60dc215.sql.gz",
+      "rawBytes": 36829
+    },
+    {
+      "case": "KILL_T_BEFORE_J-d7cd4a9bb861",
+      "schema": "pekko_test_cdc_window_d7cd4a9bb861",
+      "file": "KILL_T_BEFORE_J-d7cd4a9bb861.sql.gz",
+      "rawBytes": 36823
+    },
+    {
+      "case": "OBSERVER_DENIED-5ffddbe78371",
+      "schema": "pekko_test_cdc_window_5ffddbe78371",
+      "file": "OBSERVER_DENIED-5ffddbe78371.sql.gz",
+      "rawBytes": 36825
+    },
+    {
+      "case": "OBSERVER_DENIED-a690c73cbe5f",
+      "schema": "pekko_test_cdc_window_a690c73cbe5f",
+      "file": "OBSERVER_DENIED-a690c73cbe5f.sql.gz",
+      "rawBytes": 36832
+    },
+    {
+      "case": "SIGSTOP_READ-c20df0ef03f7",
+      "schema": "pekko_test_cdc_window_c20df0ef03f7",
+      "file": "SIGSTOP_READ-c20df0ef03f7.sql.gz",
+      "rawBytes": 36822
+    },
+    {
+      "case": "SIGSTOP_READ-f92403f21e26",
+      "schema": "pekko_test_cdc_window_f92403f21e26",
+      "file": "SIGSTOP_READ-f92403f21e26.sql.gz",
+      "rawBytes": 36831
+    }
+  ],
+  "cleanup": {
+    "container": "pekko-owner-isolation-20261023",
+    "clientsExcludingObserverAndInternalDaemon": 0,
+    "innodbTransactionsBeforeStop": 0,
+    "testObserverPrincipalsRemaining": 0,
+    "stopped": true,
+    "containersAndVolumesRetained": true,
+    "unrelatedContainersTouched": false,
+    "retainedSchemaDumps": 18
+  },
+  "scope": "static quiescent MySQL Split snapshots; explicit test/operator requeue; D=N/A; no production takeover protocol implementation",
+  "priorLiveRegressionsRerun": false,
+  "productionSourceChanged": false,
+  "committed": false,
+  "pushed": false
+}

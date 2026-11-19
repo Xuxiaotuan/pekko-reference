@@ -1,0 +1,54 @@
+{
+  "status": "PASS",
+  "scenarios": [
+    {
+      "scenario": "split-gap",
+      "cutGroups": 16,
+      "firstReplayGroups": 1,
+      "cutJSequence": 0,
+      "finalJSequence": 73,
+      "finalTargetGroups": 74,
+      "finalAuditRows": 140,
+      "comparedRows": 64,
+      "comparedFields": 384,
+      "missingKeys": 0,
+      "extraKeys": 0,
+      "fieldDifferences": 0,
+      "replayedCutEffects": 0,
+      "status": "PASS"
+    },
+    {
+      "scenario": "merge-gap",
+      "cutGroups": 1,
+      "firstReplayGroups": 72,
+      "cutJSequence": 0,
+      "finalJSequence": 2,
+      "finalTargetGroups": 74,
+      "finalAuditRows": 140,
+      "comparedRows": 64,
+      "comparedFields": 384,
+      "missingKeys": 0,
+      "extraKeys": 0,
+      "fieldDifferences": 0,
+      "replayedCutEffects": 0,
+      "status": "PASS"
+    },
+    {
+      "scenario": "pk-gap",
+      "cutGroups": 1,
+      "firstReplayGroups": 1,
+      "cutJSequence": 0,
+      "finalJSequence": 2,
+      "finalTargetGroups": 3,
+      "finalAuditRows": 69,
+      "comparedRows": 64,
+      "comparedFields": 384,
+      "missingKeys": 0,
+      "extraKeys": 0,
+      "fieldDifferences": 0,
+      "replayedCutEffects": 0,
+      "status": "PASS"
+    }
+  ],
+  "scope": "real MySQL / Actor JDBC Journal / production Source and Sink; fixed lineage and schema, single writer, trusted streaming baseline"
+}

@@ -1,0 +1,605 @@
+{
+  "mode": "default",
+  "schema": "pekko_stop_0ef9b191a8",
+  "source_uuid": "1c3a8f74-7203-4910-9260-e62bfa619c77",
+  "state_uuid": "78a80500-1849-402a-9f71-81cd1cf3fcfb",
+  "phase": "not configured; standalone fallback=20s",
+  "source_marker_fencing": false,
+  "runs": [
+    {
+      "pid": 33160,
+      "iteration": 1,
+      "samples": [
+        {
+          "t": 0.0,
+          "source": {
+            "ok": true,
+            "rows": [
+              "0",
+              "177\tstop_obs_0ef9b191a8\t127.0.0.1:53177\tSleep\t5\t",
+              "180\tcdc_lab\t127.0.0.1:53194\tSleep\t5\t",
+              "181\tcdc_lab\t127.0.0.1:53198\tSleep\t4\t",
+              "182\tcdc_lab\t127.0.0.1:53211\tBinlog Dump GTID\t4\tSource has sent all binlog to replica; waiting for more updates"
+            ],
+            "error": null
+          },
+          "state": {
+            "ok": true,
+            "rows": [
+              "0",
+              "2266\tstop_sdk_0ef9b191a8\t127.0.0.1:53172\tSleep\t0\t",
+              "2271\tcdc_lab\t127.0.0.1:53178\tSleep\t0\t",
+              "2335\tcdc_lab\t127.0.0.1:53268\tSleep\t0\t",
+              "OWNER=UNKNOWN",
+              "J=10",
+              "D=1"
+            ],
+            "error": null
+          },
+          "exit": null
+        },
+        {
+          "t": 1.003,
+          "source": {
+            "ok": true,
+            "rows": [
+              "0",
+              "177\tstop_obs_0ef9b191a8\t127.0.0.1:53177\tSleep\t0\t",
+              "182\tcdc_lab\t127.0.0.1:53211\tBinlog Dump GTID\t5\tSource has sent all binlog to replica; waiting for more updates"
+            ],
+            "error": null
+          },
+          "state": {
+            "ok": true,
+            "rows": [
+              "0",
+              "2266\tstop_sdk_0ef9b191a8\t127.0.0.1:53172\tSleep\t1\t",
+              "2271\tcdc_lab\t127.0.0.1:53178\tSleep\t0\t",
+              "2335\tcdc_lab\t127.0.0.1:53268\tSleep\t1\t",
+              "OWNER=UNKNOWN",
+              "J=10",
+              "D=1"
+            ],
+            "error": null
+          },
+          "exit": null
+        },
+        {
+          "t": 3.003,
+          "source": {
+            "ok": true,
+            "rows": [
+              "0",
+              "177\tstop_obs_0ef9b191a8\t127.0.0.1:53177\tSleep\t0\t",
+              "182\tcdc_lab\t127.0.0.1:53211\tBinlog Dump GTID\t7\tSource has sent all binlog to replica; waiting for more updates"
+            ],
+            "error": null
+          },
+          "state": {
+            "ok": true,
+            "rows": [
+              "0",
+              "2266\tstop_sdk_0ef9b191a8\t127.0.0.1:53172\tSleep\t3\t",
+              "2271\tcdc_lab\t127.0.0.1:53178\tSleep\t0\t",
+              "2335\tcdc_lab\t127.0.0.1:53268\tSleep\t3\t",
+              "OWNER=UNKNOWN",
+              "J=10",
+              "D=1"
+            ],
+            "error": null
+          },
+          "exit": null
+        },
+        {
+          "t": 5.005,
+          "source": {
+            "ok": true,
+            "rows": [
+              "0",
+              "177\tstop_obs_0ef9b191a8\t127.0.0.1:53177\tSleep\t0\t",
+              "182\tcdc_lab\t127.0.0.1:53211\tBinlog Dump GTID\t9\tSource has sent all binlog to replica; waiting for more updates"
+            ],
+            "error": null
+          },
+          "state": {
+            "ok": true,
+            "rows": [
+              "0",
+              "2266\tstop_sdk_0ef9b191a8\t127.0.0.1:53172\tSleep\t5\t",
+              "2271\tcdc_lab\t127.0.0.1:53178\tSleep\t0\t",
+              "2335\tcdc_lab\t127.0.0.1:53268\tSleep\t5\t",
+              "OWNER=UNKNOWN",
+              "J=10",
+              "D=1"
+            ],
+            "error": null
+          },
+          "exit": null
+        },
+        {
+          "t": 10.005,
+          "source": {
+            "ok": true,
+            "rows": [
+              "0"
+            ],
+            "error": null
+          },
+          "state": {
+            "ok": true,
+            "rows": [
+              "0",
+              "OWNER=STOPPED",
+              "J=10",
+              "D=1"
+            ],
+            "error": null
+          },
+          "exit": 143
+        },
+        {
+          "t": 15.002,
+          "source": {
+            "ok": true,
+            "rows": [
+              "0"
+            ],
+            "error": null
+          },
+          "state": {
+            "ok": true,
+            "rows": [
+              "0",
+              "OWNER=STOPPED",
+              "J=10",
+              "D=1"
+            ],
+            "error": null
+          },
+          "exit": 143
+        },
+        {
+          "t": 20.005,
+          "source": {
+            "ok": true,
+            "rows": [
+              "0"
+            ],
+            "error": null
+          },
+          "state": {
+            "ok": true,
+            "rows": [
+              "0",
+              "OWNER=STOPPED",
+              "J=10",
+              "D=1"
+            ],
+            "error": null
+          },
+          "exit": 143
+        }
+      ],
+      "log_private": "/private/tmp/pekko-shutdown-final-default-1.log",
+      "startup_status": {
+        "http": 200,
+        "body": {
+          "activeSteps": 0,
+          "enabled": true,
+          "maxActiveSteps": 4,
+          "ownerState": "ACTIVE",
+          "reason": null
+        }
+      },
+      "startup_captures": {
+        "http": 200,
+        "body": {
+          "items": [
+            {
+              "captureId": "capture",
+              "database": "pekko_stop_0ef9b191a8",
+              "readiness": "ADMISSION_READY",
+              "reason": null,
+              "runtimeHealth": "HEALTHY"
+            }
+          ]
+        }
+      },
+      "submit": {
+        "http": 202,
+        "body": {
+          "created": true,
+          "task": {
+            "cancelAllowed": true,
+            "cancellationEvidence": null,
+            "captureId": "capture",
+            "captureReadiness": "ADMISSION_READY",
+            "controlRevision": 1,
+            "definitionFingerprint": "dd9747f4697ed9251cb0833009f5cad6cfdf728514ebc6459df9d268b8656a9c",
+            "desiredState": "RUNNING",
+            "executionId": null,
+            "failureCode": null,
+            "generation": "g1",
+            "initializationEvidence": null,
+            "journalRevision": 0,
+            "lastVerifiedAt": null,
+            "observedAt": 1794106083819,
+            "phase": "QUEUED",
+            "releaseStatus": "RELEASED",
+            "requestId": "req1",
+            "runtimeHealth": "WAITING",
+            "table": "orders",
+            "targetTable": "orders_copy",
+            "taskId": "4964c85230e5de844320363f0bd4ea20797d4c4acbd50bd42eebd64100e11c00"
+          }
+        }
+      },
+      "task_before_data": {
+        "http": 200,
+        "body": {
+          "cancelAllowed": true,
+          "cancellationEvidence": null,
+          "captureId": "capture",
+          "captureReadiness": "ADMISSION_READY",
+          "controlRevision": 1,
+          "definitionFingerprint": "dd9747f4697ed9251cb0833009f5cad6cfdf728514ebc6459df9d268b8656a9c",
+          "desiredState": "RUNNING",
+          "executionId": "56d87de7-96f8-4ac3-ac39-233b691dec77",
+          "failureCode": null,
+          "generation": "g1",
+          "initializationEvidence": "{\"B\":{\"file\":\"binlog.000005\",\"position\":12159,\"row\":0},\"F\":{\"file\":\"binlog.000005\",\"position\":13417,\"row\":0},\"baselineRoot\":\"8a0561b9f2a8e49c1c51ff9bfc4ef724bc6b94d797f7099de277c8ff3bd58836\",\"bootstrap\":\"4964c85230e5de844320363f0bd4ea20797d4c4acbd50bd42eebd64100e11c00\",\"definition\":\"73e278d5020bdd4f79971941fbb84db8c782ea40fd0b9decce263233f8f343be\",\"fenceSequence\":12,\"schema\":\"94783bd0ca98b6d89b7dac904150f7b572029c161006e3d38e0ed1fb931c0a5f\",\"version\":1,\"windows\":1}",
+          "journalRevision": 9,
+          "lastVerifiedAt": 1794106086447,
+          "observedAt": 1794106086447,
+          "phase": "STREAMING",
+          "releaseStatus": "RELEASED",
+          "requestId": "req1",
+          "runtimeHealth": "HEALTHY",
+          "table": "orders",
+          "targetTable": "orders_copy",
+          "taskId": "4964c85230e5de844320363f0bd4ea20797d4c4acbd50bd42eebd64100e11c00"
+        }
+      },
+      "initial_source": {
+        "ok": true,
+        "rows": [
+          "1\tbefore\t11",
+          "2\tkeep\t22"
+        ],
+        "error": null
+      },
+      "initial_target": {
+        "ok": true,
+        "rows": [
+          "1\tbefore\t11",
+          "2\tkeep\t22"
+        ],
+        "error": null
+      },
+      "initial_equal": true,
+      "source_write_ok": true,
+      "updated_source": {
+        "ok": true,
+        "rows": [
+          "1\tafter\t33",
+          "3\tnew\t44"
+        ],
+        "error": null
+      },
+      "updated_target": {
+        "ok": true,
+        "rows": [
+          "1\tafter\t33",
+          "3\tnew\t44"
+        ],
+        "error": null
+      },
+      "updated_equal": true,
+      "before_shutdown": {
+        "t": 0,
+        "source": {
+          "ok": true,
+          "rows": [
+            "0",
+            "177\tstop_obs_0ef9b191a8\t127.0.0.1:53177\tSleep\t5\t",
+            "180\tcdc_lab\t127.0.0.1:53194\tSleep\t5\t",
+            "181\tcdc_lab\t127.0.0.1:53198\tSleep\t4\t",
+            "182\tcdc_lab\t127.0.0.1:53211\tBinlog Dump GTID\t4\tSource has sent all binlog to replica; waiting for more updates"
+          ],
+          "error": null
+        },
+        "state": {
+          "ok": true,
+          "rows": [
+            "0",
+            "2266\tstop_sdk_0ef9b191a8\t127.0.0.1:53172\tSleep\t0\t",
+            "2271\tcdc_lab\t127.0.0.1:53178\tSleep\t5\t",
+            "2274\tstop_sdk_0ef9b191a8\t127.0.0.1:53184\tSleep\t0\t",
+            "2279\tstop_sdk_0ef9b191a8\t127.0.0.1:53193\tSleep\t4\t",
+            "2335\tcdc_lab\t127.0.0.1:53268\tSleep\t0\t",
+            "OWNER=ACTIVE",
+            "J=10",
+            "D=1"
+          ],
+          "error": null
+        },
+        "exit": null
+      },
+      "exit": 143
+    },
+    {
+      "pid": 33260,
+      "iteration": 2,
+      "samples": [
+        {
+          "t": 0.0,
+          "source": {
+            "ok": true,
+            "rows": [
+              "0",
+              "213\tstop_obs_0ef9b191a8\t127.0.0.1:53877\tSleep\t1\t",
+              "216\tcdc_lab\t127.0.0.1:53897\tSleep\t1\t",
+              "217\tcdc_lab\t127.0.0.1:53898\tSleep\t1\t",
+              "218\tcdc_lab\t127.0.0.1:53910\tBinlog Dump GTID\t1\tSource has sent all binlog to replica; waiting for more updates"
+            ],
+            "error": null
+          },
+          "state": {
+            "ok": true,
+            "rows": [
+              "1",
+              "2735\tstop_sdk_0ef9b191a8\t127.0.0.1:53868\tSleep\t0\t",
+              "2743\tcdc_lab\t127.0.0.1:53878\tSleep\t0\t",
+              "2802\tcdc_lab\t127.0.0.1:53961\tSleep\t0\t",
+              "OWNER=ACTIVE",
+              "J=10",
+              "D=1"
+            ],
+            "error": null
+          },
+          "exit": null
+        },
+        {
+          "t": 1.002,
+          "source": {
+            "ok": true,
+            "rows": [
+              "0",
+              "213\tstop_obs_0ef9b191a8\t127.0.0.1:53877\tSleep\t0\t",
+              "218\tcdc_lab\t127.0.0.1:53910\tBinlog Dump GTID\t2\tSource has sent all binlog to replica; waiting for more updates"
+            ],
+            "error": null
+          },
+          "state": {
+            "ok": true,
+            "rows": [
+              "1",
+              "2735\tstop_sdk_0ef9b191a8\t127.0.0.1:53868\tSleep\t1\t",
+              "2743\tcdc_lab\t127.0.0.1:53878\tSleep\t0\t",
+              "2802\tcdc_lab\t127.0.0.1:53961\tSleep\t1\t",
+              "OWNER=UNKNOWN",
+              "J=10",
+              "D=1"
+            ],
+            "error": null
+          },
+          "exit": null
+        },
+        {
+          "t": 3.002,
+          "source": {
+            "ok": true,
+            "rows": [
+              "0",
+              "213\tstop_obs_0ef9b191a8\t127.0.0.1:53877\tSleep\t0\t",
+              "218\tcdc_lab\t127.0.0.1:53910\tBinlog Dump GTID\t4\tSource has sent all binlog to replica; waiting for more updates"
+            ],
+            "error": null
+          },
+          "state": {
+            "ok": true,
+            "rows": [
+              "1",
+              "2735\tstop_sdk_0ef9b191a8\t127.0.0.1:53868\tSleep\t3\t",
+              "2743\tcdc_lab\t127.0.0.1:53878\tSleep\t0\t",
+              "2802\tcdc_lab\t127.0.0.1:53961\tSleep\t3\t",
+              "OWNER=UNKNOWN",
+              "J=10",
+              "D=1"
+            ],
+            "error": null
+          },
+          "exit": null
+        },
+        {
+          "t": 5.002,
+          "source": {
+            "ok": true,
+            "rows": [
+              "0",
+              "213\tstop_obs_0ef9b191a8\t127.0.0.1:53877\tSleep\t0\t",
+              "218\tcdc_lab\t127.0.0.1:53910\tBinlog Dump GTID\t6\tSource has sent all binlog to replica; waiting for more updates"
+            ],
+            "error": null
+          },
+          "state": {
+            "ok": true,
+            "rows": [
+              "0",
+              "2735\tstop_sdk_0ef9b191a8\t127.0.0.1:53868\tSleep\t5\t",
+              "2743\tcdc_lab\t127.0.0.1:53878\tSleep\t0\t",
+              "2802\tcdc_lab\t127.0.0.1:53961\tSleep\t5\t",
+              "OWNER=UNKNOWN",
+              "J=10",
+              "D=1"
+            ],
+            "error": null
+          },
+          "exit": null
+        },
+        {
+          "t": 10.003,
+          "source": {
+            "ok": true,
+            "rows": [
+              "0"
+            ],
+            "error": null
+          },
+          "state": {
+            "ok": true,
+            "rows": [
+              "0",
+              "OWNER=STOPPED",
+              "J=10",
+              "D=1"
+            ],
+            "error": null
+          },
+          "exit": 143
+        },
+        {
+          "t": 15.001,
+          "source": {
+            "ok": true,
+            "rows": [
+              "0"
+            ],
+            "error": null
+          },
+          "state": {
+            "ok": true,
+            "rows": [
+              "0",
+              "OWNER=STOPPED",
+              "J=10",
+              "D=1"
+            ],
+            "error": null
+          },
+          "exit": 143
+        },
+        {
+          "t": 20.003,
+          "source": {
+            "ok": true,
+            "rows": [
+              "0"
+            ],
+            "error": null
+          },
+          "state": {
+            "ok": true,
+            "rows": [
+              "0",
+              "OWNER=STOPPED",
+              "J=10",
+              "D=1"
+            ],
+            "error": null
+          },
+          "exit": 143
+        }
+      ],
+      "log_private": "/private/tmp/pekko-shutdown-final-default-2.log",
+      "startup_status": {
+        "http": 200,
+        "body": {
+          "activeSteps": 1,
+          "enabled": true,
+          "maxActiveSteps": 4,
+          "ownerState": "ACTIVE",
+          "reason": null
+        }
+      },
+      "startup_captures": {
+        "http": 200,
+        "body": {
+          "items": [
+            {
+              "captureId": "capture",
+              "database": "pekko_stop_0ef9b191a8",
+              "readiness": "ADMISSION_READY",
+              "reason": null,
+              "runtimeHealth": "HEALTHY"
+            }
+          ]
+        }
+      },
+      "task_before_data": {
+        "http": 200,
+        "body": {
+          "cancelAllowed": true,
+          "cancellationEvidence": null,
+          "captureId": "capture",
+          "captureReadiness": "ADMISSION_READY",
+          "controlRevision": 1,
+          "definitionFingerprint": "dd9747f4697ed9251cb0833009f5cad6cfdf728514ebc6459df9d268b8656a9c",
+          "desiredState": "RUNNING",
+          "executionId": "56d87de7-96f8-4ac3-ac39-233b691dec77",
+          "failureCode": null,
+          "generation": "g1",
+          "initializationEvidence": "{\"B\":{\"file\":\"binlog.000005\",\"position\":12159,\"row\":0},\"F\":{\"file\":\"binlog.000005\",\"position\":13417,\"row\":0},\"baselineRoot\":\"8a0561b9f2a8e49c1c51ff9bfc4ef724bc6b94d797f7099de277c8ff3bd58836\",\"bootstrap\":\"4964c85230e5de844320363f0bd4ea20797d4c4acbd50bd42eebd64100e11c00\",\"definition\":\"73e278d5020bdd4f79971941fbb84db8c782ea40fd0b9decce263233f8f343be\",\"fenceSequence\":12,\"schema\":\"94783bd0ca98b6d89b7dac904150f7b572029c161006e3d38e0ed1fb931c0a5f\",\"version\":1,\"windows\":1}",
+          "journalRevision": 10,
+          "lastVerifiedAt": 1794106087286,
+          "observedAt": 1794106110293,
+          "phase": "STREAMING",
+          "releaseStatus": "IN_USE",
+          "requestId": "req1",
+          "runtimeHealth": "WORKING",
+          "table": "orders",
+          "targetTable": "orders_copy",
+          "taskId": "4964c85230e5de844320363f0bd4ea20797d4c4acbd50bd42eebd64100e11c00"
+        }
+      },
+      "initial_source": {
+        "ok": true,
+        "rows": [
+          "1\tafter\t33",
+          "3\tnew\t44"
+        ],
+        "error": null
+      },
+      "initial_target": {
+        "ok": true,
+        "rows": [
+          "1\tafter\t33",
+          "3\tnew\t44"
+        ],
+        "error": null
+      },
+      "initial_equal": true,
+      "before_shutdown": {
+        "t": 0,
+        "source": {
+          "ok": true,
+          "rows": [
+            "0",
+            "213\tstop_obs_0ef9b191a8\t127.0.0.1:53877\tSleep\t1\t",
+            "216\tcdc_lab\t127.0.0.1:53897\tSleep\t1\t",
+            "217\tcdc_lab\t127.0.0.1:53898\tSleep\t1\t",
+            "218\tcdc_lab\t127.0.0.1:53910\tBinlog Dump GTID\t1\tSource has sent all binlog to replica; waiting for more updates"
+          ],
+          "error": null
+        },
+        "state": {
+          "ok": true,
+          "rows": [
+            "1",
+            "2735\tstop_sdk_0ef9b191a8\t127.0.0.1:53868\tSleep\t0\t",
+            "2743\tcdc_lab\t127.0.0.1:53878\tSleep\t1\t",
+            "2751\tstop_sdk_0ef9b191a8\t127.0.0.1:53891\tSleep\t1\t",
+            "2755\tstop_sdk_0ef9b191a8\t127.0.0.1:53896\tSleep\t1\t",
+            "OWNER=ACTIVE",
+            "J=10",
+            "D=1"
+          ],
+          "error": null
+        },
+        "exit": null
+      },
+      "exit": 143
+    }
+  ],
+  "scope": "normal standalone CDC; no source fencing injection; same state restart without resetting owner or manually killing MySQL connections"
+}

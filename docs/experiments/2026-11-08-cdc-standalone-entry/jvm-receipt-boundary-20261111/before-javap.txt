@@ -1,0 +1,30 @@
+Compiled from "EventSourcedWorkflowActor.scala"
+public final class cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor$PersistedCheckpoint {
+  public java.lang.String persistenceId();
+  public long sequenceNr();
+  public java.lang.String executionId();
+  public cn.xuyinyin.magic.cdc.checkpoint.BatchCheckpoint checkpoint();
+  public cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor$PersistedCheckpoint(java.lang.String, long, java.lang.String, cn.xuyinyin.magic.cdc.checkpoint.BatchCheckpoint);
+}
+Compiled from "BootstrapJournal.scala"
+public final class cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournal$PersistedProgress {
+  public java.lang.String persistenceId();
+  public long sequenceNr();
+  public cn.xuyinyin.magic.cdc.bootstrap.BootstrapProgress state();
+  public cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournal$PersistedProgress(java.lang.String, long, cn.xuyinyin.magic.cdc.bootstrap.BootstrapProgress);
+}
+Compiled from "CdcJournalProgressVerifier.scala"
+public interface cn.xuyinyin.magic.cdc.persistence.CdcJournalProgressVerifier {
+  public static cn.xuyinyin.magic.cdc.persistence.CdcJournalProgressVerifier create(org.apache.pekko.actor.typed.ActorSystem<?>, scala.Function0<java.sql.Connection>, scala.Function0<java.sql.Connection>);
+  public abstract void verifyOn(java.sql.Connection, cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor$PersistedCheckpoint, java.lang.String, java.lang.String, cn.xuyinyin.magic.cdc.checkpoint.BatchCheckpoint);
+}
+Compiled from "BootstrapJournalProgressVerifier.scala"
+public final class cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournalProgressVerifier {
+  public static cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournalProgressVerifier create(org.apache.pekko.actor.typed.ActorSystem<?>, scala.Function0<java.sql.Connection>, scala.Function0<java.sql.Connection>);
+  public void verifyOn(java.sql.Connection, cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournal$PersistedProgress, java.lang.String, java.lang.String, java.lang.String);
+  public static final java.lang.String $anonfun$verifyOn$1();
+  public static final java.lang.String $anonfun$verifyOn$2();
+  public static final java.lang.String $anonfun$verifyOn$3();
+  public static final java.lang.String $anonfun$verifyOn$4();
+  public cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournalProgressVerifier(java.lang.String, java.lang.String, org.apache.pekko.actor.typed.ActorSystem<?>);
+}

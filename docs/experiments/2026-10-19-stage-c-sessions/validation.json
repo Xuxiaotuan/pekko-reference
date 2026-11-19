@@ -1,0 +1,35 @@
+{
+  "packageArtifact": {
+    "file": "/Users/xujiawei/magic/scala-workbench/pekko-reference/pekko-server/target/scala-2.13/pekko-reference_2.13-0.1.jar",
+    "sha256": "14c810ec997c659ae05a0c7a30695a2da18794c1f0f8e986425f9b36b20fbde5",
+    "requiredClasses": [
+      "cn/xuyinyin/magic/workflow/engine/registry/NodeRegistry.class",
+      "cn/xuyinyin/magic/workflow/nodes/base/BatchSourceSession.class",
+      "cn/xuyinyin/magic/workflow/nodes/base/SourceResourceScope.class"
+    ],
+    "testRegistryAbsent": true
+  },
+  "focusedTests": 156,
+  "focusedSuites": 10,
+  "fullModule": {
+    "passed": 440,
+    "failed": 0,
+    "abortedSuites": [
+      "cn.xuyinyin.magic.parser.calcite.MysqlSqlParserSpec",
+      "cn.xuyinyin.magic.parser.calcite.ComprehensiveCalciteTest"
+    ],
+    "gate": "evidence_incomplete"
+  },
+  "realWindowObservations": 8,
+  "realConverged": 7,
+  "knownAutomaticRecoveryFailure": "C2 FAIL_TERMINAL",
+  "realSessionReleaseCases": 2,
+  "protectedFiles": 69,
+  "protectedMismatches": [],
+  "limitations": [
+    "No DDL/multiple owners/shared readers/capacity proof",
+    "Release timeout is an observation; it does not prove the driver stopped",
+    "Fence is local to an Engine/executionId",
+    "Default custom CheckpointedNodeSource adapters must supply openBatches for asynchronous resource cleanup"
+  ]
+}

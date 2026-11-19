@@ -1,0 +1,6 @@
+Observed before/after the real proof-GC run:
+
+Before refresh: actual-D proof d9b4921a..., head 7742; page nodes 7731; page refs 7740.
+After Reader progress and a new actual-D proof: old proof d9b4921a... no longer existed; current proof f777e7d3..., head 13052; page nodes/refs 12672 each.
+The source ACK log remained append-only; Source/Sink rows stayed equal.
+The old runtime did not persist the last deletion counter, so the later metric-only patch was added but its KubeSphere run p6jr9 was externally cancelled after remaining RUNNING for more than 14 minutes. The functional deletion result above is from the deployed build-5 runtime.

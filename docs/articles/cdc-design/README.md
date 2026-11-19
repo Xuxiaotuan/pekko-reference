@@ -1,0 +1,235 @@
+# 从 Flink CDC 到 Pekko：共享捕获、全量转流与恢复协议
+
+一个 MySQL 实例有 70 多万张表，按需选择其中几张，先同步已有数据再持续追实时，并允许不停其他表地增加、取消订阅。本系列围绕这个目标解释当前代码、实验和剩余设计。70 万是业务目录背景，不是已完成的活跃复制规模验收。
+
+2026-10-27 的修订把持久任务索引、有界步骤和平台入口接回原来的五篇主线：资源模型与执行实体 → 真实 UPDATE 源码链路 → T/J/D 恢复协议 → LOW/HIGH 与批转流 → 与 Flink CDC 的具体取舍。源码变化、当前实测和历史材料分别标识；Actor 机制、旧 T/J/D 推导及失败仍保留在独立[技术附录](appendices/README.md)。文章更新不自动改变旧实验的版本或结果。
+
+## 独立 Runtime 的当前边界（2026-11-11）
+
+生产 `workflow` 目录已移除；历史执行器、Actor 和旧 receipt 投影保留为测试设施。生产包保留历史状态模型及旧 manifest 迁移，数据路径使用 BootstrapJournal。guardian 与控制存储实现位于 `cdc.guardian` / `cdc.control`。历史表结构、锁行和配额没有随目录清理删除。
+
+| 事项 | 当前依据 | 结论边界 |
+|---|---|---|
+| 生产执行器拆分 | 干净编译、生产 JAR 类清单 | 无旧 Actor/执行器类；不等于历史数据库整体升级验收 |
+| 历史持久化读取 | 18 个冻结序列化样本；真实旧 Journal 字节重放 | 类迁移与字节内容检查通过；完整数据库升级未验证 |
+| worker 隔离接管 | 排除测试类的独立 guardian/supervisor/worker；真实 MySQL、Journal、Sink | C0 的 64 行、384 字段一致；不覆盖 guardian JVM 重启 |
+| receipt 重启 | Bootstrap 独立 JVM 从 Journal 恢复并重签；伪造副本拒绝 | 证明重签及投影；不证明 L 实际删除或任意字节码攻击防护 |
+| 未知 B | C1 的 PAUSED、UNKNOWN grant 及失败日志保留 | 安全暂停；自动恢复未通过 |
+| L 的 GC | 独立 Runtime 持久化 namespace、pin、proof、operation，并按受保护前缀小批删除可重建 GROUP | RG/LG 实测通过；只证明逻辑回收，未知 B、慢表和容量不足安全暂停；未证明物理文件缩容 |
+
+[本轮源码与实验材料](../../experiments/2026-11-08-cdc-standalone-entry/retire-workflow-runtime-20261111/README.md)固定运行范围。以下各历史报告仍按原版本解释，不因目录调整重标通过。
+
+## 阅读顺序
+
+| 篇目 | 本篇要讲透的问题 |
+|---|---|
+| [一：70 万张表常驻 CDC](01-why-pekko-for-resident-cdc.md) | 为什么需要共享 Reader、表级任务和有界执行 |
+| [二：一条 MySQL UPDATE](02-source-and-recovery-contract.md) | 一条变更如何穿过 Reader、L、目标事务和 Journal |
+| [三：T/J/D 恢复协议](03-real-mysql-journal-failure.md) | 为什么 offset 不能单独恢复，ACK proof 如何形成恢复许可 |
+| [四：LOW/HIGH 与批转流](04-batch-to-stream-low-high.md) | 新表如何建立窗口、回填并切入持续同步 |
+| [五：Pekko 与 Flink](05-pekko-vs-flink-cdc.md) | 两种运行时如何承载同一个 CDC 业务承诺 |
+
+## 主线图
+
+```mermaid
+flowchart LR
+    A["70 万表目录<br/>5 → 7 动态订阅"] --> B["四平面架构"]
+    B --> C["B → LOW/HIGH → F"]
+    C --> D["SourceRecord → L → T/J/D"]
+    D --> E["ACK proof / GC"]
+    E --> F["Pekko / Flink 取舍"]
+```
+
+## 统一业务案例与论证入口
+
+全文区分源目录 N、已订阅 S 和活动工作 A(t)：70 万是 N 的需求背景，5→7 是本次案例中的 S，不能互换为容量证据。正面证据包括历史共享捕获、动态初始化及指定恢复样本；后续 A1/A2 又增加启动恢复分类和准入实测。本轮又经过真实平台 P01 的动态 5→7、P02 的十表 tail 后新增第十一表，以及独立的 700,000 条冷索引实验。它们各自支持对应层次，不从旧内核直接继承结论，也不合并成 70 万真实表验收。
+
+第二篇沿一条真实 UPDATE 追踪“回调—L—T—J—D—GC”，并保留 I08/I11/I16/I21 与启动反例材料。第三篇统一解释 T/J/D、ACK proof 和 owner fence；第四篇专门解释 B、LOW/HIGH、K、F 的批转流状态机。安全暂停不等于历史漏数已经补齐。
+
+## 主流程与关键术语
+
+```text
+持久接受意图 → 步骤预算准入 → capture启动证据
+→ Schema准备 → B绑定 → 冻结键上界U
+→ 每个固定范围：LOW → RR分页RAW → HIGH → 日志回填 → FINAL封存 → baseline T/J
+→ F绑定 → 从B完整回放到F → 审计 → 激活T → STREAMING J
+→ L dispatch唤醒 → 一批完整组T/J → 无待处理组则park
+→ 取消使用K与分批排空；维护停止不隐式退订
+```
+
+| 术语 | 含义 | 不能混同 |
+|---|---|---|
+| U | 固定的全表扫描最大主键 | binlog offset、事件时间 Watermark |
+| B / K | 一代订阅的捕获开始/停止边界 | 全量完成、取消命令刚被接受 |
+| LOW / HIGH | 一次范围读视图前后的真实日志 marker | 全局 Checkpoint、D 已经落盘 |
+| F | 全量之后有限追赶的固定终点 | 最后一个业务 GROUP、业务已原子发布 |
+| L | 持久完整组、Schema、marker 与 ACK 引用链 | 单一最大 offset、目标 T |
+| T / J / D | 目标事务 / Actor 接受进度 / SDK 持久 offset | 可以直接比较大小的三个计数器 |
+| grant / clean continuation | 一次有限工作许可 / 同 owner 已确认释放步骤的完整 J 证据 | 新执行身份、RR 读视图或内容封存 |
+| dispatch / park | capture 级 L 分派 / 无待处理组的持久休眠 | 每表定时器、数据已被 GC |
+
+## 版本与证据口径
+
+> 首页和附录中标注为 `f6313c0`、`74b6d9a`、`55fad0c` 等的链接，都是历史源码或历史实验快照；当前五篇文章的源码阅读基线是 `cc09559`，文章整理提交是 `9653daa`。历史链接用于复算当时材料，不代表当前生产源码路径。
+
+本轮平台源码以仓库相对链接进入，最终提交、生产/测试摘要与运行环境由[平台报告](../../experiments/2026-10-27-cdc-platform/README.md)固定。项目依赖仍为 Scala 2.13.12、Pekko 1.1.3、Persistence JDBC 1.1.1、Debezium 3.6.1.Final；已归档实验使用 MySQL 9.5.0、JDK 17.0.14，没有借此升级 SDK。
+
+版本分为三层，不能互换：
+
+| 层次 | 源码与证据口径 |
+|---|---|
+| 历史 LOW/HIGH 内核与旧反例 | 文章此前固定 [`55fad0c`](https://github.com/Xuxiaotuan/pekko-reference/tree/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059)；原冻结摘要和失败保留 |
+| 已提交的启动分类与准入 | [`74b6d9a`](https://github.com/Xuxiaotuan/pekko-reference/tree/74b6d9a)，实际候选源树与定点结果见[A1/A2](../../experiments/2026-10-27-capture-admission/README.md) |
+| 本次生命周期、有界调度与入口 | 当前源码及[平台报告](../../experiments/2026-10-27-cdc-platform/README.md)；按冻结候选分别记录 B/P/H、L 归属反例与修后结果，测试设施不同的全源 hash 不互换 |
+
+初始化矩阵在 `00ad18e` 加未提交实现的冻结工作区运行，全源树摘要为 `c71f260870325aa54bb6818200a875689afaace93d10dc8496a11c99e5f362da`。后续启动探针候选 1—4 生产文件一致，但测试设施不同，不能用一个全源树 hash 冒充所有运行。candidate4 保留 339 项源码清单，与发布后的相应源码逐项匹配；发布提交、运行时 HEAD 和材料复算是三种事实。[初始化版本记录](../../experiments/2026-10-25-bootstrap/final-version.json) · [启动候选 4](../../experiments/2026-10-25-capture-startup/candidate-4.json)
+
+历史版本 `d88ec80`、`65ab541` 和 `00ad18e` 的来源、运行 HEAD 与证据见[独立版本档案](appendices/00-versions-and-evidence-history.md)。第五篇的 Flink CDC 源码对照固定 3.6.0；另一组[Flink CDC 系列](https://xuyinyin.cn/flink-cdc-series/)的 3.7.0 与 Paimon 实验不混作同版或同 Sink 结果。没有同负载性能基准。
+
+全文区分：**源码结论**、**真实实验结果**、**保存材料复算**、**条件性推理/模型**、**设计提案/未验证**。小规模终值一致、组件 suite 通过或归档校验都不能替代更高层验收。
+
+<a id="全系列验证范围汇总"></a>
+
+## 当前验证范围汇总
+
+> **2026-10-27 A/B 补测：**[证据与未完成清单](../../experiments/2026-10-27-ab-followup/README.md)记录真实 MySQL、部分 Journal/Sink 故障及逐字段复算。A/B 展开矩阵尚未跑完；A05 的可证明未源写分支目前安全暂停，不能宣称自动继续。
+
+| 对象 | 证据与结果 | 支持的结论 | 未覆盖/失败边界 |
+|---|---|---|---|
+| Actor 执行模型 | 历史 10,000 普通 Actor、40,000 消息、2 线程 | 本条件下 handler 串行及共享线程机制 | 持久 CDC 实体、70 万真实表与资源斜率 |
+| 共享捕获阶段一 | 历史 R01—R16 展开 31 项、可信复制基线 | 对应版本的动态 B/K、L 和指定表级恢复语义 | 不是在线全量初始化；旧 R02 的启动失败保留 |
+| LOW/HIGH 与批转流 | 历史 I01—I24 展开 61 项，全部预期断言成立 | 对应版本的分页、窗口回填、封存、B→F、激活及故障窗口 | 含安全暂停负例，不能写成 61 次自动恢复收敛 |
+| 全量逐字段核验 | 历史 61 项材料复算，17,874 个必需相等字段，另有新 generation 对账 | 保存材料的行集、字段比较与证明链一致 | 复算不是数据库重跑；不证明任意外部副作用 |
+| 相关检查与旧回归 | 历史同冻结源树 80 通过；旧真实 58 项中 57 通过、R02 失败 | 分别支持其检查范围 | 不与后续数字相加称完整验收通过 |
+| 历史后端检查 | 593 通过 | 当时明确选择集合的回归 | 排除 ExternalIntegration 与旧 ActorSpec |
+| 启动自然/确定性反例 | 自然样本 PASS，选点前 B 提交 FAIL；B-bound＋INITIAL 样本实际五字段旧值 | 证明限定时序下旧行为会越过必要更新 | copied baseline、batch/TLS/双门条件保留；不推断失败频率 |
+| A0/B0 信号与资源探针 | 七个实际组合、一个真实 Journal/Sink witness；heartbeat 静默对照与最终会话确认 | snapshot、当前 callback/ACK、实际 D、本地结束和服务端释放必须分开观察 | 原 5 秒自然释放未通过；SDK-only 不能替代 L/目标保证 |
+| A1/A2 生产准入 | 最终候选 6 项启动/Reader 检查、5 个定点 Bootstrap variant；603 项常规后端、24 项取证/runner 工具检查 | 特定风险状态启动前拒绝、当前 attempt 准入及所选 T/J 恢复窗口 | 不补齐旧漏数；不是完整 A/B 26 项或全部 I 矩阵重跑 |
+| 本轮关闭与释放 | 两个正常 Reader 场景、全局关闭容量与有界响应检查；真实 Kernel 另验证未决 L 事务的账号归属、UNKNOWN 与 owner 保留 | 修复 L 在共享控制账号下被漏观察的真实反例；只有实际事务结束才可复用 | 旧正常关闭不补作 L 故障证明；不是 B01—B10 全扩展矩阵或快速释放 SLA |
+| 本轮平台与入口 | 真实 P01—P08；本地双 MySQL GC/RG 矩阵；远端 amd64 acceptance 的镜像、Deployment、API port-forward 和 Source binlog 启动；本地完整回归 722 成功、0 失败、415 external_blocked 取消 | 按 CONVERGED / CANCELED / SAFE_PAUSED / CONTROL_PLANE_ONLY 分开；远端 State 复查失败保留 UNKNOWN | GC no-worthwhile-space-saving 的真实集群重规划仍以部署后 `replan-*` 材料为准；旧静态快照 guardian 证据不等于新共享链路 HA |
+| 冷元数据与资源 | 50,000 pilot 后，700,000 条精确 COUNT、7,000 页遍历、EXPLAIN、60 秒固定观察；无 ActorSystem/Reader/源表 | 对应配置的索引与查询可执行，测试进程堆/线程/磁盘另列原值 | 不是同量真实源表、CDC 吞吐、长期稳定或总 RSS 上界 |
+| 本轮内核及相关回归 | 最终生产代码的所选常规后端 650 项、前端 13 项和构建；完整 61 项初始化检查含 13 个源 marker 未知的 SAFE_PAUSED；31 项共享检查与原 27 项按报告分版 | 失败期待、正确拒绝、功能恢复与保存材料复算分别报告 | 常规集合排除 ExternalIntegration 和已知旧 ActorSpec；61 项不是 61 次自动恢复，旧反例不删除 |
+| 规模与长期维护 | 700,000 条冷索引实验；Runtime GC 固定负载约 12 分钟、10 轮生命周期 soak | 冷目录和固定重启边界有证据 | 70 万真实活跃表、天级 churn、DDL、多 owner 与性能胜负未验证 |
+
+整体验收保持 **`evidence_incomplete`**。新增门改变了特定风险状态的行为，旧不一致没有因此被改成成功；新的平台代码也不能直接继承历史内核的实验数字。捕获就绪、初始化完成、当前持续健康和资源已释放分别报告，不用一个 running 字段概括。
+
+## 当前材料与源码入口
+
+- [BootstrapRunner](https://github.com/Xuxiaotuan/pekko-reference/blob/9653daa/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapRunner.scala)及[步骤结果/continuation](https://github.com/Xuxiaotuan/pekko-reference/blob/9653daa/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapStep.scala)：内核与有界调度边界。
+- [CdcTaskStore](https://github.com/Xuxiaotuan/pekko-reference/blob/9653daa/server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcTaskStore.scala)、[CdcPlatformRuntime](https://github.com/Xuxiaotuan/pekko-reference/blob/9653daa/server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcPlatformRuntime.scala)、[CdcBootstrapKernel](https://github.com/Xuxiaotuan/pekko-reference/blob/9653daa/server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcBootstrapKernel.scala)：持久意图、grant、L 唤醒及活动会话。
+- [初始化报告、范围与故障清单](../../experiments/2026-10-25-bootstrap/README.md)、[独立复算](../../experiments/2026-10-25-bootstrap/final-summary.json)、[归档索引](../../experiments/2026-10-25-bootstrap/artifacts/archive-index.json)。
+- [启动恢复反例](../../experiments/2026-10-25-capture-startup/README.md)、[结果摘要](../../experiments/2026-10-25-capture-startup/summary.json)、[材料摘要清单](../../experiments/2026-10-25-capture-startup/SHA256SUMS.json)。
+- [双槽与资源释放报告](../../experiments/2026-10-25-cdc-lab-pool/README.md)、[双槽 suite 与后置结果](../../experiments/2026-10-25-cdc-lab-pool/scala-dual-slot-summary.json)。
+- [A0/B0 探针](../../experiments/2026-10-26-capture-admission-release/README.md)、[A1/A2 准入实测](../../experiments/2026-10-27-capture-admission/README.md)、[本轮平台报告](../../experiments/2026-10-27-cdc-platform/README.md)：按版本追踪后续变化。
+- [启动准入设计](../../development/specs/2026-10-25-shared-reader-startup-recovery-design.md)、[平台生命周期设计](../../development/specs/2026-10-25-cdc-platform-lifecycle-contract.md)：原设计背景；实际实施范围以源码和对应报告为准。
+
+## A/B 矩阵补测范围
+
+| 证据 | 实际结果 | 限制 |
+|---|---|---|
+| A10、A13、A16 | 指定真实 MySQL、Actor Journal、Sink 样本逐字段相等 | 预复制基线和指定旧版本；不是所有故障窗口或在线初始化 |
+| A11 完成态 D 命名空间冲突 | 真实 Reader 重启前安全暂停，Engine 创建数 0；4 行 24 字段相等 | 文件名由测试注入；不是自动恢复收敛 |
+| A12 ACK 父引用摘要错误 | 真实 Reader 重启前安全暂停，Engine 创建数 0；4 行 24 字段相等 | 测试注入一种引用损坏；不是自动恢复收敛 |
+| A14 未知 COMMIT 取消 | 定点 Store 路径实际失败，事务迟提交 | 不将其他表对账相等写成该路径成功；完整 Runner 仍需验证 |
+| B06 未决 COMMIT 与关闭 | 实际事务仍在途时 capture owner 锁已释放；结果不可复用 | Reader 级失败，不代表平台 owner 或接管结论 |
+| B05 启停竞态 | factory 前门与真实 MySQL task start 门在 180 秒内未确认释放 | 不能断言永久泄漏；测试门位于调用原 task 的 start 实现之前 |
+| A05、A09（历史版本） | 未绑定 B 安全暂停 | 当时尚无可靠证据支持自动继续；`B_BOUND` 观察事件不能替代持久状态，后续候选见下表 |
+| B04 callback 异常 | 异常回调未 ACK，T/J 不变；4 行中有 2 个字段差异 | Actor 在异常前已停止；未验证自动恢复 |
+| B10 旧 JVM 崩溃、L 事务仍在 | 新 JVM UNKNOWN，Engine 创建数 0；事务回滚后仍暂停 | 初始化基线 64 行相等，故障后 5 字段差异；未自动接管 |
+| B08 观察连接断开 | 关闭及复查均 UNKNOWN、owner 保留；4 行 24 字段相等，T 1/J 4 | 人为断开观察连接；未验证恢复观察或自动重启 |
+| B09 双 JVM 旧执行者迟到 ready | 新 JVM 保持 UNKNOWN、Engine 数 0，旧执行者继续后 64 行 384 字段相等 | 未覆盖所有跨实例旧消息形式 |
+| B02/B03/B08/B09 | 指定关闭、观察器和过期回复切点已取证 | 测试门或组件探针不升级为端到端保证 |
+
+[2026-10-28 补测报告与原始证据](../../experiments/2026-10-28-ab-matrix/README.md)保留各候选源码摘要、实际 T/J/D、回调及失败记录。矩阵整体仍为 `evidence_incomplete`。
+
+## 独立技术附录
+
+[技术附录索引](appendices/README.md)提供六份独立历史档案、固定版本入口和完整实验报告。原始证据、失败样本与校验脚本留在既有实验目录；后续报告另存新结果，不覆盖原始实验内容，也不把文章整理当作新增运行证据。
+
+## 2026-10-28 后续修复的范围
+
+| 对象 | 证据 | 边界 |
+|---|---|---|
+| B_PENDING 取消 / 未决 COMMIT（历史版本） | 提交迟到与回滚 Reader 样本安全暂停；完整作业未知 B 保持暂停 | 当时目标表尚未完成初始化，自动恢复未完成 |
+| 关闭与 owner | 工厂阻塞、实际 task 启动、未决事务关闭各有固定窗口样本 | 非全部启动时序；无观察器时可能持续占用 owner 和有限关闭线程 |
+| 端到端对账 | 未知 B 实验中运行表 64 行、384 字段相等，暂停表 64 行待初始化 | 不证明自动收敛或全量矩阵通过 |
+| 平台目标 | [本轮证据与限制](../../experiments/2026-10-28-cdc-followup/README.md) | 该历史版本的 A05/A09、DDL、GC、多 owner 接管、70 万真实表和长时负载仍未完成或未验证；后续未知 B 固定窗口见下表 |
+
+## 2026-10-29 P0 补测
+
+| 场景 | 实验结果 | 边界 |
+|---|---|---|
+| B04 回调异常后恢复 | 资源释放后重建 Reader 与同一 Journal 身份的 Actor，4 行 24 字段相等，并验证后续写入 | 预复制基线；指定窗口，不证明所有异常自动恢复 |
+| 工厂返回后、SDK 启动前关闭 | 修复前 180 秒内未观察到全部连接退出；修复后此窗口及相邻两个窗口空闲 | 修复前 JVM 退出后才空闲；长期阻塞及线程容量仍未验证 |
+| 测试入口 | 默认测试 623 项通过；移出无断言示例，百万条 mock 基准改为按需运行 | 真实 MySQL 故障实验需独立环境执行；当时未知 B 持久判定仍未完成 |
+
+[详细实验材料](../../experiments/2026-10-29-p0-followup/README.md)。
+
+## 未知 B 的写前证据
+
+新订阅在源 marker 写入前保存 D/L ACK 锚点，严格匹配和旧记录拒绝已经过组件测试；真实迟提交样本的锚点与当时 D 相等，但新表仍在 PAUSED、目标为空。该实验版本的自动恢复、原事务释放、Journal 与 UNKNOWN grant 联动尚未完成。[证据与边界](../../experiments/2026-10-29-unknown-b/README.md)。
+
+## 未知 B 的事务释放探针
+
+真实 MySQL 组件实验分别观察提交、回滚和迟提交；另一个独立旧 JVM 在数据库空闲确认后重新连接并写入，说明资源空闲不足以证明进程隔离。[实验材料](../../experiments/2026-10-29-b-release-proof/README.md)；该探针版本的自动恢复和端到端验收当时仍未完成。
+
+## 2026-10-29 受管未知 B 的新增证据
+
+当前候选基于提交 `62ec856f20a81f3da8d56caf290754f8361ac732` 之后的未提交工作区；不同实验的精确源码摘要以各自证据目录为准，不能把旧样本归给后续修改。
+
+| 范围 | 已观察结果 | 限制 |
+| --- | --- | --- |
+| D/ACK 与许可组件 | [真实 MySQL 事务与合成证明](../../experiments/2026-10-29-cdc-b-proof-component/README.md)：B_PENDING、B_BOUND、许可、预算与明确拒绝路径 | D/ACK、guardian 身份为合成；无真实 Reader、Journal、业务 Sink；反查有行数和时间上限 |
+| 迟提交旧候选 | [WAKE 样本](../../experiments/2026-10-29-cdc-managed-b-e2e-wake-candidate/README.md)：独立 guardian、真实 Reader/Journal/Sink，新表 64 行、384 字段相等 | 指定一次迟提交；worker 显式启用候选，清理时强制终止后继 worker，CDC owner 仍 ACTIVE |
+| 保留失败 | [更早样本](../../experiments/2026-10-29-cdc-managed-b-e2e-old-candidate/README.md)需要人工业务写入唤醒 binlog，清理证据不足 | 不算无人工干预恢复或正常资源释放成功 |
+| 当前候选源码 | 隔离、排空、D/L 证明、许可与 Journal 分支已衔接；多 grant 有保守准入 | 下方六项固定窗口使用同一候选；除单个 C1 样本外的生产入口窗口、多任务 TAIL 恢复、70 万表规模和长期运行未验证 |
+
+## 同一候选版固定窗口矩阵
+
+[六项固定窗口的完整证据](../../experiments/2026-10-29-cdc-managed-b-e2e-frozen/README.md)使用同一候选源码、独立 guardian JVM、真实 MySQL、Actor Journal 与 MySQL Sink；这六项的协调器运行在测试 JVM、worker 显式接线；另有一个 [生产入口 C1 样本](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)，实际经过独立 `SnapshotGuardianMain`、`SnapshotSupervisorMain` 和 `PekkoServer` 内的 `CdcPlatformExtension`。
+
+| 窗口 | 实际结果 | 边界 |
+| --- | --- | --- |
+| C0、C1、LATE_COMMIT、LATE_ROLLBACK | 四项 STREAMING；各自 64 行、384 字段相等；许可已消费、旧 grant RELEASED；许可中的 `marker_present` 依次为 0、1、1、0 | 清理强制停止后继 worker，CDC owner 仍 ACTIVE，不证明正常停机 |
+| GUARDIAN_LOST、GUARDIAN_UNREACHABLE | 两项 UNKNOWN grant、无 permit；源 64 行、目标 0 行 | 安全暂停，不是对账完成；失联样本后继 snapshot owner 仍 active、ticket launched，未确认排空 |
+| 版本与入口 | 六项样本各保存源码摘要、故障前后 B/F、D、L、T、J 和 ACK 日志 | 测试 JVM 协调器、测试 worker 显式接线；不证明所有生产入口窗口或时序 |
+| 生产入口 C1 | [真实三入口样本](../../experiments/2026-10-29-cdc-production-entry-c1/README.md)：COMMIT 已提交、回复丢失后恢复 STREAMING；64 行、384 字段相等 | 单个 C1；无生产 raw ACK 顺序；后继强制清理后 CDC owner 仍 ACTIVE；前两次配置及代理失败和未退休尾态保留 |
+| 长期动态订阅的恢复上限 | `CdcManagedPendingB` 最多反查 4096 条源控制表记录；当前无控制行 GC | 超限时未知 B 安全暂停；历史记录会累积，70 万表长期动态订阅及恢复可用性尚未验证。详见[组件实验](../../experiments/2026-10-29-cdc-b-proof-component/README.md) |
+
+### 2026-11-08 未提交候选的验证范围
+
+本组实验与前述历史版本分开统计；[环境、失败记录和原始材料入口](../../experiments/2026-11-08-cdc-standalone-entry/README.md)列出制品散列及各自限制。
+
+| 范围 | 当前观察 | 未验证边界 |
+| --- | --- | --- |
+| 清洁重启 | 两组各五轮正常关闭、重启，源与目标逐字段一致，Journal 恢复次数为零 | 小数据正常窗口；旧 owner 隔离证明不能只靠 PID |
+| 异常退出 | SIGKILL 后源新增数据，独立入口保持 UNKNOWN、T/J/D 未前进；L 未结束事务窗口新 Reader 为 0 | 目标仍落后源；L 事务回滚后仍暂停，均未证明 guardian 自动接管及追平 |
+| 活跃 owner 与 D 滞后 | P07 旧 owner 活跃时新 Reader 为 0、旧 owner 后续继续对账；I13-lag-crash 在 D 不变且 J 推进后崩溃，重启后 64 行 384 字段一致 | 受控 Runner 的固定 F/offset 锁窗口；未证明独立入口自动接管或全部 ACK/J/D 恢复窗口 |
+| 动态表 | P01 动态 5→7；P09 固定第三表读视图时增删改，追平后取消一表，另两表继续逐字段一致；P04 初始化中取消 | 受控测试 Runtime；P09 只覆盖指定 READ_OPEN 窗口，不代表全部 LOW/HIGH 时序 |
+| 初始化与重放 | I04 固定读视图内修改，I11 固定范围故障重读，I16 全量目标写入后故障，I20 增量目标写入后故障，样本对账通过 | 指定 Runner 和故障切点，不代表全部 Checkpoint/ACK 组合 |
+| 全量目标 COMMIT 未知 | I17 的真实 OK 回复丢失、I17-C0 的 COMMIT 未转发，最终各 64 行 384 字段相等 | baseline 页事务的受控 Runner；不是独立入口的自动接管，也不覆盖增量组事务未知 |
+| 增量 replay COMMIT 未知 | C1/C0 以及迟提交、旧连接断开两个样本最终组账本各 3 条、64 行 384 字段相等 | 受控 Runner 的指定窗口；断开样本无 PFS ROLLBACK 事件，不覆盖批次重排或独立入口自动接管 |
+| 独立入口与解耦 | 独立入口不启动 Workflow Sharding 和 Scheduler；目标配置和 CDC 回放契约不需 Workflow Node，旧 Runner 构造器与 Journal 样本保留 | 旧兼容适配、bootstrap 持久化与 guardian 调度依赖仍在；并未完全迁出 Workflow |
+| 冷任务元数据 | [候选版 H01](../../experiments/2026-11-08-cdc-standalone-entry/metadata-candidate/H01-metadata-63169a06a2ce/result.json)精确计数 700,000 条、完整扫描 7,000 页 | 未启动 ActorSystem/Reader；未测 70 万真实表、活跃吞吐或 Runtime 冷启动 |
+
+## 2026-11-09 持久化切换授权实验
+
+本轮真实旧 Workflow、独立 worker、Actor Journal 和 MySQL Sink 已完成 `KILL_T_BEFORE_J` 的持久化策略切换与运行时账号重绑定，源/目标 10 行、6 字段逐字段一致；并完成 Journal 提交后故障、启动回复丢失、配额/排空回复丢失、观察拒绝和 stale grant 窗口。结果和失败材料见 [持久化切换授权实验](../../experiments/2026-11-09-persistent-cutover-authorization/README.md)。
+
+[2026-11-12 Runtime GC 实验与边界](../../experiments/2026-11-12-runtime-gc/README.md)
+
+## 2026-11-15 第二至第四篇线上 Mermaid 最终审校
+
+本轮针对第二、三、四篇的篇章衔接、源码引用和线上 Mermaid 渲染做了最终核对。第二篇和第四篇补做了浏览器截图核对，第三篇使用上一轮已保存的截图核对结果。
+
+| 检查项 | 结果 | 核对结论 |
+| --- | --- | --- |
+| 第二篇 Mermaid | 通过 | 状态机图实际显示 `RECEIVED → GROUPED → L_COVERED → TARGET_COMMITTED / PAUSED → JOURNAL_HANDOFF / REPLAYABLE → ACCEPTED`；时序图实际显示 MySQL binlog、Debezium callback、Capture log L、Target ledger T、Journal J、Source offset D 及其交接箭头。 |
+| 第三篇 Mermaid | 通过 | 状态机和故障恢复时序图均已在页面实际渲染；图中恢复许可、Journal、目标账本和 ACK proof 的交接关系与正文一致。 |
+| 第四篇 Mermaid | 通过 | 状态机图实际显示 `REQUESTED → CAPTURE_READY → SCANNING → REPLAYING → ACTIVATING → STREAMING`，并保留 `PAUSED`、`CANCELING → CANCELED` 分支；时序图实际显示 Control Plane、Shared Reader、Snapshot Split、Capture Log、Target、Journal 之间的 LOW/HIGH、回放、校验和 `CAS STREAMING`。 |
+| 第二篇 → 第三篇 | 通过 | 第二篇把事件推进到可重放边界；第三篇承接 T/J/D、ACK proof、提交未知和恢复许可，没有把“已接受”扩大成“可 GC”或“端到端 exactly-once”。 |
+| 第三篇 → 第四篇 | 通过 | 第三篇负责恢复证明；第四篇承接 B、LOW/HIGH、K、F 和 Schema，解释新表如何从全量初始化进入持续流。 |
+| 源码引用 | 通过 | 当前文章源码基线为 `b17b9d1659f923fc256e3b09ad73777ac7acc677`；第三篇 `CdcManagedRecovery.scala` 行号已修正为 `20-233`，第二至第四篇引用的文件与行号均落在该基线文件范围内。 |
+| 线上链接与部署 | 通过 | 第二至第四篇线上页面返回 HTTP 200；网站最近一次部署 commit 为 `265fc1b`，Verify、Pages build/deployment、Deploy Jekyll site 三条 Actions 均成功。 |
+
+本次截图核对只证明当前线上页面的 Mermaid 图能够被浏览器解析和显示，不扩大为运行时状态机已经覆盖所有故障窗口的证明。历史实验仍按各自材料中的源码版本和切点解释；保存的实验材料、失败证据和未验证边界继续有效。

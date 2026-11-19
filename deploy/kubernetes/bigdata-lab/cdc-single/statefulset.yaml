@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pekko-cdc-single
+  namespace: bigdata-lab
+spec:
+  serviceName: pekko-cdc-single-headless
+  replicas: 1
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: OnDelete
+  selector:
+    matchLabels: {app: pekko-cdc-single}
+  template:
+    metadata:
+      labels: {app: pekko-cdc-single}
+    spec:
+      serviceAccountName: pekko-workflow
+      terminationGracePeriodSeconds: 60
+      nodeSelector: {kubernetes.io/hostname: xjw}
+      containers:
+        - name: pekko-cdc-single
+          image: pekko-reference:mysql-cdc-single-20260831
+          imagePullPolicy: Never
+          command: ["/bin/sh", "-c"]
+          args:
+            - >-
+              export PEKKO_HOSTNAME="${POD_NAME}.pekko-cdc-single-headless.bigdata-lab.svc.cluster.local";
+              exec /opt/docker/bin/pekko-reference
+          env:
+            - name: POD_NAME
+              valueFrom: {fieldRef: {fieldPath: metadata.name}}
+            - name: POD_IP
+              valueFrom: {fieldRef: {fieldPath: status.podIP}}
+            - name: PEKKO_PORT
+              value: "2551"
+            - name: HTTP_PORT
+              value: "8080"
+            - name: JAVA_OPTS
+              value: "-Dconfig.file=/opt/docker/conf/application-cdc-single.conf"
+            - name: DB_HOST
+              value: mysql
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_NAME
+              value: pekko_cdc_acceptance
+            - name: DB_USER
+              value: pekko_workflow
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: pekko-workflow-db, key: password}}
+            - name: WORKFLOW_DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: pekko-workflow-db, key: password}}
+            - name: MYSQL_CDC_PASSWORD
+              valueFrom: {secretKeyRef: {name: pekko-cdc-db, key: password}}
+            - name: CDC_OFFSET_FLUSH_INTERVAL_MS
+              value: "60000"
+          ports:
+            - {name: artery, containerPort: 2551}
+            - {name: http, containerPort: 8080}
+            - {name: management, containerPort: 7626}
+          volumeMounts:
+            - name: application-cdc-single
+              mountPath: /opt/docker/conf/application-cdc-single.conf
+              subPath: application-cdc-single.conf
+              readOnly: true
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {cpu: "1", memory: 1Gi}
+          livenessProbe:
+            httpGet: {path: /health/live, port: http}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: {path: /health/ready, port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          lifecycle:
+            preStop:
+              exec: {command: ["/bin/sh", "-c", "sleep 10"]}
+      volumes:
+        - name: application-cdc-single
+          configMap: {name: pekko-cdc-single-config}

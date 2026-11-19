@@ -1,0 +1,71 @@
+{
+  "forced_mysql_cleanup": false,
+  "fresh_per_case_source_state_admission": true,
+  "java_exit_codes": {
+    "a": 0,
+    "b": 0
+  },
+  "java_interval_ns": {
+    "a": {
+      "duration": 3088590000,
+      "end": 1792935687740936000,
+      "start": 1792935684652346000
+    },
+    "b": {
+      "duration": 2969483000,
+      "end": 1792935687691384000,
+      "start": 1792935684721901000
+    }
+  },
+  "java_overlap_ns": 2969483000,
+  "last_observed_server_dump_present_delay_ns": {
+    "a": 55088943000,
+    "b": 55138495000
+  },
+  "later_observation_delay_ns": {
+    "a": 149151480000,
+    "b": 149412853000
+  },
+  "later_observed_no_user_connections_no_transactions_no_workers": true,
+  "leases_released": true,
+  "normal_close_within_5_seconds": false,
+  "notes": [
+    "attempt1 stopped before Scala due internal event_scheduler counted as user; retained",
+    "attempt2 Scala4/4 passed but wrapper postflight125 because CLOSED socket binlog dump server records persisted beyond 5s",
+    "planned exact KILL was rejected before any KILL because target disappeared naturally; retained failure",
+    "later live read-only check confirmed zero on all four instances; do not infer immediate/5s graceful release"
+  ],
+  "precise_release_latency_known": false,
+  "production_sha256": "4953d46ef2fa32c4ecc588afd04c14a067aab024f6b0a218145ea8dc67ee55f4",
+  "protected_C_tables_checksums_unchanged": true,
+  "runner_attempt_exit_codes": {
+    "a": 125,
+    "b": 125
+  },
+  "runner_tool_sha256": "b8ff3ce0ea0fc5f2167072cc544419c791777c0bf8f1a6fd14742b2ed3961fbd",
+  "sbt_build_performed": false,
+  "scala_counts": {
+    "a": {
+      "canceled": 0,
+      "failed": 0,
+      "ignored": 0,
+      "pending": 0,
+      "succeeded": 2
+    },
+    "b": {
+      "canceled": 0,
+      "failed": 0,
+      "ignored": 0,
+      "pending": 0,
+      "succeeded": 2
+    }
+  },
+  "scala_success_total": 4,
+  "source_sha256": "fb9e4fba0c1b016e14972daf63aca7e2f388372c523fca2fa64ba33808e852a3",
+  "status": "scala_tests_passed_cleanup_eventually_confirmed",
+  "test_sha256": "f10069601fb1e370b32a3c9d08ac5170235b9254b7148f73d0fba98b9535d691",
+  "wrapper_sha256": {
+    "a": "71d8a526e0563e9cc105fff89cbc96859b51062b32da4b4439ae8da98d4f5890",
+    "b": "71d8a526e0563e9cc105fff89cbc96859b51062b32da4b4439ae8da98d4f5890"
+  }
+}

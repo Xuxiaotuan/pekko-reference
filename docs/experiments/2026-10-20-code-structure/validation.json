@@ -1,0 +1,80 @@
+{
+  "baselineFocusedTests": 44,
+  "finalFocusedTests": 59,
+  "fullModule": {
+    "passed": 440,
+    "failed": 0,
+    "abortedSuites": [
+      "MysqlSqlParserSpec",
+      "ComprehensiveCalciteTest"
+    ],
+    "exitCode": 1,
+    "gate": "evidence_incomplete"
+  },
+  "ui": {
+    "contractTests": 5,
+    "build": "PASS",
+    "boundary": "No new browser E2E run"
+  },
+  "formalRealCases": 10,
+  "realConvergedWindows": 7,
+  "knownRecoveryFailure": "C2 FAIL_TERMINAL",
+  "realReleaseCases": 2,
+  "protectedExperimentFiles": 82,
+  "protectedMismatches": [],
+  "archivedExamples": 13,
+  "package": {
+    "file": "pekko-server/target/scala-2.13/pekko-reference_2.13-0.1.jar",
+    "sha256": "6e811faf2ab844ac8395b4e1bbd0cc197defdc7382c946f6462b4dd9b7c3e25c",
+    "requiredClasses": [
+      "cn/xuyinyin/magic/workflow/engine/ReliableExecutionSessions.class",
+      "cn/xuyinyin/magic/workflow/engine/ReliableExecutionControl.class",
+      "cn/xuyinyin/magic/workflow/nodes/base/BatchSourceSession.class",
+      "cn/xuyinyin/magic/workflow/nodes/base/SourceResourceScope.class"
+    ],
+    "testRegistryAndLegacyExamplesAbsent": true,
+    "boundary": "Packaging only; not deployment of this JAR",
+    "archivedTypesAbsent": [
+      "cn/xuyinyin/magic/stream/PekkoStreamUtils",
+      "cn/xuyinyin/magic/stream/PriorityWorkerPoolShape",
+      "cn/xuyinyin/magic/single/PekkoGc",
+      "cn/xuyinyin/magic/common/DDataHelper",
+      "cn/xuyinyin/magic/workflow/actors/WorkflowActor",
+      "cn/xuyinyin/magic/stream/cdc/SimpleCdcStreamDemo",
+      "cn/xuyinyin/magic/stream/cdc/WatermarkStreamAlgorithmDemo",
+      "cn/xuyinyin/magic/stream/cdc/BasicCdcDemo",
+      "cn/xuyinyin/magic/stream/cdc/WatermarkAlgorithmDemo",
+      "cn/xuyinyin/magic/stream/cdc/models/CdcEventType",
+      "cn/xuyinyin/magic/stream/cdc/models/INSERT",
+      "cn/xuyinyin/magic/stream/cdc/models/UPDATE",
+      "cn/xuyinyin/magic/stream/cdc/models/DELETE",
+      "cn/xuyinyin/magic/stream/cdc/models/CdcEvent",
+      "cn/xuyinyin/magic/stream/cdc/models/WatermarkEvent",
+      "cn/xuyinyin/magic/stream/cdc/models/SyncStatus",
+      "cn/xuyinyin/magic/stream/cdc/models/FULL_SYNC",
+      "cn/xuyinyin/magic/stream/cdc/models/INCREMENTAL_SYNC",
+      "cn/xuyinyin/magic/stream/cdc/models/PAUSED",
+      "cn/xuyinyin/magic/stream/cdc/models/SyncConfig",
+      "cn/xuyinyin/magic/stream/cdc/models/SyncResult",
+      "cn/xuyinyin/magic/stream/cdc/models/User",
+      "cn/xuyinyin/magic/stream/cdc/models/Order",
+      "cn/xuyinyin/magic/stream/cdc/watermark/WatermarkManager",
+      "cn/xuyinyin/magic/stream/cdc/watermark/WatermarkStatus",
+      "cn/xuyinyin/magic/stream/cdc/watermark/WatermarkEventHandler",
+      "cn/xuyinyin/magic/stream/cdc/simulator/CdcDataSimulator",
+      "cn/xuyinyin/magic/stream/cdc/simulator/DataStats",
+      "cn/xuyinyin/magic/stream/cdc/sync/SimpleFullSyncProcessor",
+      "cn/xuyinyin/magic/stream/cdc/sync/SyncProgress",
+      "cn/xuyinyin/magic/stream/cdc/sync/SimpleIncrementalSyncProcessor",
+      "cn/xuyinyin/magic/stream/cdc/sync/IncrementalSyncStatus"
+    ]
+  },
+  "structure": {
+    "verification": "PASS",
+    "processBatchUnchanged": true,
+    "controlBodyUnchanged": true,
+    "resourceScopeUnchanged": true,
+    "engineCancellationHookPreserved": true,
+    "boundary": "Source comparison only; actual runtime results are recorded separately."
+  }
+}

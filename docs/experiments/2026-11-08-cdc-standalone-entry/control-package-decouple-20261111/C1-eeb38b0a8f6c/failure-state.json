@@ -1,0 +1,976 @@
+{
+  "D": [{
+    "offset_key": "[\"managed_eeb38b0a8f6c\",{\"server\":\"managed_eeb38b0a8f6c\"}]",
+    "offset_val": "{\"ts_sec\":1794405841,\"file\":\"binlog.000015\",\"pos\":80894,\"gtids\":\"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-1487\",\"server_id\":852821}"
+  }],
+  "J": [{
+    "persistence_id": "bootstrap-v1-managed_eeb38b0a8f6c-a4023accbe88ddc4457d6e27c418d0216b7b17e9ed2b42e50dc643fec7c528f4",
+    "event_ser_id": "33",
+    "event_ser_manifest": "cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournal$Advanced",
+    "payload_hex": "BF657374617465BF687265766973696F6E01657068617365665155455545446A646566696E6974696F6E7840356531313837643966643236396435346235626135336636353530363563623735313133363839313935343265633932343437306665613332306261303731306B657865637574696F6E4964782466373039633130662D396432362D346239312D383737322D376566303264313861343037657570706572F667706C616E6E6564F4696E6578744C6F776572F665696E6465780067617474656D7074006677696E646F77F6686D616E6966657374F66B6170706C69656450616765006566656E6365F66A64656C74614166746572006D626174636853657175656E6365006E636F6D706C6574696F6E526F6F7460707265636F76657279417474656D707473006F63616E63656C526571756573746564F4676661696C757265F66E7265636F766572795065726D6974F6757265636F7665727952656365697074446967657374F6FFFF",
+    "sequence_number": "1"
+  }, {
+    "persistence_id": "bootstrap-v1-managed_eeb38b0a8f6c-a4023accbe88ddc4457d6e27c418d0216b7b17e9ed2b42e50dc643fec7c528f4",
+    "event_ser_id": "33",
+    "event_ser_manifest": "cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournal$Advanced",
+    "payload_hex": "BF657374617465BF687265766973696F6E02657068617365665041555345446A646566696E6974696F6E7840356531313837643966643236396435346235626135336636353530363563623735313133363839313935343265633932343437306665613332306261303731306B657865637574696F6E4964782466373039633130662D396432362D346239312D383737322D376566303264313861343037657570706572F667706C616E6E6564F4696E6578744C6F776572F665696E6465780067617474656D7074006677696E646F77F6686D616E6966657374F66B6170706C69656450616765006566656E6365F66A64656C74614166746572006D626174636853657175656E6365006E636F6D706C6574696F6E526F6F7460707265636F76657279417474656D707473006F63616E63656C526571756573746564F4676661696C75726578196C6F63616C5F72656C656173655F756E636F6E6669726D65646E7265636F766572795065726D6974F6757265636F7665727952656365697074446967657374F6FFFF",
+    "sequence_number": "2"
+  }],
+  "L": [{
+    "resume_json": "",
+    "digest": "12aa797271803ba5dbc2beb6df6ac45d4cf8409daf9cd924c44fba3f81898d30",
+    "point_json": null,
+    "kind": "PROFILE",
+    "payload": "{\"database\":\"pekko_test_cdc_window_eeb38b0a8f6c\",\"decoder\":\"debezium-3.6.1/capture-v1\",\"historyTable\":\"capture_history\",\"maxLogBytes\":134217728,\"offsetTable\":\"capture_offsets\",\"sourceLineage\":\"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843\",\"stateLineage\":\"6e135a5a-dd76-11f1-9924-d74efd0f4f62\",\"version\":1}",
+    "source_key": "3592ffa2030b073755e1bfce89d4b5fe1411cf6f20db519f59fbf268da2a81e6",
+    "subscription_id": "",
+    "seq": "1"
+  }, {
+    "resume_json": "",
+    "digest": "80711c652c86784f39e8425b89a81f761efe55ea172490de031e8d6a579b2a77",
+    "point_json": null,
+    "kind": "SCHEMA",
+    "payload": "{\"columns\":[{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":-5,\"length\":null,\"name\":\"id\",\"nativeType\":null,\"optional\":false,\"position\":1,\"scale\":null,\"typeExpression\":\"BIGINT\",\"typeName\":\"BIGINT\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":128,\"name\":\"label\",\"nativeType\":null,\"optional\":false,\"position\":2,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":3,\"length\":18,\"name\":\"amount\",\"nativeType\":null,\"optional\":false,\"position\":3,\"scale\":4,\"typeExpression\":\"DECIMAL\",\"typeName\":\"DECIMAL\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":240,\"name\":\"note\",\"nativeType\":null,\"optional\":true,\"position\":4,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":93,\"length\":6,\"name\":\"updated_at\",\"nativeType\":null,\"optional\":false,\"position\":5,\"scale\":null,\"typeExpression\":\"DATETIME\",\"typeName\":\"DATETIME\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":4,\"length\":null,\"name\":\"revision\",\"nativeType\":null,\"optional\":false,\"position\":6,\"scale\":null,\"typeExpression\":\"INT\",\"typeName\":\"INT\"}],\"comment\":null,\"defaultCharsetName\":\"utf8mb4\",\"primaryKeyColumnNames\":[\"id\"]}",
+    "source_key": "fba9b81a6a349b361d307539893388836166f586a3378b7cd4e091771ff6098d",
+    "subscription_id": "",
+    "seq": "2"
+  }, {
+    "resume_json": "",
+    "digest": "b4296eaa8575a739b80f32eb6ef156bf53fabf4c7eb449db79d5ea4e5bb6504f",
+    "point_json": null,
+    "kind": "SCHEMA",
+    "payload": "{\"columns\":[{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":64,\"name\":\"batch_id\",\"nativeType\":null,\"optional\":false,\"position\":1,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":255,\"name\":\"workflow_id\",\"nativeType\":null,\"optional\":false,\"position\":2,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":255,\"name\":\"execution_id\",\"nativeType\":null,\"optional\":false,\"position\":3,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":255,\"name\":\"source_node_id\",\"nativeType\":null,\"optional\":false,\"position\":4,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":128,\"name\":\"partition_id\",\"nativeType\":null,\"optional\":false,\"position\":5,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":-5,\"length\":null,\"name\":\"batch_sequence\",\"nativeType\":null,\"optional\":false,\"position\":6,\"scale\":null,\"typeExpression\":\"BIGINT\",\"typeName\":\"BIGINT\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":\"mysql.numeric-pk\",\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":64,\"name\":\"cursor_kind\",\"nativeType\":null,\"optional\":false,\"position\":7,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":null,\"name\":\"cursor_value\",\"nativeType\":null,\"optional\":false,\"position\":8,\"scale\":null,\"typeExpression\":\"LONGTEXT\",\"typeName\":\"LONGTEXT\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":null,\"name\":\"upper_bound\",\"nativeType\":null,\"optional\":false,\"position\":9,\"scale\":null,\"typeExpression\":\"LONGTEXT\",\"typeName\":\"LONGTEXT\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":-5,\"length\":null,\"name\":\"source_rows\",\"nativeType\":null,\"optional\":false,\"position\":10,\"scale\":null,\"typeExpression\":\"BIGINT\",\"typeName\":\"BIGINT\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":-5,\"length\":null,\"name\":\"target_rows\",\"nativeType\":null,\"optional\":false,\"position\":11,\"scale\":null,\"typeExpression\":\"BIGINT\",\"typeName\":\"BIGINT\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":\"1970-01-01 00:00:00\",\"enumValues\":null,\"generated\":false,\"jdbcType\":2014,\"length\":6,\"name\":\"committed_at\",\"nativeType\":null,\"optional\":false,\"position\":12,\"scale\":null,\"typeExpression\":\"TIMESTAMP\",\"typeName\":\"TIMESTAMP\"}],\"comment\":null,\"defaultCharsetName\":\"utf8mb4\",\"primaryKeyColumnNames\":[\"batch_id\"]}",
+    "source_key": "db39b008161e4f9e83a87281a0846a9bc4a39aa552b8496b4b14427822f0ca4c",
+    "subscription_id": "",
+    "seq": "3"
+  }, {
+    "resume_json": "",
+    "digest": "84d47e5cf0186de7c13fb8274ef3c5e73aaec3706aefdf6e5ad6e4255d8d7cb4",
+    "point_json": null,
+    "kind": "SCHEMA",
+    "payload": "{\"columns\":[{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":255,\"name\":\"persistence_id\",\"nativeType\":null,\"optional\":false,\"position\":1,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":-5,\"length\":null,\"name\":\"sequence_number\",\"nativeType\":null,\"optional\":false,\"position\":2,\"scale\":null,\"typeExpression\":\"BIGINT\",\"typeName\":\"BIGINT\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":-5,\"length\":null,\"name\":\"created\",\"nativeType\":null,\"optional\":false,\"position\":3,\"scale\":null,\"typeExpression\":\"BIGINT\",\"typeName\":\"BIGINT\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":4,\"length\":null,\"name\":\"snapshot_ser_id\",\"nativeType\":null,\"optional\":false,\"position\":4,\"scale\":null,\"typeExpression\":\"INT\",\"typeName\":\"INT\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":null,\"name\":\"snapshot_ser_manifest\",\"nativeType\":null,\"optional\":false,\"position\":5,\"scale\":null,\"typeExpression\":\"TEXT\",\"typeName\":\"TEXT\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":2004,\"length\":null,\"name\":\"snapshot_payload\",\"nativeType\":null,\"optional\":false,\"position\":6,\"scale\":null,\"typeExpression\":\"BLOB\",\"typeName\":\"BLOB\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":4,\"length\":null,\"name\":\"meta_ser_id\",\"nativeType\":null,\"optional\":true,\"position\":7,\"scale\":null,\"typeExpression\":\"INT\",\"typeName\":\"INT\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":null,\"name\":\"meta_ser_manifest\",\"nativeType\":null,\"optional\":true,\"position\":8,\"scale\":null,\"typeExpression\":\"TEXT\",\"typeName\":\"TEXT\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":2004,\"length\":null,\"name\":\"meta_payload\",\"nativeType\":null,\"optional\":true,\"position\":9,\"scale\":null,\"typeExpression\":\"BLOB\",\"typeName\":\"BLOB\"}],\"comment\":null,\"defaultCharsetName\":\"utf8mb4\",\"primaryKeyColumnNames\":[\"persistence_id\",\"sequence_number\"]}",
+    "source_key": "ea24ef5f535a08b2403911fe1e32e0a6c925c85d17c8a3dff6dde262a2636b75",
+    "subscription_id": "",
+    "seq": "4"
+  }, {
+    "resume_json": "",
+    "digest": "2922d2fa1fe119d0746a1adf13e397d02cef38a2c1147f26af17dc926dc6defc",
+    "point_json": null,
+    "kind": "SCHEMA",
+    "payload": "{\"columns\":[{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":-5,\"length\":null,\"name\":\"id\",\"nativeType\":null,\"optional\":false,\"position\":1,\"scale\":null,\"typeExpression\":\"BIGINT\",\"typeName\":\"BIGINT\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":128,\"name\":\"label\",\"nativeType\":null,\"optional\":false,\"position\":2,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":3,\"length\":18,\"name\":\"amount\",\"nativeType\":null,\"optional\":false,\"position\":3,\"scale\":4,\"typeExpression\":\"DECIMAL\",\"typeName\":\"DECIMAL\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":240,\"name\":\"note\",\"nativeType\":null,\"optional\":true,\"position\":4,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":93,\"length\":6,\"name\":\"updated_at\",\"nativeType\":null,\"optional\":false,\"position\":5,\"scale\":null,\"typeExpression\":\"DATETIME\",\"typeName\":\"DATETIME\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":4,\"length\":null,\"name\":\"revision\",\"nativeType\":null,\"optional\":false,\"position\":6,\"scale\":null,\"typeExpression\":\"INT\",\"typeName\":\"INT\"}],\"comment\":null,\"defaultCharsetName\":\"utf8mb4\",\"primaryKeyColumnNames\":[\"id\"]}",
+    "source_key": "2caeb5c86ccebf27c6cfff2d738facab66d55b558fb34dd8563fe5a79ca22e49",
+    "subscription_id": "",
+    "seq": "5"
+  }, {
+    "resume_json": "",
+    "digest": "4e8f97ad77f67d7b0531e6790db526f899e6a7e0c5f178b493c48cbd6a6fe720",
+    "point_json": null,
+    "kind": "SCHEMA",
+    "payload": "{\"columns\":[{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":-5,\"length\":null,\"name\":\"event_id\",\"nativeType\":null,\"optional\":false,\"position\":1,\"scale\":null,\"typeExpression\":\"BIGINT UNSIGNED\",\"typeName\":\"BIGINT UNSIGNED\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":255,\"name\":\"tag\",\"nativeType\":null,\"optional\":false,\"position\":2,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"}],\"comment\":null,\"defaultCharsetName\":\"utf8mb4\",\"primaryKeyColumnNames\":[\"event_id\",\"tag\"]}",
+    "source_key": "29540dacd48d021ef01ae933dfbb53379df55e70d8a372d66fbc62f1d517912e",
+    "subscription_id": "",
+    "seq": "6"
+  }, {
+    "resume_json": "",
+    "digest": "5efb2880e57c2ab50a17b611fb30b9b9d1757bcc5d7992635cc1a70672c34944",
+    "point_json": null,
+    "kind": "SCHEMA",
+    "payload": "{\"columns\":[{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":-5,\"length\":null,\"name\":\"id\",\"nativeType\":null,\"optional\":false,\"position\":1,\"scale\":null,\"typeExpression\":\"BIGINT\",\"typeName\":\"BIGINT\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":128,\"name\":\"label\",\"nativeType\":null,\"optional\":false,\"position\":2,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":3,\"length\":18,\"name\":\"amount\",\"nativeType\":null,\"optional\":false,\"position\":3,\"scale\":4,\"typeExpression\":\"DECIMAL\",\"typeName\":\"DECIMAL\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":240,\"name\":\"note\",\"nativeType\":null,\"optional\":true,\"position\":4,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":93,\"length\":6,\"name\":\"updated_at\",\"nativeType\":null,\"optional\":false,\"position\":5,\"scale\":null,\"typeExpression\":\"DATETIME\",\"typeName\":\"DATETIME\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":4,\"length\":null,\"name\":\"revision\",\"nativeType\":null,\"optional\":false,\"position\":6,\"scale\":null,\"typeExpression\":\"INT\",\"typeName\":\"INT\"}],\"comment\":null,\"defaultCharsetName\":\"utf8mb4\",\"primaryKeyColumnNames\":[\"id\"]}",
+    "source_key": "4304dc2a938583e25d83516c184894b96f6fe333933621e733f82a69926dc8fb",
+    "subscription_id": "",
+    "seq": "7"
+  }, {
+    "resume_json": "",
+    "digest": "72f86a1ee44fe0f2e78d7852a20cf22d5d54eb201e81e988c685143e986d09c6",
+    "point_json": null,
+    "kind": "SCHEMA",
+    "payload": "{\"columns\":[{\"autoIncremented\":true,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":true,\"jdbcType\":-5,\"length\":null,\"name\":\"ordering\",\"nativeType\":null,\"optional\":false,\"position\":1,\"scale\":null,\"typeExpression\":\"BIGINT UNSIGNED\",\"typeName\":\"BIGINT UNSIGNED\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":\"0\",\"enumValues\":null,\"generated\":false,\"jdbcType\":5,\"length\":1,\"name\":\"deleted\",\"nativeType\":null,\"optional\":false,\"position\":2,\"scale\":null,\"typeExpression\":\"TINYINT\",\"typeName\":\"TINYINT\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":255,\"name\":\"persistence_id\",\"nativeType\":null,\"optional\":false,\"position\":3,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":-5,\"length\":null,\"name\":\"sequence_number\",\"nativeType\":null,\"optional\":false,\"position\":4,\"scale\":null,\"typeExpression\":\"BIGINT\",\"typeName\":\"BIGINT\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":null,\"name\":\"writer\",\"nativeType\":null,\"optional\":false,\"position\":5,\"scale\":null,\"typeExpression\":\"TEXT\",\"typeName\":\"TEXT\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":-5,\"length\":null,\"name\":\"write_timestamp\",\"nativeType\":null,\"optional\":false,\"position\":6,\"scale\":null,\"typeExpression\":\"BIGINT\",\"typeName\":\"BIGINT\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":null,\"name\":\"adapter_manifest\",\"nativeType\":null,\"optional\":false,\"position\":7,\"scale\":null,\"typeExpression\":\"TEXT\",\"typeName\":\"TEXT\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":2004,\"length\":null,\"name\":\"event_payload\",\"nativeType\":null,\"optional\":false,\"position\":8,\"scale\":null,\"typeExpression\":\"BLOB\",\"typeName\":\"BLOB\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":4,\"length\":null,\"name\":\"event_ser_id\",\"nativeType\":null,\"optional\":false,\"position\":9,\"scale\":null,\"typeExpression\":\"INT\",\"typeName\":\"INT\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":null,\"name\":\"event_ser_manifest\",\"nativeType\":null,\"optional\":false,\"position\":10,\"scale\":null,\"typeExpression\":\"TEXT\",\"typeName\":\"TEXT\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":2004,\"length\":null,\"name\":\"meta_payload\",\"nativeType\":null,\"optional\":true,\"position\":11,\"scale\":null,\"typeExpression\":\"BLOB\",\"typeName\":\"BLOB\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":4,\"length\":null,\"name\":\"meta_ser_id\",\"nativeType\":null,\"optional\":true,\"position\":12,\"scale\":null,\"typeExpression\":\"INT\",\"typeName\":\"INT\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":null,\"name\":\"meta_ser_manifest\",\"nativeType\":null,\"optional\":true,\"position\":13,\"scale\":null,\"typeExpression\":\"TEXT\",\"typeName\":\"TEXT\"}],\"comment\":null,\"defaultCharsetName\":\"utf8mb4\",\"primaryKeyColumnNames\":[\"persistence_id\",\"sequence_number\"]}",
+    "source_key": "1b3c6191a8076d9ef34713f2dcdc5cd78f1757c0857f7e7ccda0e3131fce9be8",
+    "subscription_id": "",
+    "seq": "8"
+  }, {
+    "resume_json": "",
+    "digest": "8bbe6ee214060b8444b87f037507c4501d42c1ed20e151ec278a49d673be474b",
+    "point_json": null,
+    "kind": "SCHEMA",
+    "payload": "{\"columns\":[{\"autoIncremented\":true,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":true,\"jdbcType\":-5,\"length\":null,\"name\":\"audit_id\",\"nativeType\":null,\"optional\":false,\"position\":1,\"scale\":null,\"typeExpression\":\"BIGINT\",\"typeName\":\"BIGINT\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":1,\"name\":\"op\",\"nativeType\":null,\"optional\":true,\"position\":2,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":-5,\"length\":null,\"name\":\"row_id\",\"nativeType\":null,\"optional\":true,\"position\":3,\"scale\":null,\"typeExpression\":\"BIGINT\",\"typeName\":\"BIGINT\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":4,\"length\":null,\"name\":\"old_revision\",\"nativeType\":null,\"optional\":true,\"position\":4,\"scale\":null,\"typeExpression\":\"INT\",\"typeName\":\"INT\"},{\"autoIncremented\":false,\"charsetName\":null,\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":4,\"length\":null,\"name\":\"new_revision\",\"nativeType\":null,\"optional\":true,\"position\":5,\"scale\":null,\"typeExpression\":\"INT\",\"typeName\":\"INT\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":128,\"name\":\"old_label\",\"nativeType\":null,\"optional\":true,\"position\":6,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":128,\"name\":\"new_label\",\"nativeType\":null,\"optional\":true,\"position\":7,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"}],\"comment\":null,\"defaultCharsetName\":\"utf8mb4\",\"primaryKeyColumnNames\":[\"audit_id\"]}",
+    "source_key": "c5374337546089dae7e0e376030e97e0dadcf7558f5682cb67164a76a2499cb2",
+    "subscription_id": "",
+    "seq": "9"
+  }, {
+    "resume_json": "",
+    "digest": "db0305d248d22d7e405f62249a4221dbc8c28f7ca64ba89f629840cc43254b36",
+    "point_json": null,
+    "kind": "SCHEMA",
+    "payload": "{\"columns\":[{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":128,\"name\":\"operation_id\",\"nativeType\":null,\"optional\":false,\"position\":1,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":32,\"name\":\"action\",\"nativeType\":null,\"optional\":false,\"position\":2,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":128,\"name\":\"table_name\",\"nativeType\":null,\"optional\":false,\"position\":3,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"},{\"autoIncremented\":false,\"charsetName\":\"utf8mb4\",\"comment\":null,\"defaultValueExpression\":null,\"enumValues\":null,\"generated\":false,\"jdbcType\":12,\"length\":128,\"name\":\"generation\",\"nativeType\":null,\"optional\":false,\"position\":4,\"scale\":null,\"typeExpression\":\"VARCHAR\",\"typeName\":\"VARCHAR\"}],\"comment\":null,\"defaultCharsetName\":\"utf8mb4\",\"primaryKeyColumnNames\":[\"operation_id\"]}",
+    "source_key": "3fb18fea05789ed435ba528b2e66958882c3788cf8b50f826d2b0733e73ebd01",
+    "subscription_id": "",
+    "seq": "10"
+  }, {
+    "resume_json": "{\"offset\":{\"file\":\"binlog.000015\",\"gtids\":\"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-1486\",\"pos\":80452,\"ts_sec\":1794405840},\"version\":1}",
+    "digest": "335ec9bed094ce26d150d349fa2f272cd61174ebe8e004b12db63509cc33d985",
+    "point_json": null,
+    "kind": "ACK",
+    "payload": "{\"offset\":{\"file\":\"binlog.000015\",\"gtids\":\"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-1486\",\"pos\":80452},\"parent\":null,\"references\":[{\"digest\":\"12aa797271803ba5dbc2beb6df6ac45d4cf8409daf9cd924c44fba3f81898d30\",\"sequence\":1},{\"digest\":\"80711c652c86784f39e8425b89a81f761efe55ea172490de031e8d6a579b2a77\",\"sequence\":2},{\"digest\":\"b4296eaa8575a739b80f32eb6ef156bf53fabf4c7eb449db79d5ea4e5bb6504f\",\"sequence\":3},{\"digest\":\"84d47e5cf0186de7c13fb8274ef3c5e73aaec3706aefdf6e5ad6e4255d8d7cb4\",\"sequence\":4},{\"digest\":\"2922d2fa1fe119d0746a1adf13e397d02cef38a2c1147f26af17dc926dc6defc\",\"sequence\":5},{\"digest\":\"4e8f97ad77f67d7b0531e6790db526f899e6a7e0c5f178b493c48cbd6a6fe720\",\"sequence\":6},{\"digest\":\"5efb2880e57c2ab50a17b611fb30b9b9d1757bcc5d7992635cc1a70672c34944\",\"sequence\":7},{\"digest\":\"72f86a1ee44fe0f2e78d7852a20cf22d5d54eb201e81e988c685143e986d09c6\",\"sequence\":8},{\"digest\":\"8bbe6ee214060b8444b87f037507c4501d42c1ed20e151ec278a49d673be474b\",\"sequence\":9},{\"digest\":\"db0305d248d22d7e405f62249a4221dbc8c28f7ca64ba89f629840cc43254b36\",\"sequence\":10}]}",
+    "source_key": "4da3dd3eb3462f52fc10edd99a17d7e8255851dcf3a7fc1b3fcae0b1c8493bdd",
+    "subscription_id": "",
+    "seq": "11"
+  }, {
+    "resume_json": "",
+    "digest": "a8eea7f0e48794d2fdf576323d55cf774f916dc33f6d31d3a9f0d8d0d603dc26",
+    "point_json": null,
+    "kind": "B_INTENT",
+    "payload": "{\"ack\":11,\"digest\":\"335ec9bed094ce26d150d349fa2f272cd61174ebe8e004b12db63509cc33d985\",\"generation\":\"g1\",\"offset\":{\"file\":\"binlog.000015\",\"gtids\":\"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-1486\",\"pos\":80452},\"requestId\":\"a4023accbe88ddc4457d6e27c418d0216b7b17e9ed2b42e50dc643fec7c528f4\",\"version\":1}",
+    "source_key": "8eaa4bda4df74af6fd77edf115b603f790aa28facbfe8caef4e70176cb7c2e0e",
+    "subscription_id": "a4023accbe88ddc4457d6e27c418d0216b7b17e9ed2b42e50dc643fec7c528f4",
+    "seq": "12"
+  }, {
+    "resume_json": "{\"offset\":{\"event\":3,\"file\":\"binlog.000015\",\"gtids\":\"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-1486\",\"pos\":80531,\"server_id\":852821,\"transaction_data_collection_order_pekko_test_cdc_window_eeb38b0a8f6c.pekko_capture_control\":1,\"transaction_id\":\"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1487\",\"ts_sec\":1794405841},\"version\":1}",
+    "digest": "d55a44ff5e79380b8c075c2579a1db2102fec21ad62553183ff5086536068679",
+    "point_json": "{\"file\":\"binlog.000015\",\"position\":80744,\"row\":0}",
+    "kind": "BARRIER",
+    "payload": "{\"generation\":\"g1\",\"point\":{\"file\":\"binlog.000015\",\"position\":80744,\"row\":0},\"requestId\":\"a4023accbe88ddc4457d6e27c418d0216b7b17e9ed2b42e50dc643fec7c528f4\",\"stop\":false}",
+    "source_key": "3a3955ea9ab0967def247bfd34f308a5058215d7ed01d91ae1ca12b8b5f59014",
+    "subscription_id": "a4023accbe88ddc4457d6e27c418d0216b7b17e9ed2b42e50dc643fec7c528f4",
+    "seq": "13"
+  }, {
+    "resume_json": "{\"offset\":{\"event\":3,\"file\":\"binlog.000015\",\"gtids\":\"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-1486\",\"pos\":80531,\"server_id\":852821,\"transaction_data_collection_order_pekko_test_cdc_window_eeb38b0a8f6c.pekko_capture_control\":1,\"transaction_id\":\"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1487\",\"ts_sec\":1794405841},\"version\":1}",
+    "digest": "47249062752cef5e7fec352c92e7087f8b8c2f32250852aa4a306039e5aebd67",
+    "point_json": null,
+    "kind": "ACK",
+    "payload": "{\"offset\":{\"event\":3,\"file\":\"binlog.000015\",\"gtids\":\"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-1486\",\"pos\":80531},\"parent\":{\"digest\":\"335ec9bed094ce26d150d349fa2f272cd61174ebe8e004b12db63509cc33d985\",\"sequence\":11},\"references\":[{\"digest\":\"12aa797271803ba5dbc2beb6df6ac45d4cf8409daf9cd924c44fba3f81898d30\",\"sequence\":1},{\"digest\":\"d55a44ff5e79380b8c075c2579a1db2102fec21ad62553183ff5086536068679\",\"sequence\":13}]}",
+    "source_key": "58a9868dc1daf86d5a9e94fd6ea9da6817ea622354fb7ec40584eb9672250ea9",
+    "subscription_id": "",
+    "seq": "14"
+  }, {
+    "resume_json": "{\"offset\":{\"file\":\"binlog.000015\",\"gtids\":\"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-1487\",\"pos\":80894,\"server_id\":852821,\"ts_sec\":1794405841},\"version\":1}",
+    "digest": "9fac7552d9daeb26b25f0f6f6d3ab2ddc64da6f7daf633b45f4d19cf99e410e1",
+    "point_json": null,
+    "kind": "ACK",
+    "payload": "{\"offset\":{\"file\":\"binlog.000015\",\"gtids\":\"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843:1-1487\",\"pos\":80894},\"parent\":{\"digest\":\"47249062752cef5e7fec352c92e7087f8b8c2f32250852aa4a306039e5aebd67\",\"sequence\":14},\"references\":[{\"digest\":\"12aa797271803ba5dbc2beb6df6ac45d4cf8409daf9cd924c44fba3f81898d30\",\"sequence\":1}]}",
+    "source_key": "8bb0067130adc53403e14b5cc04f01b0149e04762bf88c0ee8e708227a5eabba",
+    "subscription_id": "",
+    "seq": "15"
+  }],
+  "T": [],
+  "baselineT": [],
+  "controls": [{
+    "operation_id": "83474114484ab0df4c48beca5d6e41ef44df3ccb532bcdb607ad6342afb436ee",
+    "action": "WAKE",
+    "table_name": "wake:managed_eeb38b0a8f6c",
+    "generation": "a57d0832-c432-4d56-aef5-da4b12213996.1"
+  }, {
+    "operation_id": "8946b43627c4231b5f4234228e7441401416416abbbdd128932c97129b5616ce",
+    "action": "WAKE",
+    "table_name": "wake:managed_eeb38b0a8f6c",
+    "generation": "a57d0832-c432-4d56-aef5-da4b12213996.0"
+  }, {
+    "operation_id": "a2d046fea5984ed0a4895e645bfad6a4d5417e5f5c6576a94b86a14b0fc9f80e",
+    "action": "SUBSCRIBE",
+    "table_name": "a",
+    "generation": "g1"
+  }],
+  "equal": false,
+  "extra": [],
+  "fieldDifferences": [],
+  "fieldsCompared": 384,
+  "grants": [{
+    "owner_attempt": "0460a391-c5c9-4301-bd6e-10f4c290ba32",
+    "grant_id": "dc4a10fc-1821-4893-b0d8-3e0d0034b976",
+    "finished_at": null,
+    "status": "UNKNOWN",
+    "pool": "SNAPSHOT",
+    "created_at": "1794405841214",
+    "task_id": "a4023accbe88ddc4457d6e27c418d0216b7b17e9ed2b42e50dc643fec7c528f4"
+  }],
+  "guardian": {
+    "instances": [{
+      "owner_id": "5aadc60f-dc5e-41c2-a20a-206e0c0e4453",
+      "server_uuid": "6e135a5a-dd76-11f1-9924-d74efd0f4f62",
+      "complete": "0",
+      "database_users": "[\"root\"]",
+      "empty_rounds": "0",
+      "server_started": "1794405657281",
+      "observation": null,
+      "instance_id": "127.0.0.1:25822",
+      "empty_since": null
+    }, {
+      "owner_id": "5aadc60f-dc5e-41c2-a20a-206e0c0e4453",
+      "server_uuid": "a2e47ca0-dd7b-11f1-b4db-78cea3c3e843",
+      "complete": "0",
+      "database_users": "[\"root\"]",
+      "empty_rounds": "0",
+      "server_started": "1794405760331",
+      "observation": null,
+      "instance_id": "127.0.0.1:50360",
+      "empty_since": null
+    }, {
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "server_uuid": "6e135a5a-dd76-11f1-9924-d74efd0f4f62",
+      "complete": "1",
+      "database_users": "[\"ds_eeb38b0a8f6c\",\"root\"]",
+      "empty_rounds": "2",
+      "server_started": "1794405657012",
+      "observation": "{\"instance\":\"127.0.0.1:25822\",\"knownIds\":[1479,1504,1554,1637,1639,1640,2128,2129,2130,2131,2132,2133,2135,2136,2137,2138],\"observedAt\":1794405847664,\"owner\":\"a57d0832-c432-4d56-aef5-da4b12213996\",\"serverStarted\":1794405657667,\"sessions\":[],\"transactions\":[],\"unassignedTransactions\":[],\"unattributed\":[]}",
+      "instance_id": "127.0.0.1:25822",
+      "empty_since": "1794405846940"
+    }, {
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "server_uuid": "a2e47ca0-dd7b-11f1-b4db-78cea3c3e843",
+      "complete": "1",
+      "database_users": "[\"cs_eeb38b0a8f6c\",\"root\"]",
+      "empty_rounds": "2",
+      "server_started": "1794405760065",
+      "observation": "{\"instance\":\"127.0.0.1:50360\",\"knownIds\":[125],\"observedAt\":1794405847685,\"owner\":\"a57d0832-c432-4d56-aef5-da4b12213996\",\"serverStarted\":1794405760689,\"sessions\":[],\"transactions\":[],\"unassignedTransactions\":[],\"unattributed\":[]}",
+      "instance_id": "127.0.0.1:50360",
+      "empty_since": "1794405847315"
+    }],
+    "launches": [{
+      "guardian_boot": "394d721f-cc3a-4581-900e-4259987a02b5",
+      "phase": "launched",
+      "process_id": "74319",
+      "boot_id": "5aadc60f-dc5e-41c2-a20a-206e0c0e4453",
+      "host_id": "eeb38b0a8f6c",
+      "start_identity": "2026-11-11T14:04:07.748Z",
+      "operation_id": null,
+      "deployment_id": "cdc-test-eeb38b0a8f6c",
+      "signed_proof": null,
+      "profile_hash": "77b3172d0559358803153333d3cf7eec67f9e4b3245bb1ab8ae212f0b9dd4c9c"
+    }, {
+      "guardian_boot": "394d721f-cc3a-4581-900e-4259987a02b5",
+      "phase": "retired",
+      "process_id": "74293",
+      "boot_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "host_id": "eeb38b0a8f6c",
+      "start_identity": "2026-11-11T14:03:58.478Z",
+      "operation_id": "46e154e8-7349-466f-a4e5-dc8b8264db64",
+      "deployment_id": "cdc-test-eeb38b0a8f6c",
+      "signed_proof": "{\"payload\":\"{\\\"guardian\\\":{\\\"bootId\\\":\\\"394d721f-cc3a-4581-900e-4259987a02b5\\\",\\\"deploymentId\\\":\\\"cdc-test-eeb38b0a8f6c\\\",\\\"hostId\\\":\\\"eeb38b0a8f6c\\\",\\\"publicKey\\\":\\\"MCowBQYDK2VwAyEAMImmiIhrcA/W3HxWXwwBXxqqKP/ARu2o12mUM4KWtRw=\\\"},\\\"receipt\\\":{\\\"confirmedAt\\\":1794405846916,\\\"details\\\":\\\"{\\\\\\\"alive\\\\\\\":false,\\\\\\\"automaticRestart\\\\\\\":false,\\\\\\\"exitCode\\\\\\\":137}\\\",\\\"identity\\\":{\\\"bootId\\\":\\\"a57d0832-c432-4d56-aef5-da4b12213996\\\",\\\"deploymentId\\\":\\\"cdc-test-eeb38b0a8f6c\\\",\\\"pid\\\":74293,\\\"startIdentity\\\":\\\"2026-11-11T14:03:58.478Z\\\"},\\\"operationId\\\":\\\"46e154e8-7349-466f-a4e5-dc8b8264db64\\\",\\\"provider\\\":\\\"managed-child-jvm\\\"}}\",\"signature\":\"5jqetY+HwILB25YCIX5u7AaoDbY6R98EUTy0IlegOPLwLnB+X7UAw+4StVvelpL6odWzzKAK2k10BKCFM4axBw==\"}",
+      "profile_hash": "77b3172d0559358803153333d3cf7eec67f9e4b3245bb1ab8ae212f0b9dd4c9c"
+    }],
+    "owners": [{
+      "manifest_version": "2",
+      "cluster_address": null,
+      "phase": "active",
+      "operation_id": null,
+      "deployment_id": "cdc-test-eeb38b0a8f6c",
+      "updated_at": "1794405848275",
+      "sealed_version": null,
+      "process_id": "74319",
+      "owner_id": "5aadc60f-dc5e-41c2-a20a-206e0c0e4453",
+      "isolation_proof": null,
+      "start_identity": "2026-11-11T14:04:07.748Z"
+    }, {
+      "manifest_version": "2",
+      "cluster_address": null,
+      "phase": "db_drained",
+      "operation_id": "46e154e8-7349-466f-a4e5-dc8b8264db64",
+      "deployment_id": "cdc-test-eeb38b0a8f6c",
+      "updated_at": "1794405847693",
+      "sealed_version": "2",
+      "process_id": "74293",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "isolation_proof": "{\"confirmedAt\":1794405846916,\"deployment\":\"cdc-test-eeb38b0a8f6c\",\"details\":{\"alive\":false,\"automaticRestart\":false,\"exitCode\":137},\"operation\":\"46e154e8-7349-466f-a4e5-dc8b8264db64\",\"owner\":\"a57d0832-c432-4d56-aef5-da4b12213996\",\"pid\":74293,\"provider\":\"managed-child-jvm\",\"startIdentity\":\"2026-11-11T14:03:58.478Z\"}",
+      "start_identity": "2026-11-11T14:03:58.478Z"
+    }],
+    "sessions": [{
+      "role_name": "control",
+      "registered_at": "1794405848298",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "5aadc60f-dc5e-41c2-a20a-206e0c0e4453",
+      "connection_id": "2194"
+    }, {
+      "role_name": "control",
+      "registered_at": "1794405852147",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "5aadc60f-dc5e-41c2-a20a-206e0c0e4453",
+      "connection_id": "2277"
+    }, {
+      "role_name": "control",
+      "registered_at": "1794405839030",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "1479"
+    }, {
+      "role_name": "control",
+      "registered_at": "1794405839962",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "1504"
+    }, {
+      "role_name": "control",
+      "registered_at": "1794405840728",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "1554"
+    }, {
+      "role_name": "journal",
+      "registered_at": "1794405841392",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "1637"
+    }, {
+      "role_name": "journal",
+      "registered_at": "1794405841430",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "1639"
+    }, {
+      "role_name": "control",
+      "registered_at": "1794405841433",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "1640"
+    }, {
+      "role_name": "control",
+      "registered_at": "1794405846642",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "2128"
+    }, {
+      "role_name": "control",
+      "registered_at": "1794405846648",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "2129"
+    }, {
+      "role_name": "control",
+      "registered_at": "1794405846653",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "2130"
+    }, {
+      "role_name": "control",
+      "registered_at": "1794405846658",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "2131"
+    }, {
+      "role_name": "control",
+      "registered_at": "1794405846697",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "2132"
+    }, {
+      "role_name": "control",
+      "registered_at": "1794405846699",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "2133"
+    }, {
+      "role_name": "control",
+      "registered_at": "1794405846703",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "2135"
+    }, {
+      "role_name": "control",
+      "registered_at": "1794405846707",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "2136"
+    }, {
+      "role_name": "control",
+      "registered_at": "1794405846709",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "2137"
+    }, {
+      "role_name": "control",
+      "registered_at": "1794405846714",
+      "instance_id": "127.0.0.1:25822",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "2138"
+    }, {
+      "role_name": "source",
+      "registered_at": "1794405839952",
+      "instance_id": "127.0.0.1:50360",
+      "owner_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+      "connection_id": "125"
+    }]
+  },
+  "managedOwners": [{
+    "owner_attempt": "0460a391-c5c9-4301-bd6e-10f4c290ba32",
+    "guardian_boot": "394d721f-cc3a-4581-900e-4259987a02b5",
+    "process_id": "74293",
+    "boot_id": "a57d0832-c432-4d56-aef5-da4b12213996",
+    "host_id": "eeb38b0a8f6c",
+    "start_identity": "2026-11-11T14:03:58.478Z",
+    "profile_hash": "77b3172d0559358803153333d3cf7eec67f9e4b3245bb1ab8ae212f0b9dd4c9c",
+    "guardian_key": "MCowBQYDK2VwAyEAMImmiIhrcA/W3HxWXwwBXxqqKP/ARu2o12mUM4KWtRw=",
+    "deployment_id": "cdc-test-eeb38b0a8f6c"
+  }],
+  "missing": ["63", "22", "15", "50", "32", "14", "23", "28", "34", "57", "30", "4", "51", "35", "26", "60", "64", "27", "1", "12", "17", "42", "16", "53", "52", "8", "5", "13", "37", "55", "49", "29", "56", "41", "33", "43", "38", "58", "24", "36", "2", "39", "31", "61", "6", "45", "46", "9", "44", "21", "20", "48", "62", "7", "3", "10", "40", "59", "54", "11", "25", "47", "18", "19"],
+  "owner": [{
+    "platform_id": "default",
+    "owner_attempt": "0460a391-c5c9-4301-bd6e-10f4c290ba32",
+    "status": "UNKNOWN",
+    "updated_at": "1794405846703"
+  }],
+  "proxy": [{
+    "batch": {
+      "stage": "B"
+    },
+    "connectionId": 139,
+    "kind": "PROXY_COMMIT_FORWARDED",
+    "mode": "C1"
+  }, {
+    "batch": {
+      "stage": "B"
+    },
+    "connectionId": 139,
+    "kind": "PROXY_COMMIT_OK_HELD",
+    "mode": "C1"
+  }, {
+    "batch": {
+      "stage": "B"
+    },
+    "connectionId": 139,
+    "kind": "CUTPOINT",
+    "mode": "C1"
+  }, {
+    "batch": {
+      "stage": "B"
+    },
+    "connectionId": 139,
+    "kind": "PROXY_COMMIT_OK_DROPPED",
+    "mode": "C1"
+  }],
+  "recoveryPermits": [],
+  "resourceManifests": [{
+    "owner_attempt": "0460a391-c5c9-4301-bd6e-10f4c290ba32",
+    "manifest_json": "{\"accounts\":[{\"endpoint\":\"127.0.0.1:25822\",\"serverUuid\":\"6e135a5a-dd76-11f1-9924-d74efd0f4f62\",\"user\":\"ds_eeb38b0a8f6c\"},{\"endpoint\":\"127.0.0.1:25822\",\"serverUuid\":\"6e135a5a-dd76-11f1-9924-d74efd0f4f62\",\"user\":\"root\"},{\"endpoint\":\"127.0.0.1:50360\",\"serverUuid\":\"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843\",\"user\":\"cs_eeb38b0a8f6c\"},{\"endpoint\":\"127.0.0.1:50360\",\"serverUuid\":\"a2e47ca0-dd7b-11f1-b4db-78cea3c3e843\",\"user\":\"root\"}],\"version\":1}",
+    "created_at": "1794405839700"
+  }],
+  "source": [{
+    "label": "初始-1",
+    "amount": "1.1200",
+    "revision": "0",
+    "id": "1",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-2",
+    "amount": "2.1200",
+    "revision": "0",
+    "id": "2",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-3",
+    "amount": "3.1200",
+    "revision": "0",
+    "id": "3",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-4",
+    "amount": "4.1200",
+    "revision": "0",
+    "id": "4",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-5",
+    "amount": "5.1200",
+    "revision": "0",
+    "id": "5",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-6",
+    "amount": "6.1200",
+    "revision": "0",
+    "id": "6",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-7",
+    "amount": "7.1200",
+    "revision": "0",
+    "id": "7",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-8",
+    "amount": "8.1200",
+    "revision": "0",
+    "id": "8",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-9",
+    "amount": "9.1200",
+    "revision": "0",
+    "id": "9",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-10",
+    "amount": "10.1200",
+    "revision": "0",
+    "id": "10",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-11",
+    "amount": "11.1200",
+    "revision": "0",
+    "id": "11",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-12",
+    "amount": "12.1200",
+    "revision": "0",
+    "id": "12",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-13",
+    "amount": "13.1200",
+    "revision": "0",
+    "id": "13",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-14",
+    "amount": "14.1200",
+    "revision": "0",
+    "id": "14",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-15",
+    "amount": "15.1200",
+    "revision": "0",
+    "id": "15",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-16",
+    "amount": "16.1200",
+    "revision": "0",
+    "id": "16",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-17",
+    "amount": "17.1200",
+    "revision": "0",
+    "id": "17",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-18",
+    "amount": "18.1200",
+    "revision": "0",
+    "id": "18",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-19",
+    "amount": "19.1200",
+    "revision": "0",
+    "id": "19",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-20",
+    "amount": "20.1200",
+    "revision": "0",
+    "id": "20",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-21",
+    "amount": "21.1200",
+    "revision": "0",
+    "id": "21",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-22",
+    "amount": "22.1200",
+    "revision": "0",
+    "id": "22",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-23",
+    "amount": "23.1200",
+    "revision": "0",
+    "id": "23",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-24",
+    "amount": "24.1200",
+    "revision": "0",
+    "id": "24",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-25",
+    "amount": "25.1200",
+    "revision": "0",
+    "id": "25",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-26",
+    "amount": "26.1200",
+    "revision": "0",
+    "id": "26",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-27",
+    "amount": "27.1200",
+    "revision": "0",
+    "id": "27",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-28",
+    "amount": "28.1200",
+    "revision": "0",
+    "id": "28",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-29",
+    "amount": "29.1200",
+    "revision": "0",
+    "id": "29",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-30",
+    "amount": "30.1200",
+    "revision": "0",
+    "id": "30",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-31",
+    "amount": "31.1200",
+    "revision": "0",
+    "id": "31",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-32",
+    "amount": "32.1200",
+    "revision": "0",
+    "id": "32",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-33",
+    "amount": "33.1200",
+    "revision": "0",
+    "id": "33",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-34",
+    "amount": "34.1200",
+    "revision": "0",
+    "id": "34",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-35",
+    "amount": "35.1200",
+    "revision": "0",
+    "id": "35",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-36",
+    "amount": "36.1200",
+    "revision": "0",
+    "id": "36",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-37",
+    "amount": "37.1200",
+    "revision": "0",
+    "id": "37",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-38",
+    "amount": "38.1200",
+    "revision": "0",
+    "id": "38",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-39",
+    "amount": "39.1200",
+    "revision": "0",
+    "id": "39",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-40",
+    "amount": "40.1200",
+    "revision": "0",
+    "id": "40",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-41",
+    "amount": "41.1200",
+    "revision": "0",
+    "id": "41",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-42",
+    "amount": "42.1200",
+    "revision": "0",
+    "id": "42",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-43",
+    "amount": "43.1200",
+    "revision": "0",
+    "id": "43",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-44",
+    "amount": "44.1200",
+    "revision": "0",
+    "id": "44",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-45",
+    "amount": "45.1200",
+    "revision": "0",
+    "id": "45",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-46",
+    "amount": "46.1200",
+    "revision": "0",
+    "id": "46",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-47",
+    "amount": "47.1200",
+    "revision": "0",
+    "id": "47",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-48",
+    "amount": "48.1200",
+    "revision": "0",
+    "id": "48",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-49",
+    "amount": "49.1200",
+    "revision": "0",
+    "id": "49",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-50",
+    "amount": "50.1200",
+    "revision": "0",
+    "id": "50",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-51",
+    "amount": "51.1200",
+    "revision": "0",
+    "id": "51",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-52",
+    "amount": "52.1200",
+    "revision": "0",
+    "id": "52",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-53",
+    "amount": "53.1200",
+    "revision": "0",
+    "id": "53",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-54",
+    "amount": "54.1200",
+    "revision": "0",
+    "id": "54",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-55",
+    "amount": "55.1200",
+    "revision": "0",
+    "id": "55",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-56",
+    "amount": "56.1200",
+    "revision": "0",
+    "id": "56",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-57",
+    "amount": "57.1200",
+    "revision": "0",
+    "id": "57",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-58",
+    "amount": "58.1200",
+    "revision": "0",
+    "id": "58",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-59",
+    "amount": "59.1200",
+    "revision": "0",
+    "id": "59",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-60",
+    "amount": "60.1200",
+    "revision": "0",
+    "id": "60",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-61",
+    "amount": "61.1200",
+    "revision": "0",
+    "id": "61",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-62",
+    "amount": "62.1200",
+    "revision": "0",
+    "id": "62",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-63",
+    "amount": "63.1200",
+    "revision": "0",
+    "id": "63",
+    "note": "  中文🙂  ",
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }, {
+    "label": "初始-64",
+    "amount": "64.1200",
+    "revision": "0",
+    "id": "64",
+    "note": null,
+    "updated_at": "2026-10-18 01:02:03.654321"
+  }],
+  "sourceSessions": [{
+    "ID": "770",
+    "USER": "root",
+    "COMMAND": "Query",
+    "STATE": "executing"
+  }],
+  "sourceTransactions": [],
+  "stateSessions": [{
+    "ID": "1472",
+    "USER": "root",
+    "COMMAND": "Sleep",
+    "STATE": ""
+  }, {
+    "ID": "6080",
+    "USER": "root",
+    "COMMAND": "Query",
+    "STATE": "executing"
+  }, {
+    "ID": "1474",
+    "USER": "root",
+    "COMMAND": "Sleep",
+    "STATE": ""
+  }, {
+    "ID": "2194",
+    "USER": "root",
+    "COMMAND": "Sleep",
+    "STATE": ""
+  }, {
+    "ID": "2277",
+    "USER": "root",
+    "COMMAND": "Sleep",
+    "STATE": ""
+  }, {
+    "ID": "1471",
+    "USER": "root",
+    "COMMAND": "Sleep",
+    "STATE": ""
+  }],
+  "stateTransactions": [],
+  "subscriptions": [{
+    "table_name": "a",
+    "generation": "g1",
+    "status": "CAPTURE_READY",
+    "request_id": "a4023accbe88ddc4457d6e27c418d0216b7b17e9ed2b42e50dc643fec7c528f4",
+    "schema_id": "e3269e5abe82d76d432dce5af939e2532e2330298ffdb958a2ea2a6bf45309de",
+    "k_point": null,
+    "capture_id": "managed_eeb38b0a8f6c",
+    "b_point": "{\"file\":\"binlog.000015\",\"position\":80744,\"row\":0}",
+    "b_seq": "13"
+  }],
+  "target": [],
+  "tasks": [{
+    "target_table": "target_a",
+    "generation": "g1",
+    "grant_id": "dc4a10fc-1821-4893-b0d8-3e0d0034b976",
+    "delta_after": "0",
+    "control_revision": "1",
+    "runtime_health": "UNKNOWN",
+    "request_id": "a",
+    "capture_id": "managed_eeb38b0a8f6c",
+    "schedulable": "0",
+    "desired_state": "RUNNING",
+    "execution_id": null,
+    "work_pool": "SNAPSHOT",
+    "cancel_evidence": null,
+    "table_name": "a",
+    "phase": "PAUSED",
+    "last_verified_at": null,
+    "journal_revision": "0",
+    "failure_code": "local_release_unconfirmed",
+    "definition_hash": "5edd8b240cad6d9b3a8bf581dde4e8a1a89f4646401e66d17bac2ef91e5721a7",
+    "due_at": "1794405841180",
+    "release_status": "UNKNOWN",
+    "observed_at": "1794405846703",
+    "continuation_json": null,
+    "grant_owner": "0460a391-c5c9-4301-bd6e-10f4c290ba32",
+    "capture_readiness": "UNKNOWN",
+    "initialization_evidence": null,
+    "wake_seq": "0",
+    "task_id": "a4023accbe88ddc4457d6e27c418d0216b7b17e9ed2b42e50dc643fec7c528f4",
+    "continuation_owner": null
+  }]
+}

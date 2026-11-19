@@ -1,0 +1,27 @@
+{
+  "class": "java.lang.IllegalArgumentException",
+  "message": "requirement failed: workflow scheduling store is unavailable for a CDC-only worker",
+  "mode": "C1",
+  "proxy": [{
+    "batch": {
+      "stage": "B"
+    },
+    "connectionId": 44,
+    "kind": "PROXY_COMMIT_FORWARDED",
+    "mode": "C1"
+  }, {
+    "batch": {
+      "stage": "B"
+    },
+    "connectionId": 44,
+    "kind": "PROXY_COMMIT_OK_HELD",
+    "mode": "C1"
+  }, {
+    "batch": {
+      "stage": "B"
+    },
+    "connectionId": 44,
+    "kind": "CUTPOINT",
+    "mode": "C1"
+  }]
+}

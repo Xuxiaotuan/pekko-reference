@@ -1,0 +1,319 @@
+{
+  "status": "partial",
+  "scope": "Frozen candidate, dedicated MySQL, same database, three sequential start/update/shutdown runs; no source fencing.",
+  "candidate": {
+    "production_sha256": "1fa947af9cee69c46717f7ec7c7ebebacd4e042518822797f7c392a60f8667d4",
+    "source_sha256": "f8b2d3d56995715e010d080598762675ce465ccf8e50aa36fd079256dcbfc2f6",
+    "test_sha256": "f6e40e8eeaf368c6caa6d10b8a7bc981d17c927cd5e61201f43ea93b06a93b6b",
+    "tool_sha256": "843df7fe4853954602552bcaaf14cfb527e276f465e881121063a1f9921c5387"
+  },
+  "candidate_manifest_sha256": "84318aeab3b768fee0eec5dde67142c8aeecf712707f57c5083550d9d689586f",
+  "source_uuid": "1c3a8f74-7203-4910-9260-e62bfa619c77",
+  "state_uuid": "78a80500-1849-402a-9f71-81cd1cf3fcfb",
+  "runs": [
+    {
+      "iteration": 1,
+      "initial_source": [
+        "1\tbefore\t11",
+        "2\tkeep\t22"
+      ],
+      "initial_target": [
+        "1\tbefore\t11",
+        "2\tkeep\t22"
+      ],
+      "initial_equal": true,
+      "updated_source": [
+        "1\tafter\t33",
+        "3\tnew\t44"
+      ],
+      "updated_target": [
+        "1\tafter\t33",
+        "3\tnew\t44"
+      ],
+      "updated_equal": true,
+      "samples": [
+        {
+          "t_seconds": 0.0,
+          "owner": "UNKNOWN",
+          "journal_row_count": 10,
+          "offset_row_count": 1,
+          "state_transactions": "0",
+          "source_transactions": "0",
+          "exit_code": null,
+          "jstack_exit": null
+        },
+        {
+          "t_seconds": 1.002,
+          "owner": "UNKNOWN",
+          "journal_row_count": 10,
+          "offset_row_count": 1,
+          "state_transactions": "0",
+          "source_transactions": "0",
+          "exit_code": null,
+          "jstack_exit": 0
+        },
+        {
+          "t_seconds": 3.004,
+          "owner": "UNKNOWN",
+          "journal_row_count": 10,
+          "offset_row_count": 1,
+          "state_transactions": "0",
+          "source_transactions": "0",
+          "exit_code": null,
+          "jstack_exit": 0
+        },
+        {
+          "t_seconds": 5.005,
+          "owner": "UNKNOWN",
+          "journal_row_count": 10,
+          "offset_row_count": 1,
+          "state_transactions": "0",
+          "source_transactions": "0",
+          "exit_code": null,
+          "jstack_exit": 0
+        },
+        {
+          "t_seconds": 10.005,
+          "owner": "STOPPED",
+          "journal_row_count": 10,
+          "offset_row_count": 1,
+          "state_transactions": "0",
+          "source_transactions": "0",
+          "exit_code": 143,
+          "jstack_exit": null
+        },
+        {
+          "t_seconds": 15.005,
+          "owner": "STOPPED",
+          "journal_row_count": 10,
+          "offset_row_count": 1,
+          "state_transactions": "0",
+          "source_transactions": "0",
+          "exit_code": 143,
+          "jstack_exit": null
+        },
+        {
+          "t_seconds": 20.001,
+          "owner": "STOPPED",
+          "journal_row_count": 10,
+          "offset_row_count": 1,
+          "state_transactions": "0",
+          "source_transactions": "0",
+          "exit_code": 143,
+          "jstack_exit": null
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "initial_source": [
+        "1\tafter\t33",
+        "3\tnew\t44"
+      ],
+      "initial_target": [
+        "1\tafter\t33",
+        "3\tnew\t44"
+      ],
+      "initial_equal": true,
+      "updated_source": [
+        "1\trestart\t55",
+        "4\tlast\t66"
+      ],
+      "updated_target": [
+        "1\trestart\t55",
+        "4\tlast\t66"
+      ],
+      "updated_equal": true,
+      "samples": [
+        {
+          "t_seconds": 0.0,
+          "owner": "UNKNOWN",
+          "journal_row_count": 12,
+          "offset_row_count": 1,
+          "state_transactions": "1",
+          "source_transactions": "0",
+          "exit_code": null,
+          "jstack_exit": null
+        },
+        {
+          "t_seconds": 1.005,
+          "owner": "UNKNOWN",
+          "journal_row_count": 12,
+          "offset_row_count": 1,
+          "state_transactions": "1",
+          "source_transactions": "0",
+          "exit_code": null,
+          "jstack_exit": 0
+        },
+        {
+          "t_seconds": 3.005,
+          "owner": "UNKNOWN",
+          "journal_row_count": 12,
+          "offset_row_count": 1,
+          "state_transactions": "1",
+          "source_transactions": "0",
+          "exit_code": null,
+          "jstack_exit": 0
+        },
+        {
+          "t_seconds": 5.003,
+          "owner": "UNKNOWN",
+          "journal_row_count": 12,
+          "offset_row_count": 1,
+          "state_transactions": "1",
+          "source_transactions": "0",
+          "exit_code": null,
+          "jstack_exit": 0
+        },
+        {
+          "t_seconds": 10.004,
+          "owner": "STOPPED",
+          "journal_row_count": 12,
+          "offset_row_count": 1,
+          "state_transactions": "0",
+          "source_transactions": "0",
+          "exit_code": 143,
+          "jstack_exit": null
+        },
+        {
+          "t_seconds": 15.003,
+          "owner": "STOPPED",
+          "journal_row_count": 12,
+          "offset_row_count": 1,
+          "state_transactions": "0",
+          "source_transactions": "0",
+          "exit_code": 143,
+          "jstack_exit": null
+        },
+        {
+          "t_seconds": 20.004,
+          "owner": "STOPPED",
+          "journal_row_count": 12,
+          "offset_row_count": 1,
+          "state_transactions": "0",
+          "source_transactions": "0",
+          "exit_code": 143,
+          "jstack_exit": null
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "initial_source": [
+        "1\trestart\t55",
+        "4\tlast\t66"
+      ],
+      "initial_target": [
+        "1\trestart\t55",
+        "4\tlast\t66"
+      ],
+      "initial_equal": true,
+      "updated_source": [
+        "1\tthird\t77",
+        "5\tfinal\t88"
+      ],
+      "updated_target": [
+        "1\tthird\t77",
+        "5\tfinal\t88"
+      ],
+      "updated_equal": true,
+      "samples": [
+        {
+          "t_seconds": 0.0,
+          "owner": "UNKNOWN",
+          "journal_row_count": 14,
+          "offset_row_count": 1,
+          "state_transactions": "1",
+          "source_transactions": "0",
+          "exit_code": null,
+          "jstack_exit": null
+        },
+        {
+          "t_seconds": 1.003,
+          "owner": "UNKNOWN",
+          "journal_row_count": 14,
+          "offset_row_count": 1,
+          "state_transactions": "1",
+          "source_transactions": "0",
+          "exit_code": null,
+          "jstack_exit": 0
+        },
+        {
+          "t_seconds": 3.005,
+          "owner": "UNKNOWN",
+          "journal_row_count": 14,
+          "offset_row_count": 1,
+          "state_transactions": "1",
+          "source_transactions": "0",
+          "exit_code": null,
+          "jstack_exit": 0
+        },
+        {
+          "t_seconds": 5.002,
+          "owner": "UNKNOWN",
+          "journal_row_count": 14,
+          "offset_row_count": 1,
+          "state_transactions": "1",
+          "source_transactions": "0",
+          "exit_code": null,
+          "jstack_exit": 0
+        },
+        {
+          "t_seconds": 10.002,
+          "owner": "STOPPED",
+          "journal_row_count": 14,
+          "offset_row_count": 1,
+          "state_transactions": "0",
+          "source_transactions": "0",
+          "exit_code": 143,
+          "jstack_exit": null
+        },
+        {
+          "t_seconds": 15.002,
+          "owner": "STOPPED",
+          "journal_row_count": 14,
+          "offset_row_count": 1,
+          "state_transactions": "0",
+          "source_transactions": "0",
+          "exit_code": 143,
+          "jstack_exit": null
+        },
+        {
+          "t_seconds": 20.004,
+          "owner": "STOPPED",
+          "journal_row_count": 14,
+          "offset_row_count": 1,
+          "state_transactions": "0",
+          "source_transactions": "0",
+          "exit_code": 143,
+          "jstack_exit": null
+        }
+      ]
+    }
+  ],
+  "final_readback": {
+    "owner": "STOPPED",
+    "journal_row_count": 14,
+    "offset": {
+      "file": "binlog.000008",
+      "pos": 23329,
+      "gtids": "1c3a8f74-7203-4910-9260-e62bfa619c77:1-627",
+      "event": 3,
+      "transaction_id": "1c3a8f74-7203-4910-9260-e62bfa619c77:628"
+    },
+    "offset_row_updated_at": "2026-11-08 11:28:53.680000",
+    "source_rows": [
+      "1\tthird\t77",
+      "5\tfinal\t88"
+    ],
+    "target_rows": [
+      "1\tthird\t77",
+      "5\tfinal\t88"
+    ],
+    "all_fields_equal": true,
+    "source_transactions": 0,
+    "state_transactions": 0
+  },
+  "boundary": "D is final observed stored offset, not proof of source-wide complete delivery; J is journal row count, not an ordered ACK or a checkpoint position. Target rows are direct observed values, not ledger commit proof. Prior runtime5 UNKNOWN and runtime6 jcmd failure remain valid evidence. The sampled SQL/transaction relation is not sufficient to establish the root cause of the runtime5 timeout; no claim of a generally stable shutdown or continuous busy-source coverage. All timestamps are sampling observations; absence between them is not established.",
+  "resources": "Dedicated source/state services stopped after readback, state configuration restored byte-for-byte, pool lease released; databases retained."
+}
