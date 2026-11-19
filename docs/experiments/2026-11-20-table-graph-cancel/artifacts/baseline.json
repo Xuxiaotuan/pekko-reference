@@ -1,0 +1,507 @@
+{
+  "T": [{
+    "group_id": "2c31cea16004e2bdce7d6cfa16ea6571dd3857fcfbe425f6b283ad5d0f44aeee",
+    "evidence": "{\"group\":{\"groupId\":\"2c31cea16004e2bdce7d6cfa16ea6571dd3857fcfbe425f6b283ad5d0f44aeee\",\"members\":[{\"envelope\":{\"after\":{\"amount\":\"1.2450\",\"id\":1,\"label\":\"baseline\",\"note\":\"\",\"revision\":1,\"updated_at\":\"2026-10-25T01:02:03.123456\"},\"before\":{\"amount\":\"1.1200\",\"id\":1,\"label\":\"初始-1\",\"note\":\"  中文🙂  \",\"revision\":0,\"updated_at\":\"2026-10-18T01:02:03.654321\"},\"key\":{\"id\":1},\"op\":\"u\",\"source\":{\"connectorId\":\"capture_9c2b41194d14\",\"database\":\"pekko_test_cdc_window_9c2b41194d14\",\"eventTimestampMillis\":1795104929112,\"file\":\"binlog.000007\",\"position\":39256,\"row\":0,\"snapshot\":false,\"table\":\"a\"},\"version\":1},\"eventId\":\"85ef870203711dafb2b34cc68b65121b688e00f806a44b5cfff35a8b60cf1d43\",\"role\":\"single.u\"}],\"version\":1},\"identity\":{\"columns\":[{\"jdbcType\":-5,\"name\":\"id\",\"typeName\":\"BIGINT\"},{\"jdbcType\":12,\"name\":\"label\",\"typeName\":\"VARCHAR\"},{\"jdbcType\":3,\"name\":\"amount\",\"typeName\":\"DECIMAL\"},{\"jdbcType\":12,\"name\":\"note\",\"typeName\":\"VARCHAR\"},{\"jdbcType\":93,\"name\":\"updated_at\",\"typeName\":\"DATETIME\"},{\"jdbcType\":4,\"name\":\"revision\",\"typeName\":\"INT\"}],\"connectorId\":\"capture_9c2b41194d14\",\"database\":\"pekko_test_cdc_window_9c2b41194d14\",\"groupProtocol\":{\"generation\":\"g1\",\"replicationId\":\"a\",\"sourceLineage\":\"85f58575-51ec-4992-ba58-ebf28cbb78bf\",\"version\":1},\"primaryKey\":\"id\",\"schemaFingerprint\":\"e3269e5abe82d76d432dce5af939e2532e2330298ffdb958a2ea2a6bf45309de\",\"table\":\"a\",\"version\":2},\"targetTable\":\"target_a\"}",
+    "committed_at": "2026-11-19 16:15:29.281917"
+  }],
+  "case": "GRA",
+  "comparisons": {
+    "e": {
+      "differences": [],
+      "equal": true,
+      "extra": [],
+      "fieldsCompared": 24,
+      "missing": [],
+      "source": [{
+        "label": "初始-1",
+        "amount": "1.1200",
+        "revision": "0",
+        "id": "1",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-2",
+        "amount": "2.1200",
+        "revision": "0",
+        "id": "2",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-3",
+        "amount": "3.1200",
+        "revision": "0",
+        "id": "3",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-4",
+        "amount": "4.1200",
+        "revision": "0",
+        "id": "4",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }],
+      "target": [{
+        "label": "初始-1",
+        "amount": "1.1200",
+        "revision": "0",
+        "id": "1",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-2",
+        "amount": "2.1200",
+        "revision": "0",
+        "id": "2",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-3",
+        "amount": "3.1200",
+        "revision": "0",
+        "id": "3",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-4",
+        "amount": "4.1200",
+        "revision": "0",
+        "id": "4",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }]
+    },
+    "f": {
+      "differences": [],
+      "equal": true,
+      "extra": [],
+      "fieldsCompared": 24,
+      "missing": [],
+      "source": [{
+        "label": "初始-1",
+        "amount": "1.1200",
+        "revision": "0",
+        "id": "1",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-2",
+        "amount": "2.1200",
+        "revision": "0",
+        "id": "2",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-3",
+        "amount": "3.1200",
+        "revision": "0",
+        "id": "3",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-4",
+        "amount": "4.1200",
+        "revision": "0",
+        "id": "4",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }],
+      "target": [{
+        "label": "初始-1",
+        "amount": "1.1200",
+        "revision": "0",
+        "id": "1",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-2",
+        "amount": "2.1200",
+        "revision": "0",
+        "id": "2",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-3",
+        "amount": "3.1200",
+        "revision": "0",
+        "id": "3",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-4",
+        "amount": "4.1200",
+        "revision": "0",
+        "id": "4",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }]
+    },
+    "a": {
+      "differences": [],
+      "equal": true,
+      "extra": [],
+      "fieldsCompared": 24,
+      "missing": [],
+      "source": [{
+        "label": "baseline",
+        "amount": "1.2450",
+        "revision": "1",
+        "id": "1",
+        "note": "",
+        "updated_at": "2026-10-25 01:02:03.123456"
+      }, {
+        "label": "初始-2",
+        "amount": "2.1200",
+        "revision": "0",
+        "id": "2",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-3",
+        "amount": "3.1200",
+        "revision": "0",
+        "id": "3",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-4",
+        "amount": "4.1200",
+        "revision": "0",
+        "id": "4",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }],
+      "target": [{
+        "label": "baseline",
+        "amount": "1.2450",
+        "revision": "1",
+        "id": "1",
+        "note": "",
+        "updated_at": "2026-10-25 01:02:03.123456"
+      }, {
+        "label": "初始-2",
+        "amount": "2.1200",
+        "revision": "0",
+        "id": "2",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-3",
+        "amount": "3.1200",
+        "revision": "0",
+        "id": "3",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-4",
+        "amount": "4.1200",
+        "revision": "0",
+        "id": "4",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }]
+    },
+    "b": {
+      "differences": [],
+      "equal": true,
+      "extra": [],
+      "fieldsCompared": 24,
+      "missing": [],
+      "source": [{
+        "label": "初始-1",
+        "amount": "1.1200",
+        "revision": "0",
+        "id": "1",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-2",
+        "amount": "2.1200",
+        "revision": "0",
+        "id": "2",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-3",
+        "amount": "3.1200",
+        "revision": "0",
+        "id": "3",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-4",
+        "amount": "4.1200",
+        "revision": "0",
+        "id": "4",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }],
+      "target": [{
+        "label": "初始-1",
+        "amount": "1.1200",
+        "revision": "0",
+        "id": "1",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-2",
+        "amount": "2.1200",
+        "revision": "0",
+        "id": "2",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-3",
+        "amount": "3.1200",
+        "revision": "0",
+        "id": "3",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-4",
+        "amount": "4.1200",
+        "revision": "0",
+        "id": "4",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }]
+    },
+    "g": {
+      "differences": [],
+      "equal": true,
+      "extra": [],
+      "fieldsCompared": 24,
+      "missing": [],
+      "source": [{
+        "label": "初始-1",
+        "amount": "1.1200",
+        "revision": "0",
+        "id": "1",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-2",
+        "amount": "2.1200",
+        "revision": "0",
+        "id": "2",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-3",
+        "amount": "3.1200",
+        "revision": "0",
+        "id": "3",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-4",
+        "amount": "4.1200",
+        "revision": "0",
+        "id": "4",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }],
+      "target": [{
+        "label": "初始-1",
+        "amount": "1.1200",
+        "revision": "0",
+        "id": "1",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-2",
+        "amount": "2.1200",
+        "revision": "0",
+        "id": "2",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-3",
+        "amount": "3.1200",
+        "revision": "0",
+        "id": "3",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-4",
+        "amount": "4.1200",
+        "revision": "0",
+        "id": "4",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }]
+    },
+    "c": {
+      "differences": [],
+      "equal": true,
+      "extra": [],
+      "fieldsCompared": 24,
+      "missing": [],
+      "source": [{
+        "label": "初始-1",
+        "amount": "1.1200",
+        "revision": "0",
+        "id": "1",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-2",
+        "amount": "2.1200",
+        "revision": "0",
+        "id": "2",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-3",
+        "amount": "3.1200",
+        "revision": "0",
+        "id": "3",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-4",
+        "amount": "4.1200",
+        "revision": "0",
+        "id": "4",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }],
+      "target": [{
+        "label": "初始-1",
+        "amount": "1.1200",
+        "revision": "0",
+        "id": "1",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-2",
+        "amount": "2.1200",
+        "revision": "0",
+        "id": "2",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-3",
+        "amount": "3.1200",
+        "revision": "0",
+        "id": "3",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-4",
+        "amount": "4.1200",
+        "revision": "0",
+        "id": "4",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }]
+    },
+    "d": {
+      "differences": [],
+      "equal": true,
+      "extra": [],
+      "fieldsCompared": 24,
+      "missing": [],
+      "source": [{
+        "label": "初始-1",
+        "amount": "1.1200",
+        "revision": "0",
+        "id": "1",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-2",
+        "amount": "2.1200",
+        "revision": "0",
+        "id": "2",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-3",
+        "amount": "3.1200",
+        "revision": "0",
+        "id": "3",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-4",
+        "amount": "4.1200",
+        "revision": "0",
+        "id": "4",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }],
+      "target": [{
+        "label": "初始-1",
+        "amount": "1.1200",
+        "revision": "0",
+        "id": "1",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-2",
+        "amount": "2.1200",
+        "revision": "0",
+        "id": "2",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-3",
+        "amount": "3.1200",
+        "revision": "0",
+        "id": "3",
+        "note": "  中文🙂  ",
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }, {
+        "label": "初始-4",
+        "amount": "4.1200",
+        "revision": "0",
+        "id": "4",
+        "note": null,
+        "updated_at": "2026-10-18 01:02:03.654321"
+      }]
+    }
+  },
+  "graphJournal": [{
+    "persistence_id": "bootstrap-v1-graph-capture_9c2b41194d14-a",
+    "sequence_number": "1",
+    "event_ser_manifest": "cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournal$Advanced"
+  }],
+  "process": 94021,
+  "sourceTransactions": [],
+  "stateConnections": [{
+    "ID": "161",
+    "DB": "pekko_test_cdc_window_9c2b41194d14",
+    "COMMAND": "Sleep",
+    "STATE": ""
+  }, {
+    "ID": "180",
+    "DB": "pekko_test_cdc_window_9c2b41194d14",
+    "COMMAND": "Query",
+    "STATE": "executing"
+  }, {
+    "ID": "36",
+    "DB": "pekko_test_cdc_window_9c2b41194d14",
+    "COMMAND": "Sleep",
+    "STATE": ""
+  }, {
+    "ID": "156",
+    "DB": "pekko_test_cdc_window_9c2b41194d14",
+    "COMMAND": "Sleep",
+    "STATE": ""
+  }, {
+    "ID": "29",
+    "DB": "pekko_test_cdc_window_9c2b41194d14",
+    "COMMAND": "Sleep",
+    "STATE": ""
+  }, {
+    "ID": "38",
+    "DB": "pekko_test_cdc_window_9c2b41194d14",
+    "COMMAND": "Sleep",
+    "STATE": ""
+  }],
+  "stateTransactions": [],
+  "worker": {
+    "alive": true
+  }
+}

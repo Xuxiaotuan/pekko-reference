@@ -1,0 +1,30 @@
+{
+  "sourceCommit": "4f025a7",
+  "scenario": "GRAPH-CANCEL",
+  "result": "PASS",
+  "evidence": {
+    "baseline": "artifacts/baseline.json",
+    "final": "artifacts/final.json",
+    "cleanup": "artifacts/cleanup.json",
+    "rawLog": "/Users/xujiawei/magic/scala-workbench/pekko-reference/target/shared-capture-matrix/GRAPH-CANCEL-9c2b41194d14/original.log"
+  },
+  "observed": {
+    "activeTable": "b",
+    "activeTableEqual": true,
+    "activeFieldsCompared": 24,
+    "activeDifferences": 0,
+    "canceledTable": "a",
+    "canceledTableEqual": false,
+    "canceledDifferences": 3,
+    "graphJournalRows": 2,
+    "ledgerRows": 2,
+    "cleanupConnections": 0
+  },
+  "interpretation": "取消 a 后 a 不再推进，因此 a 与源表的最终状态有预期差异。b 继续运行并完成逐字段一致。",
+  "unverified": [
+    "取消后重新订阅同一表的 generation 恢复",
+    "多表取消与 Savepoint 协调",
+    "DDL",
+    "700000 physical tables"
+  ]
+}
