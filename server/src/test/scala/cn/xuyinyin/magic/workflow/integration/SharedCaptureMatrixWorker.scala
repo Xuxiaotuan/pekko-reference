@@ -184,6 +184,13 @@ object SharedCaptureMatrixWorker {
               case TableActor.Started=>emit(if(cmd(0)=="GRAPH_RECOVER")"GRAPH_RECOVER_READY"else "GRAPH_APPLY_READY","id"->JsString(cmd(1)),"graphId"->JsString(graphId))
               case other=>throw new IllegalStateException("table graph start failed: "+other)
             }
+          case "GRAPH_STOP"=>
+            val actor=graphActors.getOrElse(cmd(1),throw new IllegalArgumentException("graph table not found"))
+            val probe=kit.createTestProbe[TableActor.Reply]();actor!TableActor.Stop(probe.ref)
+            probe.receiveMessage(30.seconds) match {
+              case TableActor.Stopped=>emit("GRAPH_STOPPED","id"->JsString(cmd(1)))
+              case other=>throw new IllegalStateException("table graph stop failed: "+other)
+            }
           case "ARM_L"=>armL.set(cmd(1));emit("ARMED")
           case "ARM_CONTROL"=>armControl.set(cmd(1));emit("ARMED")
           case "ARM_SUBSCRIBE"=>admissionGate.set(true);emit("ARMED")
