@@ -42,6 +42,40 @@ class TableCdcGraphSpec extends AnyWordSpec with Matchers {
       journal.latest.map(_.batchId) shouldBe Some("batch-1")
       Await.result(materialized.stop(),5.seconds) shouldBe Done
       system.terminate()
+      Await.result(system.whenTerminated,5.seconds)
+    }
+
+    "release table ownership after stop so the graph can be materialized again" in {
+      implicit val system:ActorSystem[Nothing]=ActorSystem[Nothing](Behaviors.empty,"table-actor-test")
+      implicit val ec:ExecutionContext=system.executionContext
+      implicit val materializer=SystemMaterializer(system).materializer
+      val batch=CdcCapturedBatch("source-1","mysql-cdc:capture",0,"batch-1",
+        CdcCaptureCursor("mysql.capture.groups.v1",JsObject("sequence"->JsNumber(1),"version"->JsNumber(1)).compactPrint,"{}"),
+        Vector("{\"id\":1}"))
+      val capture=new FakeCapture(batch,new AtomicInteger(0))
+      val journal=new RecordingJournal
+      val sink=new TableGraphSink {
+        override def commit(subscriptionId:String,executionId:String,b:CdcCapturedBatch)
+          (implicit ec:ExecutionContext):Future[cn.xuyinyin.magic.cdc.checkpoint.BatchCommitResult]=
+          Future.successful(Committed(BatchCheckpoint(b.sourceNodeId,b.partitionId,b.batchSequence,b.batchId,
+            cn.xuyinyin.magic.connectors.mysql.source.capture.CdcCapturedBatchWorkflowAdapter.toWorkflow(b).cursor,
+            b.rows.size,b.rows.size)))
+      }
+      val actor=system.systemActorOf(TableActor(()=>new TableCdcGraph(capture,
+        TableGraphSettings("sub-1","source-1","execution-1","b"*64),sink,journal)),"table-owner")
+      val probe=org.apache.pekko.actor.testkit.typed.scaladsl.TestProbe[TableActor.Reply]()(system)
+      actor ! TableActor.Start(probe.ref)
+      probe.expectMessage(TableActor.Started)
+      actor ! TableActor.Status(probe.ref)
+      probe.expectMessage(TableActor.Running(true))
+      actor ! TableActor.Stop(probe.ref)
+      probe.expectMessage(TableActor.Stopped)
+      actor ! TableActor.Status(probe.ref)
+      probe.expectMessage(TableActor.Running(false))
+      actor ! TableActor.Start(probe.ref)
+      probe.expectMessage(TableActor.Started)
+      system.terminate()
+      Await.result(system.whenTerminated,5.seconds)
     }
   }
 

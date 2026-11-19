@@ -21,23 +21,33 @@ object TableActor {
 
   def apply(graph:()=>TableCdcGraph):Behavior[Command]=Behaviors.setup {context=>
     implicit val ec:ExecutionContext=context.system.executionContext
-    var materialized:Option[TableGraphMaterialized]=None
+    sealed trait Lifecycle
+    case object Idle extends Lifecycle
+    final case class Active(materialized:TableGraphMaterialized) extends Lifecycle
+    case object Stopping extends Lifecycle
+    final case class StopCompleted(replyTo:ActorRef[Reply]) extends Command
+    var lifecycle:Lifecycle=Idle
     Behaviors.receiveMessage {
       case Start(replyTo)=>
-        materialized match {
-          case Some(_) => replyTo ! Started
-          case None =>
-            try {materialized=Some(graph().materialize());replyTo ! Started}
+        lifecycle match {
+          case Active(_) => replyTo ! Started
+          case Stopping => replyTo ! Failed("table graph is stopping")
+          case Idle =>
+            try {lifecycle=Active(graph().materialize());replyTo ! Started}
             catch {case error:Throwable=>replyTo ! Failed(error.toString)}
         }
         Behaviors.same
       case Stop(replyTo)=>
-        materialized match {
-          case None => replyTo ! Stopped
-          case Some(value)=>value.stop().onComplete {case _=>replyTo ! Stopped}
+        lifecycle match {
+          case Idle => replyTo ! Stopped
+          case Stopping => replyTo ! Failed("table graph is already stopping")
+          case Active(value)=>
+            lifecycle=Stopping
+            value.stop().onComplete {_=>context.self ! StopCompleted(replyTo)}
         }
         Behaviors.same
-      case Status(replyTo)=>replyTo ! Running(materialized.nonEmpty);Behaviors.same
+      case StopCompleted(replyTo)=>lifecycle=Idle;replyTo ! Stopped;Behaviors.same
+      case Status(replyTo)=>replyTo ! Running(lifecycle.isInstanceOf[Active]);Behaviors.same
     }
   }
 }
