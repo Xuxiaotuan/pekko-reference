@@ -27,10 +27,15 @@ final class CdcTaskRoutes(service: Option[CdcTaskService])(implicit ec: Executio
   private def capture(value: CdcCaptureView): JsObject = JsObject("captureId" -> JsString(value.captureId),
     "database" -> JsString(value.database), "readiness" -> JsString(value.readiness),
     "runtimeHealth" -> JsString(value.runtimeHealth), "reason" -> optional(value.reason))
+  private def savepoint(value: cn.xuyinyin.magic.cdc.savepoint.CdcSavepointHeader): JsObject = JsObject(
+    "savepointId"->JsString(value.savepointId),"captureId"->JsString(value.captureId),"sourceLineage"->JsString(value.sourceLineage),
+    "epoch"->JsNumber(value.epoch.epoch),"sealedSequence"->JsNumber(value.epoch.sealedSequence),"capturePosition"->optional(value.epoch.capturePosition),
+    "routeDigest"->JsString(value.epoch.routeDigest),"tableSetDigest"->JsString(value.tableSetDigest),"pageCount"->JsNumber(value.pageCount),
+    "ownerEpoch"->JsString(value.ownerEpoch),"protocolVersion"->JsNumber(value.protocolVersion),"status"->JsString(value.status),"manifestDigest"->optional(value.manifestDigest))
 
   private val invalid = Set("INVALID_DEFINITION", "INVALID_PAGE", "INVALID_TASK_ID", "CAPTURE_NOT_CONFIGURED")
   private val conflicts = Set("CONFLICT", "CANCEL_NOT_PERMITTED")
-  private val unavailable = Set("OWNER_RELEASE_UNPROVEN", "CDC_PLATFORM_STOPPING", "CDC_PLATFORM_BUSY", "RELEASE_UNKNOWN", "STORAGE_UNAVAILABLE", "CDC_PLATFORM_DISABLED")
+  private val unavailable = Set("OWNER_RELEASE_UNPROVEN", "CDC_PLATFORM_STOPPING", "CDC_PLATFORM_BUSY", "RELEASE_UNKNOWN", "STORAGE_UNAVAILABLE", "CDC_PLATFORM_DISABLED", "SAVEPOINT_NOT_PERMITTED", "SAVEPOINT_UNAVAILABLE", "SAVEPOINT_ADMISSION_FROZEN", "SAVEPOINT_ALREADY_ALIGNING", "SAVEPOINT_ACTIVE_STEPS")
   private def failure(error: Throwable): (StatusCode, JsValue) = {
     val code = error match {
       case e: CdcPlatformException if invalid(e.code) || conflicts(e.code) || unavailable(e.code) || e.code == "NOT_FOUND" => e.code
@@ -68,6 +73,29 @@ final class CdcTaskRoutes(service: Option[CdcTaskService])(implicit ec: Executio
         path("cdc-gc") { get { withService(s=>completeResult(s.gcStatus().map(v=>StatusCodes.OK->JsObject("items"->JsArray(v))))) } },
         path("cdc-status") { get { withService(s => complete(StatusCodes.OK -> status(s.status))) } },
         path("cdc-captures") { get { withService(s => completeResult(s.captures().map(rows => StatusCodes.OK -> JsObject("items" -> JsArray(rows.map(capture)))))) } },
+        pathPrefix("cdc-savepoints") {
+          withService { runtime =>
+            concat(
+              path(Segment / Segment) { (captureId, savepointId) =>
+                post { completeResult {
+                  if (!captureId.matches("[A-Za-z0-9_-]{1,64}") || !savepointId.matches("[A-Za-z0-9_-]{1,128}")) throw new CdcPlatformException("INVALID_PAGE")
+                  runtime.createSavepoint(captureId, savepointId).map(h => StatusCodes.Accepted -> savepoint(h))
+                } }
+              },
+              path(Segment) { savepointId =>
+                get { completeResult {
+                  if (!savepointId.matches("[A-Za-z0-9_-]{1,128}")) throw new CdcPlatformException("INVALID_PAGE")
+                  runtime.restoreSavepoint(savepointId).map {
+                    case Some((header, refs)) => StatusCodes.OK -> JsObject("savepoint"->savepoint(header),"tables"->JsArray(refs.map(r=>JsObject(
+                      "taskId"->JsString(r.taskId),"generation"->JsString(r.generation),"phase"->JsString(r.phase),
+                      "checkpointRef"->JsString(r.checkpointRef),"inclusionState"->JsString(r.inclusionState),"tableDigest"->JsString(r.tableDigest)))))
+                    case None => failure(new CdcPlatformException("NOT_FOUND"))
+                  }
+                } }
+              }
+            )
+          }
+        },
         pathPrefix("cdc-tasks") {
           withService { runtime =>
             concat(

@@ -2,6 +2,7 @@ package cn.xuyinyin.magic.cdc.platform
 
 import cn.xuyinyin.magic.cdc.MySQLCdcGroup
 import cn.xuyinyin.magic.cdc.bootstrap.BootstrapProgress
+import cn.xuyinyin.magic.cdc.savepoint.{CdcSavepointHeader,TableCheckpointRef}
 import scala.concurrent.Future
 import spray.json._
 
@@ -34,6 +35,8 @@ trait CdcTaskService {
   def get(taskId:String):Future[Option[CdcTaskView]]
   def listAfter(after:Option[String],limit:Int):Future[CdcTaskPage]
   def cancel(taskId:String):Future[CdcTaskView]
+  def createSavepoint(captureId:String,savepointId:String):Future[CdcSavepointHeader]=Future.failed(new CdcPlatformException("SAVEPOINT_UNAVAILABLE"))
+  def restoreSavepoint(savepointId:String):Future[Option[(CdcSavepointHeader,Vector[TableCheckpointRef])]]=Future.failed(new CdcPlatformException("SAVEPOINT_UNAVAILABLE"))
 }
 final case class CdcPlatformLimits(snapshotSteps:Int=2,tailSteps:Int=2,candidatePage:Int=32,maxPendingOperations:Int=64,
   tailDelayMillis:Long=500L,snapshotDelayMillis:Long=10L) {

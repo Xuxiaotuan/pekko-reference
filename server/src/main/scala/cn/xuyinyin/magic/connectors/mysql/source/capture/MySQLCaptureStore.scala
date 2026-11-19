@@ -142,10 +142,12 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
       "CREATE TABLE IF NOT EXISTS pekko_capture_subscriptions(capture_id VARCHAR(64),request_id VARCHAR(128),table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL,status VARCHAR(32) NOT NULL,schema_id CHAR(64) NOT NULL,b_point TEXT NULL,k_point TEXT NULL,b_seq BIGINT NULL,PRIMARY KEY(capture_id,request_id),INDEX table_route(capture_id,table_name))",
       "CREATE TABLE IF NOT EXISTS pekko_capture_gc_state_v1(capture_id VARCHAR(64) PRIMARY KEY,discovery_status VARCHAR(16) NOT NULL,barrier_status VARCHAR(16) NOT NULL)",
       "CREATE TABLE IF NOT EXISTS pekko_capture_consumers_v1(capture_id VARCHAR(64) NOT NULL,consumer_id CHAR(64) NOT NULL,consumer_kind VARCHAR(16) NOT NULL,subscription_id VARCHAR(128) NOT NULL,source_node VARCHAR(128) NOT NULL,journal_floor BIGINT NOT NULL,audit_floor BIGINT NOT NULL,observed_floor BIGINT NOT NULL,journal_revision BIGINT NOT NULL,checkpoint_id VARCHAR(128) NOT NULL,PRIMARY KEY(capture_id,consumer_id))",
+      "CREATE TABLE IF NOT EXISTS pekko_capture_epochs_v1(capture_id VARCHAR(64) PRIMARY KEY,next_epoch BIGINT NOT NULL)",
       "CREATE TABLE IF NOT EXISTS pekko_capture_log(capture_id VARCHAR(64),seq BIGINT,source_key CHAR(64) NOT NULL,kind VARCHAR(16) NOT NULL,table_name VARCHAR(128) NOT NULL,subscription_id VARCHAR(128) NOT NULL,schema_id CHAR(64) NOT NULL,payload LONGTEXT NOT NULL,digest CHAR(64) NOT NULL,point_json TEXT NULL,resume_json LONGTEXT NULL,PRIMARY KEY(capture_id,seq),UNIQUE KEY occurrence(capture_id,source_key),INDEX deliveries(capture_id,subscription_id,seq))"
     ).foreach(sql=>update(c,sql+" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin"))
-    require(rows(c,"SELECT COUNT(*) AS total FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ('pekko_capture_readers','pekko_capture_schemas','pekko_capture_subscriptions','pekko_capture_log','pekko_capture_fences','pekko_capture_gc_state_v1','pekko_capture_consumers_v1') AND engine='InnoDB'").head("total")=="7","capture state requires InnoDB")
+    require(rows(c,"SELECT COUNT(*) AS total FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ('pekko_capture_readers','pekko_capture_schemas','pekko_capture_subscriptions','pekko_capture_log','pekko_capture_fences','pekko_capture_gc_state_v1','pekko_capture_consumers_v1','pekko_capture_epochs_v1') AND engine='InnoDB'").head("total")=="8","capture state requires InnoDB")
     update(c,"INSERT IGNORE INTO pekko_capture_readers VALUES(?,?,1,0,NULL)",captureId,lineage)
+    update(c,"INSERT IGNORE INTO pekko_capture_epochs_v1 VALUES(?,0)",captureId)
     update(c,"INSERT IGNORE INTO pekko_capture_gc_state_v1 VALUES(?,'UNKNOWN','OPEN')",captureId)
     val head=rows(c,"SELECT lineage,next_seq,(SELECT COALESCE(MAX(seq),0) FROM pekko_capture_log WHERE capture_id=?) AS maximum FROM pekko_capture_readers WHERE capture_id=?",captureId,captureId).head
     require(head("lineage")==lineage,"capture lineage changed")
@@ -600,6 +602,20 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
     verifyChain(c,proof("seq").toLong);proof("seq").toLong
   }
   def lastAckSequence:Long=connection(c=>rows(c,"SELECT COALESCE(MAX(seq),0) AS n FROM pekko_capture_log WHERE capture_id=? AND kind='ACK'",captureId).head("n").toLong)
+  def frontier:Option[String]=connection(c=>rows(c,"SELECT frontier FROM pekko_capture_readers WHERE capture_id=?",captureId).headOption.flatMap(r=>Option(r("frontier"))))
+  def routeDigest:String=connection {c=>
+    val values=rows(c,"SELECT request_id,table_name,generation,status,schema_id,b_point,k_point,b_seq FROM pekko_capture_subscriptions WHERE capture_id=? ORDER BY request_id",captureId)
+    MySQLCdcGroup.hash(values.map(r=>r.toVector.sortBy(_._1).mkString("|", "=", "|")).mkString("[",",","]"))
+  }
+  def tableSetDigest:String=connection {c=>
+    val values=rows(c,"SELECT request_id,table_name,generation FROM pekko_capture_subscriptions WHERE capture_id=? AND status<>'CANCELED' ORDER BY request_id",captureId)
+    MySQLCdcGroup.hash(values.map(r=>s"${r("request_id")}|${r("table_name")}|${r("generation")}").mkString("[",",","]"))
+  }
+  def nextCaptureEpoch():Long=tx {c=>
+    val current=rows(c,"SELECT next_epoch FROM pekko_capture_epochs_v1 WHERE capture_id=? FOR UPDATE",captureId).head("next_epoch").toLong
+    val next=Math.addExact(current,1L)
+    update(c,"UPDATE pekko_capture_epochs_v1 SET next_epoch=? WHERE capture_id=?",next,captureId);next
+  }
   /** Conservative proof: only the same completed, covered D may replay a newly anchored intent. */
   def recoverablePendingAt(offset:String):Vector[String]={
     val ack=verifiedOffsetSequence(offset);val canonical=offsetKey(offset)

@@ -2,8 +2,10 @@ package cn.xuyinyin.magic.cdc.platform
 
 import cn.xuyinyin.magic.cdc.bootstrap.BootstrapProgress
 import cn.xuyinyin.magic.cdc.recovery.ExecutionFailure
+import cn.xuyinyin.magic.cdc.savepoint.{CdcSavepointHeader,TableCheckpointRef}
 import java.util.UUID
 import java.util.concurrent.{Executors,ScheduledFuture,ThreadFactory,TimeUnit}
+import scala.concurrent.duration._
 import java.util.concurrent.atomic.{AtomicBoolean,AtomicInteger}
 import scala.concurrent.{ExecutionContext,Future,Promise}
 import scala.util.{Failure,Success}
@@ -29,6 +31,10 @@ trait CdcPlatformKernel {
   def dispatchCaptureIds:Set[String]=Set.empty
   /** Captures whose readers are paused solely to resume a claimed v2 permit. */
   def recoveryCaptureIds:Set[String]=Set.empty
+  def createSavepoint(captureId:String,savepointId:String,ownerEpoch:String):CdcSavepointHeader=
+    throw new CdcPlatformException("SAVEPOINT_UNAVAILABLE")
+  def restoreSavepoint(savepointId:String):Option[(CdcSavepointHeader,Vector[TableCheckpointRef])]=
+    throw new CdcPlatformException("SAVEPOINT_UNAVAILABLE")
 }
 
 /** One coordinator, two independent work budgets, no Future or Actor allocated per cold index row. */
@@ -51,6 +57,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
   private val markingStartupFailure=new AtomicBoolean()
   private val startupFailedFlag=new AtomicBoolean()
   private val guardianLost=new AtomicBoolean()
+  private val savepointInProgress=new AtomicBoolean()
   @volatile private var startupFailurePending=false
   @volatile private var recoveryPending=false
   @volatile private var nextRecoveryNanos=0L
@@ -140,6 +147,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
   override def gcStatus():Future[Vector[spray.json.JsObject]]=io(kernel.gcViews)
   def captures():Future[Vector[CdcCaptureView]]=io(kernel.captures.map(v=>if(ownerState=="ACTIVE")v else v.copy(readiness="UNKNOWN",runtimeHealth="UNKNOWN",reason=reason)))
   def submit(request:CdcTaskRequest):Future[CdcTaskAcceptance]=io {
+    if(savepointInProgress.get())throw new CdcPlatformException("SAVEPOINT_ADMISSION_FROZEN")
     if(stopping.get())throw new CdcPlatformException("CDC_PLATFORM_STOPPING")
     request.validate()
     if(!kernel.captures.exists(_.captureId==request.captureId))throw new CdcPlatformException("CAPTURE_NOT_CONFIGURED")
@@ -148,6 +156,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
   def get(taskId:String):Future[Option[CdcTaskView]]=io(store.get(taskId).map(observed))
   def listAfter(after:Option[String],limit:Int):Future[CdcTaskPage]=io {val p=store.listAfter(after,limit);p.copy(items=p.items.map(observed))}
   def cancel(taskId:String):Future[CdcTaskView]=io {
+    if(savepointInProgress.get())throw new CdcPlatformException("SAVEPOINT_ADMISSION_FROZEN")
     if(ownerState!="ACTIVE" || stopping.get())throw new CdcPlatformException("CANCEL_NOT_PERMITTED")
     val current=store.get(taskId).getOrElse(throw new CdcPlatformException("NOT_FOUND"))
     if(current.desiredState=="CANCELED" || current.phase=="CANCELED")observed(current)
@@ -156,12 +165,25 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
       observed(store.cancel(taskId,now))
     }
   }
+  override def createSavepoint(captureId:String,savepointId:String):Future[CdcSavepointHeader]=io {
+    if(ownerState!="ACTIVE" || stopping.get())throw new CdcPlatformException("SAVEPOINT_NOT_PERMITTED")
+    if(!savepointInProgress.compareAndSet(false,true))throw new CdcPlatformException("SAVEPOINT_ALREADY_ALIGNING")
+    try {
+      val deadline=System.nanoTime()+10.seconds.toNanos
+      while(active.get()>0 && System.nanoTime()<deadline){Thread.sleep(10L)}
+      if(active.get()>0)throw new CdcPlatformException("SAVEPOINT_ACTIVE_STEPS")
+      kernel.createSavepoint(captureId,savepointId,runtimeAttemptId)
+    } finally savepointInProgress.set(false)
+  }
+  override def restoreSavepoint(savepointId:String):Future[Option[(CdcSavepointHeader,Vector[TableCheckpointRef])]]=io {
+    kernel.restoreSavepoint(savepointId)
+  }
   def pollNow():Future[Unit]={
     if(startupFailurePending && !stopping.get())Future {markStartupFailure()}(controlEc)
     else if(recoveryPending && !stopping.get() && System.nanoTime()>=nextRecoveryNanos && ticking.compareAndSet(false,true)){
       Future {startOwner()}(controlEc).transform {r=>ticking.set(false);r.failed.foreach(startupFailed);r}(ExecutionContext.parasitic)
     }
-    else if(stopping.get() || ownerState!="ACTIVE" || !ticking.compareAndSet(false,true))Future.successful(())
+    else if(stopping.get() || ownerState!="ACTIVE" || savepointInProgress.get() || !ticking.compareAndSet(false,true))Future.successful(())
     else {
       val workEntered=new AtomicBoolean()
       io {

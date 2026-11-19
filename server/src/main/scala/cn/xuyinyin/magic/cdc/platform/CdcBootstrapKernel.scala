@@ -6,6 +6,7 @@ import cn.xuyinyin.magic.cdc.bootstrap._
 import cn.xuyinyin.magic.cdc.recovery.{CdcExecutionException, ExecutionFailure}
 import cn.xuyinyin.magic.cdc.guardian.ManagedCdcJdbc
 import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
+import cn.xuyinyin.magic.cdc.savepoint.{CdcSavepointCoordinator,CdcSavepointHeader,CdcSavepointStore,TableCheckpointRef}
 import org.apache.pekko.Done
 import org.apache.pekko.actor.typed.{ActorRef,ActorSystem}
 import org.apache.pekko.actor.typed.scaladsl.{Behaviors,adapter}
@@ -26,7 +27,8 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
   managed:Boolean=false,private[cdc] val recoveryStore:Option[CdcTaskStore]=None,
   private[cdc] val freshAttest:Option[(SnapshotGuardianWire.WorkerAttestationContext,String)=>SnapshotGuardianWire.VerifiedWorkerAttestation]=None,
   private[cdc] val fenceGuardStore:Option[CdcTaskStore]=None,
-  private[cdc] val wrapSource:(String,Connection)=>Connection=(_,c)=>c) extends CdcPlatformKernel {
+  private[cdc] val wrapSource:(String,Connection)=>Connection=(_,c)=>c,
+  private[cdc] val savepointTasks:Option[CdcTaskStore]=None) extends CdcPlatformKernel {
   private implicit val actorEc:ExecutionContext=system.executionContext
   private implicit val scheduler:org.apache.pekko.actor.typed.Scheduler=system.scheduler
   private val stopping=new AtomicBoolean()
@@ -45,8 +47,17 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
   private var peakSessions=0
   private val journalStops=mutable.Map.empty[ActorRef[BootstrapJournal.Command],Future[Done]]
   private val closing=mutable.Map.empty[String,Future[CaptureReleaseEvidence]]
+  private val savepointStore=savepointTasks.map(s=>new CdcSavepointStore(s.open))
   @volatile private var observations=Map.empty[String,Long]
   @volatile private var captureViews=settings.captures.map(c=>CdcCaptureView(c.id,c.source.database,"NEW","WAITING",None))
+  override def createSavepoint(captureId:String,savepointId:String,ownerEpoch:String):CdcSavepointHeader=synchronized {
+    val capture=capturesById.getOrElse(captureId,throw new CdcPlatformException("CAPTURE_NOT_CONFIGURED"))
+    val tasks=savepointTasks.getOrElse(throw new CdcPlatformException("SAVEPOINT_UNAVAILABLE"))
+    val manifests=savepointStore.get
+    new CdcSavepointCoordinator(tasks,manifests,capture.reader,capture.settings.sourceLineage,ownerEpoch).create(savepointId)
+  }
+  override def restoreSavepoint(savepointId:String):Option[(CdcSavepointHeader,Vector[TableCheckpointRef])]=
+    savepointStore.flatMap(_.readSealed(savepointId))
   def captures:Vector[CdcCaptureView]={
     if(stopping.get())captureViews.map(_.copy(readiness="STOPPING",runtimeHealth="UNKNOWN"))
     else {val current=System.nanoTime();captureViews.map(v=>CdcCaptureHealth.current(v,observations.get(v.captureId),current))}

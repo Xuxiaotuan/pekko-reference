@@ -9,8 +9,11 @@ import cn.xuyinyin.magic.cdc.MySQLCdcGroup
 import cn.xuyinyin.magic.cdc.recovery.{CdcExecutionException, ExecutionFailure}
 import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
 import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire._
+import cn.xuyinyin.magic.cdc.savepoint.CdcSavepointStore
+import cn.xuyinyin.magic.cdc.savepoint.{CdcSavepointTaskPage,TableCheckpointRef}
 import java.sql.{Connection,SQLException}
 import java.util.UUID
+import java.security.MessageDigest
 import spray.json._
 
 /** Immutable association recorded only when an owner acquires the platform. */
@@ -42,7 +45,7 @@ object CdcTaskStore {
 }
 
 /** A new control index. It never edits the kernel Journal, original L, SDK D or target receipts. */
-final class CdcTaskStore(open:()=>Connection,val limits:CdcPlatformLimits) {
+final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
   private val jdbc=new BootstrapJdbc(open,2)
   import jdbc._
   private val logger=org.slf4j.LoggerFactory.getLogger(getClass)
@@ -72,6 +75,7 @@ final class CdcTaskStore(open:()=>Connection,val limits:CdcPlatformLimits) {
       "CREATE TABLE IF NOT EXISTS pekko_cdc_dispatch_v1(capture_id VARCHAR(64) PRIMARY KEY,after_seq BIGINT NOT NULL)",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_grants_v1(grant_id VARCHAR(64) PRIMARY KEY,task_id CHAR(64) NOT NULL,owner_attempt VARCHAR(128) NOT NULL,pool VARCHAR(16) NOT NULL,status VARCHAR(32) NOT NULL,created_at BIGINT NOT NULL,finished_at BIGINT)"
     ).foreach(sql=>update(c,sql+suffix))
+    CdcSavepointStore.initializeOn(c)
     def hasProofVersion:Boolean={
       Vector("pekko_cdc_b_recovery_v1","PEKKO_CDC_B_RECOVERY_V1").exists {table=>
         val rs=c.getMetaData.getColumns(c.getCatalog,null,table,"%");var found=false
@@ -1066,6 +1070,47 @@ final class CdcTaskStore(open:()=>Connection,val limits:CdcPlatformLimits) {
     if(limit<1 || limit>100 || after.exists(x=> !x.matches("[a-f0-9]{64}")))throw new CdcPlatformException("INVALID_PAGE")
     connection {c=>val rows=query(c,"SELECT t.*,EXISTS(SELECT 1 FROM pekko_cdc_b_recovery_v1 p WHERE p.task_id=t.task_id AND p.consumed=FALSE) AS recovery_pending FROM pekko_cdc_tasks_v1 t WHERE t.task_id>? ORDER BY t.task_id LIMIT ?",after.getOrElse(""),limit+1).map(record).map(_.view)
       CdcTaskPage(rows.take(limit),if(rows.size>limit)rows.take(limit).lastOption.map(_.taskId)else None)}
+  }
+  private def savepointRef(r:Map[String,String]):TableCheckpointRef={
+    val journal=Option(r("journal_revision")).filter(_.nonEmpty).map(MySQLCdcGroup.hash)
+    val target=Option(r("initialization_evidence")).filter(_.nonEmpty).map(MySQLCdcGroup.hash)
+    // The task index carries a definition fingerprint, not the captured schema
+    // fingerprint. Keep the latter absent until the capture registry is joined.
+    val schema=None
+    val raw=Vector(r("task_id"),r("generation"),r("phase"),r("control_revision"),r("journal_revision"),
+      Option(r("continuation_json")).getOrElse(""),target.getOrElse(""),schema.getOrElse(""),r("desired_state")).mkString("|")
+    val digest=MySQLCdcGroup.hash(raw)
+    TableCheckpointRef(r("task_id"),r("generation"),r("phase"),digest,journal,target,schema,digest,
+      if(r("phase")=="CANCELED")"TOMBSTONE"else"ACTIVE")
+  }
+  /** Keyset page for Savepoint creation. This never creates Actors or JDBC work resources. */
+  def savepointTaskPage(captureId:String,after:Option[(String,String)],limit:Int):CdcSavepointTaskPage={
+    require(limit>0 && limit<=1024)
+    connection {c=>
+      val sql="SELECT task_id,generation,phase,control_revision,journal_revision,continuation_json,initialization_evidence,definition_hash,desired_state FROM pekko_cdc_tasks_v1 WHERE capture_id=? "+
+        after.map(_=>"AND (task_id>? OR (task_id=? AND generation>?)) ").getOrElse("")+"ORDER BY task_id,generation LIMIT ?"
+      val args=Vector[Any](captureId) ++ after.map(x=>Vector[Any](x._1,x._1,x._2)).getOrElse(Vector.empty[Any]) :+ limit
+      val rows=statement(c,sql,args){q=>
+        val rs=q.executeQuery();try {val meta=rs.getMetaData;val out=Vector.newBuilder[Map[String,String]]
+          while(rs.next())out+=(1 to meta.getColumnCount).map(i=>meta.getColumnLabel(i).toLowerCase(java.util.Locale.ROOT)->rs.getString(i)).toMap
+          out.result()}finally rs.close()}
+      val refs=rows.map(savepointRef)
+      CdcSavepointTaskPage(refs,refs.lastOption.map(x=>x.taskId->x.generation).filter(_=>refs.size==limit))
+    }
+  }
+  def savepointTaskCount(captureId:String):Int=connection(c=>query(c,"SELECT COUNT(*) AS n FROM pekko_cdc_tasks_v1 WHERE capture_id=?",captureId).head("n").toInt)
+  /** Streaming digest over the stable task key order; it does not materialize the task set. */
+  def savepointTableSetDigest(captureId:String):String=connection {c=>
+    val q=c.prepareStatement("SELECT task_id,generation,phase,control_revision,journal_revision,continuation_json,initialization_evidence,definition_hash,desired_state FROM pekko_cdc_tasks_v1 WHERE capture_id=? ORDER BY task_id,generation")
+    q.setString(1,captureId)
+    val rs=q.executeQuery();val md=MessageDigest.getInstance("SHA-256");md.update('['.toByte);var first=true
+    try while(rs.next()) {
+      val row=(1 to rs.getMetaData.getColumnCount).map(i=>rs.getString(i)).toVector
+      val ref=savepointRef((Vector("task_id","generation","phase","control_revision","journal_revision","continuation_json","initialization_evidence","definition_hash","desired_state") zip row).toMap)
+      if(!first)md.update(','.toByte)else first=false
+      md.update(ref.canonical.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+    } finally {rs.close();q.close()}
+    md.update(']'.toByte);md.digest().map(b=>f"${b & 0xff}%02x").mkString
   }
   def cancel(id:String,now:Long):CdcTaskView={validateId(id);transaction {c=>
     owner(c)

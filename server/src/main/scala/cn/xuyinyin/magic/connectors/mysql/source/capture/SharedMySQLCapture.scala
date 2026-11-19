@@ -13,6 +13,7 @@ import scala.collection.mutable
 import scala.concurrent.{ExecutionContext,Future}
 import scala.jdk.CollectionConverters._
 import scala.util.Failure
+import cn.xuyinyin.magic.cdc.savepoint.CaptureEpoch
 
 /** Single managed owner. A subscription becoming CAPTURE_READY does not initialize its target. */
 class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,val store:MySQLCaptureStore,
@@ -75,6 +76,15 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   private case class Marker(id:String,table:String,generation:String,action:String,point:CapturePoint,done:Long=>Unit)
   private val markers=mutable.Map.empty[String,Marker]
   private val commandLock=new AnyRef
+  @volatile private var savepointAdmissionFrozen=false
+  /** Freeze subscription and fence mutations while a Runtime Savepoint aligns. */
+  def beginSavepoint():Unit=commandLock.synchronized {requireAdmission();require(!savepointAdmissionFrozen,"SAVEPOINT_ALREADY_ALIGNING");savepointAdmissionFrozen=true}
+  def endSavepoint():Unit=commandLock.synchronized {savepointAdmissionFrozen=false}
+  /** Seal a persisted L/route boundary. The source callback is serialized with this command. */
+  def sealCaptureEpoch():CaptureEpoch=commandLock.synchronized {
+    requireAdmission()
+    CaptureEpoch(store.captureId,store.nextCaptureEpoch(),store.lineage,store.lastAckSequence,store.frontier,store.routeDigest,store.tableSetDigest)
+  }
   /** Install only after state and source release proof; never replace a gate in flight. */
   private[magic] def installRecoveryGate(gate:cn.xuyinyin.magic.cdc.platform.CdcTaskStore.ReaderRecoveryGate):Unit=commandLock.synchronized {
     require(gate!=null && sourceFenceRequired && !started.get() && !stopping.get() && !closed.get() && installedRecoveryGate.isEmpty,
@@ -203,7 +213,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     startup.evidence
   }
   private def requireAdmission():Unit={
-    active();assertOwner()
+    active();assertOwner();require(!savepointAdmissionFrozen,"SAVEPOINT_ADMISSION_FROZEN")
     val evidence=startupEvidence
     failure.foreach(throw _)
     if(evidence.phase!="ADMISSION_READY")throw new CaptureAdmissionException(evidence.reasonCode.getOrElse("CAPTURE_STARTING"))
@@ -326,8 +336,9 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     }
   }
   private[source] def accept(records:Vector[SourceRecord],handle:CdcBatchCommitHandle):Unit={
-    require(inside.compareAndSet(false,true),"concurrent shared callbacks unsupported")
-    try {
+    commandLock.synchronized {
+      require(inside.compareAndSet(false,true),"concurrent shared callbacks unsupported")
+      try {
       active();assertOwner()
       require(records.nonEmpty && pending.size<8,"retained callback budget exceeded")
       val bytes=records.iterator.map(r=>Option(r.value()).fold(0L)(_.toString.getBytes(java.nio.charset.StandardCharsets.UTF_8).length.toLong)).sum
@@ -337,10 +348,11 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       observe("RAW_CALLBACK",JsObject("id"->JsNumber(p.id),"records"->JsNumber(records.size),"offset"->p.offset.parseJson))
       records.foreach(r=>processCallbackRecord(r,p))
       acknowledgeCoveredCallbacks()
-    }catch {case e:Throwable=>
-      val problem=if(!store.releaseConfirmed)releaseUnknown("capture-store",e)else e
-      callbackFailed.set(true);error.compareAndSet(null,problem);throw problem
-    }finally inside.set(false)
+      }catch {case e:Throwable=>
+        val problem=if(!store.releaseConfirmed)releaseUnknown("capture-store",e)else e
+        callbackFailed.set(true);error.compareAndSet(null,problem);throw problem
+      }finally inside.set(false)
+    }
   }
   /** Decode and durably route one record; its callback remains pending until every record is covered. */
   private def processCallbackRecord(r:SourceRecord,p:Pending):Unit={
@@ -493,16 +505,16 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     if(s.status=="B_PENDING")writeMarker(s,stop=false)
     s
   }
-  def unsubscribe(id:String):Unit=commandLock.synchronized {active();assertOwner();val s=store.subscription(id).get
+  def unsubscribe(id:String):Unit=commandLock.synchronized {active();assertOwner();require(!savepointAdmissionFrozen,"SAVEPOINT_ADMISSION_FROZEN");val s=store.subscription(id).get
     require(s.status=="CAPTURE_READY" || s.status=="CAPTURE_STOPPED","subscription not ready to stop")
     if(s.status=="CAPTURE_READY"){requireAdmission();writeMarker(s,stop=true)}}
   /** Serialize pending cancellation with marker writes and refuse uncertain attempts. */
   def cancelPending(id:String):Unit=commandLock.synchronized {
-    active();assertOwner();requireAdmission()
+    active();assertOwner();require(!savepointAdmissionFrozen,"SAVEPOINT_ADMISSION_FROZEN");requireAdmission()
     store.cancelPending(id)
   }
   def requestFence(id:String,subscriptionId:String,action:String,context:String):CaptureFence=commandLock.synchronized {
-    active();assertOwner()
+    active();assertOwner();require(!savepointAdmissionFrozen,"SAVEPOINT_ADMISSION_FROZEN")
     store.fence(id).filter(_.sequence.nonEmpty).foreach {f=>
       require(f.subscriptionId==subscriptionId && f.action==action && f.context==MySQLCdcGroup.canonical(context.parseJson),"fence request conflict")
       return f
