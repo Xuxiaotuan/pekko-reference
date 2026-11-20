@@ -9,3 +9,4 @@ Source 与 State 的 UUID 必须来自实际 `SELECT @@server_uuid`，并且账�
 Runtime API 目前按设计绑定容器 loopback；Service 只保留资源入口，生产环境应通过已认证的管理代理暴露 API。部署模板的 TCP probe 只证明进程监听，不证明 CDC 已捕获就绪。
 
 GitHub Actions 的 `deploy` job 默认关闭，只有手动 `workflow_dispatch` 且提供环境 `cdc-runtime` 的 `KUBE_CONFIG_DATA` 时才 apply 本目录。流水线明确不引用旧 Workflow StatefulSet。
+本次验收沿用该隔离入口，部署目标为 `bigdata-lab/pekko-cdc-runtime`，不覆盖旧 StatefulSet。
