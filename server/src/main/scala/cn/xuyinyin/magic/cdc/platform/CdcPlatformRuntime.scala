@@ -162,6 +162,9 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
   override def renew(lease:TaskLease):Future[TaskLease]=io {
     workerRuntime.map(_.renewNow(lease)).getOrElse(throw new CdcPlatformException("WORKER_LEASE_UNAVAILABLE"))
   }
+  override def recordProgress(commit:cn.xuyinyin.magic.cdc.runtime.TaskProgressCommit):Future[TaskLease]=io {
+    workerRuntime.map(_.recordProgressNow(commit)).getOrElse(throw new CdcPlatformException("WORKER_LEASE_UNAVAILABLE"))
+  }
 
   override def release(lease:TaskLease,proof:String):Future[Boolean]=io {
     workerRuntime.map(_.releaseNow(lease,proof)).getOrElse(false)

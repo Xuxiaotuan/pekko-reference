@@ -38,7 +38,10 @@ final case class TaskLease(
   leaseEpoch: Long,
   lastLSeq: Long,
   lastJournalRevision: Long,
-  lastTargetBatch: Option[String]
+  lastTargetBatch: Option[String],
+  captureOwnerEpoch: Option[Long] = None,
+  workerEpoch: Option[Long] = None,
+  leaseId: Option[String] = None
 )
 
 /** Progress committed together with a task lease transition. */
@@ -46,6 +49,14 @@ final case class TaskProgressSnapshot(
   lastLSeq: Long,
   lastJournalRevision: Long,
   lastTargetBatch: Option[String]
+)
+
+/** Progress and acknowledgement are committed with the task lease renewal. */
+final case class TaskProgressCommit(
+  lease: TaskLease,
+  progress: TaskProgressSnapshot,
+  ackKind: Option[String] = None,
+  ackDigest: Option[String] = None
 )
 
 final case class CaptureSubscriptionRequest(
@@ -77,5 +88,7 @@ trait WorkerRuntimeControl {
   def register(workerId: String, incarnation: String, capacityJson: String): Future[WorkerLease]
   def claim(worker: WorkerLease, limit: Int): Future[Vector[TaskLease]]
   def renew(lease: TaskLease): Future[TaskLease]
+
+  def recordProgress(commit: TaskProgressCommit): Future[TaskLease]
   def release(lease: TaskLease, proof: String): Future[Boolean]
 }

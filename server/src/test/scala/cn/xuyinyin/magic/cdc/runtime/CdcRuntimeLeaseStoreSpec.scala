@@ -21,7 +21,6 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       val capture = leases.acquireCapture("capture", "source-1", "capture-incarnation").get
       leases.markCaptureActive(capture) shouldBe true
       leases.acquireCapture("capture", "source-1", "other-incarnation") shouldBe None
-      leases.releaseCapture(capture) shouldBe true
 
       val worker = leases.registerWorker("worker-1", "worker-incarnation", "{\"tail\":1}")
       val task = leases.claimTasks(worker, 1).head
@@ -29,6 +28,7 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       val stale = task.copy(leaseEpoch = task.leaseEpoch - 1L)
       leases.renewTask(stale) shouldBe false
       leases.releaseTask(task, "proof") shouldBe true
+      leases.releaseCapture(capture) shouldBe true
     }
 
     "must not create a Grant when the task lease is already fenced by another worker" in {
@@ -75,6 +75,37 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
         finally update.close()
       } finally ready.close()
       taskStore.claimWithLease("owner", "SNAPSHOT", Set("capture"), 5L, None, worker, leases).nonEmpty shouldBe true
+    }
+
+    "bind task progress to both owner epochs and commit T/J/D with the lease renewal" in {
+      val url = database()
+      val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits())
+      taskStore.initialize()
+      taskStore.submit(CdcTaskRequest("request", "capture", "orders", "g1", "orders_target"), 1L)
+      val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))
+      val capture = leases.acquireCapture("capture", "source-1", "capture-incarnation").get
+      leases.markCaptureActive(capture) shouldBe true
+      val worker = leases.registerWorker("worker", "incarnation", "{\"snapshotSteps\":1}")
+      val task = leases.claimTasks(worker, 1).head
+
+      task.captureOwnerEpoch shouldBe Some(capture.ownerEpoch)
+      task.workerEpoch shouldBe Some(worker.leaseEpoch)
+      task.leaseId.nonEmpty shouldBe true
+
+      val progressed = leases.recordProgress(TaskProgressCommit(task,
+        TaskProgressSnapshot(7L, 3L, Some("target-batch-1")), Some("COMMIT"), Some("ack-digest")))
+      progressed.lastLSeq shouldBe 7L
+      progressed.lastJournalRevision shouldBe 3L
+      progressed.lastTargetBatch shouldBe Some("target-batch-1")
+
+      val nextCapture = {
+        leases.releaseCapture(capture) shouldBe true
+        val value = leases.acquireCapture("capture", "source-1", "capture-incarnation-2").get
+        leases.markCaptureActive(value) shouldBe true
+        value
+      }
+      nextCapture.ownerEpoch shouldBe capture.ownerEpoch + 1L
+      intercept[IllegalArgumentException](leases.renewTask(progressed)).getMessage should include("capture owner epoch changed")
     }
 
     "must not let an older unready task block a later ready task in the same capture" in {
