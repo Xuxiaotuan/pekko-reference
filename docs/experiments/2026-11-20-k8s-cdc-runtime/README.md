@@ -123,3 +123,7 @@ Worker 的平台 owner 仍被历史 `UNKNOWN` grants 阻挡，控制库保留 4 
 随后提交 `75d7ff0` 将首次 Journal identity 不完整时的 proof 激活改为延迟，并保持 `journal_floor` 不前进。该修复完成本地编译和 21 项核心测试，但尚未在集群流水线中得到新任务的真实 Sink 对账结果。
 
 最终流水线复核中，`pekko-cdc-capture` 和 `pekko-cdc-worker` 均已运行同一 Harbor 镜像并处于 `Ready`。KubeSphere PipelineRun 仍报告失败，失败日志未提供新的业务成功证据，不能把 Pod Ready 升级成端到端完成。当前验证结论保持 `evidence_incomplete`。
+
+在提交 `75d7ff0` 的镜像上又提交了 generation `g8`，task 为 `57e9de99fda67e5b32991a51e5170ba6136b0b505451ed1e5e4c0e52648cc0a2`。Worker 已成功 admission，但任务第一次执行仍进入 `PAUSED/UNKNOWN/unclassified_failure`，Journal 只留下序号 1 的暂停事件，目标表逐字段对账没有产生。该结果说明“首次 Journal proof 延迟”修复尚未被完整端到端路径证实，g7 和 g8 的失败材料都保留。
+
+Pipeline 的多个 Run 均完成了镜像构建、推送和两 Deployment 更新，但最终状态仍为 `Failed`。当前线上两组件使用同一 Harbor 镜像且 Pod 为 `Ready`，这项证据只支持部署和进程健康，不支持 Worker 初始化、Sink 提交或最终一致性。
