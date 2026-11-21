@@ -23,12 +23,47 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
   private def openState(config: CdcCaptureSettings) =
     DriverManager.getConnection(config.sdkState.jdbcUrl, config.sdkState.username, config.sdkState.password)
 
+  private def openControl(config: CdcCaptureSettings) =
+    DriverManager.getConnection(config.controlState.jdbcUrl, config.controlState.username, config.controlState.password)
+
+  private def reconcileSubscriptions(entry: Entry): Unit = {
+    val connection=openControl(entry.config)
+    try {
+      val query=connection.prepareStatement(
+        "SELECT task_id,table_name,generation,desired_state,phase FROM pekko_cdc_tasks_v1 WHERE capture_id=?")
+      try {
+        query.setString(1,entry.config.id)
+        val rows=query.executeQuery()
+        try while(rows.next()) {
+          val requestId=rows.getString("task_id")
+          val table=rows.getString("table_name")
+          val generation=rows.getString("generation")
+          val desired=rows.getString("desired_state")
+          val phase=rows.getString("phase")
+          val current=entry.store.subscription(requestId)
+          if(desired=="RUNNING" && !Set("PAUSED","CANCELED").contains(phase) && current.isEmpty) {
+            try entry.reader.subscribe(requestId,table,generation)
+            catch {case _:Throwable=>()}
+          } else if(desired=="CANCELED" || phase=="CANCELED") current.foreach { subscription =>
+            try {
+              subscription.status match {
+                case "B_PENDING" => entry.reader.cancelPending(requestId)
+                case "CAPTURE_READY" => entry.reader.unsubscribe(requestId)
+                case _ => ()
+              }
+            } catch {case _:Throwable=>()}
+          }
+        } finally rows.close()
+      } finally query.close()
+    } finally connection.close()
+  }
+
   private def renewLeases():Unit=synchronized {
     entries.values.foreach { entry =>
       if(!leases.renewCapture(entry.lease,leaseTtlMillis)) {
         entry.reader.requestClose()
         leases.releaseCapture(entry.lease,"UNKNOWN")
-      }
+      } else reconcileSubscriptions(entry)
     }
   }
 
