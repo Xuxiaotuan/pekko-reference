@@ -98,8 +98,15 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
       journalProgressVerifier.foreach { verifier=>
         val receipt=waitFor(journal.persistedProgress()).getOrElse(throw new IllegalStateException("persisted bootstrap progress missing"))
         require(receipt.state==n,"bootstrap Journal moved before projection")
-        logStore.projectBootstrapVerified(retentionConsumer,id,generation,MySQLCdcGroup.hash(boundDefinition),receipt,verifier)
-        observe("J_FLOOR_VERIFIED",JsObject("deltaAfter"->JsNumber(n.deltaAfter),"journalSequence"->JsNumber(receipt.sequenceNr)))
+        val expectedDefinition=MySQLCdcGroup.hash(boundDefinition)
+        if(receipt.state.definition==expectedDefinition && receipt.state.executionId.nonEmpty){
+          logStore.projectBootstrapVerified(retentionConsumer,id,generation,expectedDefinition,receipt,verifier)
+          observe("J_FLOOR_VERIFIED",JsObject("deltaAfter"->JsNumber(n.deltaAfter),"journalSequence"->JsNumber(receipt.sequenceNr)))
+        }else {
+          // L observation is durable, but the Journal proof is incomplete.
+          // Keep journal_floor unchanged so GC cannot reclaim these frames.
+          observe("J_FLOOR_DEFERRED",JsObject("deltaAfter"->JsNumber(n.deltaAfter),"journalSequence"->JsNumber(receipt.sequenceNr)))
+        }
       }
     }
     n
