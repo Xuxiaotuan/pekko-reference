@@ -12,6 +12,7 @@ import scala.concurrent.{ExecutionContext,Future}
 /** Capture-only runtime. It owns source readers and L, never task grants. */
 final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeLeaseStore)(implicit ec: ExecutionContext)
     extends CaptureRuntimeControl with AutoCloseable {
+  private val logger=org.slf4j.LoggerFactory.getLogger(getClass)
   private val leaseTtlMillis=5000L
   private val heartbeat:ScheduledExecutorService=Executors.newSingleThreadScheduledExecutor(r=>{
     val thread=new Thread(r,"cdc-capture-heartbeat");thread.setDaemon(true);thread
@@ -43,7 +44,7 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
           val current=entry.store.subscription(requestId)
           if(desired=="RUNNING" && !Set("PAUSED","CANCELED").contains(phase) && current.isEmpty) {
             try entry.reader.subscribe(requestId,table,generation)
-            catch {case _:Throwable=>()}
+            catch {case error:Throwable=>logger.warn("CDC capture subscription deferred capture={} request={} table={} generation={} reason={}",entry.config.id,requestId,table,generation,error.toString)}
           } else if(desired=="CANCELED" || phase=="CANCELED") current.foreach { subscription =>
             try {
               subscription.status match {
@@ -51,7 +52,7 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
                 case "CAPTURE_READY" => entry.reader.unsubscribe(requestId)
                 case _ => ()
               }
-            } catch {case _:Throwable=>()}
+            } catch {case error:Throwable=>logger.warn("CDC capture cancellation deferred capture={} request={} reason={}",entry.config.id,requestId,error.toString)}
           }
         } finally rows.close()
       } finally query.close()
@@ -127,7 +128,7 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
           throw error
       }
     }
-    heartbeat.scheduleWithFixedDelay(new Runnable {def run():Unit=try renewLeases() catch {case _:Throwable=>()}},1000L,1000L,TimeUnit.MILLISECONDS)
+    heartbeat.scheduleWithFixedDelay(new Runnable {def run():Unit=try renewLeases() catch {case error:Throwable=>logger.warn("CDC capture heartbeat failed",error)}},1000L,1000L,TimeUnit.MILLISECONDS)
   }
 
   def status: Vector[(String,String)] = synchronized {
