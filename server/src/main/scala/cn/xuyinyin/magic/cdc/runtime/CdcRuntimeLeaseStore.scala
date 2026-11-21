@@ -34,6 +34,7 @@ object CdcRuntimeSchemaVersion {
 
 /** Additive lease store used by the two-role runtime. Legacy owner and grant rows remain untouched. */
 final class CdcRuntimeLeaseStore(open: () => Connection) {
+  private val logger = org.slf4j.LoggerFactory.getLogger(getClass)
   private val defaultLeaseMillis = 5000L
   private val workerLeaseMillis = 30000L
   private def withConnection[A](f: Connection => A): A = {
@@ -385,7 +386,18 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
       statement.setInt(4, activeGraphs); statement.setLong(5, now)
       statement.setString(6, worker.workerId); statement.setString(7, worker.incarnation); statement.setLong(8, worker.leaseEpoch); statement.setLong(9, now)
       worker.leaseId match { case Some(value) => statement.setString(10, value); case None => statement.setObject(10, null) }
-      statement.executeUpdate() == 1
+      val updated = statement.executeUpdate()
+      if(updated != 1) {
+        val probe = connection.prepareStatement("SELECT incarnation,worker_epoch,state,lease_expires_at,lease_id FROM pekko_cdc_worker_v1 WHERE worker_id=?")
+        try {
+          probe.setString(1, worker.workerId)
+          queryOne(probe).foreach { row =>
+            logger.warn("CDC worker heartbeat condition missed worker={} expectedEpoch={} expectedIncarnation={} expectedLeaseMatches={} currentEpoch={} currentIncarnation={} currentState={} currentLeaseExpired={}",
+              worker.workerId,worker.leaseEpoch,worker.incarnation,Option(row("lease_id")).contains(worker.leaseId.getOrElse("")),row("worker_epoch"),row("incarnation"),row("state"),Option(row("lease_expires_at")).forall(_.toLong<=System.currentTimeMillis()))
+          }
+        } finally probe.close()
+      }
+      updated == 1
     } finally statement.close()
   }
 
