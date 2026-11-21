@@ -1,0 +1,42 @@
+{
+  "date": "2026-11-21",
+  "sourceCommit": "abc3067",
+  "image": "100.97.53.78:5001/xxt/pekko-cdc-runtime:build-abc3067-amd64-v1",
+  "environment": {
+    "cluster": "xjw",
+    "namespace": "bigdata-lab",
+    "sourceTable": "source_rows_ready_v1",
+    "targetTable": "target_rows_ready_v1",
+    "captureId": "primary",
+    "taskId": "f798e8c5b7e201f252995830bb4d4e8ba46d5e60b3f846bf29359c3dadfda390",
+    "requestId": "ready-v1"
+  },
+  "observations": {
+    "captureSubscription": "CAPTURE_READY",
+    "controlProjection": "CAPTURE_READY",
+    "workerClaim": "CLAIMED",
+    "journalRevision": 2,
+    "taskPhase": "PAUSED",
+    "taskRuntimeHealth": "UNKNOWN",
+    "taskReleaseStatus": "UNKNOWN",
+    "failureCode": "local_release_unconfirmed",
+    "targetRowCount": 0,
+    "ownerStateAfterFailure": "ACTIVE_OR_UNKNOWN_DEPENDING_ON_RESTART",
+    "unknownGrantRetained": true
+  },
+  "result": "evidence_incomplete",
+  "verified": [
+    "Capture State CAPTURE_READY was projected to Control DB",
+    "an older unready task did not block a later ready task in unit coverage",
+    "Worker-only runtime used the capture admission domain",
+    "real task was claimed and entered SCANNING",
+    "Journal revision 2 was persisted"
+  ],
+  "failedOrIncomplete": [
+    "real Sink target did not reach full initialization",
+    "release proof remained UNKNOWN after capture owner control was lost",
+    "the retained UNKNOWN grant prevented automatic ordinary owner replacement",
+    "no claim is made for end-to-end row equality"
+  ],
+  "evidenceBoundary": "This material preserves the failed run. It does not convert Pod Ready, CAPTURE_READY, or Journal revision into Sink success."
+}
