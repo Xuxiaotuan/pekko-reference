@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.{AtomicBoolean,AtomicInteger}
 import scala.concurrent.{ExecutionContext,Future,Promise}
 import scala.util.Failure
 import scala.util.control.NonFatal
-import cn.xuyinyin.magic.cdc.runtime.{CdcRuntimeLeaseStore,TaskLease,WorkerLease}
+import cn.xuyinyin.magic.cdc.runtime.{CdcRuntimeLeaseStore,TaskLease,WorkerLease,WorkerRuntimeControl}
 
 final case class CdcKernelOutcome(progress:BootstrapProgress,releaseConfirmed:Boolean,didWork:Boolean,
   validationComplete:Boolean,nextDelayMillis:Long,initializationEvidence:Option[String])
@@ -42,7 +42,7 @@ trait CdcPlatformKernel {
 final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,val limits:CdcPlatformLimits,
   polling:Boolean=true,pollIntervalMillis:Long=100L,private[cdc] val managedOwner:Option[CdcManagedOwner]=None,
   private[cdc] val recoverManaged:()=>Unit=()=>(),private[cdc] val guardianCheck:()=>Unit=()=>(),
-  private[cdc] val runtimeLeases:Option[CdcRuntimeLeaseStore]=None) extends CdcTaskService {
+  private[cdc] val runtimeLeases:Option[CdcRuntimeLeaseStore]=None) extends CdcTaskService with WorkerRuntimeControl {
   val runtimeAttemptId:String=UUID.randomUUID().toString
   private def threads(label:String):ThreadFactory=(r:Runnable)=>{val t=new Thread(r,"cdc-platform-"+label+"-"+runtimeAttemptId.take(8));t.setDaemon(true);t}
   private val controls=Executors.newFixedThreadPool(2,threads("control"))
@@ -149,6 +149,37 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
     initialized.trySuccess(())
   }(controlEc).failed.foreach(startupFailed)(ExecutionContext.parasitic)
   def status:CdcPlatformStatus=CdcPlatformStatus(true,ownerState,reason,active.get(),limits.snapshotSteps+limits.tailSteps)
+
+  /** WorkerRuntime control surface. The scheduler below remains the single grant owner. */
+  override def register(workerId:String,incarnation:String,capacityJson:String):Future[WorkerLease]=io {
+    val leases=runtimeLeases.getOrElse(throw new CdcPlatformException("WORKER_LEASE_UNAVAILABLE"))
+    val current=workerLease.get()
+    current match {
+      case Some(existing) if existing.workerId==workerId && existing.incarnation==incarnation => existing
+      case Some(_) => throw new CdcPlatformException("WORKER_IDENTITY_CONFLICT")
+      case None =>
+        val registered=leases.registerWorker(workerId,incarnation,capacityJson)
+        workerLease.set(Some(registered))
+        registered
+    }
+  }
+
+  override def claim(worker:WorkerLease,limit:Int):Future[Vector[TaskLease]]=io {
+    val leases=runtimeLeases.getOrElse(throw new CdcPlatformException("WORKER_LEASE_UNAVAILABLE"))
+    require(workerLease.get().contains(worker),"worker lease is not registered")
+    leases.claimTasks(worker,limit)
+  }
+
+  override def renew(lease:TaskLease):Future[TaskLease]=io {
+    val leases=runtimeLeases.getOrElse(throw new CdcPlatformException("WORKER_LEASE_UNAVAILABLE"))
+    require(leases.renewTask(lease),"task lease is stale")
+    lease
+  }
+
+  override def release(lease:TaskLease,proof:String):Future[Boolean]=io {
+    runtimeLeases.exists(_.releaseTask(lease,proof))
+  }
+
   private def io[A](f: =>A):Future[A]={
     if(stopped.get())return Future.failed(new CdcPlatformException("CDC_PLATFORM_STOPPING"))
     if(pending.incrementAndGet()>limits.maxPendingOperations){pending.decrementAndGet();Future.failed(new CdcPlatformException("CDC_PLATFORM_BUSY"))}
