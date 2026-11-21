@@ -1,0 +1,253 @@
+apiVersion: v1
+items:
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "39"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"pekko-cdc-capture"},"name":"pekko-cdc-capture","namespace":"bigdata-lab"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"pekko-cdc-capture"}},"strategy":{"type":"Recreate"},"template":{"metadata":{"labels":{"app":"pekko-cdc-capture"}},"spec":{"containers":[{"command":["/opt/docker/bin/cdc-capture-runtime-main"],"env":[{"name":"JAVA_OPTS","value":"-Dconfig.file=/opt/docker/conf/application-cdc-runtime.conf"}],"envFrom":[{"secretRef":{"name":"pekko-cdc-runtime-config"}}],"image":"ghcr.io/xuxiaotuan/pekko-reference/cdc-runtime:dev","imagePullPolicy":"IfNotPresent","livenessProbe":{"exec":{"command":["/bin/sh","-c","test -r /proc/1/cmdline"]},"initialDelaySeconds":30,"periodSeconds":10},"name":"cdc-capture","readinessProbe":{"exec":{"command":["/bin/sh","-c","test -r /proc/1/cmdline"]},"initialDelaySeconds":15,"periodSeconds":5},"resources":{"limits":{"cpu":"1","memory":"1Gi"},"requests":{"cpu":"250m","memory":"512Mi"}},"volumeMounts":[{"mountPath":"/opt/docker/conf/application-cdc-runtime.conf","name":"config","readOnly":true,"subPath":"application-cdc-runtime.conf"}]}],"imagePullSecrets":[{"name":"xxt-harbor-pull"}],"nodeSelector":{"kubernetes.io/hostname":"xjw"},"terminationGracePeriodSeconds":60,"volumes":[{"configMap":{"name":"pekko-cdc-capture-config"},"name":"config"}]}}}}
+    creationTimestamp: "2026-11-21T03:49:31Z"
+    generation: 45
+    labels:
+      app: pekko-cdc-capture
+    name: pekko-cdc-capture
+    namespace: bigdata-lab
+    resourceVersion: "228344433"
+    uid: 8f29a7b7-fa8e-49ea-b288-610a3ee16933
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: pekko-cdc-capture
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-11-21T16:24:35+08:00"
+        creationTimestamp: null
+        labels:
+          app: pekko-cdc-capture
+      spec:
+        containers:
+        - command:
+          - /opt/docker/bin/cdc-capture-runtime-main
+          env:
+          - name: JAVA_OPTS
+            value: -Dconfig.file=/opt/docker/conf/application-cdc-runtime.conf
+          envFrom:
+          - secretRef:
+              name: pekko-cdc-runtime-config
+          image: 100.97.53.78:5001/xxt/pekko-cdc-runtime:build-16-2a7d06d4b315
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - test -r /proc/1/cmdline
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: cdc-capture
+          readinessProbe:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - test -r /proc/1/cmdline
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 250m
+              memory: 512Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /opt/docker/conf/application-cdc-runtime.conf
+            name: config
+            readOnly: true
+            subPath: application-cdc-runtime.conf
+        dnsPolicy: ClusterFirst
+        imagePullSecrets:
+        - name: xxt-harbor-pull
+        nodeSelector:
+          kubernetes.io/hostname: xjw
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 60
+        volumes:
+        - configMap:
+            defaultMode: 420
+            name: pekko-cdc-capture-config
+          name: config
+  status:
+    conditions:
+    - lastTransitionTime: "2026-11-21T03:49:31Z"
+      lastUpdateTime: "2026-11-21T10:17:26Z"
+      message: ReplicaSet "pekko-cdc-capture-78cfb7b598" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-11-21T10:50:04Z"
+      lastUpdateTime: "2026-11-21T10:50:04Z"
+      message: Deployment does not have minimum availability.
+      reason: MinimumReplicasUnavailable
+      status: "False"
+      type: Available
+    observedGeneration: 45
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "40"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"pekko-cdc-worker"},"name":"pekko-cdc-worker","namespace":"bigdata-lab"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"pekko-cdc-worker"}},"strategy":{"type":"Recreate"},"template":{"metadata":{"labels":{"app":"pekko-cdc-worker"}},"spec":{"containers":[{"command":["/opt/docker/bin/cdc-runtime"],"env":[{"name":"JAVA_OPTS","value":"-Dconfig.file=/opt/docker/conf/application-cdc-worker.conf"},{"name":"DB_HOST","valueFrom":{"secretKeyRef":{"key":"CDC_STATE_HOST","name":"pekko-cdc-runtime-config"}}},{"name":"DB_PORT","valueFrom":{"secretKeyRef":{"key":"CDC_STATE_PORT","name":"pekko-cdc-runtime-config"}}},{"name":"DB_NAME","valueFrom":{"secretKeyRef":{"key":"CDC_STATE_DATABASE","name":"pekko-cdc-runtime-config"}}},{"name":"DB_USER","valueFrom":{"secretKeyRef":{"key":"CDC_STATE_USER","name":"pekko-cdc-runtime-config"}}},{"name":"DB_PASSWORD","valueFrom":{"secretKeyRef":{"key":"CDC_STATE_PASSWORD","name":"pekko-cdc-runtime-config"}}}],"envFrom":[{"secretRef":{"name":"pekko-cdc-runtime-config"}}],"image":"ghcr.io/xuxiaotuan/pekko-reference/cdc-runtime:dev","imagePullPolicy":"IfNotPresent","livenessProbe":{"exec":{"command":["/bin/sh","-c","test -r /proc/1/cmdline"]},"initialDelaySeconds":30,"periodSeconds":10},"name":"cdc-worker","ports":[{"containerPort":8080,"name":"http"}],"readinessProbe":{"exec":{"command":["/bin/sh","-c","test -r /proc/1/cmdline"]},"initialDelaySeconds":15,"periodSeconds":5},"resources":{"limits":{"cpu":"1","memory":"1Gi"},"requests":{"cpu":"250m","memory":"512Mi"}},"volumeMounts":[{"mountPath":"/opt/docker/conf/application-cdc-worker.conf","name":"config","readOnly":true,"subPath":"application-cdc-worker.conf"}]}],"imagePullSecrets":[{"name":"xxt-harbor-pull"}],"nodeSelector":{"kubernetes.io/hostname":"xjw"},"terminationGracePeriodSeconds":60,"volumes":[{"configMap":{"name":"pekko-cdc-worker-config"},"name":"config"}]}}}}
+    creationTimestamp: "2026-11-21T03:49:31Z"
+    generation: 51
+    labels:
+      app: pekko-cdc-worker
+    name: pekko-cdc-worker
+    namespace: bigdata-lab
+    resourceVersion: "228344435"
+    uid: b5debdf4-4d13-4e06-bdaa-599cf8a59d1d
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: pekko-cdc-worker
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-11-21T16:27:06+08:00"
+        creationTimestamp: null
+        labels:
+          app: pekko-cdc-worker
+      spec:
+        containers:
+        - command:
+          - /opt/docker/bin/cdc-runtime
+          env:
+          - name: JAVA_OPTS
+            value: -Dconfig.file=/opt/docker/conf/application-cdc-worker.conf
+          - name: DB_HOST
+            valueFrom:
+              secretKeyRef:
+                key: CDC_STATE_HOST
+                name: pekko-cdc-runtime-config
+          - name: DB_PORT
+            valueFrom:
+              secretKeyRef:
+                key: CDC_STATE_PORT
+                name: pekko-cdc-runtime-config
+          - name: DB_NAME
+            valueFrom:
+              secretKeyRef:
+                key: CDC_STATE_DATABASE
+                name: pekko-cdc-runtime-config
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                key: CDC_STATE_USER
+                name: pekko-cdc-runtime-config
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: CDC_STATE_PASSWORD
+                name: pekko-cdc-runtime-config
+          envFrom:
+          - secretRef:
+              name: pekko-cdc-runtime-config
+          image: 100.97.53.78:5001/xxt/pekko-cdc-runtime:build-16-2a7d06d4b315
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - test -r /proc/1/cmdline
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: cdc-worker
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - test -r /proc/1/cmdline
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 250m
+              memory: 512Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /opt/docker/conf/application-cdc-worker.conf
+            name: config
+            readOnly: true
+            subPath: application-cdc-worker.conf
+        dnsPolicy: ClusterFirst
+        imagePullSecrets:
+        - name: xxt-harbor-pull
+        nodeSelector:
+          kubernetes.io/hostname: xjw
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 60
+        volumes:
+        - configMap:
+            defaultMode: 420
+            name: pekko-cdc-worker-config
+          name: config
+  status:
+    conditions:
+    - lastTransitionTime: "2026-11-21T03:49:32Z"
+      lastUpdateTime: "2026-11-21T10:17:26Z"
+      message: ReplicaSet "pekko-cdc-worker-55fdf886d6" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-11-21T10:50:05Z"
+      lastUpdateTime: "2026-11-21T10:50:05Z"
+      message: Deployment does not have minimum availability.
+      reason: MinimumReplicasUnavailable
+      status: "False"
+      type: Available
+    observedGeneration: 51
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""
