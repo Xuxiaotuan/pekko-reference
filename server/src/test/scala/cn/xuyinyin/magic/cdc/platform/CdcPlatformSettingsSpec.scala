@@ -1,7 +1,7 @@
 package cn.xuyinyin.magic.cdc.platform
 
 import cn.xuyinyin.magic.testkit.STSpec
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ConfigFactory,ConfigValueFactory}
 import cn.xuyinyin.magic.connectors.mysql.source.{MySQLCdcSourceConfig,MySQLCdcStateConfig}
 
 class CdcPlatformSettingsSpec extends STSpec {
@@ -21,6 +21,10 @@ class CdcPlatformSettingsSpec extends STSpec {
   "CDC platform settings" should {
     "stay disabled unless explicitly enabled" in {
       CdcPlatformSettings.load(ConfigFactory.empty()) shouldBe None
+    }
+    "accept the capture-only runtime role" in {
+      val cfg=materialConfig("").withValue("pekko.workflow.cdc-platform.runtime-role",ConfigValueFactory.fromAnyRef("capture"))
+      CdcPlatformSettings.load(cfg).get.runtimeRole shouldBe "capture"
     }
     "reject configuration that reuses the control account as the exclusive SDK account" in {
       val cfg=ConfigFactory.parseString("""

@@ -34,7 +34,7 @@ final case class CdcCaptureSettings(id:String,source:MySQLCdcSourceConfig,sdkSta
 }
 final case class CdcPlatformSettings(captures:Vector[CdcCaptureSettings],limits:CdcPlatformLimits,pollIntervalMillis:Long=100L,
   runtimeRole:String="combined") {
-  require(Set("combined","worker").contains(runtimeRole), "invalid CDC runtime role")
+  require(Set("combined","capture","worker").contains(runtimeRole), "invalid CDC runtime role")
   require(captures.nonEmpty && captures.size<=32 && captures.map(_.id).distinct.size==captures.size &&
     captures.map(_.controlState.jdbcUrl).distinct.size==1 && pollIntervalMillis>0)
   private def duplicate[A](values:Vector[A])=values.distinct.size!=values.size
