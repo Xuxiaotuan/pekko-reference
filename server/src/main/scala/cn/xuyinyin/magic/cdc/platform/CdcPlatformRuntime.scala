@@ -102,7 +102,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
       }
     }else {
       logger.warn("CDC owner admission rejected attempt={} persisted={}",runtimeAttemptId,store.ownerAttempt.map(x=>x._1+":"+x._2).getOrElse("none"))
-      recoveryPending=managedOwner.nonEmpty && !stopping.get();nextRecoveryNanos=System.nanoTime()+1000000000L;ownerState="UNKNOWN";reason=Some("OWNER_RELEASE_UNPROVEN")
+      recoveryPending = !stopping.get();nextRecoveryNanos=System.nanoTime()+1000000000L;ownerState="UNKNOWN";reason=Some("OWNER_RELEASE_UNPROVEN")
     }
   }
   private def markStartupFailure():Unit=if(startupFailurePending && markingStartupFailure.compareAndSet(false,true))try {
