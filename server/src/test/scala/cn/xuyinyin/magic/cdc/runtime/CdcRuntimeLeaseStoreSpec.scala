@@ -80,6 +80,27 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       taskStore.claimWithLease("owner", "SNAPSHOT", Set("capture"), 5L, None, worker, leases).nonEmpty shouldBe true
     }
 
+    "must not claim a paused task even when its scheduling flag is stale" in {
+      val url = database()
+      val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits(snapshotSteps = 1, tailSteps = 1), true)
+      taskStore.initialize()
+      taskStore.beginOwner("owner", 1L) shouldBe true
+      val task = taskStore.submit(CdcTaskRequest("request", "capture", "orders", "g1", "orders_target"), 2L).task
+      val connection = DriverManager.getConnection(url)
+      try {
+        val update = connection.prepareStatement("UPDATE pekko_cdc_tasks_v1 SET phase='PAUSED',schedulable=TRUE WHERE task_id=?")
+        try { update.setString(1, task.taskId); update.executeUpdate() }
+        finally update.close()
+        val ready = connection.prepareStatement("UPDATE pekko_cdc_capture_subscription_v1 SET state='CAPTURE_READY',capture_readiness='CAPTURE_READY' WHERE task_id=?")
+        try { ready.setString(1, task.taskId); ready.executeUpdate() }
+        finally ready.close()
+      } finally connection.close()
+      val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))
+      val worker = leases.registerWorker("worker", "incarnation", "{\"snapshotSteps\":1}")
+
+      taskStore.claimWithLease("owner", "SNAPSHOT", Set("capture"), 3L, None, worker, leases) shouldBe None
+    }
+
     "bind task progress to both owner epochs and commit T/J/D with the lease renewal" in {
       val url = database()
       val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits())

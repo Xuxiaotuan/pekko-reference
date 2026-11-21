@@ -1296,7 +1296,7 @@ final class CdcTaskStore(
           case Some(ids)=>
             require(ids.size<=32,"too many pinned validation tasks")
             ids.toVector.sorted.flatMap {id=>
-              query(c,"SELECT * FROM pekko_cdc_tasks_v1 WHERE task_id=? AND work_pool=? AND schedulable=TRUE AND due_at<=? FOR UPDATE",id,pool,now).map(record)
+              query(c,"SELECT * FROM pekko_cdc_tasks_v1 WHERE task_id=? AND work_pool=? AND desired_state='RUNNING' AND phase NOT IN ('PAUSED','CANCELED') AND schedulable=TRUE AND due_at<=? FOR UPDATE",id,pool,now).map(record)
             }.filter(t=>ready(t.view.captureId) && captureSubscriptionReady(c,t))
           case None=>
             // Equality predicates match the scheduling index prefix. At most one head row
@@ -1305,7 +1305,7 @@ final class CdcTaskStore(
               val readiness=if(requireCaptureReadiness)
                 " AND EXISTS (SELECT 1 FROM pekko_cdc_capture_subscription_v1 ready_subscription WHERE ready_subscription.task_id=pekko_cdc_tasks_v1.task_id AND ready_subscription.capture_id=pekko_cdc_tasks_v1.capture_id AND ready_subscription.state='CAPTURE_READY' AND ready_subscription.capture_readiness='CAPTURE_READY')"
               else ""
-              query(c,s"SELECT * FROM pekko_cdc_tasks_v1 WHERE capture_id=? AND work_pool=? AND schedulable=TRUE AND due_at<=?$readiness ORDER BY due_at,task_id LIMIT 1 FOR UPDATE",capture,pool,now).map(record)
+              query(c,s"SELECT * FROM pekko_cdc_tasks_v1 WHERE capture_id=? AND work_pool=? AND desired_state='RUNNING' AND phase NOT IN ('PAUSED','CANCELED') AND schedulable=TRUE AND due_at<=?$readiness ORDER BY due_at,task_id LIMIT 1 FOR UPDATE",capture,pool,now).map(record)
             }.filter(t=>captureSubscriptionReady(c,t))
         }
         candidates.sortBy(t=>(t.dueAt,t.view.taskId)).headOption.map {task=>
@@ -1337,14 +1337,14 @@ final class CdcTaskStore(
           case Some(ids)=>
             require(ids.size<=32,"too many pinned validation tasks")
             ids.toVector.sorted.flatMap {id=>
-              query(c,"SELECT * FROM pekko_cdc_tasks_v1 WHERE task_id=? AND work_pool=? AND schedulable=TRUE AND due_at<=? FOR UPDATE",id,pool,now).map(record)
+              query(c,"SELECT * FROM pekko_cdc_tasks_v1 WHERE task_id=? AND work_pool=? AND desired_state='RUNNING' AND phase NOT IN ('PAUSED','CANCELED') AND schedulable=TRUE AND due_at<=? FOR UPDATE",id,pool,now).map(record)
             }.filter(t=>ready(t.view.captureId) && captureSubscriptionReady(c,t))
           case None=>
             captureIds.flatMap {capture=>
               val readiness=if(requireCaptureReadiness)
                 " AND EXISTS (SELECT 1 FROM pekko_cdc_capture_subscription_v1 ready_subscription WHERE ready_subscription.task_id=pekko_cdc_tasks_v1.task_id AND ready_subscription.capture_id=pekko_cdc_tasks_v1.capture_id AND ready_subscription.state='CAPTURE_READY' AND ready_subscription.capture_readiness='CAPTURE_READY')"
               else ""
-              query(c,s"SELECT * FROM pekko_cdc_tasks_v1 WHERE capture_id=? AND work_pool=? AND schedulable=TRUE AND due_at<=?$readiness ORDER BY due_at,task_id LIMIT 1 FOR UPDATE",capture,pool,now).map(record)
+              query(c,s"SELECT * FROM pekko_cdc_tasks_v1 WHERE capture_id=? AND work_pool=? AND desired_state='RUNNING' AND phase NOT IN ('PAUSED','CANCELED') AND schedulable=TRUE AND due_at<=?$readiness ORDER BY due_at,task_id LIMIT 1 FOR UPDATE",capture,pool,now).map(record)
             }.filter(t=>captureSubscriptionReady(c,t))
         }
         candidates.sortBy(t=>(t.dueAt,t.view.taskId)).headOption.flatMap {task=>
