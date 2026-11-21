@@ -48,10 +48,25 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
     } finally {statement.close();connection.close()}
   }
 
+  private def sourceTransactionsDrained(config:CdcCaptureSettings):Boolean={
+    val connection=DriverManager.getConnection(
+      s"jdbc:mysql://${config.source.host}:${config.source.port}/${config.source.database}?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&connectTimeout=5000&socketTimeout=5000",
+      config.source.username,config.source.password)
+    val statement=connection.prepareStatement(
+      "SELECT COUNT(*) FROM information_schema.innodb_trx t JOIN information_schema.processlist p ON p.ID=t.trx_mysql_thread_id WHERE p.USER=?")
+    try {
+      statement.setString(1,config.source.username)
+      val result=statement.executeQuery()
+      try result.next() && result.getLong(1)==0L
+      finally result.close()
+    } finally {statement.close();connection.close()}
+  }
+
   private def acquireLease(config:CdcCaptureSettings):Option[CaptureLease]={
     leases.acquireCapture(config.id,config.sourceLineage,incarnation).orElse {
       leases.currentCapture(config.id).flatMap {snapshot =>
-        if(Set("ACQUIRING","ACTIVE")(snapshot.state) && sourceLockFree(config,snapshot.lease.ownerAttempt)) {
+        if(Set("ACQUIRING","ACTIVE","UNKNOWN")(snapshot.state) &&
+          sourceLockFree(config,snapshot.lease.ownerAttempt) && sourceTransactionsDrained(config)) {
           require(leases.releaseCapture(snapshot.lease,"STOPPED"),"stale capture owner changed during recovery")
           logger.warn("CDC capture owner recovered after source lock release capture={} oldAttempt={}",config.id,snapshot.lease.ownerAttempt)
           leases.acquireCapture(config.id,config.sourceLineage,incarnation)
