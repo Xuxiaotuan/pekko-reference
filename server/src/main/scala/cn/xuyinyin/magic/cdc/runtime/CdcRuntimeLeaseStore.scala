@@ -3,6 +3,34 @@ package cn.xuyinyin.magic.cdc.runtime
 import java.sql.{Connection, PreparedStatement}
 import java.util.UUID
 
+/** Records the schema contract actually applied by each runtime initializer. */
+object CdcRuntimeSchemaVersion {
+  val leaseVersion = 2
+  val taskVersion = 3
+  val leaseChecksum = "cdc-runtime-lease-v2"
+  val taskChecksum = "cdc-task-store-v3"
+
+  def record(connection: Connection, version: Int, checksum: String): Unit = {
+    val select = connection.prepareStatement("SELECT checksum FROM pekko_cdc_runtime_schema_version WHERE version=? FOR UPDATE")
+    try {
+      select.setInt(1, version)
+      val rows = select.executeQuery()
+      try {
+        if (rows.next()) require(rows.getString(1) == checksum, s"runtime schema checksum conflict for version $version")
+        else {
+          val insert = connection.prepareStatement("INSERT INTO pekko_cdc_runtime_schema_version(version,checksum,applied_at) VALUES(?,?,?)")
+          try {
+            insert.setInt(1, version)
+            insert.setString(2, checksum)
+            insert.setLong(3, System.currentTimeMillis())
+            insert.executeUpdate()
+          } finally insert.close()
+        }
+      } finally rows.close()
+    } finally select.close()
+  }
+}
+
 /** Additive lease store used by the two-role runtime. Legacy owner and grant rows remain untouched. */
 final class CdcRuntimeLeaseStore(open: () => Connection) {
   private val defaultLeaseMillis = 5000L
@@ -64,6 +92,7 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
       finally metadata.close()
       if(!found){val statement=connection.createStatement();try statement.executeUpdate(s"ALTER TABLE $table ADD COLUMN $column $definition") finally statement.close()}
     }
+    CdcRuntimeSchemaVersion.record(connection,CdcRuntimeSchemaVersion.leaseVersion,CdcRuntimeSchemaVersion.leaseChecksum)
   }
 
   private def queryOne(statement: PreparedStatement): Option[Map[String, String]] = {

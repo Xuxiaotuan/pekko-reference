@@ -11,7 +11,7 @@ import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
 import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire._
 import cn.xuyinyin.magic.cdc.savepoint.CdcSavepointStore
 import cn.xuyinyin.magic.cdc.savepoint.{CdcSavepointTaskPage,TableCheckpointRef}
-import cn.xuyinyin.magic.cdc.runtime.{CdcRuntimeLeaseStore,TaskLease,TaskProgressSnapshot,WorkerLease}
+import cn.xuyinyin.magic.cdc.runtime.{CdcRuntimeLeaseStore,CdcRuntimeSchemaVersion,TaskLease,TaskProgressSnapshot,WorkerLease}
 import java.sql.{Connection,SQLException}
 import java.util.UUID
 import java.security.MessageDigest
@@ -158,6 +158,7 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
       try update(c,"INSERT INTO pekko_cdc_owner_v1 VALUES('default',NULL,'STOPPED',0)")catch {case _:SQLException=>
         require(query(c,"SELECT platform_id FROM pekko_cdc_owner_v1 WHERE platform_id='default'").nonEmpty,"CDC owner initialization failed")}
     }
+    CdcRuntimeSchemaVersion.record(c,CdcRuntimeSchemaVersion.taskVersion,CdcRuntimeSchemaVersion.taskChecksum)
   }
   private def validateId(id:String):Unit=if(id==null || !id.matches("[a-f0-9]{64}"))throw new CdcPlatformException("INVALID_TASK_ID")
   /** Projects only the capture-owned fields so CaptureRuntime does not depend on task scheduling columns. */
