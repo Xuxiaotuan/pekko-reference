@@ -235,7 +235,14 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
       if(!recoveryComplete){recoveryAfter=store.recoverColdPage(runtimeAttemptId,recoveryAfter,128,now);recoveryComplete=recoveryAfter.isEmpty}
       val dispatch=store.dispatch(runtimeAttemptId,kernel.dispatchCaptureIds,128,now)
       lastDispatchAt=now;dispatchCaughtUp=dispatch.caughtUp
-      val ready=kernel.captures.filter(c=>c.readiness=="ADMISSION_READY" && c.runtimeHealth=="HEALTHY").map(_.captureId).toSet
+      // A worker-only kernel has no local Reader view. Its dispatch set is
+      // the capture-side admission domain, while claimWithLease still checks
+      // the durable CAPTURE_READY projection for each task.
+      val ready={
+        val dispatched=kernel.dispatchCaptureIds
+        if(dispatched.nonEmpty)dispatched
+        else kernel.captures.filter(c=>c.readiness=="ADMISSION_READY" && c.runtimeHealth=="HEALTHY").map(_.captureId).toSet
+      }
       def launch(g:CdcTaskGrant,preclaimed:Option[TaskLease]=None):Unit={
         val lease=preclaimed.orElse(workerRuntime.flatMap { runtime =>
           runtime.currentWorker.flatMap(worker=>runtime.claimTask(worker,g.task.view.taskId,g.task.view.captureId))

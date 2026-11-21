@@ -18,7 +18,7 @@ class CdcPlatformRuntimeSpec extends STSpec {
       val limits=CdcPlatformLimits(snapshotSteps=1,tailSteps=1)
       val kernel=new CdcPlatformKernel {
         def start():Unit=()
-        def captures:Vector[CdcCaptureView]=Vector.empty
+        def captures:Vector[CdcCaptureView]=Vector(CdcCaptureView("capture","source","NEW","WAITING",None))
         def run(task:CdcTaskRequest,id:String,cancel:Boolean,continuation:Option[BootstrapProgress],stop:()=>Boolean,workPool:String):CdcKernelOutcome=throw new AssertionError("no tasks")
         def closeAndVerify():Boolean=true
       }
@@ -83,6 +83,39 @@ class CdcPlatformRuntimeSpec extends STSpec {
             finally rows.close()
           } finally query.close()
         } finally connection.close()
+      } finally Await.result(runtime.stopRuntime(),10.seconds)
+    }
+
+    "must use the capture admission domain when the worker has no local Reader view" in {
+      val url="jdbc:h2:mem:cdc_worker_capture_domain_"+UUID.randomUUID().toString.replace('-','_')+";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
+      val limits=CdcPlatformLimits(snapshotSteps=1,tailSteps=1)
+      val kernel=new CdcPlatformKernel {
+        def start():Unit=()
+        def captures:Vector[CdcCaptureView]=Vector(CdcCaptureView("capture","source","NEW","WAITING",None))
+        override def dispatchCaptureIds:Set[String]=Set("capture")
+        override def run(task:CdcTaskRequest,id:String,cancel:Boolean,continuation:Option[BootstrapProgress],stop:()=>Boolean,workPool:String)=
+          CdcKernelOutcome(BootstrapProgress(revision=1,phase="STREAMING",executionId=id),true,true,true,1L,Some("proof"))
+        def closeAndVerify():Boolean=true
+      }
+      val store=new CdcTaskStore(()=>DriverManager.getConnection(url),limits,requireCaptureReadiness=true)
+      val leases=new CdcRuntimeLeaseStore(()=>DriverManager.getConnection(url))
+      val runtime=new CdcPlatformRuntime(store,kernel,limits,polling=false,runtimeLeases=Some(leases))
+      try {
+        Await.result(runtime.listAfter(None,1),10.seconds)
+        val accepted=Await.result(runtime.submit(CdcTaskRequest("worker-domain","capture","orders","g1","orders_target")),10.seconds)
+        val connection=DriverManager.getConnection(url)
+        try {
+          val schema=connection.createStatement()
+          try schema.executeUpdate("CREATE TABLE pekko_capture_log(capture_id VARCHAR(64),seq BIGINT,kind VARCHAR(32),subscription_id CHAR(64),PRIMARY KEY(capture_id,seq))")
+          finally schema.close()
+          val update=connection.prepareStatement("UPDATE pekko_cdc_capture_subscription_v1 SET state='CAPTURE_READY',capture_readiness='CAPTURE_READY' WHERE task_id=?")
+          try { update.setString(1,accepted.task.taskId); update.executeUpdate() } finally update.close()
+        } finally connection.close()
+        Await.result(runtime.pollNow(),10.seconds)
+        val deadline=System.nanoTime()+5000000000L
+        var current=Await.result(runtime.get(accepted.task.taskId),10.seconds)
+        while(current.forall(_.phase!="STREAMING") && System.nanoTime()<deadline){Thread.sleep(20);current=Await.result(runtime.get(accepted.task.taskId),10.seconds)}
+        current.map(_.phase) shouldBe Some("STREAMING")
       } finally Await.result(runtime.stopRuntime(),10.seconds)
     }
 
