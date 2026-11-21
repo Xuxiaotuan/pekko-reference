@@ -284,14 +284,22 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
         return CdcKernelOutcome(p,true,false,true,settings.limits.tailDelayMillis,None)
     }
     val existing=synchronized {
-      if(stopping.get() || stop())throw new CdcKernelDeferred
+      if(stopping.get() || stop()){
+        org.slf4j.LoggerFactory.getLogger(getClass).warn("CDC kernel deferred task={} reason=stopping",id)
+        throw new CdcKernelDeferred
+      }
       sessions.get(id) match {
         case some@Some(_)=>some
-        case None if reservations.contains(id)=>throw new CdcKernelDeferred
+        case None if reservations.contains(id)=>
+          org.slf4j.LoggerFactory.getLogger(getClass).warn("CDC kernel deferred task={} reason=reservation",id)
+          throw new CdcKernelDeferred
         case None=>
           val occupied=sessions.values.count(_.pool==workPool)+reservations.values.count(_==workPool)
           val maximum=if(workPool=="TAIL")settings.limits.tailSteps else settings.limits.snapshotSteps
-          if(occupied>=maximum)throw new CdcKernelDeferred
+          if(occupied>=maximum){
+            org.slf4j.LoggerFactory.getLogger(getClass).warn("CDC kernel deferred task={} reason=capacity occupied={} maximum={} pool={}",id,occupied,maximum,workPool)
+            throw new CdcKernelDeferred
+          }
           reservations.update(id,workPool);None
       }
     }

@@ -232,6 +232,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
         }(workerEc).onComplete {result=>
           result match {
             case Failure(_:CdcKernelDeferred)=>
+              logger.warn("CDC task deferred before execution task={} owner={}",g.task.view.taskId,runtimeAttemptId)
               try store.defer(g,limits.tailDelayMillis,now)catch {case NonFatal(_)=>ownerState="UNKNOWN";reason=Some("STORAGE_UNAVAILABLE")}
             case Failure(e)=>
               val failure=ExecutionFailure.from(e,"cdc-step")
