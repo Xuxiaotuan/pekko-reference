@@ -72,6 +72,7 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
       "CREATE TABLE IF NOT EXISTS pekko_cdc_owner_delegation_v2(old_attempt VARCHAR(128) PRIMARY KEY,new_attempt VARCHAR(128) NOT NULL,permit_id VARCHAR(128) NOT NULL,freeze_digest CHAR(64) NOT NULL,receipt_digest CHAR(64) NOT NULL,journal_pid VARCHAR(255) NOT NULL,journal_sequence BIGINT NOT NULL,journal_revision BIGINT NOT NULL,execution_id VARCHAR(128) NOT NULL,attestation LONGTEXT NOT NULL,nonce VARCHAR(64) NOT NULL,created_at BIGINT NOT NULL)",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_b_budget_v1(task_id CHAR(64) PRIMARY KEY,attempts INT NOT NULL)",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_b_rejection_v1(permit_id VARCHAR(128) PRIMARY KEY,task_id CHAR(64) NOT NULL)",
+      "CREATE TABLE IF NOT EXISTS pekko_cdc_capture_subscription_v1(task_id CHAR(64) PRIMARY KEY,capture_id VARCHAR(64) NOT NULL,request_id VARCHAR(128) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL,desired_state VARCHAR(32) NOT NULL,state VARCHAR(32) NOT NULL,control_revision BIGINT NOT NULL,capture_readiness VARCHAR(32) NOT NULL,initialization_evidence LONGTEXT NULL,b_offset LONGTEXT NULL,high_offset LONGTEXT NULL,f_offset LONGTEXT NULL,k_offset LONGTEXT NULL,owner_attempt VARCHAR(128) NULL,updated_at BIGINT NOT NULL,UNIQUE(capture_id,table_name,generation),INDEX subscription_reconcile(capture_id,desired_state,state))",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_tasks_v1(task_id CHAR(64) PRIMARY KEY,capture_id VARCHAR(64) NOT NULL,request_id VARCHAR(128) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL,target_table VARCHAR(128) NOT NULL,definition_hash CHAR(64) NOT NULL,desired_state VARCHAR(32) NOT NULL,control_revision BIGINT NOT NULL,phase VARCHAR(32) NOT NULL,journal_revision BIGINT NOT NULL,execution_id VARCHAR(128),capture_readiness VARCHAR(32) NOT NULL,initialization_evidence LONGTEXT,runtime_health VARCHAR(32) NOT NULL,release_status VARCHAR(32) NOT NULL,failure_code VARCHAR(64),observed_at BIGINT NOT NULL,last_verified_at BIGINT,due_at BIGINT NOT NULL,grant_id VARCHAR(64),grant_owner VARCHAR(128),continuation_json LONGTEXT,continuation_owner VARCHAR(128),cancel_evidence VARCHAR(32),work_pool VARCHAR(16) NOT NULL,schedulable BOOLEAN NOT NULL,delta_after BIGINT NOT NULL DEFAULT 0,wake_seq BIGINT NOT NULL DEFAULT 0,UNIQUE(capture_id,request_id),UNIQUE(capture_id,table_name,generation))",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_dispatch_v1(capture_id VARCHAR(64) PRIMARY KEY,after_seq BIGINT NOT NULL)",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_grants_v1(grant_id VARCHAR(64) PRIMARY KEY,task_id CHAR(64) NOT NULL,owner_attempt VARCHAR(128) NOT NULL,pool VARCHAR(16) NOT NULL,status VARCHAR(32) NOT NULL,created_at BIGINT NOT NULL,finished_at BIGINT)",
@@ -149,6 +150,8 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
     index("pekko_cdc_b_recovery_v1","cdc_b_recovery_claim_v1","claimed_by,consumed")
     index("pekko_cdc_b_recovery_v1","cdc_b_recovery_permit_v2","permit_id")
     index("pekko_cdc_managed_owner_v1","cdc_managed_owner_boot_v1","boot_id")
+    val projectionNow=System.currentTimeMillis()
+    query(c,"SELECT task_id FROM pekko_cdc_tasks_v1 ORDER BY task_id").foreach(r=>syncCaptureSubscription(c,r("task_id"),projectionNow))
     if(query(c,"SELECT platform_id FROM pekko_cdc_owner_v1 WHERE platform_id='default'").isEmpty){
       val retained=Vector("pekko_cdc_clean_owner_v1","pekko_cdc_tasks_v1","pekko_cdc_grants_v1","pekko_cdc_dispatch_v1","pekko_cdc_managed_owner_v1","pekko_cdc_managed_manifest_v1","pekko_cdc_b_recovery_v1","pekko_cdc_b_fence_v2","pekko_cdc_b_fence_intent_v2","pekko_cdc_b_fence_scan_v2","pekko_cdc_b_receipt_v2","pekko_cdc_b_proof_anchor_v2","pekko_cdc_b_release_v2","pekko_cdc_reader_start_v2","pekko_cdc_owner_freeze_v2","pekko_cdc_owner_admission_v2","pekko_cdc_owner_delegation_v2","pekko_cdc_b_budget_v1","pekko_cdc_b_rejection_v1").exists(t=>query(c,s"SELECT 1 AS n FROM $t LIMIT 1").nonEmpty)
       if(retained)throw new CdcPlatformException("CONTROL_OWNER_MISSING")
@@ -157,6 +160,15 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
     }
   }
   private def validateId(id:String):Unit=if(id==null || !id.matches("[a-f0-9]{64}"))throw new CdcPlatformException("INVALID_TASK_ID")
+  /** Projects only the capture-owned fields so CaptureRuntime does not depend on task scheduling columns. */
+  private def syncCaptureSubscription(c:Connection,id:String,now:Long):Unit={
+    query(c,"SELECT task_id,capture_id,request_id,table_name,generation,desired_state,phase,control_revision,capture_readiness,initialization_evidence FROM pekko_cdc_tasks_v1 WHERE task_id=?",id).headOption.foreach {r=>
+      update(c,"INSERT INTO pekko_cdc_capture_subscription_v1(task_id,capture_id,request_id,table_name,generation,desired_state,state,control_revision,capture_readiness,initialization_evidence,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?) "+
+        "ON DUPLICATE KEY UPDATE capture_id=VALUES(capture_id),request_id=VALUES(request_id),table_name=VALUES(table_name),generation=VALUES(generation),desired_state=VALUES(desired_state),state=VALUES(state),control_revision=VALUES(control_revision),capture_readiness=VALUES(capture_readiness),initialization_evidence=VALUES(initialization_evidence),updated_at=VALUES(updated_at)",
+        r("task_id"),r("capture_id"),r("request_id"),r("table_name"),r("generation"),r("desired_state"),r("phase"),r("control_revision").toLong,r("capture_readiness"),Option(r("initialization_evidence")).orNull,now)
+    }
+  }
+
   private def record(r:Map[String,String]):CdcTaskRecord={
     val request=CdcTaskRequest(r("request_id"),r("capture_id"),r("table_name"),r("generation"),r("target_table"))
     val phase=r("phase");val grant=Option(r("grant_id"))
@@ -1106,6 +1118,7 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
             throw new CdcPlatformException("CONFLICT")
           update(c,"INSERT INTO pekko_cdc_tasks_v1(task_id,capture_id,request_id,table_name,generation,target_table,definition_hash,desired_state,control_revision,phase,journal_revision,capture_readiness,runtime_health,release_status,observed_at,due_at,work_pool,schedulable) VALUES(?,?,?,?,?,?,?,'RUNNING',1,'QUEUED',0,'UNKNOWN','WAITING','RELEASED',?,?,'SNAPSHOT',TRUE)",
             request.taskId,request.captureId,request.requestId,request.table,request.generation,request.targetTable,request.fingerprint,now,now)
+          syncCaptureSubscription(c,request.taskId,now)
           CdcTaskAcceptance(row(c,request.taskId).get.view,true)
       }
     }catch {case e:SQLException if Option(e.getSQLState).exists(_.startsWith("23"))=>throw new CdcPlatformException("CONFLICT")}
@@ -1168,6 +1181,7 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
       val preexec=v.executionId.isEmpty && task.grantId.isEmpty && v.phase=="QUEUED"
       update(c,"UPDATE pekko_cdc_tasks_v1 SET desired_state='CANCELED',control_revision=control_revision+1,phase=?,cancel_evidence=?,observed_at=?,due_at=?,schedulable=? WHERE task_id=?",
         if(preexec)"CANCELED"else"CANCELING",if(preexec)"PREEXEC_CANCEL"else v.cancellationEvidence.orNull,now,now,!preexec && task.grantId.isEmpty,id)
+      syncCaptureSubscription(c,id,now)
     }
     row(c,id).get.view
   }}
@@ -1351,22 +1365,26 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
       if(phase=="PAUSED")"PAUSED"else if(phase=="CANCELED")"STOPPED"else if(validationComplete && progress.phase=="STREAMING")"HEALTHY"else"VERIFYING",
       if(validationComplete && progress.phase=="STREAMING")null else progress.failure.orNull,now,if(validationComplete)Long.box(now)else old.view.lastVerifiedAt.map(Long.box).orNull,now+math.max(0L,delay),
       CdcProgressJson.encode(progress),grant.owner,if(progress.phase=="STREAMING" || (phase=="CANCELING" && old.workPool=="TAIL"))"TAIL"else"SNAPSHOT",!Set("PAUSED","CANCELED").contains(phase) && (phase!="STREAMING" || !validationComplete || canceled || old.wakeSequence>progress.deltaAfter),progress.deltaAfter,old.view.taskId)
+    syncCaptureSubscription(c,old.view.taskId,now)
   }
   private[cdc] def defer(grant:CdcTaskGrant,delay:Long,now:Long):Unit=transaction {c=>
     val old=requireGrant(c,grant)
     update(c,"UPDATE pekko_cdc_grants_v1 SET status='RELEASED',finished_at=? WHERE grant_id=?",now,grant.id)
     update(c,"UPDATE pekko_cdc_tasks_v1 SET grant_id=NULL,grant_owner=NULL,release_status='RELEASED',runtime_health='WAITING',due_at=?,schedulable=TRUE WHERE task_id=?",now+delay,old.view.taskId)
+    syncCaptureSubscription(c,old.view.taskId,now)
   }
   private[cdc] def finishFailureReleased(grant:CdcTaskGrant,code:String,now:Long):Unit=transaction {c=>
     requireGrant(c,grant)
     update(c,"UPDATE pekko_cdc_grants_v1 SET status='RELEASED',finished_at=? WHERE grant_id=?",now,grant.id)
     update(c,"UPDATE pekko_cdc_tasks_v1 SET phase='PAUSED',runtime_health='PAUSED',release_status='RELEASED',failure_code=?,observed_at=?,schedulable=FALSE,grant_id=NULL,grant_owner=NULL WHERE task_id=?",code,now,grant.task.view.taskId)
+    syncCaptureSubscription(c,grant.task.view.taskId,now)
   }
   private[cdc] def finishUnknown(grant:CdcTaskGrant,code:String,now:Long):Unit=transaction {c=>
     val current=owner(c)
     requireGrant(c,grant)
     update(c,"UPDATE pekko_cdc_grants_v1 SET status='UNKNOWN' WHERE grant_id=?",grant.id)
     update(c,"UPDATE pekko_cdc_tasks_v1 SET phase='PAUSED',runtime_health='UNKNOWN',release_status='UNKNOWN',failure_code=?,observed_at=?,schedulable=FALSE WHERE task_id=?",code,now,grant.task.view.taskId)
+    syncCaptureSubscription(c,grant.task.view.taskId,now)
     if(current("owner_attempt")==grant.owner && managedOn(c,grant.owner).nonEmpty)
       update(c,"UPDATE pekko_cdc_owner_v1 SET status='UNKNOWN',updated_at=? WHERE platform_id='default'",now)
   }

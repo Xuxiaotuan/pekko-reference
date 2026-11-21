@@ -38,7 +38,7 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
     val connection=openControl(entry.config)
     try {
       val query=connection.prepareStatement(
-        "SELECT task_id,table_name,generation,desired_state,phase FROM pekko_cdc_tasks_v1 WHERE capture_id=?")
+        "SELECT task_id,table_name,generation,desired_state,state AS phase FROM pekko_cdc_capture_subscription_v1 WHERE capture_id=?")
       try {
         query.setString(1,entry.config.id)
         val rows=query.executeQuery()

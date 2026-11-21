@@ -120,6 +120,28 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       leases.claimTasks(newWorker, 1) shouldBe empty
     }
 
+    "must project task lifecycle changes into the capture subscription view" in {
+      val url = database()
+      val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits())
+      taskStore.initialize()
+      val accepted = taskStore.submit(CdcTaskRequest("request", "capture", "orders", "g1", "orders_target"), 1L)
+      def projection(): (String,String) = {
+        val connection = DriverManager.getConnection(url)
+        try {
+          val query = connection.prepareStatement("SELECT desired_state,state FROM pekko_cdc_capture_subscription_v1 WHERE task_id=?")
+          try {
+            query.setString(1, accepted.task.taskId)
+            val rows = query.executeQuery()
+            try { rows.next() shouldBe true; rows.getString(1) -> rows.getString(2) }
+            finally rows.close()
+          } finally query.close()
+        } finally connection.close()
+      }
+      projection() shouldBe "RUNNING" -> "QUEUED"
+      taskStore.cancel(accepted.task.taskId, 2L).phase shouldBe "CANCELED"
+      projection() shouldBe "CANCELED" -> "CANCELED"
+    }
+
     "must initialize the runtime lease schema without the worker task store" in {
       val url = database()
       val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))

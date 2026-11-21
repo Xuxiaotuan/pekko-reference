@@ -97,3 +97,24 @@ CREATE TABLE IF NOT EXISTS pekko_cdc_runtime_schema_version (
   checksum CHAR(64) NOT NULL,
   applied_at BIGINT NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE IF NOT EXISTS pekko_cdc_capture_subscription_v1 (
+  task_id CHAR(64) PRIMARY KEY,
+  capture_id VARCHAR(64) NOT NULL,
+  request_id VARCHAR(128) NOT NULL,
+  table_name VARCHAR(128) NOT NULL,
+  generation VARCHAR(128) NOT NULL,
+  desired_state VARCHAR(32) NOT NULL,
+  state VARCHAR(32) NOT NULL,
+  control_revision BIGINT NOT NULL,
+  capture_readiness VARCHAR(32) NOT NULL,
+  initialization_evidence LONGTEXT NULL,
+  b_offset LONGTEXT NULL,
+  high_offset LONGTEXT NULL,
+  f_offset LONGTEXT NULL,
+  k_offset LONGTEXT NULL,
+  owner_attempt VARCHAR(128) NULL,
+  updated_at BIGINT NOT NULL,
+  UNIQUE KEY subscription_generation (capture_id, table_name, generation),
+  INDEX subscription_reconcile (capture_id, desired_state, state)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
