@@ -1253,7 +1253,7 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
     update(c,"UPDATE pekko_cdc_tasks_v1 SET phase=?,journal_revision=?,execution_id=?,capture_readiness=?,initialization_evidence=?,runtime_health=?,release_status='RELEASED',failure_code=?,observed_at=?,last_verified_at=?,due_at=?,grant_id=NULL,grant_owner=NULL,continuation_json=?,continuation_owner=?,work_pool=?,schedulable=?,delta_after=? WHERE task_id=?",
       phase,progress.revision,Option(progress.executionId).filter(_.nonEmpty).orNull,readiness,initialization.orElse(old.view.initializationEvidence).orNull,
       if(phase=="PAUSED")"PAUSED"else if(phase=="CANCELED")"STOPPED"else if(validationComplete && progress.phase=="STREAMING")"HEALTHY"else"VERIFYING",
-      progress.failure.orNull,now,if(validationComplete)Long.box(now)else old.view.lastVerifiedAt.map(Long.box).orNull,now+math.max(0L,delay),
+      if(validationComplete && progress.phase=="STREAMING")null else progress.failure.orNull,now,if(validationComplete)Long.box(now)else old.view.lastVerifiedAt.map(Long.box).orNull,now+math.max(0L,delay),
       CdcProgressJson.encode(progress),grant.owner,if(progress.phase=="STREAMING" || (phase=="CANCELING" && old.workPool=="TAIL"))"TAIL"else"SNAPSHOT",!Set("PAUSED","CANCELED").contains(phase) && (phase!="STREAMING" || !validationComplete || canceled || old.wakeSequence>progress.deltaAfter),progress.deltaAfter,old.view.taskId)
   }
   private[cdc] def defer(grant:CdcTaskGrant,delay:Long,now:Long):Unit=transaction {c=>
