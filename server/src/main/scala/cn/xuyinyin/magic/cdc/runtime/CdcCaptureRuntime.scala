@@ -118,7 +118,8 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
       val store = new MySQLCaptureStore(() => openState(config), config.id, config.sourceLineage, config.maxLogBytes)
       try {
         store.initialize()
-        val reader = new SharedMySQLCapture(config.source, config.sdkState, store, DebeziumEngineFactory.real)
+        val reader = new SharedMySQLCapture(config.source, config.sdkState, store, DebeziumEngineFactory.real,
+          ownerLockName=Some(s"pekko_capture_${config.id}_${lease.ownerAttempt}"))
         reader.start()
         require(leases.markCaptureActive(lease), "capture owner activation was fenced")
         entries += config.id -> Entry(config, lease, store, reader)

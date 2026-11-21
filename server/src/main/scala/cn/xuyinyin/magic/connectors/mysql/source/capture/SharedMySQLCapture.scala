@@ -28,12 +28,14 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   sourceFenceRequired:Boolean=false,
   sourceFenceObserver:Option[()=>Connection]=None,
   sourceFenceUuid:Option[String]=None,
-  recoveryGate:Option[cn.xuyinyin.magic.cdc.platform.CdcTaskStore.ReaderRecoveryGate]=None) extends AutoCloseable {
+  recoveryGate:Option[cn.xuyinyin.magic.cdc.platform.CdcTaskStore.ReaderRecoveryGate]=None,
+  ownerLockName:Option[String]=None) extends AutoCloseable {
   require(source.connectorId==store.captureId,"capture namespace mismatch")
   require(recoveryGate.isEmpty || sourceFenceRequired,"recovery gate requires v2 source protection")
   recoveryGate.foreach(g=>require(g!=null && g.captureId==store.captureId,"reader recovery gate capture changed"))
   @volatile private var installedRecoveryGate=recoveryGate
   private val started=new AtomicBoolean(false);private val closed=new AtomicBoolean(false)
+  private val captureOwnerLock=ownerLockName.getOrElse("pekko_capture_"+store.captureId)
   private val sharedLogOnly=new AtomicBoolean(false)
   private val stopping=new AtomicBoolean(false)
   private val startup=new CaptureStartupState(java.util.UUID.randomUUID().toString)
@@ -202,7 +204,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     try {val r=q.executeQuery(sql);try {val b=Vector.newBuilder[String];while(r.next())b+=r.getString(1);b.result()}finally r.close()}finally q.close()}
   private def update(c:Connection,sql:String):Unit={val q=c.createStatement();q.setQueryTimeout(5);try {q.executeUpdate(sql);()}finally q.close()}
   private def assertOwner():Unit=synchronized {
-    try require(owner!=null && query(owner,s"SELECT IS_USED_LOCK('pekko_capture_${store.captureId}')").headOption.contains(ownerId.toString),"capture owner control lost")
+    try require(owner!=null && query(owner,s"SELECT IS_USED_LOCK('$captureOwnerLock')").headOption.contains(ownerId.toString),"capture owner control lost")
     catch {case scala.util.control.NonFatal(e)=>
       val unknown=releaseUnknown("capture-owner-control",e);error.compareAndSet(null,unknown);startup.fail();throw unknown
     }
@@ -281,7 +283,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       val stateUuid=query(owner,"SELECT @@server_uuid").head
       require(stateUuid!=sourceUuid,"capture state must use a different MySQL instance: transaction metadata feedback")
       require(store.location==(stateUuid->query(owner,"SELECT DATABASE()").head),"capture L must use the owner state server and database")
-      require(query(owner,s"SELECT GET_LOCK('pekko_capture_${store.captureId}',0)").head=="1","another shared Reader owns this capture")
+      require(query(owner,s"SELECT GET_LOCK('$captureOwnerLock',0)").head=="1","another shared Reader owns this capture")
       ownerId=query(owner,"SELECT CONNECTION_ID()").head.toLong
       val (existing,hasEvidence,hasBoundaries,unbound)=store.recoveryInventory
       val checkpoint=readCheckpoint()
