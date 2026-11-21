@@ -204,10 +204,11 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     try {val r=q.executeQuery(sql);try {val b=Vector.newBuilder[String];while(r.next())b+=r.getString(1);b.result()}finally r.close()}finally q.close()}
   private def update(c:Connection,sql:String):Unit={val q=c.createStatement();q.setQueryTimeout(5);try {q.executeUpdate(sql);()}finally q.close()}
   private def assertOwner():Unit=synchronized {
-    try require(owner!=null && query(owner,s"SELECT IS_USED_LOCK('$captureOwnerLock')").headOption.contains(ownerId.toString),"capture owner control lost")
-    catch {case scala.util.control.NonFatal(e)=>
-      val unknown=releaseUnknown("capture-owner-control",e);error.compareAndSet(null,unknown);startup.fail();throw unknown
-    }
+    if(!sharedLogOnly.get())
+      try require(owner!=null && query(owner,s"SELECT IS_USED_LOCK('$captureOwnerLock')").headOption.contains(ownerId.toString),"capture owner control lost")
+      catch {case scala.util.control.NonFatal(e)=>
+        val unknown=releaseUnknown("capture-owner-control",e);error.compareAndSet(null,unknown);startup.fail();throw unknown
+      }
   }
   private def stateTableExists(c:Connection,name:String):Boolean={
     require(name.matches("[A-Za-z0-9_]+"),"invalid checkpoint table")
@@ -261,10 +262,13 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     startup.evidence
   }
   private def requireAdmission():Unit={
-    active();assertOwner();require(!savepointAdmissionFrozen,"SAVEPOINT_ADMISSION_FROZEN")
-    val evidence=startupEvidence
+    active();require(!savepointAdmissionFrozen,"SAVEPOINT_ADMISSION_FROZEN")
     failure.foreach(throw _)
-    if(evidence.phase!="ADMISSION_READY")throw new CaptureAdmissionException(evidence.reasonCode.getOrElse("CAPTURE_STARTING"))
+    if(!sharedLogOnly.get()) {
+      assertOwner()
+      val evidence=startupEvidence
+      if(evidence.phase!="ADMISSION_READY")throw new CaptureAdmissionException(evidence.reasonCode.getOrElse("CAPTURE_STARTING"))
+    }
   }
   def start():Future[Done]=commandLock.synchronized {
     require(started.compareAndSet(false,true),"capture already started")
