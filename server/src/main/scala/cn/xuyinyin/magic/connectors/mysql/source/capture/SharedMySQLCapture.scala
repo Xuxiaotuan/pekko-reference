@@ -34,6 +34,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   recoveryGate.foreach(g=>require(g!=null && g.captureId==store.captureId,"reader recovery gate capture changed"))
   @volatile private var installedRecoveryGate=recoveryGate
   private val started=new AtomicBoolean(false);private val closed=new AtomicBoolean(false)
+  private val sharedLogOnly=new AtomicBoolean(false)
   private val stopping=new AtomicBoolean(false)
   private val startup=new CaptureStartupState(java.util.UUID.randomUUID().toString)
   private val snapshots=snapshotMonitor.getOrElse(CaptureSnapshotMonitor.platform(store.captureId))
@@ -146,6 +147,12 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     else if(failure.nonEmpty)startup.fail()
     startup.evidence
   }
+  /** WorkerRuntime reads the CaptureRuntime-owned immutable L without opening a second Reader. */
+  private[magic] def enableSharedLogOnly():Unit=commandLock.synchronized {
+    require(!started.get() && !closed.get() && !stopping.get(),"shared-log mode must be enabled before Reader start")
+    sharedLogOnly.set(true)
+  }
+  def bootstrapReady:Boolean=sharedLogOnly.get() || cachedStartupEvidence.phase=="ADMISSION_READY"
   def streamingConnected:Option[Boolean]=
     if(stopping.get() || closed.get() || failure.nonEmpty)Some(false)else snapshots.streamingConnected
   private lazy val releaseGuard=new CaptureReleaseGuard(startup.evidence.runtimeAttemptId,()=>closeLocal(),
@@ -172,7 +179,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
   def failure:Option[Throwable]=Option(error.get())
   private def active():Unit={
     require(!closed.get(),"shared capture closed")
-    if(!started.get())throw new CaptureAdmissionException("CAPTURE_STARTING")
+    if(!started.get() && !sharedLogOnly.get())throw new CaptureAdmissionException("CAPTURE_STARTING")
     failure.foreach(throw _)
   }
   private def releaseUnknown(stage:String,cause:Throwable):cn.xuyinyin.magic.cdc.recovery.CdcExecutionException=
@@ -515,6 +522,9 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     case _=>throw new IllegalArgumentException("unsupported captured schema descriptor")
   }
   def subscribe(id:String,table:String,generation:String):CaptureSubscription=commandLock.synchronized {
+    if(sharedLogOnly.get())return store.subscription(id).map {existing=>
+      require(existing.table==table && existing.generation==generation,"subscription request conflict");existing
+    }.getOrElse(throw new CaptureAdmissionException("CAPTURE_SUBSCRIPTION_NOT_READY"))
     active();assertOwner()
     require(!ignoreInternalSchema(table),"internal source control table cannot be subscribed")
     store.subscription(id).foreach {existing=>

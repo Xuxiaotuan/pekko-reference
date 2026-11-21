@@ -431,7 +431,7 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
     if(initial.phase=="RECOVERY_PENDING")return BootstrapStepResult(initial,false,true,250,validationComplete=false)
     if(stop() || Set("PAUSED","CANCELED").contains(initial.phase))
       return BootstrapStepResult(initial,false,true,0)
-    if(capture.cachedStartupEvidence.phase!="ADMISSION_READY"){
+    if(!capture.bootstrapReady){
       healthy();return BootstrapStepResult(initial,false,true,250,validationComplete=false)
     }
     admission.reserveRun()

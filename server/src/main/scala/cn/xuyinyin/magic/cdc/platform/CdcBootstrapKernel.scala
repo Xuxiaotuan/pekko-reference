@@ -169,6 +169,7 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
         sourceFenceRequired=cfg.sourceFenceV2,
         sourceFenceObserver=if(cfg.sourceFenceV2)Some(()=>sourceOpen(cfg,observer=true))else None,
         sourceFenceUuid=if(cfg.sourceFenceV2)Some(cfg.sourceLineage)else None)
+      if(!captureEnabled)reader.enableSharedLogOnly()
       val registered=synchronized {
         if(stopping.get())false else {capturesById.update(cfg.id,Capture(cfg,store,reader));true}
       }
