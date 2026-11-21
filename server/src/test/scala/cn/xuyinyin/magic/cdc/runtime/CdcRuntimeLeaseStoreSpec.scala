@@ -174,6 +174,16 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))
       leases.initialize()
       leases.acquireCapture("capture", "source-1", "capture-incarnation").nonEmpty shouldBe true
+      val connection = DriverManager.getConnection(url)
+      try {
+        val query = connection.prepareStatement("SELECT checksum FROM pekko_cdc_runtime_schema_version WHERE version=?")
+        try {
+          query.setInt(1, CdcRuntimeSchemaVersion.leaseVersion)
+          val rows = query.executeQuery()
+          try { rows.next() shouldBe true; rows.getString(1) shouldBe CdcRuntimeSchemaVersion.leaseChecksum }
+          finally rows.close()
+        } finally query.close()
+      } finally connection.close()
     }
   }
 }
