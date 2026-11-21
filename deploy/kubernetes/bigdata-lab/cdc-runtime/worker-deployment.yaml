@@ -17,7 +17,7 @@ spec:
       containers:
         - name: cdc-worker
           image: pekko-cdc-runtime:dev
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command: ["/opt/docker/bin/cdc-runtime"]
           envFrom: [{secretRef: {name: pekko-cdc-runtime-config}}]
           env:
