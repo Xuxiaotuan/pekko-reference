@@ -32,7 +32,9 @@ final case class CdcCaptureSettings(id:String,source:MySQLCdcSourceConfig,sdkSta
   val targetDatabase:String=Option(stateUri.getPath).getOrElse("").stripPrefix("/")
   if(!targetDatabase.matches("[A-Za-z_][A-Za-z0-9_]*"))throw new CdcPlatformException("INVALID_STATE_JDBC")
 }
-final case class CdcPlatformSettings(captures:Vector[CdcCaptureSettings],limits:CdcPlatformLimits,pollIntervalMillis:Long=100L) {
+final case class CdcPlatformSettings(captures:Vector[CdcCaptureSettings],limits:CdcPlatformLimits,pollIntervalMillis:Long=100L,
+  runtimeRole:String="combined") {
+  require(Set("combined","worker").contains(runtimeRole), "invalid CDC runtime role")
   require(captures.nonEmpty && captures.size<=32 && captures.map(_.id).distinct.size==captures.size &&
     captures.map(_.controlState.jdbcUrl).distinct.size==1 && pollIntervalMillis>0)
   private def duplicate[A](values:Vector[A])=values.distinct.size!=values.size
@@ -92,9 +94,10 @@ object CdcPlatformSettings {
           if(c.hasPath("source-controller-password"))Some(c.getString("source-controller-password"))else None,
           material,CdcGcSettings.load(c))
       }
+      val runtimeRole=if(cfg.hasPath("runtime-role"))cfg.getString("runtime-role")else "combined"
       Some(CdcPlatformSettings(captures,CdcPlatformLimits(snapshotSteps=number(cfg,"snapshot-steps",2),tailSteps=number(cfg,"tail-steps",2),
         candidatePage=number(cfg,"candidate-page",32),maxPendingOperations=number(cfg,"max-pending-operations",64),
-        tailDelayMillis=long(cfg,"tail-delay-ms",500L)),long(cfg,"poll-interval-ms",100L)))
+        tailDelayMillis=long(cfg,"tail-delay-ms",500L)),long(cfg,"poll-interval-ms",100L),runtimeRole))
     }
   }
 }

@@ -28,7 +28,8 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
   private[cdc] val freshAttest:Option[(SnapshotGuardianWire.WorkerAttestationContext,String)=>SnapshotGuardianWire.VerifiedWorkerAttestation]=None,
   private[cdc] val fenceGuardStore:Option[CdcTaskStore]=None,
   private[cdc] val wrapSource:(String,Connection)=>Connection=(_,c)=>c,
-  private[cdc] val savepointTasks:Option[CdcTaskStore]=None) extends CdcPlatformKernel {
+  private[cdc] val savepointTasks:Option[CdcTaskStore]=None,
+  private[cdc] val captureEnabled:Boolean=true) extends CdcPlatformKernel {
   private implicit val actorEc:ExecutionContext=system.executionContext
   private implicit val scheduler:org.apache.pekko.actor.typed.Scheduler=system.scheduler
   private val stopping=new AtomicBoolean()
@@ -181,13 +182,15 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
       }
       if(stopping.get())return
       if(deferred.contains(cfg.id))synchronized {recoveryOnly+=cfg.id}
-      else reader.start()
+      else if(captureEnabled)reader.start()
+      else synchronized {captureViews=captureViews.map(view=>if(view.captureId==cfg.id)view.copy(readiness="ADMISSION_READY",runtimeHealth="HEALTHY")else view)}
     }
     if(!stopping.get())try refresh.scheduleWithFixedDelay(new Runnable {def run():Unit=refreshCaptures()},0L,250L,TimeUnit.MILLISECONDS)
     catch {case _:java.util.concurrent.RejectedExecutionException if stopping.get()=>()}
   }
   private val nextEvidence=mutable.Map.empty[String,Long]
   private def refreshCaptures():Unit={
+    if(!captureEnabled) return
     if(!stopping.get()){
       val current=synchronized(capturesById.values.toVector)
       val now=System.currentTimeMillis()
@@ -205,7 +208,8 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
       }
     }
   }
-  override def dispatchCaptureIds:Set[String]=captures.filter(c=>c.readiness=="ADMISSION_READY" && c.runtimeHealth=="HEALTHY").map(_.captureId).toSet
+  override def dispatchCaptureIds:Set[String]=if(!captureEnabled)settings.captures.map(_.id).toSet
+    else captures.filter(c=>c.readiness=="ADMISSION_READY" && c.runtimeHealth=="HEALTHY").map(_.captureId).toSet
   override def recoveryCaptureIds:Set[String]=synchronized(recoveryOnly.toSet)
   override def admissibleTasks(pool:String):Option[Set[String]]=synchronized {
     val occupied=sessions.iterator.collect{case(id,s) if s.pool==pool=>id}.toSet++reservations.collect{case(id,p) if p==pool=>id}

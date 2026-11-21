@@ -45,7 +45,8 @@ final class CdcPlatformExtension(system:ActorSystem[_]) extends Extension {
         org.slf4j.LoggerFactory.getLogger(classOf[CdcPlatformExtension]).warn("CDC {} {}",kind,data.compactPrint)
     }
     val kernel=new CdcBootstrapKernel(settings,system,observe=diagnostics,managed=managed.nonEmpty,
-      recoveryStore=if(managed.nonEmpty)Some(store)else None,freshAttest=freshAttest,fenceGuardStore=Some(store),savepointTasks=Some(store))
+      recoveryStore=if(managed.nonEmpty)Some(store)else None,freshAttest=freshAttest,fenceGuardStore=Some(store),savepointTasks=Some(store),
+      captureEnabled=settings.runtimeRole!="worker")
     val runtime=new CdcPlatformRuntime(store,kernel,settings.limits,
       polling=true,pollIntervalMillis=settings.pollIntervalMillis,managedOwner=managed,recoverManaged=recover,guardianCheck=guardianCheck,
       runtimeLeases=Some(runtimeLeases))
