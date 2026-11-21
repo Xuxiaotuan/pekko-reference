@@ -10,9 +10,13 @@ final class BootstrapJournalProgressVerifier private (uuid:String,database:Strin
   private val serialization=SerializationExtension(system.classicSystem)
   def verifyOn(c:Connection,receipt:BootstrapJournal.PersistedProgress,capture:String,subscription:String,
     expectedDefinition:String):Unit={
-    require(BootstrapJournal.isActorIssuedProgress(receipt) && !c.getAutoCommit && c.getTransactionIsolation==Connection.TRANSACTION_REPEATABLE_READ &&
-      receipt.persistenceId=="bootstrap-v1-"+capture+"-"+subscription && receipt.sequenceNr>0 &&
-      receipt.state.definition==expectedDefinition && receipt.state.executionId.nonEmpty,"bootstrap Journal receipt identity conflict")
+    require(BootstrapJournal.isActorIssuedProgress(receipt),"bootstrap Journal receipt capability missing")
+    require(!c.getAutoCommit,"bootstrap Journal proof requires an open state transaction")
+    require(c.getTransactionIsolation==Connection.TRANSACTION_REPEATABLE_READ,"bootstrap Journal proof isolation changed")
+    require(receipt.persistenceId=="bootstrap-v1-"+capture+"-"+subscription,"bootstrap Journal persistence identity changed")
+    require(receipt.sequenceNr>0,"bootstrap Journal sequence missing")
+    require(receipt.state.definition==expectedDefinition,"bootstrap Journal definition identity changed")
+    require(receipt.state.executionId.nonEmpty,"bootstrap Journal execution identity missing")
     val id=c.createStatement();id.setQueryTimeout(5)
     try {val r=id.executeQuery("SELECT @@server_uuid,DATABASE()");try {
       require(r.next() && r.getString(1)==uuid && r.getString(2)==database && !r.next(),"bootstrap Journal database changed")
