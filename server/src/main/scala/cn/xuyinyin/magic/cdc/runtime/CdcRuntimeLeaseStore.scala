@@ -107,6 +107,22 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
       }
     }
 
+  def currentCapture(captureId: String): Option[CaptureOwnerSnapshot] = withConnection { connection =>
+    val statement = connection.prepareStatement(
+      "SELECT source_lineage,owner_attempt,owner_epoch,incarnation,state,updated_at,lease_expires_at " +
+        "FROM pekko_cdc_capture_owner_v1 WHERE capture_id=?")
+    try {
+      statement.setString(1, captureId)
+      queryOne(statement).map { row =>
+        CaptureOwnerSnapshot(
+          CaptureLease(captureId, row("source_lineage"), row("owner_attempt"), row("owner_epoch").toLong, row("incarnation")),
+          row("state"),
+          row("updated_at").toLong,
+          Option(row("lease_expires_at")).map(_.toLong))
+      }
+    } finally statement.close()
+  }
+
   def markCaptureActive(lease: CaptureLease): Boolean = updateCaptureState(lease, "ACQUIRING", "ACTIVE")
 
   def renewCapture(lease: CaptureLease, ttlMillis: Long = defaultLeaseMillis): Boolean = transaction { connection =>

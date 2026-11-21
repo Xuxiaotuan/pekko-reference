@@ -17,6 +17,13 @@ final case class CaptureLease(
   incarnation: String
 )
 
+final case class CaptureOwnerSnapshot(
+  lease: CaptureLease,
+  state: String,
+  updatedAt: Long,
+  leaseExpiresAt: Option[Long]
+)
+
 final case class WorkerLease(
   workerId: String,
   incarnation: String,

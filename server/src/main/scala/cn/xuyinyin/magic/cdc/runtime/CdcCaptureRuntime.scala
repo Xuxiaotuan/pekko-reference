@@ -34,6 +34,32 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
   private def openControl(config: CdcCaptureSettings) =
     DriverManager.getConnection(config.controlState.jdbcUrl, config.controlState.username, config.controlState.password)
 
+  /** A stale owner is recoverable only after the source proves its old lock is gone. */
+  private def sourceLockFree(config:CdcCaptureSettings,ownerAttempt:String):Boolean={
+    val connection=DriverManager.getConnection(
+      s"jdbc:mysql://${config.source.host}:${config.source.port}/${config.source.database}?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&connectTimeout=5000&socketTimeout=5000",
+      config.source.username,config.source.password)
+    val statement=connection.prepareStatement("SELECT IS_USED_LOCK(?)")
+    try {
+      statement.setString(1,s"pekko_capture_${config.id}_${ownerAttempt}")
+      val result=statement.executeQuery()
+      try result.next() && result.wasNull()
+      finally result.close()
+    } finally {statement.close();connection.close()}
+  }
+
+  private def acquireLease(config:CdcCaptureSettings):Option[CaptureLease]={
+    leases.acquireCapture(config.id,config.sourceLineage,incarnation).orElse {
+      leases.currentCapture(config.id).flatMap {snapshot =>
+        if(Set("ACQUIRING","ACTIVE")(snapshot.state) && sourceLockFree(config,snapshot.lease.ownerAttempt)) {
+          require(leases.releaseCapture(snapshot.lease,"STOPPED"),"stale capture owner changed during recovery")
+          logger.warn("CDC capture owner recovered after source lock release capture={} oldAttempt={}",config.id,snapshot.lease.ownerAttempt)
+          leases.acquireCapture(config.id,config.sourceLineage,incarnation)
+        } else None
+      }
+    }
+  }
+
   private def reconcileSubscriptions(entry: Entry): Unit = {
     val connection=openControl(entry.config)
     try {
@@ -120,7 +146,7 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
     require(entries.isEmpty, "capture runtime already started")
     leases.initialize()
     settings.captures.foreach { config =>
-      val lease = leases.acquireCapture(config.id, config.sourceLineage, incarnation)
+      val lease = acquireLease(config)
         .getOrElse(throw new IllegalStateException("capture owner is not available: " + config.id))
       val store = new MySQLCaptureStore(() => openState(config), config.id, config.sourceLineage, config.maxLogBytes)
       try {
