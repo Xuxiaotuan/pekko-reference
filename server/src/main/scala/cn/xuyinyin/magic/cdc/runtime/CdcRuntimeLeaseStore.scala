@@ -35,6 +35,7 @@ object CdcRuntimeSchemaVersion {
 /** Additive lease store used by the two-role runtime. Legacy owner and grant rows remain untouched. */
 final class CdcRuntimeLeaseStore(open: () => Connection) {
   private val defaultLeaseMillis = 5000L
+  private val workerLeaseMillis = 30000L
   private def withConnection[A](f: Connection => A): A = {
     val connection = open()
     try f(connection) finally connection.close()
@@ -252,7 +253,7 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
       statement.setString(4, "READY")
       statement.setString(5, capacityJson)
       statement.setLong(6, now)
-      statement.setLong(7, now + defaultLeaseMillis)
+      statement.setLong(7, now + workerLeaseMillis)
       statement.setLong(8, now)
       statement.setString(9, leaseId)
       statement.setLong(10, now)

@@ -17,6 +17,7 @@ final class CdcWorkerRuntime(
     defaultIncarnation: String,
     defaultCapacityJson: String
 )(implicit ec: ExecutionContext) extends WorkerRuntimeControl {
+  private val runtimeLeaseMillis = 30000L
   private val workerLease = new AtomicReference[Option[WorkerLease]](None)
   private val taskLeases = mutable.Map.empty[String, TaskLease]
 
@@ -110,8 +111,8 @@ final class CdcWorkerRuntime(
   }
 
   def renewTracked(activeGraphs: Int): Boolean = {
-    val workerOk = workerLease.get().forall(worker => leases.heartbeatWorker(worker, activeGraphs))
-    val tasksOk = taskLeases.synchronized(taskLeases.values.forall(lease => leases.renewTask(lease, 5000L)))
+    val workerOk = workerLease.get().forall(worker => leases.heartbeatWorker(worker, activeGraphs, runtimeLeaseMillis))
+    val tasksOk = taskLeases.synchronized(taskLeases.values.forall(lease => leases.renewTask(lease, runtimeLeaseMillis)))
     workerOk && tasksOk
   }
 
