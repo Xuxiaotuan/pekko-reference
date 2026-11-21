@@ -34,6 +34,7 @@ final class CdcPlatformExtension(system:ActorSystem[_]) extends Extension {
       } finally supervisor.close()
     }else None
     val store=new CdcTaskStore(()=>ManagedCdcJdbc.open(CdcJdbc.withTimeouts(state.jdbcUrl),state.username,state.password,"control",managed.nonEmpty),settings.limits)
+    val runtimeLeases=new cn.xuyinyin.magic.cdc.runtime.CdcRuntimeLeaseStore(()=>ManagedCdcJdbc.open(CdcJdbc.withTimeouts(state.jdbcUrl),state.username,state.password,"control",managed.nonEmpty))
     val recover=managed.map { _ =>
       val supervisorConfig=Path.of(config.getString("pekko.workflow.snapshot-ha.supervisor-config"))
       val standalone=config.hasPath("pekko.cdc-standalone.managed-worker") && config.getBoolean("pekko.cdc-standalone.managed-worker")
@@ -46,7 +47,8 @@ final class CdcPlatformExtension(system:ActorSystem[_]) extends Extension {
     val kernel=new CdcBootstrapKernel(settings,system,observe=diagnostics,managed=managed.nonEmpty,
       recoveryStore=if(managed.nonEmpty)Some(store)else None,freshAttest=freshAttest,fenceGuardStore=Some(store),savepointTasks=Some(store))
     val runtime=new CdcPlatformRuntime(store,kernel,settings.limits,
-      polling=true,pollIntervalMillis=settings.pollIntervalMillis,managedOwner=managed,recoverManaged=recover,guardianCheck=guardianCheck)
+      polling=true,pollIntervalMillis=settings.pollIntervalMillis,managedOwner=managed,recoverManaged=recover,guardianCheck=guardianCheck,
+      runtimeLeases=Some(runtimeLeases))
     CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate,"stop-cdc-platform") {()=>
       // UNKNOWN remains in the durable owner/grant records; process exit is never a release proof.
       runtime.stopRuntime().map(_=>Done)(ExecutionContext.parasitic)

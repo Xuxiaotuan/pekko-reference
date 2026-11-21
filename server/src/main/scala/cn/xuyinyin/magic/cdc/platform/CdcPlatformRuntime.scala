@@ -8,8 +8,9 @@ import java.util.concurrent.{Executors,ScheduledFuture,ThreadFactory,TimeUnit}
 import scala.concurrent.duration._
 import java.util.concurrent.atomic.{AtomicBoolean,AtomicInteger}
 import scala.concurrent.{ExecutionContext,Future,Promise}
-import scala.util.{Failure,Success}
+import scala.util.Failure
 import scala.util.control.NonFatal
+import cn.xuyinyin.magic.cdc.runtime.{CdcRuntimeLeaseStore,TaskLease,WorkerLease}
 
 final case class CdcKernelOutcome(progress:BootstrapProgress,releaseConfirmed:Boolean,didWork:Boolean,
   validationComplete:Boolean,nextDelayMillis:Long,initializationEvidence:Option[String])
@@ -40,7 +41,8 @@ trait CdcPlatformKernel {
 /** One coordinator, two independent work budgets, no Future or Actor allocated per cold index row. */
 final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,val limits:CdcPlatformLimits,
   polling:Boolean=true,pollIntervalMillis:Long=100L,private[cdc] val managedOwner:Option[CdcManagedOwner]=None,
-  private[cdc] val recoverManaged:()=>Unit=()=>(),private[cdc] val guardianCheck:()=>Unit=()=>()) extends CdcTaskService {
+  private[cdc] val recoverManaged:()=>Unit=()=>(),private[cdc] val guardianCheck:()=>Unit=()=>(),
+  private[cdc] val runtimeLeases:Option[CdcRuntimeLeaseStore]=None) extends CdcTaskService {
   val runtimeAttemptId:String=UUID.randomUUID().toString
   private def threads(label:String):ThreadFactory=(r:Runnable)=>{val t=new Thread(r,"cdc-platform-"+label+"-"+runtimeAttemptId.take(8));t.setDaemon(true);t}
   private val controls=Executors.newFixedThreadPool(2,threads("control"))
@@ -57,6 +59,9 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
   private val markingStartupFailure=new AtomicBoolean()
   private val startupFailedFlag=new AtomicBoolean()
   private val guardianLost=new AtomicBoolean()
+  private val workerLease=new java.util.concurrent.atomic.AtomicReference[Option[WorkerLease]](None)
+  private val taskLeases=scala.collection.mutable.Map.empty[String,TaskLease]
+  private val unknownTaskLeases=scala.collection.mutable.Set.empty[String]
   private val savepointInProgress=new AtomicBoolean()
   @volatile private var startupFailurePending=false
   @volatile private var recoveryPending=false
@@ -82,6 +87,10 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
       logger.info("CDC owner admission granted attempt={} persisted={}",runtimeAttemptId,store.ownerAttempt.map(_._1).getOrElse("none"))
       recoveryPending=false
       ownerGranted=true
+      runtimeLeases.foreach { leases =>
+        workerLease.set(Some(leases.registerWorker(runtimeAttemptId,runtimeAttemptId,
+          s"{\"snapshotSteps\":${limits.snapshotSteps},\"tailSteps\":${limits.tailSteps}}")))
+      }
       if(!stopping.get()){
         if(managedOwner.nonEmpty){store.recordManagedManifest(runtimeAttemptId,kernel.prepareManagedManifest(),now);guardianCheck()}
         if(!stopping.get() && !guardianLost.get()){
@@ -200,6 +209,13 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
       lastDispatchAt=now;dispatchCaughtUp=dispatch.caughtUp
       val ready=kernel.captures.filter(c=>c.readiness=="ADMISSION_READY" && c.runtimeHealth=="HEALTHY").map(_.captureId).toSet
       def launch(g:CdcTaskGrant):Unit={
+        val lease=runtimeLeases.flatMap { leases =>
+          workerLease.get().flatMap(worker=>leases.claimTask(worker,g.task.view.taskId,g.task.view.captureId))
+        }
+        if(runtimeLeases.nonEmpty && lease.isEmpty) {
+          store.defer(g,limits.tailDelayMillis,now)
+        } else {
+        lease.foreach(value=>taskLeases.synchronized(taskLeases.update(g.id,value)))
         active.incrementAndGet()
         Future {
           if(stopping.get() || guardianLost.get())throw new CdcKernelDeferred
@@ -208,7 +224,11 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
           val out=kernel.runWithContinuation(current.definition,current.view.taskId,current.view.desiredState=="CANCELED",continuation,sameOwner,()=>stopping.get(),g.pool)
           if(out.releaseConfirmed)store.finish(g,out.progress,out.initializationEvidence,"ADMISSION_READY",out.didWork,out.validationComplete,
             if(out.progress.phase=="STREAMING")limits.tailDelayMillis else math.max(limits.snapshotDelayMillis,out.nextDelayMillis),now)
-          else {store.finishUnknown(g,ExecutionFailure.ReleaseUnknown,now);if(managedOwner.nonEmpty){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN")}}
+          else {
+            unknownTaskLeases.synchronized(unknownTaskLeases+=g.id)
+            store.finishUnknown(g,ExecutionFailure.ReleaseUnknown,now)
+            if(managedOwner.nonEmpty){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN")}
+          }
         }(workerEc).onComplete {result=>
           result match {
             case Failure(_:CdcKernelDeferred)=>
@@ -218,8 +238,14 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
               try {if(failure.releaseConfirmed)store.finishFailureReleased(g,failure.code,now)else {store.finishUnknown(g,failure.code,now);if(managedOwner.nonEmpty){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN")}}}catch {case NonFatal(_)=>ownerState="UNKNOWN";reason=Some("STORAGE_UNAVAILABLE")}
             case _=>()
           }
+          taskLeases.synchronized(taskLeases.remove(g.id)).foreach { value =>
+            val unknown=unknownTaskLeases.synchronized(unknownTaskLeases.remove(g.id))
+            val state=if(unknown || result.failed.toOption.exists(!_.isInstanceOf[CdcKernelDeferred]))"UNKNOWN"else"RELEASED"
+            runtimeLeases.foreach(_.releaseTask(value,if(unknown)"release-unknown"else"released",state))
+          }
           active.decrementAndGet()
         }(ExecutionContext.parasitic)
+        }
       }
       if(!stopping.get() && managedOwner.nonEmpty)
         store.claimFenceRecovery(runtimeAttemptId,kernel.recoveryCaptureIds,now).foreach(launch)
