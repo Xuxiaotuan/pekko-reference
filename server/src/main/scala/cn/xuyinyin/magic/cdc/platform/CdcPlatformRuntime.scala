@@ -352,7 +352,10 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
             val persisted=if(ownerGranted)store.endOwner(runtimeAttemptId,clean && !startupFailedFlag.get(),now)
               else if(startupFailedFlag.get()){markStartupFailure();false} // beginOwner may have committed without its reply
               else clean
-            if(persisted){
+            val workerReleased=runtimeLeases.forall { leases =>
+              workerLease.get().forall(worker => leases.releaseWorker(worker,if(persisted)"STOPPED"else"UNKNOWN"))
+            }
+            if(persisted && workerReleased){
               stopped.set(true);ownerState="STOPPED";reason=None;stopRequested.trySuccess(true)
               clock.shutdown();workers.shutdown();gcWorker.foreach(_.shutdown());controls.shutdown()
             }else {ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN");stopRequested.trySuccess(false)}

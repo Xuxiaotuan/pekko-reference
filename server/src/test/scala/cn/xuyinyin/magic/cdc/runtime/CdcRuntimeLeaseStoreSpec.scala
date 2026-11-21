@@ -120,6 +120,33 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       leases.claimTasks(newWorker, 1) shouldBe empty
     }
 
+    "must fence an UNKNOWN worker from same-id re-registration until it is stopped" in {
+      val url = database()
+      val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))
+      leases.initialize()
+      val oldWorker = leases.registerWorker("worker-reused", "old-incarnation", "{\"snapshotSteps\":1}")
+      leases.releaseWorker(oldWorker, "UNKNOWN") shouldBe true
+
+      val error = intercept[IllegalArgumentException] {
+        leases.registerWorker("worker-reused", "new-incarnation", "{\"snapshotSteps\":1}")
+      }
+      error.getMessage should include("worker identity is fenced")
+
+      val connection = DriverManager.getConnection(url)
+      try {
+        val update = connection.prepareStatement("UPDATE pekko_cdc_worker_v1 SET state='STOPPED' WHERE worker_id=? AND incarnation=? AND worker_epoch=?")
+        try {
+          update.setString(1, oldWorker.workerId)
+          update.setString(2, oldWorker.incarnation)
+          update.setLong(3, oldWorker.leaseEpoch)
+          update.executeUpdate() shouldBe 1
+        } finally update.close()
+      } finally connection.close()
+      val replacement = leases.registerWorker("worker-reused", "new-incarnation", "{\"snapshotSteps\":1}")
+      replacement.leaseEpoch shouldBe oldWorker.leaseEpoch + 1L
+      replacement.incarnation shouldBe "new-incarnation"
+    }
+
     "must project task lifecycle changes into the capture subscription view" in {
       val url = database()
       val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits())

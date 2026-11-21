@@ -174,10 +174,16 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
     }
 
   def registerWorker(workerId: String, incarnation: String, capacityJson: String): WorkerLease = transaction { connection =>
-    val existing = connection.prepareStatement("SELECT worker_epoch FROM pekko_cdc_worker_v1 WHERE worker_id=? FOR UPDATE")
+    val existing = connection.prepareStatement("SELECT worker_epoch,state,incarnation FROM pekko_cdc_worker_v1 WHERE worker_id=? FOR UPDATE")
     val nextEpoch = try {
       existing.setString(1, workerId)
-      queryOne(existing).map(_("worker_epoch").toLong + 1L).getOrElse(1L)
+      queryOne(existing) match {
+        case None => 1L
+        case Some(row) =>
+          val state = row("state")
+          require(state == "STOPPED", s"worker identity is fenced: state=$state")
+          row("worker_epoch").toLong + 1L
+      }
     } finally existing.close()
     val statement = connection.prepareStatement(
       "INSERT INTO pekko_cdc_worker_v1(worker_id,incarnation,worker_epoch,state,capacity_json,active_graphs,heartbeat_at,lease_expires_at,last_heartbeat_at,updated_at) VALUES(?,?,?, ?,?,0,?,?,?,?) " +
@@ -198,6 +204,30 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
     val read = connection.prepareStatement("SELECT COUNT(*) AS n FROM pekko_cdc_task_lease_v1 WHERE worker_id=? AND state='ACTIVE'")
     try { read.setString(1, workerId); queryOne(read) } finally read.close()
     WorkerLease(workerId, incarnation, nextEpoch)
+  }
+
+  /**
+    * Records the result of a worker shutdown without changing task evidence.
+    * UNKNOWN is deliberately retained when the process or its tasks cannot be
+    * proven drained. A later registration is allowed only from STOPPED.
+    */
+  def releaseWorker(worker: WorkerLease, state: String): Boolean = {
+    require(Set("STOPPED", "UNKNOWN").contains(state), "invalid worker release state")
+    transaction { connection =>
+      val statement = connection.prepareStatement(
+        "UPDATE pekko_cdc_worker_v1 SET state=?,lease_expires_at=NULL,last_heartbeat_at=?,updated_at=?,control_revision=control_revision+1 " +
+          "WHERE worker_id=? AND incarnation=? AND worker_epoch=? AND state IN ('READY','ACTIVE','DRAINING')")
+      try {
+        val now = System.currentTimeMillis()
+        statement.setString(1, state)
+        statement.setLong(2, now)
+        statement.setLong(3, now)
+        statement.setString(4, worker.workerId)
+        statement.setString(5, worker.incarnation)
+        statement.setLong(6, worker.leaseEpoch)
+        statement.executeUpdate() == 1
+      } finally statement.close()
+    }
   }
 
   def heartbeat(worker: WorkerLease, activeGraphs: Int): Boolean = heartbeatWorker(worker, activeGraphs, defaultLeaseMillis)
