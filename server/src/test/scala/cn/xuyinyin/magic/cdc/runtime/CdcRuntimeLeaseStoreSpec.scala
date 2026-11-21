@@ -77,6 +77,25 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       taskStore.claimWithLease("owner", "SNAPSHOT", Set("capture"), 5L, None, worker, leases).nonEmpty shouldBe true
     }
 
+    "must not let an older unready task block a later ready task in the same capture" in {
+      val url = database()
+      val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits(snapshotSteps = 1, tailSteps = 1), true)
+      taskStore.initialize(); taskStore.beginOwner("owner", 1L) shouldBe true
+      val old = taskStore.submit(CdcTaskRequest("old", "capture", "old_orders", "g1", "old_target"), 2L).task
+      val ready = taskStore.submit(CdcTaskRequest("ready", "capture", "ready_orders", "g1", "ready_target"), 3L).task
+      val connection = DriverManager.getConnection(url)
+      try {
+        val update = connection.prepareStatement("UPDATE pekko_cdc_capture_subscription_v1 SET state='CAPTURE_READY',capture_readiness='CAPTURE_READY' WHERE task_id=?")
+        try { update.setString(1, ready.taskId); update.executeUpdate() }
+        finally update.close()
+      } finally connection.close()
+      val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))
+      val worker = leases.registerWorker("worker", "incarnation", "{\"snapshotSteps\":1}")
+      val claimed = taskStore.claimWithLease("owner", "SNAPSHOT", Set("capture"), 4L, None, worker, leases)
+      claimed.map(_._1.task.view.taskId) shouldBe Some(ready.taskId)
+      old.taskId should not be ready.taskId
+    }
+
     "must renew capture and worker leases only for the current fencing identity" in {
       val url = database()
       val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits())
