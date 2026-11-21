@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.{AtomicBoolean,AtomicInteger}
 import scala.concurrent.{ExecutionContext,Future,Promise}
 import scala.util.Failure
 import scala.util.control.NonFatal
-import cn.xuyinyin.magic.cdc.runtime.{CdcRuntimeLeaseStore,TaskLease,WorkerLease,WorkerRuntimeControl}
+import cn.xuyinyin.magic.cdc.runtime.{CdcRuntimeLeaseStore,CdcWorkerRuntime,TaskLease,WorkerLease,WorkerRuntimeControl}
 
 final case class CdcKernelOutcome(progress:BootstrapProgress,releaseConfirmed:Boolean,didWork:Boolean,
   validationComplete:Boolean,nextDelayMillis:Long,initializationEvidence:Option[String])
@@ -60,8 +60,9 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
   private val markingStartupFailure=new AtomicBoolean()
   private val startupFailedFlag=new AtomicBoolean()
   private val guardianLost=new AtomicBoolean()
-  private val workerLease=new java.util.concurrent.atomic.AtomicReference[Option[WorkerLease]](None)
-  private val taskLeases=scala.collection.mutable.Map.empty[String,TaskLease]
+  private val workerRuntime=runtimeLeases.map(leases => new CdcWorkerRuntime(leases,runtimeAttemptId,runtimeAttemptId,
+    s"{\"snapshotSteps\":${limits.snapshotSteps},\"tailSteps\":${limits.tailSteps}}")(
+      ExecutionContext.parasitic))
   private val unknownTaskLeases=scala.collection.mutable.Set.empty[String]
   private val savepointInProgress=new AtomicBoolean()
   @volatile private var startupFailurePending=false
@@ -88,10 +89,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
       logger.info("CDC owner admission granted attempt={} persisted={}",runtimeAttemptId,store.ownerAttempt.map(_._1).getOrElse("none"))
       recoveryPending=false
       ownerGranted=true
-      runtimeLeases.foreach { leases =>
-        workerLease.set(Some(leases.registerWorker(runtimeAttemptId,runtimeAttemptId,
-          s"{\"snapshotSteps\":${limits.snapshotSteps},\"tailSteps\":${limits.tailSteps}}")))
-      }
+      workerRuntime.foreach(_.registerCurrent())
       if(!stopping.get()){
         if(managedOwner.nonEmpty){store.recordManagedManifest(runtimeAttemptId,kernel.prepareManagedManifest(),now);guardianCheck()}
         if(!stopping.get() && !guardianLost.get()){
@@ -134,10 +132,9 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
     }
   }},100L,1000L,TimeUnit.MILLISECONDS))
   workerHeartbeatClock.foreach(_.scheduleWithFixedDelay(new Runnable {def run():Unit={
-    if(!stopping.get())runtimeLeases.foreach { leases=>
-      val workerOk=workerLease.get().forall(worker=>leases.heartbeatWorker(worker,active.get()))
-      val tasksOk=taskLeases.synchronized(taskLeases.values.forall(lease=>leases.renewTask(lease,5000L)))
-      if(!workerOk || !tasksOk){
+    if(!stopping.get())workerRuntime.foreach { runtime=>
+      val leasesOk=runtime.renewTracked(active.get())
+      if(!leasesOk){
         ownerState="UNKNOWN";reason=Some("RUNTIME_LEASE_LOST");startupFailurePending=true;stopRuntime()
       }
     }
@@ -152,32 +149,19 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
 
   /** WorkerRuntime control surface. The scheduler below remains the single grant owner. */
   override def register(workerId:String,incarnation:String,capacityJson:String):Future[WorkerLease]=io {
-    val leases=runtimeLeases.getOrElse(throw new CdcPlatformException("WORKER_LEASE_UNAVAILABLE"))
-    val current=workerLease.get()
-    current match {
-      case Some(existing) if existing.workerId==workerId && existing.incarnation==incarnation => existing
-      case Some(_) => throw new CdcPlatformException("WORKER_IDENTITY_CONFLICT")
-      case None =>
-        val registered=leases.registerWorker(workerId,incarnation,capacityJson)
-        workerLease.set(Some(registered))
-        registered
-    }
+    workerRuntime.map(_.registerNow(workerId,incarnation,capacityJson)).getOrElse(throw new CdcPlatformException("WORKER_LEASE_UNAVAILABLE"))
   }
 
   override def claim(worker:WorkerLease,limit:Int):Future[Vector[TaskLease]]=io {
-    val leases=runtimeLeases.getOrElse(throw new CdcPlatformException("WORKER_LEASE_UNAVAILABLE"))
-    require(workerLease.get().contains(worker),"worker lease is not registered")
-    leases.claimTasks(worker,limit)
+    workerRuntime.map(_.claimNow(worker,limit)).getOrElse(throw new CdcPlatformException("WORKER_LEASE_UNAVAILABLE"))
   }
 
   override def renew(lease:TaskLease):Future[TaskLease]=io {
-    val leases=runtimeLeases.getOrElse(throw new CdcPlatformException("WORKER_LEASE_UNAVAILABLE"))
-    require(leases.renewTask(lease),"task lease is stale")
-    lease
+    workerRuntime.map(_.renewNow(lease)).getOrElse(throw new CdcPlatformException("WORKER_LEASE_UNAVAILABLE"))
   }
 
   override def release(lease:TaskLease,proof:String):Future[Boolean]=io {
-    runtimeLeases.exists(_.releaseTask(lease,proof))
+    workerRuntime.map(_.releaseNow(lease,proof)).getOrElse(false)
   }
 
   private def io[A](f: =>A):Future[A]={
@@ -250,14 +234,14 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
       lastDispatchAt=now;dispatchCaughtUp=dispatch.caughtUp
       val ready=kernel.captures.filter(c=>c.readiness=="ADMISSION_READY" && c.runtimeHealth=="HEALTHY").map(_.captureId).toSet
       def launch(g:CdcTaskGrant,preclaimed:Option[TaskLease]=None):Unit={
-        val lease=preclaimed.orElse(runtimeLeases.flatMap { leases =>
-          workerLease.get().flatMap(worker=>leases.claimTask(worker,g.task.view.taskId,g.task.view.captureId))
+        val lease=preclaimed.orElse(workerRuntime.flatMap { runtime =>
+          runtime.currentWorker.flatMap(worker=>runtime.claimTask(worker,g.task.view.taskId,g.task.view.captureId))
         })
         if(runtimeLeases.nonEmpty && lease.isEmpty) {
           logger.warn("CDC task lease unavailable task={} worker={}",g.task.view.taskId,runtimeAttemptId)
           store.defer(g,limits.tailDelayMillis,now)
         } else {
-        lease.foreach(value=>taskLeases.synchronized(taskLeases.update(g.id,value)))
+        lease.foreach(value=>workerRuntime.foreach(_.track(value)))
         active.incrementAndGet()
         Future {
           if(stopping.get() || guardianLost.get())throw new CdcKernelDeferred
@@ -281,10 +265,10 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
               try {if(failure.releaseConfirmed)store.finishFailureReleased(g,failure.code,now)else {store.finishUnknown(g,failure.code,now);if(managedOwner.nonEmpty){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN")}}}catch {case NonFatal(_)=>ownerState="UNKNOWN";reason=Some("STORAGE_UNAVAILABLE")}
             case _=>()
           }
-          taskLeases.synchronized(taskLeases.remove(g.id)).foreach { value =>
+          workerRuntime.flatMap(_.untrack(g.id)).foreach { value =>
             val unknown=unknownTaskLeases.synchronized(unknownTaskLeases.remove(g.id))
             val state=if(unknown || result.failed.toOption.exists(!_.isInstanceOf[CdcKernelDeferred]))"UNKNOWN"else"RELEASED"
-            runtimeLeases.foreach(_.releaseTask(value,if(unknown)"release-unknown"else"released",state))
+            workerRuntime.foreach(_.releaseTask(value,if(unknown)"release-unknown"else"released",state))
           }
           active.decrementAndGet()
         }(ExecutionContext.parasitic)
@@ -292,7 +276,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
       }
       if(!stopping.get() && managedOwner.nonEmpty)
         runtimeLeases match {
-          case Some(leases)=>workerLease.get().flatMap { worker =>
+          case Some(leases)=>workerRuntime.flatMap(_.currentWorker).flatMap { worker =>
             store.claimFenceRecoveryWithLease(runtimeAttemptId,kernel.recoveryCaptureIds,now,worker,leases)
           }.foreach { case (grant,lease)=>launch(grant,Some(lease)) }
           case None=>store.claimFenceRecovery(runtimeAttemptId,kernel.recoveryCaptureIds,now).foreach(g=>launch(g))
@@ -302,7 +286,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
         var left=maximum;var more=true
         while(left>0 && more && !stopping.get()){
           val claimed:Option[(CdcTaskGrant,Option[TaskLease])]=runtimeLeases match {
-            case Some(leases)=>workerLease.get().flatMap { worker =>
+            case Some(leases)=>workerRuntime.flatMap(_.currentWorker).flatMap { worker =>
               store.claimWithLease(runtimeAttemptId,pool,ready,now,kernel.admissibleTasks(pool),worker,leases)
                 .map { case (grant,lease) => grant->Some(lease) }
             }
@@ -352,9 +336,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
             val persisted=if(ownerGranted)store.endOwner(runtimeAttemptId,clean && !startupFailedFlag.get(),now)
               else if(startupFailedFlag.get()){markStartupFailure();false} // beginOwner may have committed without its reply
               else clean
-            val workerReleased=runtimeLeases.forall { leases =>
-              workerLease.get().forall(worker => leases.releaseWorker(worker,if(persisted)"STOPPED"else"UNKNOWN"))
-            }
+            val workerReleased=workerRuntime.forall(_.releaseCurrent(if(persisted)"STOPPED"else"UNKNOWN"))
             if(persisted && workerReleased){
               stopped.set(true);ownerState="STOPPED";reason=None;stopRequested.trySuccess(true)
               clock.shutdown();workers.shutdown();gcWorker.foreach(_.shutdown());controls.shutdown()

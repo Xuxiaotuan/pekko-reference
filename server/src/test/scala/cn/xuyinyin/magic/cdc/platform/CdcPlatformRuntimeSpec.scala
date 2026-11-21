@@ -33,6 +33,25 @@ class CdcPlatformRuntimeSpec extends STSpec {
       } finally Await.result(runtime.stopRuntime(),10.seconds)
     }
 
+    "persist STOPPED for a clean worker shutdown" in {
+      val url="jdbc:h2:mem:cdc_worker_clean_stop_"+UUID.randomUUID().toString.replace('-','_')+";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
+      val limits=CdcPlatformLimits(snapshotSteps=1,tailSteps=1)
+      val kernel=new CdcPlatformKernel {
+        def start():Unit=()
+        def captures:Vector[CdcCaptureView]=Vector.empty
+        def run(task:CdcTaskRequest,id:String,cancel:Boolean,continuation:Option[BootstrapProgress],stop:()=>Boolean,workPool:String):CdcKernelOutcome=throw new AssertionError("no tasks")
+        def closeAndVerify():Boolean=true
+      }
+      val store=new CdcTaskStore(()=>DriverManager.getConnection(url),limits)
+      val leases=new CdcRuntimeLeaseStore(()=>DriverManager.getConnection(url))
+      val runtime=new CdcPlatformRuntime(store,kernel,limits,polling=false,runtimeLeases=Some(leases))
+      Await.result(runtime.listAfter(None,1),10.seconds)
+      val worker=Await.result(runtime.register(runtime.runtimeAttemptId,runtime.runtimeAttemptId,"{}"),10.seconds)
+      Await.result(runtime.stopRuntime(),10.seconds) shouldBe true
+      val replacement=leases.registerWorker(runtime.runtimeAttemptId,"replacement-incarnation","{}")
+      replacement.leaseEpoch shouldBe worker.leaseEpoch + 1L
+    }
+
     "retry recovery after a transient proof lookup failure without activating early" in {
       val url="jdbc:h2:mem:cdc_recovery_retry_"+UUID.randomUUID().toString.replace('-','_')+";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
       val limits=CdcPlatformLimits(snapshotSteps=1,tailSteps=1);val attempts=new AtomicInteger();val starts=new AtomicInteger()
