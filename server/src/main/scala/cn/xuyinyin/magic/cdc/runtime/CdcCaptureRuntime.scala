@@ -26,6 +26,7 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
   })
   private final case class Entry(config: CdcCaptureSettings, lease: CaptureLease, store: MySQLCaptureStore, reader: SharedMySQLCapture)
   private val entries = mutable.Map.empty[String,Entry]
+  private val reconcileBusy = mutable.Set.empty[String]
   private val incarnation = UUID.randomUUID().toString
 
   private def openState(config: CdcCaptureSettings) =
@@ -107,12 +108,27 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
     } finally connection.close()
   }
 
+  /** Subscription reconciliation may perform JDBC and source calls. It must not
+    * occupy the lease heartbeat thread, otherwise a slow table admission can
+    * make a healthy Reader appear expired. One reconciliation remains in flight
+    * per capture and SharedMySQLCapture serializes the actual command path.
+    */
+  private def scheduleReconcile(entry: Entry): Unit = {
+    val scheduled = reconcileBusy.synchronized {
+      if (reconcileBusy(entry.config.id)) false else { reconcileBusy += entry.config.id; true }
+    }
+    if (scheduled) Future {
+      try reconcileSubscriptions(entry)
+      finally reconcileBusy.synchronized(reconcileBusy -= entry.config.id)
+    }
+  }
+
   private def renewLeases():Unit=synchronized {
     entries.values.foreach { entry =>
       if(!leases.renewCapture(entry.lease,leaseTtlMillis)) {
         entry.reader.requestClose()
         leases.releaseCapture(entry.lease,"UNKNOWN")
-      } else reconcileSubscriptions(entry)
+      } else scheduleReconcile(entry)
     }
   }
 

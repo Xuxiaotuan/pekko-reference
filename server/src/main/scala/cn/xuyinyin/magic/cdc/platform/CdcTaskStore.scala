@@ -1284,13 +1284,13 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
             require(ids.size<=32,"too many pinned validation tasks")
             ids.toVector.sorted.flatMap {id=>
               query(c,"SELECT * FROM pekko_cdc_tasks_v1 WHERE task_id=? AND work_pool=? AND schedulable=TRUE AND due_at<=? FOR UPDATE",id,pool,now).map(record)
-            }.filter(t=>ready(t.view.captureId))
+            }.filter(t=>ready(t.view.captureId) && captureSubscriptionReady(c,t))
           case None=>
             // Equality predicates match the scheduling index prefix. At most one head row
             // per configured capture is locked; terminal and unready domains are never scanned.
             captureIds.flatMap {capture=>
               query(c,"SELECT * FROM pekko_cdc_tasks_v1 WHERE capture_id=? AND work_pool=? AND schedulable=TRUE AND due_at<=? ORDER BY due_at,task_id LIMIT 1 FOR UPDATE",capture,pool,now).map(record)
-            }
+            }.filter(t=>captureSubscriptionReady(c,t))
         }
         candidates.sortBy(t=>(t.dueAt,t.view.taskId)).headOption.map {task=>
           val id=UUID.randomUUID().toString
@@ -1322,11 +1322,11 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
             require(ids.size<=32,"too many pinned validation tasks")
             ids.toVector.sorted.flatMap {id=>
               query(c,"SELECT * FROM pekko_cdc_tasks_v1 WHERE task_id=? AND work_pool=? AND schedulable=TRUE AND due_at<=? FOR UPDATE",id,pool,now).map(record)
-            }.filter(t=>ready(t.view.captureId))
+            }.filter(t=>ready(t.view.captureId) && captureSubscriptionReady(c,t))
           case None=>
             captureIds.flatMap {capture=>
               query(c,"SELECT * FROM pekko_cdc_tasks_v1 WHERE capture_id=? AND work_pool=? AND schedulable=TRUE AND due_at<=? ORDER BY due_at,task_id LIMIT 1 FOR UPDATE",capture,pool,now).map(record)
-            }
+            }.filter(t=>captureSubscriptionReady(c,t))
         }
         candidates.sortBy(t=>(t.dueAt,t.view.taskId)).headOption.flatMap {task=>
           leases.claimTaskOn(c,worker,task.view.taskId,task.view.captureId).map {taskLease=>
@@ -1338,6 +1338,17 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
         }
       }
     }
+  }
+
+  /** Worker-only mode must wait for the shared Reader's durable CAPTURE_READY
+    * subscription. Older H2 fixtures do not install the Reader tables, so they
+    * retain the previous scheduling behavior.
+    */
+  private def captureSubscriptionReady(c:Connection,task:CdcTaskRecord):Boolean={
+    val table=try query(c,"SELECT 1 AS n FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='pekko_capture_subscriptions' LIMIT 1")
+    catch {case _:SQLException=>Vector.empty}
+    if(table.isEmpty) true
+    else query(c,"SELECT 1 AS n FROM pekko_capture_subscriptions WHERE capture_id=? AND subscription_id=? AND status='CAPTURE_READY' LIMIT 1",task.view.captureId,task.view.taskId).nonEmpty
   }
   private def requireGrant(c:Connection,grant:CdcTaskGrant):CdcTaskRecord={
     val r=row(c,grant.task.view.taskId,true).getOrElse(throw new CdcPlatformException("NOT_FOUND"))
