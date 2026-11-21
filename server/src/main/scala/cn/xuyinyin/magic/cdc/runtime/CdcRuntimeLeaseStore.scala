@@ -328,7 +328,7 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
             val releaseGrant = connection.prepareStatement("UPDATE pekko_cdc_grants_v1 SET status='RELEASED',finished_at=? WHERE grant_id=? AND status='UNKNOWN'")
             try { releaseGrant.setLong(1, now); releaseGrant.setString(2, grant("grant_id")); releaseGrant.executeUpdate() } finally releaseGrant.close()
             val resetTask = connection.prepareStatement(
-              "UPDATE pekko_cdc_tasks_v1 SET phase='QUEUED',runtime_health='WAITING',release_status='RELEASED',failure_code='UNKNOWN_REPLAY_REQUEUED',grant_id=NULL,grant_owner=NULL,schedulable=TRUE,due_at=?,observed_at=? WHERE task_id=? AND phase='PAUSED' AND release_status='UNKNOWN'")
+              "UPDATE pekko_cdc_tasks_v1 SET phase='QUEUED',runtime_health='WAITING',release_status='RELEASED',failure_code='UNKNOWN_REPLAY_REQUEUED',grant_id=NULL,grant_owner=NULL,schedulable=TRUE,due_at=?,observed_at=? WHERE task_id=? AND phase='PAUSED' AND release_status IN ('UNKNOWN','RELEASED') AND (failure_code='local_release_unconfirmed' OR failure_code IS NULL)")
             try { resetTask.setLong(1, now); resetTask.setLong(2, now); resetTask.setString(3, grant("task_id")); resetTask.executeUpdate() } finally resetTask.close()
             val releaseLease = connection.prepareStatement(
               "UPDATE pekko_cdc_task_lease_v1 SET state='RELEASED',release_state='RELEASED',release_proof=?,lease_expires_at=NULL,updated_at=?,control_revision=control_revision+1 WHERE task_id=? AND state IN ('UNKNOWN','ACTIVE','DRAINING') AND (lease_expires_at IS NULL OR lease_expires_at<=?)")
@@ -344,6 +344,17 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
         } else false
       case _ => false
     }
+  }
+
+  /** Re-applies a durable UNKNOWN replay decision after a later owner has already started. */
+  def requeueAuditedUnknownTasks(now: Long): Int = transaction { connection =>
+    val update = connection.prepareStatement(
+      "UPDATE pekko_cdc_tasks_v1 SET phase='QUEUED',runtime_health='WAITING',release_status='RELEASED',failure_code='UNKNOWN_REPLAY_REQUEUED'," +
+        "grant_id=NULL,grant_owner=NULL,schedulable=TRUE,due_at=?,observed_at=? " +
+        "WHERE task_id IN (SELECT task_id FROM pekko_cdc_unknown_recovery_v1 WHERE decision='REPLAY_WITHOUT_TARGET_BATCH') " +
+        "AND phase='PAUSED' AND release_status='RELEASED' AND (failure_code='local_release_unconfirmed' OR failure_code IS NULL)")
+    try { update.setLong(1, now); update.setLong(2, now); update.executeUpdate() }
+    finally update.close()
   }
 
   def heartbeat(worker: WorkerLease, activeGraphs: Int): Boolean = heartbeatWorker(worker, activeGraphs, defaultLeaseMillis)

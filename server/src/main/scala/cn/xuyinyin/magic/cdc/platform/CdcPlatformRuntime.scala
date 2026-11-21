@@ -87,6 +87,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
     if(!recoveryProven){recoveryPending= !exhausted;nextRecoveryNanos=System.nanoTime()+1000000000L;ownerState="UNKNOWN";reason=Some(if(exhausted)"AUTOMATIC_RECOVERY_EXHAUSTED"else"OWNER_RELEASE_UNPROVEN")}
     else if(!stopping.get() && {
       runtimeLeases.foreach(_.recoverExpiredOwner(now))
+      runtimeLeases.foreach(_.requeueAuditedUnknownTasks(now))
       store.beginOwner(runtimeAttemptId,now,managedOwner)
     }){
       logger.info("CDC owner admission granted attempt={} persisted={}",runtimeAttemptId,store.ownerAttempt.map(_._1).getOrElse("none"))
