@@ -139,6 +139,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
     if(!stopping.get())workerRuntime.foreach { runtime=>
       val leasesOk=runtime.renewTracked(active.get())
       if(!leasesOk){
+        logger.warn("CDC worker lease heartbeat lost attempt={} activeSteps={} worker={}",runtimeAttemptId,active.get(),runtime.currentWorker.map(_.workerId).getOrElse("none"))
         ownerState="UNKNOWN";reason=Some("RUNTIME_LEASE_LOST");startupFailurePending=true;stopRuntime()
       }
     }
@@ -318,7 +319,10 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
         case e:CdcPlatformException=>e.code=="CDC_PLATFORM_BUSY"
         case _=>false
       }
-      if(r.isFailure && !preAdmissionBusy && !stopping.get()){ownerState="UNKNOWN";reason=Some("STORAGE_UNAVAILABLE")}
+      if(r.isFailure && !preAdmissionBusy && !stopping.get()){
+        logger.warn("CDC poll failed attempt={} ownerState={} reason={}",runtimeAttemptId,ownerState,r.failed.toOption.map(_.getClass.getName).getOrElse("unknown"))
+        ownerState="UNKNOWN";reason=Some("STORAGE_UNAVAILABLE")
+      }
       r
     }(ExecutionContext.parasitic)
     }
@@ -328,6 +332,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
     */
   def stopRuntime():Future[Boolean]={
     if(stopping.compareAndSet(false,true)){
+      logger.warn("CDC runtime stop requested attempt={} ownerState={} reason={} activeSteps={} guardianLost={}",runtimeAttemptId,ownerState,reason.getOrElse("none"),active.get(),guardianLost.get())
       guardianClock.foreach(_.shutdown());schedule.foreach(_.cancel(false))
       workerHeartbeatClock.foreach(_.shutdown())
       if(guardianLost.get()){ownerState="UNKNOWN";reason=Some("GUARDIAN_UNAVAILABLE")}else ownerState="STOPPING"
