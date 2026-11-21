@@ -94,3 +94,22 @@ Capture Pod 已实际连接到 `192.168.31.251:32372`，Reader 日志显示从 `
 - 新 Worker 的 Graph 创建曾报 `com.typesafe.config.ConfigException$Missing`，补齐 `DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD` 后重新进入执行。当前新任务仍需要完成真实 Sink 逐字段对账，不能使用此前 combined Runtime 的成功结果代替。
 
 本轮两组件部署因此标记为 `evidence_incomplete`。Capture 独立入口和 Worker owner/lease 已验证，Worker 从 L 到目标的完整初始化、HPA 扩缩容和跨 Worker 交接仍待完成。旧 combined Runtime 的历史通过材料继续保留，未与本轮失败证据合并。
+
+## 2026-11-21 两组件新镜像和流水线复核
+
+本轮源码提交为 `bd4e3e1`。KubeSphere 流水线使用当前分支构建并推送了镜像
+`100.97.53.78:5001/xxt/pekko-cdc-runtime:build-10-bd4e3e1ec804`，同时更新了
+`pekko-cdc-capture` 和 `pekko-cdc-worker`。旧 `pekko-cdc-runtime` Deployment 保持 0 副本。
+
+流水线结果仍为失败。失败窗口发生在 Capture 重启时，控制库保留了历史 `ACTIVE` 或 `ACQUIRING` owner。前两次镜像的 `IS_USED_LOCK` 读取错误使用了 JDBC `wasNull()`，未能自动回收旧 owner。随后发布的 `build-10-bd4e3e1ec804` 改为显式读取第一列对象并判断 `NULL`，Capture 日志已经出现 `CDC capture owner recovered after source lock release`，说明 source lock 证明和旧 owner 回收路径实际执行成功。流水线最终仍因 Worker 的历史 UNKNOWN grants 阻挡平台 owner 而失败。
+
+当前 Capture 的实际证据如下：
+
+- `pekko-cdc-capture` 使用 `build-10-bd4e3e1ec804`，Pod 为 `Running/Ready`。
+- `pekko-cdc-worker` 使用同一镜像，Pod 为 `Running/Ready`。
+- Capture owner 为 `ACTIVE`，Reader 从 `binlog.000017/410958877` 继续读取。
+- Debezium 日志显示已连接 `192.168.31.251:32372`，server id 为 `18501`，随后持续产生 binlog records。
+
+Worker 的平台 owner 仍被历史 `UNKNOWN` grants 阻挡，控制库保留 4 条 `UNKNOWN` grant。系统因此没有强行接管，也没有把旧任务的暂停状态解释为端到端成功。当前只能证明 Capture 独立入口、source lock recovery 前置条件和新镜像启动，不能证明本轮 Worker 从 L 到 Sink 的全量逐字段一致性。
+
+`IS_USED_LOCK` 的修复提交为 `bd4e3e1`，已经通过 21 项运行时测试，并在本轮 Capture Pod 日志中得到实际恢复证据。Worker 平台 owner 的历史 UNKNOWN grants 尚未完成安全清理，因此新的真实 Sink 对账仍未执行，保留为未验证边界。
