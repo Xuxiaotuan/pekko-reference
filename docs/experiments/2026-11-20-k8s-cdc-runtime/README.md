@@ -132,7 +132,7 @@ Pipeline 的多个 Run 均完成了镜像构建、推送和两 Deployment 更新
 
 本轮使用提交 `bbb56b2` 构建了 amd64 镜像并部署到 `pekko-cdc-capture` 和 `pekko-cdc-worker`。镜像 digest、Pod、Reader、Worker、任务和 Task lease 的原始结果见 [结构化证据](2026-11-21-bbb56b2-runtime-e2e.json)。
 
-第一次本地构建继承了 macOS arm64 架构，节点启动时报 `exec format error`。该镜像没有继续用于验收。随后使用新 tag 重新构建 `linux/amd64` 镜像，两个 Pod 均进入 `Running/Ready`。Capture 已连接真实 MySQL `192.168.31.251:32372`，从 `binlog.000017/411693051` 继续读取。
+第一次本地构建继承了 macOS arm64 架构，节点启动时报 `exec format error`。该镜像没有继续用于验收。随后使用新 tag 重新构建 `linux/amd64` 镜像，两个 Pod 均进入 `Running/Ready`。Capture 已连接真实 MySQL `192.168.31.251:32372`，从 `binlog.000017/411693051` 继续读取并产生 475 个记录。随后在重复订阅警告后观察到 Reader 关闭序列，Pod readiness 不能作为 Reader 健康证明。
 
 使用真实 Worker 提交任务 `accept-bbb56b2` 后，任务进入 `PAUSED/UNKNOWN`，失败信息为 `java.util.NoSuchElementException: empty.head`。Task lease 最终为 `RELEASED`，`last_l_seq=0`、`last_journal_revision=1`、`last_target_batch=NULL`。日志还记录了新订阅与已有订阅重复的 `table already subscribed` 警告。
 
