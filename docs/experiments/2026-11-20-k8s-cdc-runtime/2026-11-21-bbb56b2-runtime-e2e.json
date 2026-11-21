@@ -1,0 +1,40 @@
+{
+  "commit": "bbb56b2",
+  "image": "100.97.53.78:5001/xxt/pekko-cdc-runtime:build-bbb56b2-amd64-v2",
+  "imageDigest": "sha256:f7b1a7e26e93467472bc7e545914c18b6fdf1297710bd10700a2832c1e9d1d78",
+  "deployment": {
+    "capture": "Running/Ready",
+    "worker": "Running/Ready",
+    "oldCombinedRuntimeReplicas": 0
+  },
+  "captureEvidence": {
+    "reader": "Connected to 192.168.31.251:32372",
+    "binlog": "binlog.000017/411693051",
+    "recordsObserved": 475,
+    "subscriptionWarning": "table already subscribed"
+  },
+  "workerEvidence": {
+    "ownerState": "ACTIVE",
+    "taskId": "5693749c61a02f57353153e40403213944866432b3421fc3eb8cedc116659b5d",
+    "requestId": "accept-bbb56b2",
+    "generation": "bbb56b2",
+    "phase": "PAUSED",
+    "releaseStatus": "RELEASED",
+    "failureCode": "unclassified_failure",
+    "journalRevision": 1,
+    "taskLeaseState": "RELEASED",
+    "taskLeaseLastLSeq": 0,
+    "taskLeaseLastJournalRevision": 1,
+    "taskLeaseLastTargetBatch": null,
+    "failureMessage": "java.util.NoSuchElementException: empty.head"
+  },
+  "targetReconciliation": {
+    "status": "not_run",
+    "reason": "Worker initialization failed before a target batch was committed"
+  },
+  "boundaries": [
+    "The first local image used arm64 and produced exec format error on the amd64 node. A fresh amd64 tag was built and deployed.",
+    "Pod Ready and Reader binlog connectivity do not prove Worker initialization or Sink consistency.",
+    "The existing empty.head failure remains preserved and was not converted into success."
+  ]
+}

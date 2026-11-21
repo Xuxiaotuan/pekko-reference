@@ -127,3 +127,13 @@ Worker 的平台 owner 仍被历史 `UNKNOWN` grants 阻挡，控制库保留 4 
 在提交 `75d7ff0` 的镜像上又提交了 generation `g8`，task 为 `57e9de99fda67e5b32991a51e5170ba6136b0b505451ed1e5e4c0e52648cc0a2`。Worker 已成功 admission，但任务第一次执行仍进入 `PAUSED/UNKNOWN/unclassified_failure`，Journal 只留下序号 1 的暂停事件，目标表逐字段对账没有产生。该结果说明“首次 Journal proof 延迟”修复尚未被完整端到端路径证实，g7 和 g8 的失败材料都保留。
 
 Pipeline 的多个 Run 均完成了镜像构建、推送和两 Deployment 更新，但最终状态仍为 `Failed`。当前线上两组件使用同一 Harbor 镜像且 Pod 为 `Ready`，这项证据只支持部署和进程健康，不支持 Worker 初始化、Sink 提交或最终一致性。
+
+## 2026-11-21 bbb56b2 两组件真实运行复核
+
+本轮使用提交 `bbb56b2` 构建了 amd64 镜像并部署到 `pekko-cdc-capture` 和 `pekko-cdc-worker`。镜像 digest、Pod、Reader、Worker、任务和 Task lease 的原始结果见 [结构化证据](2026-11-21-bbb56b2-runtime-e2e.json)。
+
+第一次本地构建继承了 macOS arm64 架构，节点启动时报 `exec format error`。该镜像没有继续用于验收。随后使用新 tag 重新构建 `linux/amd64` 镜像，两个 Pod 均进入 `Running/Ready`。Capture 已连接真实 MySQL `192.168.31.251:32372`，从 `binlog.000017/411693051` 继续读取。
+
+使用真实 Worker 提交任务 `accept-bbb56b2` 后，任务进入 `PAUSED/UNKNOWN`，失败信息为 `java.util.NoSuchElementException: empty.head`。Task lease 最终为 `RELEASED`，`last_l_seq=0`、`last_journal_revision=1`、`last_target_batch=NULL`。日志还记录了新订阅与已有订阅重复的 `table already subscribed` 警告。
+
+本轮没有执行目标表逐字段对账，因为 Worker 在初始化完成前已经失败。该材料只能证明 amd64 部署、Reader 连接和 Worker owner admission，不能证明新版本的全量初始化、Sink 提交或端到端一致性。
