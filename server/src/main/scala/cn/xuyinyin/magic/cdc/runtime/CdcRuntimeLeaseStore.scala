@@ -259,6 +259,47 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
     }
   }
 
+  /**
+    * Converges an abandoned legacy platform owner only when its worker lease
+    * has expired and no durable work can still be executing. Lease expiry is
+    * one input to the proof, never the proof by itself.
+    */
+  def recoverExpiredOwner(now: Long, workerLeaseGraceMillis: Long = defaultLeaseMillis): Boolean = transaction { connection =>
+    require(workerLeaseGraceMillis > 0L, "invalid worker lease grace")
+    val owner = connection.prepareStatement(
+      "SELECT owner_attempt,status FROM pekko_cdc_owner_v1 WHERE platform_id='default' FOR UPDATE")
+    val ownerRow = try queryOne(owner) finally owner.close()
+    ownerRow match {
+      case Some(row) if Set("ACTIVE", "UNKNOWN")(row("status")) && row.get("owner_attempt").exists(_.nonEmpty) =>
+        val attempt = row("owner_attempt")
+        val worker = connection.prepareStatement(
+          "SELECT state,lease_expires_at FROM pekko_cdc_worker_v1 WHERE worker_id=? FOR UPDATE")
+        val workerRow = try { worker.setString(1, attempt); queryOne(worker) } finally worker.close()
+        val leaseExpired = workerRow.exists(r =>
+          Set("READY", "ACTIVE", "DRAINING", "UNKNOWN")(r("state")) &&
+            Option(r("lease_expires_at")).exists(_.toLong <= now - workerLeaseGraceMillis))
+        val taskCheck = connection.prepareStatement(
+          "SELECT 1 AS n FROM pekko_cdc_task_lease_v1 WHERE state IN ('ACTIVE','DRAINING') AND (lease_expires_at IS NULL OR lease_expires_at>?) LIMIT 1")
+        val hasActiveTask = try { taskCheck.setLong(1, now); queryOne(taskCheck).nonEmpty } finally taskCheck.close()
+        val grantCheck = connection.prepareStatement(
+          "SELECT 1 AS n FROM pekko_cdc_grants_v1 WHERE status IN ('ACTIVE','UNKNOWN') LIMIT 1")
+        val hasUncertainGrant = try queryOne(grantCheck).nonEmpty finally grantCheck.close()
+        val pendingCheck = connection.prepareStatement(
+          "SELECT 1 AS n FROM pekko_cdc_b_recovery_v1 WHERE consumed=FALSE LIMIT 1")
+        val hasPendingRecovery = try queryOne(pendingCheck).nonEmpty finally pendingCheck.close()
+        if (leaseExpired && !hasActiveTask && !hasUncertainGrant && !hasPendingRecovery) {
+          val stopWorker = connection.prepareStatement(
+            "UPDATE pekko_cdc_worker_v1 SET state='STOPPED',lease_expires_at=NULL,updated_at=?,control_revision=control_revision+1 WHERE worker_id=? AND state<>'STOPPED'")
+          try { stopWorker.setLong(1, now); stopWorker.setString(2, attempt); stopWorker.executeUpdate() } finally stopWorker.close()
+          val stopOwner = connection.prepareStatement(
+            "UPDATE pekko_cdc_owner_v1 SET status='STOPPED',updated_at=? WHERE platform_id='default' AND owner_attempt=? AND status=?")
+          try { stopOwner.setLong(1, now); stopOwner.setString(2, attempt); stopOwner.setString(3, row("status")); stopOwner.executeUpdate() == 1 }
+          finally stopOwner.close()
+        } else false
+      case _ => false
+    }
+  }
+
   def heartbeat(worker: WorkerLease, activeGraphs: Int): Boolean = heartbeatWorker(worker, activeGraphs, defaultLeaseMillis)
 
   def heartbeatWorker(worker: WorkerLease, activeGraphs: Int, ttlMillis: Long = defaultLeaseMillis): Boolean = transaction { connection =>

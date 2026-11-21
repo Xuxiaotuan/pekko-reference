@@ -178,6 +178,23 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       replacement.incarnation shouldBe "new-incarnation"
     }
 
+    "must converge an expired legacy owner only when no executable work remains" in {
+      val url = database()
+      val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits())
+      taskStore.initialize()
+      taskStore.beginOwner("legacy-worker", 1L) shouldBe true
+      val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))
+      leases.registerWorker("legacy-worker", "legacy-incarnation", "{}")
+      val connection = DriverManager.getConnection(url)
+      try {
+        val update = connection.prepareStatement("UPDATE pekko_cdc_worker_v1 SET lease_expires_at=0 WHERE worker_id=?")
+        try { update.setString(1, "legacy-worker"); update.executeUpdate() }
+        finally update.close()
+      } finally connection.close()
+      leases.recoverExpiredOwner(System.currentTimeMillis()) shouldBe true
+      taskStore.ownerStatus shouldBe "STOPPED"
+    }
+
     "must project task lifecycle changes into the capture subscription view" in {
       val url = database()
       val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits())
