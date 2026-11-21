@@ -113,3 +113,13 @@ Capture Pod 已实际连接到 `192.168.31.251:32372`，Reader 日志显示从 `
 Worker 的平台 owner 仍被历史 `UNKNOWN` grants 阻挡，控制库保留 4 条 `UNKNOWN` grant。系统因此没有强行接管，也没有把旧任务的暂停状态解释为端到端成功。当前只能证明 Capture 独立入口、source lock recovery 前置条件和新镜像启动，不能证明本轮 Worker 从 L 到 Sink 的全量逐字段一致性。
 
 `IS_USED_LOCK` 的修复提交为 `bd4e3e1`，已经通过 21 项运行时测试，并在本轮 Capture Pod 日志中得到实际恢复证据。Worker 平台 owner 的历史 UNKNOWN grants 尚未完成安全清理，因此新的真实 Sink 对账仍未执行，保留为未验证边界。
+
+## 2026-11-21 g7 真实 Worker 任务结果
+
+在旧 UNKNOWN task lease 保留的前提下，新建了独立任务 `103dfafcb3e5a030bac232f19addb98e863b35e47dfa9a8151ee021c40d1d19c`，generation 为 `g7`，目标表为 `target_rows_g7`。Capture 投影已写入该订阅，Worker 领取后进入执行，但首次 Journal proof 仍失败，任务进入 `PAUSED/UNKNOWN/unclassified_failure`。
+
+失败调用链落在 `BootstrapJournalProgressVerifier.verifyOn`。原始 `event_journal`、任务状态和投影均保留。该结果证明了新任务从控制投影进入 Worker 的路径，不能证明 Sink 已完成初始化或逐字段一致。
+
+随后提交 `75d7ff0` 将首次 Journal identity 不完整时的 proof 激活改为延迟，并保持 `journal_floor` 不前进。该修复完成本地编译和 21 项核心测试，但尚未在集群流水线中得到新任务的真实 Sink 对账结果。
+
+最终流水线复核中，`pekko-cdc-capture` 和 `pekko-cdc-worker` 均已运行同一 Harbor 镜像并处于 `Ready`。KubeSphere PipelineRun 仍报告失败，失败日志未提供新的业务成功证据，不能把 Pod Ready 升级成端到端完成。当前验证结论保持 `evidence_incomplete`。
