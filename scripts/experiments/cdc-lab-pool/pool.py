@@ -141,11 +141,22 @@ class Pool:
         if path.stat().st_mode & 0o077: raise ValueError('credentials file must be mode 0600')
         return json.loads(path.read_text())
 
+    def role_credentials(self, name, role):
+        credentials = self.credentials(name)
+        selected = credentials.get(role, credentials)
+        if not isinstance(selected, dict) or not selected.get('user') or not selected.get('password'):
+            raise ValueError(f'invalid {role} credentials')
+        return selected
+
     def environment(self, name):
-        slot = self.slots[name]; credentials = self.credentials(name)
+        slot = self.slots[name]
+        source = self.role_credentials(name, 'source')
+        state = self.role_credentials(name, 'state')
         return {'CDC_LAB_SLOT':name, 'CDC_WINDOW_MYSQL_HOST':'127.0.0.1',
                 'CDC_WINDOW_MYSQL_PORT':str(slot['source']['port']), 'CAPTURE_STATE_PORT':str(slot['state']['port']),
-                'CDC_WINDOW_MYSQL_USER':credentials['user'], 'CDC_WINDOW_MYSQL_PASSWORD':credentials['password'],
+                'CDC_WINDOW_MYSQL_USER':source['user'], 'CDC_WINDOW_MYSQL_PASSWORD':source['password'],
+                'CDC_WINDOW_SOURCE_USER':source['user'], 'CDC_WINDOW_SOURCE_PASSWORD':source['password'],
+                'CDC_WINDOW_STATE_USER':state['user'], 'CDC_WINDOW_STATE_PASSWORD':state['password'],
                 'CAPTURE_TEST_URL':f"jdbc:mysql://127.0.0.1:{slot['source']['port']}/pekko_test_shared_wire?useSSL=false&allowPublicKeyRetrieval=true",
                 'CAPTURE_STATE_URL':f"jdbc:mysql://127.0.0.1:{slot['state']['port']}/pekko_test_shared_state?useSSL=false&allowPublicKeyRetrieval=true",
                 'RUN_SHARED_CAPTURE_MATRIX':'1', 'RUN_MYSQL_CDC_RECOVERY_WINDOWS':'1', 'RUN_MYSQL_SNAPSHOT_SPLITS':'1'}
@@ -196,8 +207,8 @@ class Pool:
         private = self.root/name; private.mkdir(parents=True, exist_ok=True, mode=0o700); private.chmod(0o700)
         if not Path(slot['credentials_ref']).exists():
             write_json(slot['credentials_ref'], {'user':'cdc_lab', 'password':secrets.token_hex(24)}, True)
-        credentials = self.credentials(name)
         for role in ROLES:
+            credentials = self.role_credentials(name, role)
             cfg = slot[role]; base = self.instance_dir(name,role); base.mkdir(mode=0o700)
             data = Path(cfg['datadir'])
             with (base/'initialize.log').open('x') as log:
@@ -378,7 +389,7 @@ def run_jobs(pool, candidate, jobs, slots, destination):
         try:
             try: environment=pool.environment(slot)
             except Exception as error: return failed_shard(slot,error)
-            password=environment['CDC_WINDOW_MYSQL_PASSWORD']
+            passwords=[environment['CDC_WINDOW_SOURCE_PASSWORD'],environment['CDC_WINDOW_STATE_PASSWORD']]
             for job_number,job in enumerate(assignments[slot]):
                 attempt=out/(job['case_id']+'-'+slot);attempt.mkdir()
                 result={'case_id':job['case_id'],'slot':slot,'attempt':str(attempt),'source_sha256':manifest['source_sha256'],
@@ -387,7 +398,7 @@ def run_jobs(pool, candidate, jobs, slots, destination):
                     if digest(candidate)!=candidate_hash: raise ValueError('candidate manifest changed')
                     verify_candidate(candidate)
                     argv=[arg.replace('{classpath}',os.pathsep.join(manifest['classpath'])).replace('{evidence}',str(attempt)) for arg in job['argv']]
-                    if any(password in arg for arg in argv): raise ValueError('credential in argv')
+                    if any(password in arg for password in passwords for arg in argv): raise ValueError('credential in argv')
                     result['argv']=argv
                     env=os.environ.copy();env.update(environment)
                     env.update(BOOTSTRAP_EVIDENCE_RUN=attempt.name, BOOTSTRAP_SOURCE_MANIFEST_SHA256=manifest['source_sha256'],CDC_LAB_EVIDENCE_DIR=str(attempt))
@@ -405,11 +416,15 @@ def run_jobs(pool, candidate, jobs, slots, destination):
                             except Exception as error:
                                 result['cleanup']={'confirmed_exited':False,'error':str(error),'finished_ns':time.time_ns()}
                             quarantined=not result['cleanup']['confirmed_exited']
-                    (attempt/'runner.log').write_bytes(raw.read_bytes().replace(password.encode(),b'[REDACTED]'))
+                    runner_log=raw.read_bytes()
+                    for password in passwords: runner_log=runner_log.replace(password.encode(),b'[REDACTED]')
+                    (attempt/'runner.log').write_bytes(runner_log)
                     result.update(exit_code=126 if quarantined else code,private_raw_log=str(raw))
                     verify_candidate(candidate)
                 except Exception as error:
-                    result.update(exit_code=125,error=str(error).replace(password,'[REDACTED]'))
+                    error_text=str(error)
+                    for password in passwords: error_text=error_text.replace(password,'[REDACTED]')
+                    result.update(exit_code=125,error=error_text)
                 result['finished_ns']=time.time_ns()
                 result['evidence_files']={str(f.relative_to(attempt)):digest(f) for f in sorted(attempt.rglob('*')) if f.is_file() and not f.is_symlink()}
                 write_json(attempt/'result.json',result);results.append(result)

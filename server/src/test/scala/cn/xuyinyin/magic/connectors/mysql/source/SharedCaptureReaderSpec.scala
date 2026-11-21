@@ -13,12 +13,15 @@ class SharedCaptureReaderSpec extends AnyWordSpec with Matchers {
   "the real shared Reader" should {
     "fence commands when source connection release is uncertain" taggedAs ExternalIntegration in {
       if(!sys.env.get("RUN_SHARED_CAPTURE_MATRIX").contains("1"))cancel("isolated MySQL required")
-      val user=sys.env("CDC_WINDOW_MYSQL_USER");val pw=sys.env("CDC_WINDOW_MYSQL_PASSWORD")
+      val sourceUser=sys.env.getOrElse("CDC_WINDOW_SOURCE_USER",sys.env("CDC_WINDOW_MYSQL_USER"))
+      val sourcePassword=sys.env.getOrElse("CDC_WINDOW_SOURCE_PASSWORD",sys.env("CDC_WINDOW_MYSQL_PASSWORD"))
+      val stateUser=sys.env.getOrElse("CDC_WINDOW_STATE_USER",sys.env("CDC_WINDOW_MYSQL_USER"))
+      val statePassword=sys.env.getOrElse("CDC_WINDOW_STATE_PASSWORD",sys.env("CDC_WINDOW_MYSQL_PASSWORD"))
       val sourceUrl=sys.env("CAPTURE_TEST_URL");val stateUrl=sys.env("CAPTURE_STATE_URL")
       val id="release_"+UUID.randomUUID().toString.replace("-","").take(10)
-      val c=DriverManager.getConnection(sourceUrl,user,pw)
+      val c=DriverManager.getConnection(sourceUrl,sourceUser,sourcePassword)
       val lineage=try {val q=c.createStatement();try {val r=q.executeQuery("SELECT @@server_uuid");try {r.next();r.getString(1)}finally r.close()}finally q.close()}finally c.close()
-      val store=new MySQLCaptureStore(()=>DriverManager.getConnection(stateUrl,user,pw),id,lineage,10000000)
+      val store=new MySQLCaptureStore(()=>DriverManager.getConnection(stateUrl,stateUser,statePassword),id,lineage,10000000)
       store.initialize();store.rememberSchema("missing","""{"columns":[],"primaryKeyColumnNames":[]}""")
       val failClose=new java.util.concurrent.atomic.AtomicBoolean(false)
       val opened=new java.util.concurrent.atomic.AtomicInteger(0)
@@ -29,8 +32,8 @@ class SharedCaptureReaderSpec extends AnyWordSpec with Matchers {
           def close():Unit={done.trySuccess(org.apache.pekko.Done);()}
         }
       }
-      val source=MySQLCdcSourceConfig(id,sys.env.getOrElse("CDC_WINDOW_MYSQL_HOST","127.0.0.1"),sys.env.getOrElse("CDC_WINDOW_MYSQL_PORT","13365").toInt,"pekko_test_shared_wire","missing",user,pw,310002,1,100)
-      val session=new SharedMySQLCapture(source,MySQLCdcStateConfig(stateUrl,user,pw,"capture_offsets","capture_history",0),store,factory) {
+      val source=MySQLCdcSourceConfig(id,sys.env.getOrElse("CDC_WINDOW_MYSQL_HOST","127.0.0.1"),sys.env.getOrElse("CDC_WINDOW_MYSQL_PORT","13365").toInt,"pekko_test_shared_wire","missing",sourceUser,sourcePassword,310002,1,100)
+      val session=new SharedMySQLCapture(source,MySQLCdcStateConfig(stateUrl,stateUser,statePassword,"capture_offsets","capture_history",0),store,factory) {
         override protected def sourceConnection():java.sql.Connection={
           opened.incrementAndGet();val real=super.sourceConnection()
           java.lang.reflect.Proxy.newProxyInstance(classOf[java.sql.Connection].getClassLoader,Array(classOf[java.sql.Connection]),new java.lang.reflect.InvocationHandler {
@@ -54,17 +57,20 @@ class SharedCaptureReaderSpec extends AnyWordSpec with Matchers {
     }
     "prepare schema and commit B before capturing changes, without declaring initialization" taggedAs ExternalIntegration in {
       if(!sys.env.get("RUN_SHARED_CAPTURE_MATRIX").contains("1"))cancel("isolated MySQL required")
-      val user=sys.env("CDC_WINDOW_MYSQL_USER");val pw=sys.env("CDC_WINDOW_MYSQL_PASSWORD")
+      val sourceUser=sys.env.getOrElse("CDC_WINDOW_SOURCE_USER",sys.env("CDC_WINDOW_MYSQL_USER"))
+      val sourcePassword=sys.env.getOrElse("CDC_WINDOW_SOURCE_PASSWORD",sys.env("CDC_WINDOW_MYSQL_PASSWORD"))
+      val stateUser=sys.env.getOrElse("CDC_WINDOW_STATE_USER",sys.env("CDC_WINDOW_MYSQL_USER"))
+      val statePassword=sys.env.getOrElse("CDC_WINDOW_STATE_PASSWORD",sys.env("CDC_WINDOW_MYSQL_PASSWORD"))
       val sourceUrl=sys.env("CAPTURE_TEST_URL"); val stateUrl=sys.env("CAPTURE_STATE_URL")
       val suffix=UUID.randomUUID().toString.replace("-","").take(10);val id="reader_"+suffix;val table="orders_"+suffix
-      def sql(s:String):Unit={val c=DriverManager.getConnection(sourceUrl,user,pw);try {val q=c.createStatement();try q.execute(s)finally q.close()}finally c.close()}
+      def sql(s:String):Unit={val c=DriverManager.getConnection(sourceUrl,sourceUser,sourcePassword);try {val q=c.createStatement();try q.execute(s)finally q.close()}finally c.close()}
       sql(s"CREATE TABLE $table(id BIGINT PRIMARY KEY,label VARCHAR(64))");sql(s"INSERT INTO $table VALUES(1,'baseline')")
-      val c=DriverManager.getConnection(sourceUrl,user,pw)
+      val c=DriverManager.getConnection(sourceUrl,sourceUser,sourcePassword)
       val lineage=try {val q=c.createStatement();try {val r=q.executeQuery("SELECT @@server_uuid");try {r.next();r.getString(1)}finally r.close()}finally q.close()}finally c.close()
-      val store=new MySQLCaptureStore(()=>DriverManager.getConnection(stateUrl,user,pw),id,lineage,10000000)
+      val store=new MySQLCaptureStore(()=>DriverManager.getConnection(stateUrl,stateUser,statePassword),id,lineage,10000000)
       store.initialize()
-      val source=MySQLCdcSourceConfig(id,sys.env.getOrElse("CDC_WINDOW_MYSQL_HOST","127.0.0.1"),sys.env.getOrElse("CDC_WINDOW_MYSQL_PORT","13365").toInt,"pekko_test_shared_wire",table,user,pw,310002,1,100)
-      val state=MySQLCdcStateConfig(stateUrl,user,pw,"capture_offsets","capture_history",0)
+      val source=MySQLCdcSourceConfig(id,sys.env.getOrElse("CDC_WINDOW_MYSQL_HOST","127.0.0.1"),sys.env.getOrElse("CDC_WINDOW_MYSQL_PORT","13365").toInt,"pekko_test_shared_wire",table,sourceUser,sourcePassword,310002,1,100)
+      val state=MySQLCdcStateConfig(stateUrl,stateUser,statePassword,"capture_offsets","capture_history",0)
       val effectiveKeepAlive=new java.util.concurrent.atomic.AtomicReference[String]()
       val factory=new DebeziumEngineFactory {
         def create(properties:java.util.Properties):DebeziumEngineAccess={
@@ -73,7 +79,7 @@ class SharedCaptureReaderSpec extends AnyWordSpec with Matchers {
         }
       }
       val session=new SharedMySQLCapture(source,state,store,factory)
-      val misplaced=new MySQLCaptureStore(()=>DriverManager.getConnection(sourceUrl,user,pw),id+"_misplaced",lineage,10000000)
+      val misplaced=new MySQLCaptureStore(()=>DriverManager.getConnection(sourceUrl,sourceUser,sourcePassword),id+"_misplaced",lineage,10000000)
       misplaced.initialize()
       val invalid=new SharedMySQLCapture(source.copy(connectorId=misplaced.captureId),state,misplaced)
       try intercept[IllegalArgumentException](invalid.start()) finally invalid.close()

@@ -17,13 +17,16 @@ def main():
     a=p.parse_args();pool=Pool(a.config);slot=os.environ['CDC_LAB_SLOT']
     schemas=json.loads(a.protected_schema_file.read_text())['unique_experiment_schemas_preserved']
     receipt={'slot':slot,'wrapper_sha256':digest(__file__),'source_sha256':os.environ['BOOTSTRAP_SOURCE_MANIFEST_SHA256']}
-    password=os.environ['CDC_WINDOW_MYSQL_PASSWORD']
+    passwords=[os.environ['CDC_WINDOW_SOURCE_PASSWORD'],os.environ['CDC_WINDOW_STATE_PASSWORD']]
     def sql(role,statement):
         cfg=pool.slots[slot][role]
         args=['mysql','--defaults-file='+str(pool.instance_dir(slot,role)/'client.cnf'),
               '--protocol=TCP','--host=127.0.0.1','--port='+str(cfg['port']),'-N','-B','-e',statement]
         result=subprocess.run(args,capture_output=True,text=True,timeout=30)
-        if result.returncode:raise RuntimeError(result.stderr.replace(password,'[REDACTED]'))
+        if result.returncode:
+            error=result.stderr
+            for password in passwords: error=error.replace(password,'[REDACTED]')
+            raise RuntimeError(error)
         return result.stdout
     def snapshot():
         result={}

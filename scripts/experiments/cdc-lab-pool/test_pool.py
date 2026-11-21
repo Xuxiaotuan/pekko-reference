@@ -77,6 +77,22 @@ class PoolTests(unittest.TestCase):
         self.assertEqual(env['CAPTURE_STATE_PORT'], '14366')
         self.assertNotIn('sensitive-test-value', json.dumps(self.p.public_slot('a')))
 
+    def test_environment_supports_separate_source_and_state_credentials(self):
+        credentials = Path(self.config['slots'][0]['credentials_ref'])
+        credentials.parent.mkdir(parents=True)
+        credentials.write_text(json.dumps({
+            'source': {'user': 'source_user', 'password': 'source_password'},
+            'state': {'user': 'state_user', 'password': 'state_password'}
+        }))
+        credentials.chmod(0o600)
+        env = self.p.environment('a')
+        self.assertEqual(env['CDC_WINDOW_SOURCE_USER'], 'source_user')
+        self.assertEqual(env['CDC_WINDOW_SOURCE_PASSWORD'], 'source_password')
+        self.assertEqual(env['CDC_WINDOW_STATE_USER'], 'state_user')
+        self.assertEqual(env['CDC_WINDOW_STATE_PASSWORD'], 'state_password')
+        self.assertNotIn('source_password', json.dumps(self.p.public_slot('a')))
+        self.assertNotIn('state_password', json.dumps(self.p.public_slot('a')))
+
     def test_freeze_copies_classpath_and_rejects_tampering(self):
         repo = self.root / 'repo'; (repo / 'server/src').mkdir(parents=True)
         (repo / 'server/src/X.scala').write_text('original source')
