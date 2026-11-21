@@ -6,7 +6,7 @@ metadata:
   labels: {app: pekko-cdc-worker}
 spec:
   replicas: 1
-  strategy: {type: RollingUpdate}
+  strategy: {type: Recreate}
   selector: {matchLabels: {app: pekko-cdc-worker}}
   template:
     metadata: {labels: {app: pekko-cdc-worker}}
