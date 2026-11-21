@@ -43,7 +43,7 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
     try {
       statement.setString(1,s"pekko_capture_${config.id}_${ownerAttempt}")
       val result=statement.executeQuery()
-      try result.next() && result.wasNull()
+      try result.next() && result.getObject(1)==null
       finally result.close()
     } finally {statement.close();connection.close()}
   }
