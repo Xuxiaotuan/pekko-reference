@@ -174,7 +174,7 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
         if(stopping.get())false else {capturesById.update(cfg.id,Capture(cfg,store,reader));true}
       }
       if(!registered){reader.requestClose();throw new IllegalStateException("CDC kernel stopping")}
-      cfg.gc.foreach {g=>
+      if(captureEnabled) cfg.gc.foreach {g=>
         require(!cfg.sourceFenceV2,"GC and source fence v2 require separate integration")
         val gc=new CdcGcCoordinator(cfg,store,reader,()=>stateOpen(cfg),()=>gcOpen(cfg),system,settings.captures.map(_.id).toSet,observe)
         synchronized {gcById.update(cfg.id,gc)}
