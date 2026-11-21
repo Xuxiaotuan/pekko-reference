@@ -51,6 +51,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
   private val gcBusy=new AtomicBoolean()
   private val clock=Executors.newSingleThreadScheduledExecutor(threads("clock"))
   private val guardianClock=if(managedOwner.nonEmpty)Some(Executors.newSingleThreadScheduledExecutor(threads("guardian")))else None
+  private val workerHeartbeatClock=runtimeLeases.map(_=>Executors.newSingleThreadScheduledExecutor(threads("worker-heartbeat")))
   private val controlEc=ExecutionContext.fromExecutorService(controls)
   private val workerEc=ExecutionContext.fromExecutorService(workers)
   private val active=new AtomicInteger();private val pending=new AtomicInteger();private val ticking=new AtomicBoolean()
@@ -132,6 +133,15 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
       }
     }
   }},100L,1000L,TimeUnit.MILLISECONDS))
+  workerHeartbeatClock.foreach(_.scheduleWithFixedDelay(new Runnable {def run():Unit={
+    if(!stopping.get())runtimeLeases.foreach { leases=>
+      val workerOk=workerLease.get().forall(worker=>leases.heartbeatWorker(worker,active.get()))
+      val tasksOk=taskLeases.synchronized(taskLeases.values.forall(lease=>leases.renewTask(lease,5000L)))
+      if(!workerOk || !tasksOk){
+        ownerState="UNKNOWN";reason=Some("RUNTIME_LEASE_LOST");startupFailurePending=true;stopRuntime()
+      }
+    }
+  }},1000L,1000L,TimeUnit.MILLISECONDS))
   // Start only after stopRuntime's scheduled handles have been initialized.
   Future {
     store.initialize()
@@ -208,11 +218,12 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
       val dispatch=store.dispatch(runtimeAttemptId,kernel.dispatchCaptureIds,128,now)
       lastDispatchAt=now;dispatchCaughtUp=dispatch.caughtUp
       val ready=kernel.captures.filter(c=>c.readiness=="ADMISSION_READY" && c.runtimeHealth=="HEALTHY").map(_.captureId).toSet
-      def launch(g:CdcTaskGrant):Unit={
-        val lease=runtimeLeases.flatMap { leases =>
+      def launch(g:CdcTaskGrant,preclaimed:Option[TaskLease]=None):Unit={
+        val lease=preclaimed.orElse(runtimeLeases.flatMap { leases =>
           workerLease.get().flatMap(worker=>leases.claimTask(worker,g.task.view.taskId,g.task.view.captureId))
-        }
+        })
         if(runtimeLeases.nonEmpty && lease.isEmpty) {
+          logger.warn("CDC task lease unavailable task={} worker={}",g.task.view.taskId,runtimeAttemptId)
           store.defer(g,limits.tailDelayMillis,now)
         } else {
         lease.foreach(value=>taskLeases.synchronized(taskLeases.update(g.id,value)))
@@ -249,15 +260,26 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
         }
       }
       if(!stopping.get() && managedOwner.nonEmpty)
-        store.claimFenceRecovery(runtimeAttemptId,kernel.recoveryCaptureIds,now).foreach(launch)
+        runtimeLeases match {
+          case Some(leases)=>workerLease.get().flatMap { worker =>
+            store.claimFenceRecoveryWithLease(runtimeAttemptId,kernel.recoveryCaptureIds,now,worker,leases)
+          }.foreach { case (grant,lease)=>launch(grant,Some(lease)) }
+          case None=>store.claimFenceRecovery(runtimeAttemptId,kernel.recoveryCaptureIds,now).foreach(g=>launch(g))
+        }
       for(pool<-Vector("TAIL","SNAPSHOT")){
         val maximum=if(pool=="TAIL")limits.tailSteps else limits.snapshotSteps
         var left=maximum;var more=true
         while(left>0 && more && !stopping.get()){
-          val grant=store.claim(runtimeAttemptId,pool,ready,now,kernel.admissibleTasks(pool))
-          grant match {
+          val claimed:Option[(CdcTaskGrant,Option[TaskLease])]=runtimeLeases match {
+            case Some(leases)=>workerLease.get().flatMap { worker =>
+              store.claimWithLease(runtimeAttemptId,pool,ready,now,kernel.admissibleTasks(pool),worker,leases)
+                .map { case (grant,lease) => grant->Some(lease) }
+            }
+            case None=>store.claim(runtimeAttemptId,pool,ready,now,kernel.admissibleTasks(pool)).map(_->None)
+          }
+          claimed match {
             case None=>more=false
-            case Some(g)=>left-=1;launch(g)
+            case Some((g,lease))=>left-=1;launch(g,lease)
           }
         }
       }
@@ -278,6 +300,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
   def stopRuntime():Future[Boolean]={
     if(stopping.compareAndSet(false,true)){
       guardianClock.foreach(_.shutdown());schedule.foreach(_.cancel(false))
+      workerHeartbeatClock.foreach(_.shutdown())
       if(guardianLost.get()){ownerState="UNKNOWN";reason=Some("GUARDIAN_UNAVAILABLE")}else ownerState="STOPPING"
       try kernel.requestStop() catch {case NonFatal(_)=>startupFailedFlag.set(true)}
       clock.schedule(new Runnable {def run():Unit={

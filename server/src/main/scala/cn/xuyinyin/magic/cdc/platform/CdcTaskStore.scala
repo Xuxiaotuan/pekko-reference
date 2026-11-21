@@ -11,6 +11,7 @@ import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
 import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire._
 import cn.xuyinyin.magic.cdc.savepoint.CdcSavepointStore
 import cn.xuyinyin.magic.cdc.savepoint.{CdcSavepointTaskPage,TableCheckpointRef}
+import cn.xuyinyin.magic.cdc.runtime.{CdcRuntimeLeaseStore,TaskLease,WorkerLease}
 import java.sql.{Connection,SQLException}
 import java.util.UUID
 import java.security.MessageDigest
@@ -74,11 +75,36 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
       "CREATE TABLE IF NOT EXISTS pekko_cdc_tasks_v1(task_id CHAR(64) PRIMARY KEY,capture_id VARCHAR(64) NOT NULL,request_id VARCHAR(128) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL,target_table VARCHAR(128) NOT NULL,definition_hash CHAR(64) NOT NULL,desired_state VARCHAR(32) NOT NULL,control_revision BIGINT NOT NULL,phase VARCHAR(32) NOT NULL,journal_revision BIGINT NOT NULL,execution_id VARCHAR(128),capture_readiness VARCHAR(32) NOT NULL,initialization_evidence LONGTEXT,runtime_health VARCHAR(32) NOT NULL,release_status VARCHAR(32) NOT NULL,failure_code VARCHAR(64),observed_at BIGINT NOT NULL,last_verified_at BIGINT,due_at BIGINT NOT NULL,grant_id VARCHAR(64),grant_owner VARCHAR(128),continuation_json LONGTEXT,continuation_owner VARCHAR(128),cancel_evidence VARCHAR(32),work_pool VARCHAR(16) NOT NULL,schedulable BOOLEAN NOT NULL,delta_after BIGINT NOT NULL DEFAULT 0,wake_seq BIGINT NOT NULL DEFAULT 0,UNIQUE(capture_id,request_id),UNIQUE(capture_id,table_name,generation))",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_dispatch_v1(capture_id VARCHAR(64) PRIMARY KEY,after_seq BIGINT NOT NULL)",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_grants_v1(grant_id VARCHAR(64) PRIMARY KEY,task_id CHAR(64) NOT NULL,owner_attempt VARCHAR(128) NOT NULL,pool VARCHAR(16) NOT NULL,status VARCHAR(32) NOT NULL,created_at BIGINT NOT NULL,finished_at BIGINT)",
-      "CREATE TABLE IF NOT EXISTS pekko_cdc_capture_owner_v1(capture_id VARCHAR(64) PRIMARY KEY,source_lineage VARCHAR(255) NOT NULL,owner_attempt VARCHAR(128) NOT NULL,owner_epoch BIGINT NOT NULL,incarnation VARCHAR(128) NOT NULL,state VARCHAR(32) NOT NULL,reader_session VARCHAR(128),source_offset_digest CHAR(64),release_proof_id VARCHAR(128),updated_at BIGINT NOT NULL,UNIQUE KEY capture_owner_attempt(capture_id,owner_attempt))",
-      "CREATE TABLE IF NOT EXISTS pekko_cdc_worker_v1(worker_id VARCHAR(128) PRIMARY KEY,incarnation VARCHAR(128) NOT NULL,worker_epoch BIGINT NOT NULL,state VARCHAR(32) NOT NULL,capacity_json LONGTEXT NOT NULL,active_graphs INT NOT NULL,heartbeat_at BIGINT NOT NULL,updated_at BIGINT NOT NULL,UNIQUE KEY worker_instance(worker_id,incarnation))",
-      "CREATE TABLE IF NOT EXISTS pekko_cdc_task_lease_v1(task_id CHAR(64) PRIMARY KEY,capture_id VARCHAR(64) NOT NULL,worker_id VARCHAR(128),worker_incarnation VARCHAR(128),lease_epoch BIGINT NOT NULL,state VARCHAR(32) NOT NULL,last_l_seq BIGINT NOT NULL,last_journal_revision BIGINT NOT NULL,last_target_batch VARCHAR(128),release_proof LONGTEXT,updated_at BIGINT NOT NULL,INDEX lease_worker(worker_id,state),INDEX lease_capture(capture_id,state))",
-      "CREATE TABLE IF NOT EXISTS pekko_cdc_task_handoff_v1(handoff_id VARCHAR(128) PRIMARY KEY,task_id CHAR(64) NOT NULL,old_worker_id VARCHAR(128) NOT NULL,old_incarnation VARCHAR(128) NOT NULL,old_lease_epoch BIGINT NOT NULL,new_worker_id VARCHAR(128),new_incarnation VARCHAR(128),new_lease_epoch BIGINT,state VARCHAR(32) NOT NULL,t_digest CHAR(64),journal_revision BIGINT,d_seq BIGINT,release_proof LONGTEXT,created_at BIGINT NOT NULL,updated_at BIGINT NOT NULL,INDEX handoff_task(task_id,created_at))"
+      "CREATE TABLE IF NOT EXISTS pekko_cdc_runtime_schema_version(version INT PRIMARY KEY,checksum CHAR(64) NOT NULL,applied_at BIGINT NOT NULL)",
+      "CREATE TABLE IF NOT EXISTS pekko_cdc_capture_owner_v1(capture_id VARCHAR(64) PRIMARY KEY,source_lineage VARCHAR(255) NOT NULL,owner_attempt VARCHAR(128) NOT NULL,owner_epoch BIGINT NOT NULL,incarnation VARCHAR(128) NOT NULL,state VARCHAR(32) NOT NULL,reader_session VARCHAR(128),source_offset_digest CHAR(64),release_proof_id VARCHAR(128),lease_expires_at BIGINT NULL,last_heartbeat_at BIGINT NULL,control_revision BIGINT NOT NULL DEFAULT 0,fence_token_hash CHAR(64) NULL,updated_at BIGINT NOT NULL,UNIQUE KEY capture_owner_attempt(capture_id,owner_attempt))",
+      "CREATE TABLE IF NOT EXISTS pekko_cdc_worker_v1(worker_id VARCHAR(128) PRIMARY KEY,incarnation VARCHAR(128) NOT NULL,worker_epoch BIGINT NOT NULL,state VARCHAR(32) NOT NULL,capacity_json LONGTEXT NOT NULL,active_graphs INT NOT NULL,heartbeat_at BIGINT NOT NULL,lease_expires_at BIGINT NULL,last_heartbeat_at BIGINT NULL,drain_started_at BIGINT NULL,control_revision BIGINT NOT NULL DEFAULT 0,updated_at BIGINT NOT NULL,UNIQUE KEY worker_instance(worker_id,incarnation))",
+      "CREATE TABLE IF NOT EXISTS pekko_cdc_task_lease_v1(task_id CHAR(64) PRIMARY KEY,capture_id VARCHAR(64) NOT NULL,worker_id VARCHAR(128),worker_incarnation VARCHAR(128),lease_epoch BIGINT NOT NULL,state VARCHAR(32) NOT NULL,last_l_seq BIGINT NOT NULL,last_journal_revision BIGINT NOT NULL,last_target_batch VARCHAR(128),release_proof LONGTEXT,lease_expires_at BIGINT NULL,renewed_at BIGINT NULL,handoff_id VARCHAR(128) NULL,fence_token_hash CHAR(64) NULL,control_revision BIGINT NOT NULL DEFAULT 0,updated_at BIGINT NOT NULL,INDEX lease_worker(worker_id,state),INDEX lease_capture(capture_id,state))",
+      "CREATE TABLE IF NOT EXISTS pekko_cdc_task_handoff_v1(handoff_id VARCHAR(128) PRIMARY KEY,task_id CHAR(64) NOT NULL,old_worker_id VARCHAR(128) NOT NULL,old_incarnation VARCHAR(128) NOT NULL,old_lease_epoch BIGINT NOT NULL,new_worker_id VARCHAR(128),new_incarnation VARCHAR(128),new_lease_epoch BIGINT,state VARCHAR(32) NOT NULL,t_digest CHAR(64),journal_revision BIGINT,d_seq BIGINT,release_proof LONGTEXT,old_release_state VARCHAR(32) NULL,proof_digest CHAR(64) NULL,new_claimed_at BIGINT NULL,failure_code VARCHAR(64) NULL,created_at BIGINT NOT NULL,updated_at BIGINT NOT NULL,INDEX handoff_task(task_id,created_at))"
     ).foreach(sql=>update(c,sql+suffix))
+    def ensureColumn(table:String,column:String,definition:String):Unit={
+      val rs=c.getMetaData.getColumns(c.getCatalog,null,table,"%")
+      var found=false
+      try while(rs.next())if(rs.getString("TABLE_NAME").equalsIgnoreCase(table) && rs.getString("COLUMN_NAME").equalsIgnoreCase(column))found=true
+      finally rs.close()
+      if(!found)update(c,s"ALTER TABLE $table ADD COLUMN $column $definition")
+    }
+    ensureColumn("pekko_cdc_capture_owner_v1","lease_expires_at","BIGINT NULL")
+    ensureColumn("pekko_cdc_capture_owner_v1","last_heartbeat_at","BIGINT NULL")
+    ensureColumn("pekko_cdc_capture_owner_v1","control_revision","BIGINT NOT NULL DEFAULT 0")
+    ensureColumn("pekko_cdc_capture_owner_v1","fence_token_hash","CHAR(64) NULL")
+    ensureColumn("pekko_cdc_worker_v1","lease_expires_at","BIGINT NULL")
+    ensureColumn("pekko_cdc_worker_v1","last_heartbeat_at","BIGINT NULL")
+    ensureColumn("pekko_cdc_worker_v1","drain_started_at","BIGINT NULL")
+    ensureColumn("pekko_cdc_worker_v1","control_revision","BIGINT NOT NULL DEFAULT 0")
+    ensureColumn("pekko_cdc_task_lease_v1","lease_expires_at","BIGINT NULL")
+    ensureColumn("pekko_cdc_task_lease_v1","renewed_at","BIGINT NULL")
+    ensureColumn("pekko_cdc_task_lease_v1","handoff_id","VARCHAR(128) NULL")
+    ensureColumn("pekko_cdc_task_lease_v1","fence_token_hash","CHAR(64) NULL")
+    ensureColumn("pekko_cdc_task_lease_v1","control_revision","BIGINT NOT NULL DEFAULT 0")
+    ensureColumn("pekko_cdc_task_handoff_v1","old_release_state","VARCHAR(32) NULL")
+    ensureColumn("pekko_cdc_task_handoff_v1","proof_digest","CHAR(64) NULL")
+    ensureColumn("pekko_cdc_task_handoff_v1","new_claimed_at","BIGINT NULL")
+    ensureColumn("pekko_cdc_task_handoff_v1","failure_code","VARCHAR(64) NULL")
     CdcSavepointStore.initializeOn(c)
     def hasProofVersion:Boolean={
       Vector("pekko_cdc_b_recovery_v1","PEKKO_CDC_B_RECOVERY_V1").exists {table=>
@@ -1171,7 +1197,15 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
     }.toMap
   }
   /** Admit only the claimed v2 recovery task while its capture reader is paused. */
-  private[cdc] def claimFenceRecovery(attempt:String,captures:Set[String],now:Long):Option[CdcTaskGrant]=transaction {c=>
+  private[cdc] def claimFenceRecovery(attempt:String,captures:Set[String],now:Long):Option[CdcTaskGrant]=
+    claimFenceRecoveryInternal(attempt,captures,now,None).map(_._1)
+
+  private[cdc] def claimFenceRecoveryWithLease(attempt:String,captures:Set[String],now:Long,
+    worker:WorkerLease,leases:CdcRuntimeLeaseStore):Option[(CdcTaskGrant,TaskLease)]=
+    claimFenceRecoveryInternal(attempt,captures,now,Some(worker->leases)).collect {case (grant,Some(lease))=>grant->lease}
+
+  private def claimFenceRecoveryInternal(attempt:String,captures:Set[String],now:Long,
+    lease:Option[(WorkerLease,CdcRuntimeLeaseStore)]):Option[(CdcTaskGrant,Option[TaskLease])]=transaction {c=>
     val o=owner(c)
     if(o("status")!="ACTIVE" || o("owner_attempt")!=attempt || managedOn(c,attempt).isEmpty || captures.isEmpty)None
     else {
@@ -1190,10 +1224,14 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
             t.grantId.isEmpty && t.workPool=="SNAPSHOT" && t.dueAt<=now && !Set("PAUSED","CANCELED")(t.view.phase)).flatMap {task=>
             val eligible=query(c,"SELECT 1 FROM pekko_cdc_tasks_v1 WHERE task_id=? AND schedulable=TRUE",task.view.taskId).nonEmpty
             if(!eligible)None else {
-              val id=UUID.randomUUID().toString
-              update(c,"INSERT INTO pekko_cdc_grants_v1 VALUES(?,?,?,?,'ACTIVE',?,NULL)",id,task.view.taskId,attempt,"SNAPSHOT",now)
-              update(c,"UPDATE pekko_cdc_tasks_v1 SET grant_id=?,grant_owner=?,release_status='IN_USE',runtime_health='WORKING',observed_at=?,schedulable=FALSE WHERE task_id=?",id,attempt,now,task.view.taskId)
-              Some(CdcTaskGrant(id,attempt,"SNAPSHOT",row(c,task.view.taskId).get))
+              val taskLease=lease.flatMap {case(worker,store)=>store.claimTaskOn(c,worker,task.view.taskId,task.view.captureId)}
+              if(lease.nonEmpty && taskLease.isEmpty)None
+              else {
+                val id=UUID.randomUUID().toString
+                update(c,"INSERT INTO pekko_cdc_grants_v1 VALUES(?,?,?,?,'ACTIVE',?,NULL)",id,task.view.taskId,attempt,"SNAPSHOT",now)
+                update(c,"UPDATE pekko_cdc_tasks_v1 SET grant_id=?,grant_owner=?,release_status='IN_USE',runtime_health='WORKING',observed_at=?,schedulable=FALSE WHERE task_id=?",id,attempt,now,task.view.taskId)
+                Some(CdcTaskGrant(id,attempt,"SNAPSHOT",row(c,task.view.taskId).get)->taskLease)
+              }
             }
           }
         }
@@ -1228,6 +1266,44 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
           update(c,"INSERT INTO pekko_cdc_grants_v1 VALUES(?,?,?,?,'ACTIVE',?,NULL)",id,task.view.taskId,attempt,pool,now)
           update(c,"UPDATE pekko_cdc_tasks_v1 SET grant_id=?,grant_owner=?,release_status='IN_USE',runtime_health='WORKING',observed_at=?,schedulable=FALSE WHERE task_id=?",id,attempt,now,task.view.taskId)
           CdcTaskGrant(id,attempt,pool,row(c,task.view.taskId).get)
+        }
+      }
+    }
+  }
+
+  /**
+    * Atomically acquires the runtime task lease and the legacy execution grant.
+    * The runtime lease table and the task/grant tables share this transaction.
+    */
+  private[cdc] def claimWithLease(attempt:String,pool:String,ready:Set[String],now:Long,
+    onlyTasks:Option[Set[String]],worker:WorkerLease,leases:CdcRuntimeLeaseStore):Option[(CdcTaskGrant,TaskLease)]=transaction {c=>
+    require(pool=="SNAPSHOT" || pool=="TAIL")
+    val o=owner(c)
+    if(o("status")!="ACTIVE" || o("owner_attempt")!=attempt || ready.isEmpty || onlyTasks.exists(_.isEmpty))None
+    else {
+      val count=query(c,"SELECT COUNT(*) AS n FROM pekko_cdc_grants_v1 WHERE pool=? AND status IN ('ACTIVE','UNKNOWN')",pool).head("n").toInt
+      val maximum=if(pool=="TAIL")limits.tailSteps else limits.snapshotSteps
+      if(count>=maximum)None else {
+        val captureIds=ready.toVector.sorted
+        require(captureIds.size<=32,"too many configured capture domains")
+        val candidates=onlyTasks match {
+          case Some(ids)=>
+            require(ids.size<=32,"too many pinned validation tasks")
+            ids.toVector.sorted.flatMap {id=>
+              query(c,"SELECT * FROM pekko_cdc_tasks_v1 WHERE task_id=? AND work_pool=? AND schedulable=TRUE AND due_at<=? FOR UPDATE",id,pool,now).map(record)
+            }.filter(t=>ready(t.view.captureId))
+          case None=>
+            captureIds.flatMap {capture=>
+              query(c,"SELECT * FROM pekko_cdc_tasks_v1 WHERE capture_id=? AND work_pool=? AND schedulable=TRUE AND due_at<=? ORDER BY due_at,task_id LIMIT 1 FOR UPDATE",capture,pool,now).map(record)
+            }
+        }
+        candidates.sortBy(t=>(t.dueAt,t.view.taskId)).headOption.flatMap {task=>
+          leases.claimTaskOn(c,worker,task.view.taskId,task.view.captureId).map {taskLease=>
+            val id=UUID.randomUUID().toString
+            update(c,"INSERT INTO pekko_cdc_grants_v1 VALUES(?,?,?,?,'ACTIVE',?,NULL)",id,task.view.taskId,attempt,pool,now)
+            update(c,"UPDATE pekko_cdc_tasks_v1 SET grant_id=?,grant_owner=?,release_status='IN_USE',runtime_health='WORKING',observed_at=?,schedulable=FALSE WHERE task_id=?",id,attempt,now,task.view.taskId)
+            CdcTaskGrant(id,attempt,pool,row(c,task.view.taskId).get)->taskLease
+          }
         }
       }
     }

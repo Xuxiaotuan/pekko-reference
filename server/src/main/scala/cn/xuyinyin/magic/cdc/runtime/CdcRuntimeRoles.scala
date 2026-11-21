@@ -34,9 +34,27 @@ final case class TaskLease(
   lastTargetBatch: Option[String]
 )
 
+final case class CaptureSubscriptionRequest(
+  captureId: String,
+  requestId: String,
+  tableName: String,
+  generation: String
+)
+
+final case class CaptureSubscriptionResult(
+  captureId: String,
+  requestId: String,
+  tableName: String,
+  generation: String,
+  status: String
+)
+
 /** Capture control is deliberately smaller than the table execution API. */
 trait CaptureRuntimeControl {
   def acquire(captureId: String, sourceLineage: String, incarnation: String): Future[CaptureLease]
+  def ensureSubscription(request: CaptureSubscriptionRequest): Future[CaptureSubscriptionResult]
+  def cancelSubscription(captureId: String, requestId: String, reason: String): Future[CaptureSubscriptionResult]
+  def renew(lease: CaptureLease): Future[Boolean]
   def release(lease: CaptureLease): Future[Boolean]
 }
 
