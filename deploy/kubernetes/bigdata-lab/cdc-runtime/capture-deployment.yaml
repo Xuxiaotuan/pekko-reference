@@ -18,7 +18,7 @@ spec:
         - name: cdc-capture
           image: pekko-cdc-runtime:dev
           imagePullPolicy: IfNotPresent
-          command: ["/opt/docker/bin/pekko-reference", "-main", "cn.xuyinyin.magic.cdc.runtime.CdcCaptureRuntimeMain"]
+          command: ["/opt/docker/bin/cdc-capture-runtime-main"]
           envFrom: [{secretRef: {name: pekko-cdc-runtime-config}}]
           env:
             - name: JAVA_OPTS

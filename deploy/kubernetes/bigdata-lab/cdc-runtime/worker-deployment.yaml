@@ -18,7 +18,7 @@ spec:
         - name: cdc-worker
           image: pekko-cdc-runtime:dev
           imagePullPolicy: IfNotPresent
-          command: ["/opt/docker/bin/pekko-reference", "-main", "cn.xuyinyin.magic.cdc.runtime.CdcRuntime"]
+          command: ["/opt/docker/bin/cdc-runtime"]
           envFrom: [{secretRef: {name: pekko-cdc-runtime-config}}]
           env:
             - name: JAVA_OPTS
