@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pekko-cdc-capture
+  namespace: bigdata-lab
+  labels: {app: pekko-cdc-capture}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector: {matchLabels: {app: pekko-cdc-capture}}
+  template:
+    metadata: {labels: {app: pekko-cdc-capture}}
+    spec:
+      terminationGracePeriodSeconds: 60
+      nodeSelector: {kubernetes.io/hostname: xjw}
+      imagePullSecrets: [{name: xxt-harbor-pull}]
+      containers:
+        - name: cdc-capture
+          image: pekko-cdc-runtime:dev
+          imagePullPolicy: IfNotPresent
+          command: ["/opt/docker/bin/pekko-reference", "-main", "cn.xuyinyin.magic.cdc.runtime.CdcCaptureRuntimeMain"]
+          envFrom: [{secretRef: {name: pekko-cdc-runtime-config}}]
+          env:
+            - name: JAVA_OPTS
+              value: "-Dconfig.file=/opt/docker/conf/application-cdc-runtime.conf"
+          volumeMounts:
+            - {name: config, mountPath: /opt/docker/conf/application-cdc-runtime.conf, subPath: application-cdc-runtime.conf, readOnly: true}
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {cpu: "1", memory: 1Gi}
+          livenessProbe: {exec: {command: ["/bin/sh", "-c", "test -r /proc/1/cmdline"]}, initialDelaySeconds: 30, periodSeconds: 10}
+          readinessProbe: {exec: {command: ["/bin/sh", "-c", "test -r /proc/1/cmdline"]}, initialDelaySeconds: 15, periodSeconds: 5}
+      volumes:
+        - {name: config, configMap: {name: pekko-cdc-capture-config}}
