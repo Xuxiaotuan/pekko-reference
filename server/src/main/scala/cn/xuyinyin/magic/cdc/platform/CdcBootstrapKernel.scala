@@ -61,6 +61,7 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
     savepointStore.flatMap(_.readSealed(savepointId))
   def captures:Vector[CdcCaptureView]={
     if(stopping.get())captureViews.map(_.copy(readiness="STOPPING",runtimeHealth="UNKNOWN"))
+    else if(!captureEnabled)captureViews
     else {val current=System.nanoTime();captureViews.map(v=>CdcCaptureHealth.current(v,observations.get(v.captureId),current))}
   }
   def resourceEvidence:JsObject=synchronized {JsObject(
