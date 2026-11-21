@@ -19,10 +19,13 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))
 
       val capture = leases.acquireCapture("capture", "source-1", "capture-incarnation").get
+      capture.leaseId.nonEmpty shouldBe true
       leases.markCaptureActive(capture) shouldBe true
       leases.acquireCapture("capture", "source-1", "other-incarnation") shouldBe None
 
       val worker = leases.registerWorker("worker-1", "worker-incarnation", "{\"tail\":1}")
+      worker.leaseId.nonEmpty shouldBe true
+      leases.heartbeatWorker(worker.copy(leaseId = Some("stale-worker-lease")), 0) shouldBe false
       val task = leases.claimTasks(worker, 1).head
       leases.renewTask(task) shouldBe true
       val stale = task.copy(leaseEpoch = task.leaseEpoch - 1L)
@@ -93,10 +96,14 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       task.leaseId.nonEmpty shouldBe true
 
       val progressed = leases.recordProgress(TaskProgressCommit(task,
-        TaskProgressSnapshot(7L, 3L, Some("target-batch-1")), Some("COMMIT"), Some("ack-digest")))
+        TaskProgressSnapshot(7L, 3L, Some("target-batch-1")), Some("COMMIT"), Some("ack-digest"), Some("progress-1"), Some("progress-digest-1")))
       progressed.lastLSeq shouldBe 7L
       progressed.lastJournalRevision shouldBe 3L
       progressed.lastTargetBatch shouldBe Some("target-batch-1")
+      leases.recordProgress(TaskProgressCommit(progressed,
+        TaskProgressSnapshot(7L, 3L, Some("target-batch-1")), Some("COMMIT"), Some("ack-digest"), Some("progress-1"), Some("progress-digest-1"))).lastProgressId shouldBe Some("progress-1")
+      intercept[IllegalArgumentException](leases.recordProgress(TaskProgressCommit(progressed,
+        TaskProgressSnapshot(8L, 4L, Some("target-batch-2")), Some("COMMIT"), Some("ack-digest-2"), Some("progress-1"), Some("different-digest")))).getMessage should include("progress id reused")
 
       val nextCapture = {
         leases.releaseCapture(capture) shouldBe true
@@ -311,6 +318,9 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
           try { rows.next() shouldBe true; rows.getString(1) shouldBe CdcRuntimeSchemaVersion.leaseChecksum }
           finally rows.close()
         } finally query.close()
+        val columns = connection.prepareStatement("SELECT capture_owner_epoch,capture_lease_id,readiness_digest FROM pekko_cdc_capture_subscription_v1 WHERE 1=0")
+        try columns.executeQuery().close()
+        finally columns.close()
       } finally connection.close()
     }
   }

@@ -80,7 +80,7 @@ final class CdcWorkerRuntime(
 
   def recordProgressNow(commit: TaskProgressCommit): TaskLease = synchronized {
     requireRegistered(WorkerLease(commit.lease.workerId, commit.lease.workerIncarnation,
-      commit.lease.workerEpoch.getOrElse(commit.lease.leaseEpoch)))
+      commit.lease.workerEpoch.getOrElse(commit.lease.leaseEpoch), commit.lease.workerLeaseId.orElse(currentWorker.flatMap(_.leaseId))))
     val updated = leases.recordProgress(commit)
     track(updated)
     updated
@@ -88,7 +88,7 @@ final class CdcWorkerRuntime(
 
   def renewNow(lease: TaskLease): TaskLease = {
     requireRegistered(WorkerLease(lease.workerId, lease.workerIncarnation,
-      lease.workerEpoch.getOrElse(lease.leaseEpoch)))
+      lease.workerEpoch.getOrElse(lease.leaseEpoch), lease.workerLeaseId.orElse(currentWorker.flatMap(_.leaseId))))
     require(leases.renewTask(lease), "task lease is stale")
     lease
   }

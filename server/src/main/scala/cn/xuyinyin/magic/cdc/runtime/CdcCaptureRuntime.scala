@@ -42,17 +42,21 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
     val connection = openControl(entry.config)
     try {
       val update = connection.prepareStatement(
-        "UPDATE pekko_cdc_capture_subscription_v1 SET state=?,capture_readiness=?,owner_attempt=?,control_revision=control_revision+1,updated_at=? WHERE capture_id=? AND task_id=? AND (state<>? OR capture_readiness<>? OR COALESCE(owner_attempt,'')<>?)")
+        "UPDATE pekko_cdc_capture_subscription_v1 SET state=?,capture_readiness=?,owner_attempt=?,capture_owner_epoch=?,capture_lease_id=?,control_revision=control_revision+1,updated_at=? WHERE capture_id=? AND task_id=? AND (state<>? OR capture_readiness<>? OR COALESCE(owner_attempt,'')<>? OR COALESCE(capture_owner_epoch,-1)<>? OR COALESCE(capture_lease_id,'')<>?)")
       try {
         update.setString(1, subscription.status)
         update.setString(2, subscription.status)
         update.setString(3, entry.lease.ownerAttempt)
-        update.setLong(4, System.currentTimeMillis())
-        update.setString(5, entry.config.id)
-        update.setString(6, subscription.requestId)
-        update.setString(7, subscription.status)
-        update.setString(8, subscription.status)
-        update.setString(9, entry.lease.ownerAttempt)
+        update.setLong(4, entry.lease.ownerEpoch)
+        entry.lease.leaseId match { case Some(value) => update.setString(5, value); case None => update.setObject(5, null) }
+        update.setLong(6, System.currentTimeMillis())
+        update.setString(7, entry.config.id)
+        update.setString(8, subscription.requestId)
+        update.setString(9, subscription.status)
+        update.setString(10, subscription.status)
+        update.setString(11, entry.lease.ownerAttempt)
+        update.setLong(12, entry.lease.ownerEpoch)
+        entry.lease.leaseId match { case Some(value) => update.setString(13, value); case None => update.setString(13, "") }
         update.executeUpdate()
       } finally update.close()
     } finally connection.close()

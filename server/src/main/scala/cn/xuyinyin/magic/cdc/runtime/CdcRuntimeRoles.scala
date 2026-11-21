@@ -14,7 +14,8 @@ final case class CaptureLease(
   sourceLineage: String,
   ownerAttempt: String,
   ownerEpoch: Long,
-  incarnation: String
+  incarnation: String,
+  leaseId: Option[String] = None
 )
 
 final case class CaptureOwnerSnapshot(
@@ -27,7 +28,8 @@ final case class CaptureOwnerSnapshot(
 final case class WorkerLease(
   workerId: String,
   incarnation: String,
-  leaseEpoch: Long
+  leaseEpoch: Long,
+  leaseId: Option[String] = None
 )
 
 final case class TaskLease(
@@ -41,7 +43,10 @@ final case class TaskLease(
   lastTargetBatch: Option[String],
   captureOwnerEpoch: Option[Long] = None,
   workerEpoch: Option[Long] = None,
-  leaseId: Option[String] = None
+  leaseId: Option[String] = None,
+  lastProgressId: Option[String] = None,
+  lastProgressDigest: Option[String] = None,
+  workerLeaseId: Option[String] = None
 )
 
 /** Progress committed together with a task lease transition. */
@@ -56,7 +61,9 @@ final case class TaskProgressCommit(
   lease: TaskLease,
   progress: TaskProgressSnapshot,
   ackKind: Option[String] = None,
-  ackDigest: Option[String] = None
+  ackDigest: Option[String] = None,
+  progressId: Option[String] = None,
+  progressDigest: Option[String] = None
 )
 
 final case class CaptureSubscriptionRequest(

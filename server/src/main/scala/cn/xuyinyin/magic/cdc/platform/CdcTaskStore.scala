@@ -76,7 +76,7 @@ final class CdcTaskStore(
       "CREATE TABLE IF NOT EXISTS pekko_cdc_owner_delegation_v2(old_attempt VARCHAR(128) PRIMARY KEY,new_attempt VARCHAR(128) NOT NULL,permit_id VARCHAR(128) NOT NULL,freeze_digest CHAR(64) NOT NULL,receipt_digest CHAR(64) NOT NULL,journal_pid VARCHAR(255) NOT NULL,journal_sequence BIGINT NOT NULL,journal_revision BIGINT NOT NULL,execution_id VARCHAR(128) NOT NULL,attestation LONGTEXT NOT NULL,nonce VARCHAR(64) NOT NULL,created_at BIGINT NOT NULL)",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_b_budget_v1(task_id CHAR(64) PRIMARY KEY,attempts INT NOT NULL)",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_b_rejection_v1(permit_id VARCHAR(128) PRIMARY KEY,task_id CHAR(64) NOT NULL)",
-      "CREATE TABLE IF NOT EXISTS pekko_cdc_capture_subscription_v1(task_id CHAR(64) PRIMARY KEY,capture_id VARCHAR(64) NOT NULL,request_id VARCHAR(128) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL,desired_state VARCHAR(32) NOT NULL,state VARCHAR(32) NOT NULL,control_revision BIGINT NOT NULL,capture_readiness VARCHAR(32) NOT NULL,initialization_evidence LONGTEXT NULL,b_offset LONGTEXT NULL,high_offset LONGTEXT NULL,f_offset LONGTEXT NULL,k_offset LONGTEXT NULL,owner_attempt VARCHAR(128) NULL,updated_at BIGINT NOT NULL,UNIQUE(capture_id,table_name,generation),INDEX subscription_reconcile(capture_id,desired_state,state))",
+      "CREATE TABLE IF NOT EXISTS pekko_cdc_capture_subscription_v1(task_id CHAR(64) PRIMARY KEY,capture_id VARCHAR(64) NOT NULL,request_id VARCHAR(128) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL,desired_state VARCHAR(32) NOT NULL,state VARCHAR(32) NOT NULL,control_revision BIGINT NOT NULL,capture_readiness VARCHAR(32) NOT NULL,initialization_evidence LONGTEXT NULL,b_offset LONGTEXT NULL,high_offset LONGTEXT NULL,f_offset LONGTEXT NULL,k_offset LONGTEXT NULL,owner_attempt VARCHAR(128) NULL,capture_owner_epoch BIGINT NULL,capture_lease_id VARCHAR(128) NULL,readiness_digest CHAR(64) NULL,updated_at BIGINT NOT NULL,UNIQUE(capture_id,table_name,generation),INDEX subscription_reconcile(capture_id,desired_state,state))",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_tasks_v1(task_id CHAR(64) PRIMARY KEY,capture_id VARCHAR(64) NOT NULL,request_id VARCHAR(128) NOT NULL,table_name VARCHAR(128) NOT NULL,generation VARCHAR(128) NOT NULL,target_table VARCHAR(128) NOT NULL,definition_hash CHAR(64) NOT NULL,desired_state VARCHAR(32) NOT NULL,control_revision BIGINT NOT NULL,phase VARCHAR(32) NOT NULL,journal_revision BIGINT NOT NULL,execution_id VARCHAR(128),capture_readiness VARCHAR(32) NOT NULL,initialization_evidence LONGTEXT,runtime_health VARCHAR(32) NOT NULL,release_status VARCHAR(32) NOT NULL,failure_code VARCHAR(64),observed_at BIGINT NOT NULL,last_verified_at BIGINT,due_at BIGINT NOT NULL,grant_id VARCHAR(64),grant_owner VARCHAR(128),continuation_json LONGTEXT,continuation_owner VARCHAR(128),cancel_evidence VARCHAR(32),work_pool VARCHAR(16) NOT NULL,schedulable BOOLEAN NOT NULL,delta_after BIGINT NOT NULL DEFAULT 0,wake_seq BIGINT NOT NULL DEFAULT 0,UNIQUE(capture_id,request_id),UNIQUE(capture_id,table_name,generation))",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_dispatch_v1(capture_id VARCHAR(64) PRIMARY KEY,after_seq BIGINT NOT NULL)",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_grants_v1(grant_id VARCHAR(64) PRIMARY KEY,task_id CHAR(64) NOT NULL,owner_attempt VARCHAR(128) NOT NULL,pool VARCHAR(16) NOT NULL,status VARCHAR(32) NOT NULL,created_at BIGINT NOT NULL,finished_at BIGINT)",
@@ -84,7 +84,7 @@ final class CdcTaskStore(
       "CREATE TABLE IF NOT EXISTS pekko_cdc_unknown_recovery_v1(grant_id VARCHAR(64) PRIMARY KEY,task_id CHAR(64) NOT NULL,old_owner_attempt VARCHAR(128) NOT NULL,decision VARCHAR(64) NOT NULL,proof_json LONGTEXT NOT NULL,created_at BIGINT NOT NULL)",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_capture_owner_v1(capture_id VARCHAR(64) PRIMARY KEY,source_lineage VARCHAR(255) NOT NULL,owner_attempt VARCHAR(128) NOT NULL,owner_epoch BIGINT NOT NULL,incarnation VARCHAR(128) NOT NULL,state VARCHAR(32) NOT NULL,reader_session VARCHAR(128),source_offset_digest CHAR(64),release_proof_id VARCHAR(128),lease_expires_at BIGINT NULL,last_heartbeat_at BIGINT NULL,control_revision BIGINT NOT NULL DEFAULT 0,fence_token_hash CHAR(64) NULL,lease_id VARCHAR(128) NULL,drain_started_at BIGINT NULL,drain_deadline_at BIGINT NULL,failure_code VARCHAR(64) NULL,last_l_seq BIGINT NULL,last_source_epoch BIGINT NULL,updated_at BIGINT NOT NULL,UNIQUE KEY capture_owner_attempt(capture_id,owner_attempt))",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_worker_v1(worker_id VARCHAR(128) PRIMARY KEY,incarnation VARCHAR(128) NOT NULL,worker_epoch BIGINT NOT NULL,state VARCHAR(32) NOT NULL,capacity_json LONGTEXT NOT NULL,active_graphs INT NOT NULL,heartbeat_at BIGINT NOT NULL,lease_expires_at BIGINT NULL,last_heartbeat_at BIGINT NULL,drain_started_at BIGINT NULL,drain_deadline_at BIGINT NULL,max_active_graphs INT NULL,failure_code VARCHAR(64) NULL,lease_id VARCHAR(128) NULL,control_revision BIGINT NOT NULL DEFAULT 0,updated_at BIGINT NOT NULL,UNIQUE KEY worker_instance(worker_id,incarnation))",
-      "CREATE TABLE IF NOT EXISTS pekko_cdc_task_lease_v1(task_id CHAR(64) PRIMARY KEY,capture_id VARCHAR(64) NOT NULL,worker_id VARCHAR(128),worker_incarnation VARCHAR(128),lease_epoch BIGINT NOT NULL,state VARCHAR(32) NOT NULL,last_l_seq BIGINT NOT NULL,last_journal_revision BIGINT NOT NULL,last_target_batch VARCHAR(128),release_proof LONGTEXT,lease_expires_at BIGINT NULL,renewed_at BIGINT NULL,handoff_id VARCHAR(128) NULL,fence_token_hash CHAR(64) NULL,lease_id VARCHAR(128) NULL,last_ack_kind VARCHAR(16) NULL,last_ack_digest CHAR(64) NULL,unknown_since BIGINT NULL,release_state VARCHAR(32) NULL,failure_code VARCHAR(64) NULL,control_revision BIGINT NOT NULL DEFAULT 0,capture_owner_epoch BIGINT NULL,worker_epoch BIGINT NULL,updated_at BIGINT NOT NULL,INDEX lease_worker(worker_id,state),INDEX lease_capture(capture_id,state))",
+      "CREATE TABLE IF NOT EXISTS pekko_cdc_task_lease_v1(task_id CHAR(64) PRIMARY KEY,capture_id VARCHAR(64) NOT NULL,worker_id VARCHAR(128),worker_incarnation VARCHAR(128),worker_lease_id VARCHAR(128) NULL,lease_epoch BIGINT NOT NULL,state VARCHAR(32) NOT NULL,last_l_seq BIGINT NOT NULL,last_journal_revision BIGINT NOT NULL,last_target_batch VARCHAR(128),release_proof LONGTEXT,lease_expires_at BIGINT NULL,renewed_at BIGINT NULL,handoff_id VARCHAR(128) NULL,fence_token_hash CHAR(64) NULL,lease_id VARCHAR(128) NULL,last_ack_kind VARCHAR(16) NULL,last_ack_digest CHAR(64) NULL,last_progress_id CHAR(64) NULL,last_progress_digest CHAR(64) NULL,unknown_since BIGINT NULL,release_state VARCHAR(32) NULL,failure_code VARCHAR(64) NULL,control_revision BIGINT NOT NULL DEFAULT 0,capture_owner_epoch BIGINT NULL,worker_epoch BIGINT NULL,updated_at BIGINT NOT NULL,INDEX lease_worker(worker_id,state),INDEX lease_capture(capture_id,state))",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_task_handoff_v1(handoff_id VARCHAR(128) PRIMARY KEY,task_id CHAR(64) NOT NULL,old_worker_id VARCHAR(128) NOT NULL,old_incarnation VARCHAR(128) NOT NULL,old_lease_epoch BIGINT NOT NULL,new_worker_id VARCHAR(128),new_incarnation VARCHAR(128),new_lease_epoch BIGINT,state VARCHAR(32) NOT NULL,t_digest CHAR(64),journal_revision BIGINT,d_seq BIGINT,release_proof LONGTEXT,old_release_state VARCHAR(32) NULL,proof_digest CHAR(64) NULL,new_claimed_at BIGINT NULL,failure_code VARCHAR(64) NULL,created_at BIGINT NOT NULL,updated_at BIGINT NOT NULL,INDEX handoff_task(task_id,created_at))"
     ).foreach(sql=>update(c,sql+suffix))
     def ensureColumn(table:String,column:String,definition:String):Unit={
@@ -117,14 +117,20 @@ final class CdcTaskStore(
     ensureColumn("pekko_cdc_task_lease_v1","handoff_id","VARCHAR(128) NULL")
     ensureColumn("pekko_cdc_task_lease_v1","fence_token_hash","CHAR(64) NULL")
     ensureColumn("pekko_cdc_task_lease_v1","lease_id","VARCHAR(128) NULL")
+    ensureColumn("pekko_cdc_task_lease_v1","worker_lease_id","VARCHAR(128) NULL")
     ensureColumn("pekko_cdc_task_lease_v1","last_ack_kind","VARCHAR(16) NULL")
     ensureColumn("pekko_cdc_task_lease_v1","last_ack_digest","CHAR(64) NULL")
+    ensureColumn("pekko_cdc_task_lease_v1","last_progress_id","CHAR(64) NULL")
+    ensureColumn("pekko_cdc_task_lease_v1","last_progress_digest","CHAR(64) NULL")
     ensureColumn("pekko_cdc_task_lease_v1","unknown_since","BIGINT NULL")
     ensureColumn("pekko_cdc_task_lease_v1","release_state","VARCHAR(32) NULL")
     ensureColumn("pekko_cdc_task_lease_v1","failure_code","VARCHAR(64) NULL")
     ensureColumn("pekko_cdc_task_lease_v1","control_revision","BIGINT NOT NULL DEFAULT 0")
     ensureColumn("pekko_cdc_task_lease_v1","capture_owner_epoch","BIGINT NULL")
     ensureColumn("pekko_cdc_task_lease_v1","worker_epoch","BIGINT NULL")
+    ensureColumn("pekko_cdc_capture_subscription_v1","capture_owner_epoch","BIGINT NULL")
+    ensureColumn("pekko_cdc_capture_subscription_v1","capture_lease_id","VARCHAR(128) NULL")
+    ensureColumn("pekko_cdc_capture_subscription_v1","readiness_digest","CHAR(64) NULL")
     ensureColumn("pekko_cdc_task_handoff_v1","old_release_state","VARCHAR(32) NULL")
     ensureColumn("pekko_cdc_task_handoff_v1","proof_digest","CHAR(64) NULL")
     ensureColumn("pekko_cdc_task_handoff_v1","new_claimed_at","BIGINT NULL")
@@ -1359,7 +1365,15 @@ final class CdcTaskStore(
     */
   private def captureSubscriptionReady(c:Connection,task:CdcTaskRecord):Boolean={
     if(!requireCaptureReadiness) true
-    else query(c,"SELECT 1 AS n FROM pekko_cdc_capture_subscription_v1 WHERE task_id=? AND capture_id=? AND state='CAPTURE_READY' AND capture_readiness='CAPTURE_READY' LIMIT 1",task.view.taskId,task.view.captureId).nonEmpty
+    else if(query(c,"SELECT 1 AS n FROM pekko_cdc_capture_owner_v1 WHERE capture_id=?",task.view.captureId).isEmpty)
+      query(c,"SELECT 1 AS n FROM pekko_cdc_capture_subscription_v1 WHERE task_id=? AND capture_id=? AND state='CAPTURE_READY' AND capture_readiness='CAPTURE_READY' LIMIT 1",task.view.taskId,task.view.captureId).nonEmpty
+    else query(c,
+      "SELECT 1 AS n FROM pekko_cdc_capture_subscription_v1 s " +
+        "JOIN pekko_cdc_capture_owner_v1 o ON o.capture_id=s.capture_id " +
+        "WHERE s.task_id=? AND s.capture_id=? AND s.state='CAPTURE_READY' AND s.capture_readiness='CAPTURE_READY' " +
+        "AND o.state='ACTIVE' AND s.capture_owner_epoch=o.owner_epoch " +
+        "AND (s.capture_lease_id IS NULL OR s.capture_lease_id=o.lease_id) LIMIT 1",
+      task.view.taskId,task.view.captureId).nonEmpty
   }
   private def requireGrant(c:Connection,grant:CdcTaskGrant):CdcTaskRecord={
     val r=row(c,grant.task.view.taskId,true).getOrElse(throw new CdcPlatformException("NOT_FOUND"))
