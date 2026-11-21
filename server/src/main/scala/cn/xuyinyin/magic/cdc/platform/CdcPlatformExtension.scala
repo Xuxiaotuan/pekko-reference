@@ -33,7 +33,7 @@ final class CdcPlatformExtension(system:ActorSystem[_]) extends Extension {
         Some(CdcManagedOwner(identity.bootId,identity.deploymentId,b.hostId,b.bootId,b.publicKey,identity.pid,identity.startIdentity,profile))
       } finally supervisor.close()
     }else None
-    val store=new CdcTaskStore(()=>ManagedCdcJdbc.open(CdcJdbc.withTimeouts(state.jdbcUrl),state.username,state.password,"control",managed.nonEmpty),settings.limits)
+    val store=new CdcTaskStore(()=>ManagedCdcJdbc.open(CdcJdbc.withTimeouts(state.jdbcUrl),state.username,state.password,"control",managed.nonEmpty),settings.limits,requireCaptureReadiness=true)
     val runtimeLeases=new cn.xuyinyin.magic.cdc.runtime.CdcRuntimeLeaseStore(()=>ManagedCdcJdbc.open(CdcJdbc.withTimeouts(state.jdbcUrl),state.username,state.password,"control",managed.nonEmpty))
     val recover=managed.map { _ =>
       val supervisorConfig=Path.of(config.getString("pekko.workflow.snapshot-ha.supervisor-config"))

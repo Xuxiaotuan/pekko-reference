@@ -46,6 +46,37 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       taskStore.grants shouldBe empty
     }
 
+    "must require the Capture State readiness proof when the roles use separate databases" in {
+      val controlUrl = database()
+      def openControl() = DriverManager.getConnection(controlUrl)
+      val taskStore = new CdcTaskStore(() => openControl(), CdcPlatformLimits(snapshotSteps = 1, tailSteps = 1), true)
+      taskStore.initialize()
+      taskStore.beginOwner("owner", 1L) shouldBe true
+      val task = taskStore.submit(CdcTaskRequest("request", "capture", "orders", "g1", "orders_target"), 2L).task
+      val leases = new CdcRuntimeLeaseStore(() => openControl())
+      val worker = leases.registerWorker("worker", "incarnation", "{\"snapshotSteps\":1}")
+
+      taskStore.claimWithLease("owner", "SNAPSHOT", Set("capture"), 3L, None, worker, leases) shouldBe None
+
+      val pending = openControl()
+      try {
+        val insert = pending.prepareStatement("UPDATE pekko_cdc_capture_subscription_v1 SET state='B_PENDING',capture_readiness='B_PENDING' WHERE task_id=?")
+        try {
+          insert.setString(1, task.taskId)
+          insert.executeUpdate()
+        } finally insert.close()
+      } finally pending.close()
+      taskStore.claimWithLease("owner", "SNAPSHOT", Set("capture"), 4L, None, worker, leases) shouldBe None
+
+      val ready = openControl()
+      try {
+        val update = ready.prepareStatement("UPDATE pekko_cdc_capture_subscription_v1 SET state='CAPTURE_READY',capture_readiness='CAPTURE_READY' WHERE task_id=?")
+        try { update.setString(1, task.taskId); update.executeUpdate() }
+        finally update.close()
+      } finally ready.close()
+      taskStore.claimWithLease("owner", "SNAPSHOT", Set("capture"), 5L, None, worker, leases).nonEmpty shouldBe true
+    }
+
     "must renew capture and worker leases only for the current fencing identity" in {
       val url = database()
       val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits())

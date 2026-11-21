@@ -6,9 +6,9 @@ import java.util.UUID
 /** Records the schema contract actually applied by each runtime initializer. */
 object CdcRuntimeSchemaVersion {
   val leaseVersion = 2
-  val taskVersion = 3
+  val taskVersion = 4
   val leaseChecksum = "cdc-runtime-lease-v2"
-  val taskChecksum = "cdc-task-store-v3"
+  val taskChecksum = "cdc-task-store-v4-capture-readiness-projection"
 
   def record(connection: Connection, version: Int, checksum: String): Unit = {
     val select = connection.prepareStatement("SELECT checksum FROM pekko_cdc_runtime_schema_version WHERE version=? FOR UPDATE")

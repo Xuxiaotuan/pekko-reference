@@ -1,7 +1,7 @@
 package cn.xuyinyin.magic.cdc.runtime
 
 import cn.xuyinyin.magic.cdc.platform.{CdcCaptureSettings,CdcPlatformSettings}
-import cn.xuyinyin.magic.connectors.mysql.source.capture.{MySQLCaptureStore,SharedMySQLCapture}
+import cn.xuyinyin.magic.connectors.mysql.source.capture.{CaptureSubscription,MySQLCaptureStore,SharedMySQLCapture}
 import cn.xuyinyin.magic.connectors.mysql.source.DebeziumEngineFactory
 import java.sql.DriverManager
 import java.util.UUID
@@ -34,6 +34,29 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
 
   private def openControl(config: CdcCaptureSettings) =
     DriverManager.getConnection(config.controlState.jdbcUrl, config.controlState.username, config.controlState.password)
+
+  /** Publish the Reader fact after its Capture State transaction has returned.
+    * WorkerRuntime consumes this Control DB projection and never opens Capture State.
+    */
+  private def publishSubscription(entry: Entry, subscription: CaptureSubscription): Unit = {
+    val connection = openControl(entry.config)
+    try {
+      val update = connection.prepareStatement(
+        "UPDATE pekko_cdc_capture_subscription_v1 SET state=?,capture_readiness=?,owner_attempt=?,control_revision=control_revision+1,updated_at=? WHERE capture_id=? AND task_id=? AND (state<>? OR capture_readiness<>? OR COALESCE(owner_attempt,'')<>?)")
+      try {
+        update.setString(1, subscription.status)
+        update.setString(2, subscription.status)
+        update.setString(3, entry.lease.ownerAttempt)
+        update.setLong(4, System.currentTimeMillis())
+        update.setString(5, entry.config.id)
+        update.setString(6, subscription.requestId)
+        update.setString(7, subscription.status)
+        update.setString(8, subscription.status)
+        update.setString(9, entry.lease.ownerAttempt)
+        update.executeUpdate()
+      } finally update.close()
+    } finally connection.close()
+  }
 
   /** A stale owner is recoverable only after the source proves its old lock is gone. */
   private def sourceLockFree(config:CdcCaptureSettings,ownerAttempt:String):Boolean={
@@ -101,7 +124,13 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
                 case "CAPTURE_READY" => entry.reader.unsubscribe(requestId)
                 case _ => ()
               }
+              entry.store.subscription(requestId).foreach(publishSubscription(entry, _))
             } catch {case error:Throwable=>logger.warn("CDC capture cancellation deferred capture={} request={} reason={}",entry.config.id,requestId,error.toString)}
+          }
+          entry.store.subscription(requestId).foreach { subscription =>
+            if (subscription.status == "CAPTURE_READY" || subscription.status == "CAPTURE_STOPPED" || subscription.status == "CANCELED")
+              try publishSubscription(entry, subscription)
+              catch {case error:Throwable=>logger.warn("CDC capture readiness projection deferred capture={} request={} reason={}",entry.config.id,requestId,error.toString)}
           }
         } finally rows.close()
       } finally query.close()
@@ -150,6 +179,7 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
       val e=entry(request.captureId)
       require(leases.renewCapture(e.lease,leaseTtlMillis),"capture lease is stale")
       val subscription=e.reader.subscribe(request.requestId,request.tableName,request.generation)
+      publishSubscription(e, subscription)
       CaptureSubscriptionResult(request.captureId,subscription.requestId,subscription.table,subscription.generation,subscription.status)
     }
   }
@@ -167,6 +197,7 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
         case other => throw new IllegalStateException("subscription cannot be canceled from "+other)
       }
       val result=e.store.subscription(requestId).getOrElse(current)
+      publishSubscription(e, result)
       CaptureSubscriptionResult(captureId,result.requestId,result.table,result.generation,result.status)
     }
   }

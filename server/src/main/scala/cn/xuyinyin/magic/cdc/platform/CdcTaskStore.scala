@@ -46,7 +46,11 @@ object CdcTaskStore {
 }
 
 /** A new control index. It never edits the kernel Journal, original L, SDK D or target receipts. */
-final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
+final class CdcTaskStore(
+  val open:()=>Connection,
+  val limits:CdcPlatformLimits,
+  requireCaptureReadiness:Boolean=false
+) {
   private val jdbc=new BootstrapJdbc(open,2)
   import jdbc._
   private val logger=org.slf4j.LoggerFactory.getLogger(getClass)
@@ -1341,14 +1345,12 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
   }
 
   /** Worker-only mode must wait for the shared Reader's durable CAPTURE_READY
-    * subscription. Older H2 fixtures do not install the Reader tables, so they
-    * retain the previous scheduling behavior.
+    * subscription. Production enables the Control DB projection; legacy
+    * fixtures retain the previous scheduling behavior.
     */
   private def captureSubscriptionReady(c:Connection,task:CdcTaskRecord):Boolean={
-    val table=try query(c,"SELECT 1 AS n FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='pekko_capture_subscriptions' LIMIT 1")
-    catch {case _:SQLException=>Vector.empty}
-    if(table.isEmpty) true
-    else query(c,"SELECT 1 AS n FROM pekko_capture_subscriptions WHERE capture_id=? AND subscription_id=? AND status='CAPTURE_READY' LIMIT 1",task.view.captureId,task.view.taskId).nonEmpty
+    if(!requireCaptureReadiness) true
+    else query(c,"SELECT 1 AS n FROM pekko_cdc_capture_subscription_v1 WHERE task_id=? AND capture_id=? AND state='CAPTURE_READY' AND capture_readiness='CAPTURE_READY' LIMIT 1",task.view.taskId,task.view.captureId).nonEmpty
   }
   private def requireGrant(c:Connection,grant:CdcTaskGrant):CdcTaskRecord={
     val r=row(c,grant.task.view.taskId,true).getOrElse(throw new CdcPlatformException("NOT_FOUND"))
