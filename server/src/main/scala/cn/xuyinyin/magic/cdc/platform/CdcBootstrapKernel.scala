@@ -72,7 +72,7 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
     val account=c.gc.get
     ManagedCdcJdbc.open(CdcJdbc.withTimeouts(c.controlState.jdbcUrl),account.username,account.password,"control",managed)
   }
-  override def gcEnabled:Boolean=settings.captures.exists(_.gc.nonEmpty)
+  override def gcEnabled:Boolean=captureEnabled && settings.captures.exists(_.gc.nonEmpty)
   override def gcViews:Vector[JsObject]=synchronized(gcById.values.toVector).map(_.status)
   override def maintainGc(attempt:String,stop:()=>Boolean):Unit={
     val ready=dispatchCaptureIds
