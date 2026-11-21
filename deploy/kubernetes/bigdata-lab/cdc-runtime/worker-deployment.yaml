@@ -23,6 +23,16 @@ spec:
           env:
             - name: JAVA_OPTS
               value: "-Dconfig.file=/opt/docker/conf/application-cdc-worker.conf"
+            - name: DB_HOST
+              valueFrom: {secretKeyRef: {name: pekko-cdc-runtime-config, key: CDC_STATE_HOST}}
+            - name: DB_PORT
+              valueFrom: {secretKeyRef: {name: pekko-cdc-runtime-config, key: CDC_STATE_PORT}}
+            - name: DB_NAME
+              valueFrom: {secretKeyRef: {name: pekko-cdc-runtime-config, key: CDC_STATE_DATABASE}}
+            - name: DB_USER
+              valueFrom: {secretKeyRef: {name: pekko-cdc-runtime-config, key: CDC_STATE_USER}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: pekko-cdc-runtime-config, key: CDC_STATE_PASSWORD}}
           ports: [{name: http, containerPort: 8080}]
           volumeMounts:
             - {name: config, mountPath: /opt/docker/conf/application-cdc-worker.conf, subPath: application-cdc-worker.conf, readOnly: true}
