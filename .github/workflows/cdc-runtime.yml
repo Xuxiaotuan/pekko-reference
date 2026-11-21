@@ -1,5 +1,7 @@
 name: cdc-runtime
 
+# The feature branch uses an explicit deploy marker so verification pushes do not alter the cluster.
+
 on:
   push:
     branches: [main, feature/pekkosync-mvp-cleanup-datafusion]
