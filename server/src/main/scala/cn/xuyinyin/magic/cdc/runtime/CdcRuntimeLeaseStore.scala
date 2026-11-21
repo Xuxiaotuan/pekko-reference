@@ -6,9 +6,9 @@ import java.util.UUID
 /** Records the schema contract actually applied by each runtime initializer. */
 object CdcRuntimeSchemaVersion {
   // Versions 2-4 are already occupied by the historical shared schema table.
-  val leaseVersion = 5
+  val leaseVersion = 6
   val taskVersion = 4
-  val leaseChecksum = "cdc-runtime-lease-v3-epoch-bound-task-progress"
+  val leaseChecksum = "cdc-runtime-lease-v4-epoch-progress-unknown-replay"
   val taskChecksum = "cdc-task-store-v4-capture-readiness-projection"
 
   def record(connection: Connection, version: Int, checksum: String): Unit = {
@@ -62,6 +62,7 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
       "CREATE TABLE IF NOT EXISTS pekko_cdc_capture_owner_v1(capture_id VARCHAR(64) PRIMARY KEY,source_lineage VARCHAR(255) NOT NULL,owner_attempt VARCHAR(128) NOT NULL,owner_epoch BIGINT NOT NULL,incarnation VARCHAR(128) NOT NULL,state VARCHAR(32) NOT NULL,reader_session VARCHAR(128) NULL,source_offset_digest CHAR(64) NULL,release_proof_id VARCHAR(128) NULL,lease_expires_at BIGINT NULL,last_heartbeat_at BIGINT NULL,control_revision BIGINT NOT NULL DEFAULT 0,fence_token_hash CHAR(64) NULL,lease_id VARCHAR(128) NULL,drain_started_at BIGINT NULL,drain_deadline_at BIGINT NULL,failure_code VARCHAR(64) NULL,last_l_seq BIGINT NULL,last_source_epoch BIGINT NULL,updated_at BIGINT NOT NULL,UNIQUE(capture_id,owner_attempt))",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_worker_v1(worker_id VARCHAR(128) PRIMARY KEY,incarnation VARCHAR(128) NOT NULL,worker_epoch BIGINT NOT NULL,state VARCHAR(32) NOT NULL,capacity_json LONGTEXT NOT NULL,active_graphs INT NOT NULL,heartbeat_at BIGINT NOT NULL,lease_expires_at BIGINT NULL,last_heartbeat_at BIGINT NULL,drain_started_at BIGINT NULL,drain_deadline_at BIGINT NULL,max_active_graphs INT NULL,failure_code VARCHAR(64) NULL,lease_id VARCHAR(128) NULL,control_revision BIGINT NOT NULL DEFAULT 0,updated_at BIGINT NOT NULL,UNIQUE(worker_id,incarnation))",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_task_lease_v1(task_id CHAR(64) PRIMARY KEY,capture_id VARCHAR(64) NOT NULL,worker_id VARCHAR(128) NULL,worker_incarnation VARCHAR(128) NULL,lease_epoch BIGINT NOT NULL,state VARCHAR(32) NOT NULL,last_l_seq BIGINT NOT NULL,last_journal_revision BIGINT NOT NULL,last_target_batch VARCHAR(128) NULL,release_proof LONGTEXT NULL,lease_expires_at BIGINT NULL,renewed_at BIGINT NULL,handoff_id VARCHAR(128) NULL,fence_token_hash CHAR(64) NULL,lease_id VARCHAR(128) NULL,last_ack_kind VARCHAR(16) NULL,last_ack_digest CHAR(64) NULL,unknown_since BIGINT NULL,release_state VARCHAR(32) NULL,failure_code VARCHAR(64) NULL,control_revision BIGINT NOT NULL DEFAULT 0,capture_owner_epoch BIGINT NULL,worker_epoch BIGINT NULL,updated_at BIGINT NOT NULL)",
+      "CREATE TABLE IF NOT EXISTS pekko_cdc_unknown_recovery_v1(grant_id VARCHAR(64) PRIMARY KEY,task_id CHAR(64) NOT NULL,old_owner_attempt VARCHAR(128) NOT NULL,decision VARCHAR(64) NOT NULL,proof_json LONGTEXT NOT NULL,created_at BIGINT NOT NULL)",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_task_handoff_v1(handoff_id VARCHAR(128) PRIMARY KEY,task_id CHAR(64) NOT NULL,old_worker_id VARCHAR(128) NOT NULL,old_incarnation VARCHAR(128) NOT NULL,old_lease_epoch BIGINT NOT NULL,new_worker_id VARCHAR(128) NULL,new_incarnation VARCHAR(128) NULL,new_lease_epoch BIGINT NULL,state VARCHAR(32) NOT NULL,t_digest CHAR(64) NULL,journal_revision BIGINT NULL,d_seq BIGINT NULL,release_proof LONGTEXT NULL,old_release_state VARCHAR(32) NULL,proof_digest CHAR(64) NULL,new_claimed_at BIGINT NULL,failure_code VARCHAR(64) NULL,created_at BIGINT NOT NULL,updated_at BIGINT NOT NULL)"
     )
     ddl.foreach { sql =>
@@ -108,6 +109,18 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
           metadata.getColumnLabel(index) -> result.getString(index)
         }.toMap)
       }
+    } finally result.close()
+  }
+
+  private def queryRows(statement: PreparedStatement): Vector[Map[String, String]] = {
+    val result = statement.executeQuery()
+    try {
+      val metadata = result.getMetaData
+      val rows = Vector.newBuilder[Map[String, String]]
+      while (result.next()) rows += (1 to metadata.getColumnCount).map { index =>
+        metadata.getColumnLabel(index) -> result.getString(index)
+      }.toMap
+      rows.result()
     } finally result.close()
   }
 
@@ -285,12 +298,42 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
           "SELECT 1 AS n FROM pekko_cdc_task_lease_v1 WHERE state IN ('ACTIVE','DRAINING') AND (lease_expires_at IS NULL OR lease_expires_at>?) LIMIT 1")
         val hasActiveTask = try { taskCheck.setLong(1, now); queryOne(taskCheck).nonEmpty } finally taskCheck.close()
         val grantCheck = connection.prepareStatement(
-          "SELECT 1 AS n FROM pekko_cdc_grants_v1 WHERE status IN ('ACTIVE','UNKNOWN') LIMIT 1")
-        val hasUncertainGrant = try queryOne(grantCheck).nonEmpty finally grantCheck.close()
+          "SELECT g.grant_id,g.task_id,g.owner_attempt,g.status,t.phase,t.release_status,t.runtime_health," +
+            "l.state AS lease_state,l.lease_expires_at,l.last_target_batch " +
+            "FROM pekko_cdc_grants_v1 g JOIN pekko_cdc_tasks_v1 t ON t.task_id=g.task_id " +
+            "LEFT JOIN pekko_cdc_task_lease_v1 l ON l.task_id=g.task_id " +
+            "WHERE g.status IN ('ACTIVE','UNKNOWN') ORDER BY g.grant_id FOR UPDATE")
+        val grants = try queryRows(grantCheck) finally grantCheck.close()
+        val activeGrant = grants.exists(_("status") == "ACTIVE")
+        val replayableUnknown = grants.nonEmpty && !activeGrant && grants.forall { grant =>
+          grant("owner_attempt") == attempt && grant("status") == "UNKNOWN" &&
+            grant("phase") == "PAUSED" && grant("release_status") == "UNKNOWN" &&
+            grant("runtime_health") == "UNKNOWN" && Option(grant("last_target_batch")).forall(_.isEmpty) &&
+            (Option(grant("lease_state")).forall(state => state != "ACTIVE" && state != "DRAINING") ||
+              Option(grant("lease_expires_at")).exists(_.toLong <= now))
+        }
         val pendingCheck = connection.prepareStatement(
           "SELECT 1 AS n FROM pekko_cdc_b_recovery_v1 WHERE consumed=FALSE LIMIT 1")
         val hasPendingRecovery = try queryOne(pendingCheck).nonEmpty finally pendingCheck.close()
-        if (leaseExpired && !hasActiveTask && !hasUncertainGrant && !hasPendingRecovery) {
+        if (leaseExpired && !hasActiveTask && !hasPendingRecovery && (!activeGrant && (grants.isEmpty || replayableUnknown))) {
+          grants.filter(_("status") == "UNKNOWN").foreach { grant =>
+            val proof = s"{\"decision\":\"REPLAY_WITHOUT_TARGET_BATCH\",\"grantId\":\"${grant("grant_id")}\",\"taskId\":\"${grant("task_id")}\",\"oldOwner\":\"$attempt\"}"
+            val audit = connection.prepareStatement(
+              "INSERT INTO pekko_cdc_unknown_recovery_v1(grant_id,task_id,old_owner_attempt,decision,proof_json,created_at) VALUES(?,?,?,?,?,?) " +
+                "ON DUPLICATE KEY UPDATE decision=VALUES(decision),proof_json=VALUES(proof_json)")
+            try {
+              audit.setString(1, grant("grant_id")); audit.setString(2, grant("task_id")); audit.setString(3, attempt)
+              audit.setString(4, "REPLAY_WITHOUT_TARGET_BATCH"); audit.setString(5, proof); audit.setLong(6, now); audit.executeUpdate()
+            } finally audit.close()
+            val releaseGrant = connection.prepareStatement("UPDATE pekko_cdc_grants_v1 SET status='RELEASED',finished_at=? WHERE grant_id=? AND status='UNKNOWN'")
+            try { releaseGrant.setLong(1, now); releaseGrant.setString(2, grant("grant_id")); releaseGrant.executeUpdate() } finally releaseGrant.close()
+            val resetTask = connection.prepareStatement(
+              "UPDATE pekko_cdc_tasks_v1 SET phase='QUEUED',runtime_health='WAITING',release_status='RELEASED',failure_code='UNKNOWN_REPLAY_REQUEUED',grant_id=NULL,grant_owner=NULL,schedulable=TRUE,due_at=?,observed_at=? WHERE task_id=? AND phase='PAUSED' AND release_status='UNKNOWN'")
+            try { resetTask.setLong(1, now); resetTask.setLong(2, now); resetTask.setString(3, grant("task_id")); resetTask.executeUpdate() } finally resetTask.close()
+            val releaseLease = connection.prepareStatement(
+              "UPDATE pekko_cdc_task_lease_v1 SET state='RELEASED',release_state='RELEASED',release_proof=?,lease_expires_at=NULL,updated_at=?,control_revision=control_revision+1 WHERE task_id=? AND state IN ('UNKNOWN','ACTIVE','DRAINING') AND (lease_expires_at IS NULL OR lease_expires_at<=?)")
+            try { releaseLease.setString(1, proof); releaseLease.setLong(2, now); releaseLease.setString(3, grant("task_id")); releaseLease.setLong(4, now); releaseLease.executeUpdate() } finally releaseLease.close()
+          }
           val stopWorker = connection.prepareStatement(
             "UPDATE pekko_cdc_worker_v1 SET state='STOPPED',lease_expires_at=NULL,updated_at=?,control_revision=control_revision+1 WHERE worker_id=? AND state<>'STOPPED'")
           try { stopWorker.setLong(1, now); stopWorker.setString(2, attempt); stopWorker.executeUpdate() } finally stopWorker.close()

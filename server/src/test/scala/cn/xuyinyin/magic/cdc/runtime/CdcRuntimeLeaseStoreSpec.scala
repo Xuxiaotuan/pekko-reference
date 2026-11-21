@@ -245,6 +245,36 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       taskStore.ownerStatus shouldBe "STOPPED"
     }
 
+    "must requeue an UNKNOWN grant only when it has no target batch and its task is paused" in {
+      val url = database()
+      val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits())
+      taskStore.initialize()
+      taskStore.beginOwner("legacy-worker", 1L) shouldBe true
+      val accepted = taskStore.submit(CdcTaskRequest("request", "capture", "orders", "g1", "orders_target"), 1L)
+      val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))
+      val worker = leases.registerWorker("legacy-worker", "legacy-incarnation", "{}"); val task = leases.claimTasks(worker, 1).head
+      leases.releaseTask(task, "release-unknown", "UNKNOWN") shouldBe true
+      val connection = DriverManager.getConnection(url)
+      try {
+        val grant = connection.prepareStatement("INSERT INTO pekko_cdc_grants_v1 VALUES(?,?,?,?,?, ?,?)")
+        try { grant.setString(1, "unknown-grant"); grant.setString(2, accepted.task.taskId); grant.setString(3, "legacy-worker"); grant.setString(4, "SNAPSHOT"); grant.setString(5, "UNKNOWN"); grant.setLong(6, 1L); grant.setObject(7, null); grant.executeUpdate() } finally grant.close()
+        val taskState = connection.prepareStatement("UPDATE pekko_cdc_tasks_v1 SET phase='PAUSED',runtime_health='UNKNOWN',release_status='UNKNOWN',schedulable=FALSE,grant_id=? WHERE task_id=?")
+        try { taskState.setString(1, "unknown-grant"); taskState.setString(2, accepted.task.taskId); taskState.executeUpdate() } finally taskState.close()
+        val expire = connection.prepareStatement("UPDATE pekko_cdc_worker_v1 SET lease_expires_at=0 WHERE worker_id=?")
+        try { expire.setString(1, worker.workerId); expire.executeUpdate() } finally expire.close()
+      } finally connection.close()
+
+      leases.recoverExpiredOwner(System.currentTimeMillis()) shouldBe true
+      val check = DriverManager.getConnection(url)
+      try {
+        val query = check.prepareStatement("SELECT status FROM pekko_cdc_grants_v1 WHERE grant_id='unknown-grant'")
+        try { val rows=query.executeQuery(); try { rows.next() shouldBe true; rows.getString(1) shouldBe "RELEASED" } finally rows.close() } finally query.close()
+        val audit = check.prepareStatement("SELECT decision FROM pekko_cdc_unknown_recovery_v1 WHERE grant_id='unknown-grant'")
+        try { val rows=audit.executeQuery(); try { rows.next() shouldBe true; rows.getString(1) shouldBe "REPLAY_WITHOUT_TARGET_BATCH" } finally rows.close() } finally audit.close()
+      } finally check.close()
+      taskStore.ownerStatus shouldBe "STOPPED"
+    }
+
     "must project task lifecycle changes into the capture subscription view" in {
       val url = database()
       val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits())
