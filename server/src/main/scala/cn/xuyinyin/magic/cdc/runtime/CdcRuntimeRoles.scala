@@ -41,6 +41,13 @@ final case class TaskLease(
   lastTargetBatch: Option[String]
 )
 
+/** Progress committed together with a task lease transition. */
+final case class TaskProgressSnapshot(
+  lastLSeq: Long,
+  lastJournalRevision: Long,
+  lastTargetBatch: Option[String]
+)
+
 final case class CaptureSubscriptionRequest(
   captureId: String,
   requestId: String,

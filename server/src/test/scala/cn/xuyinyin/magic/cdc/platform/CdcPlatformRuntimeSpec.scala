@@ -52,6 +52,40 @@ class CdcPlatformRuntimeSpec extends STSpec {
       replacement.leaseEpoch shouldBe worker.leaseEpoch + 1L
     }
 
+    "commit task lease progress with the task completion transaction" in {
+      val url="jdbc:h2:mem:cdc_task_progress_"+UUID.randomUUID().toString.replace('-','_')+";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
+      val limits=CdcPlatformLimits(snapshotSteps=1,tailSteps=1)
+      val kernel=new CdcPlatformKernel {
+        def start():Unit=()
+        def captures:Vector[CdcCaptureView]=Vector(CdcCaptureView("capture","source","ADMISSION_READY","HEALTHY",None))
+        override def run(task:CdcTaskRequest,id:String,cancel:Boolean,continuation:Option[BootstrapProgress],stop:()=>Boolean,workPool:String):CdcKernelOutcome=
+          CdcKernelOutcome(BootstrapProgress(revision=7,phase="STREAMING",executionId=id,deltaAfter=11,completionRoot="target-batch-11"),true,true,true,1L,Some("proof"))
+        def closeAndVerify():Boolean=true
+      }
+      val store=new CdcTaskStore(()=>DriverManager.getConnection(url),limits)
+      val leases=new CdcRuntimeLeaseStore(()=>DriverManager.getConnection(url))
+      val runtime=new CdcPlatformRuntime(store,kernel,limits,polling=false,runtimeLeases=Some(leases))
+      try {
+        Await.result(runtime.listAfter(None,1),10.seconds)
+        val accepted=Await.result(runtime.submit(CdcTaskRequest("request","capture","orders","g1","orders_target")),10.seconds)
+        Await.result(runtime.pollNow(),10.seconds)
+        val deadline=System.nanoTime()+5000000000L
+        var current=Await.result(runtime.get(accepted.task.taskId),10.seconds)
+        while(current.forall(_.phase!="STREAMING") && System.nanoTime()<deadline){Thread.sleep(20);current=Await.result(runtime.get(accepted.task.taskId),10.seconds)}
+        current.map(_.phase) shouldBe Some("STREAMING")
+        val connection=DriverManager.getConnection(url)
+        try {
+          val query=connection.prepareStatement("SELECT state,last_l_seq,last_journal_revision,last_target_batch FROM pekko_cdc_task_lease_v1 WHERE task_id=?")
+          try {
+            query.setString(1,accepted.task.taskId)
+            val rows=query.executeQuery()
+            try { rows.next() shouldBe true; rows.getString(1) shouldBe "RELEASED"; rows.getLong(2) shouldBe 11L; rows.getLong(3) shouldBe 7L; rows.getString(4) shouldBe "target-batch-11" }
+            finally rows.close()
+          } finally query.close()
+        } finally connection.close()
+      } finally Await.result(runtime.stopRuntime(),10.seconds)
+    }
+
     "retry recovery after a transient proof lookup failure without activating early" in {
       val url="jdbc:h2:mem:cdc_recovery_retry_"+UUID.randomUUID().toString.replace('-','_')+";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
       val limits=CdcPlatformLimits(snapshotSteps=1,tailSteps=1);val attempts=new AtomicInteger();val starts=new AtomicInteger()

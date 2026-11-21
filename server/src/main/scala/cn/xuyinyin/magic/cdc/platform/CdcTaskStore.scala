@@ -11,7 +11,7 @@ import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
 import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire._
 import cn.xuyinyin.magic.cdc.savepoint.CdcSavepointStore
 import cn.xuyinyin.magic.cdc.savepoint.{CdcSavepointTaskPage,TableCheckpointRef}
-import cn.xuyinyin.magic.cdc.runtime.{CdcRuntimeLeaseStore,TaskLease,WorkerLease}
+import cn.xuyinyin.magic.cdc.runtime.{CdcRuntimeLeaseStore,TaskLease,TaskProgressSnapshot,WorkerLease}
 import java.sql.{Connection,SQLException}
 import java.util.UUID
 import java.security.MessageDigest
@@ -1355,7 +1355,7 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
     (if(same || inherited)Option(r("continuation_json")).map(CdcProgressJson.decode)else None,same)
   }
   private[cdc] def finish(grant:CdcTaskGrant,progress:BootstrapProgress,initialization:Option[String],readiness:String,
-    didWork:Boolean,validationComplete:Boolean,delay:Long,now:Long):Unit=transaction {c=>
+    didWork:Boolean,validationComplete:Boolean,delay:Long,now:Long,taskLease:Option[TaskLease]=None):Unit=transaction {c=>
     val old=requireGrant(c,grant)
     val canceled=old.view.desiredState=="CANCELED"
     val phase=if(canceled && !Set("PAUSED","CANCELED").contains(progress.phase))"CANCELING"else progress.phase
@@ -1365,28 +1365,40 @@ final class CdcTaskStore(val open:()=>Connection,val limits:CdcPlatformLimits) {
       if(phase=="PAUSED")"PAUSED"else if(phase=="CANCELED")"STOPPED"else if(validationComplete && progress.phase=="STREAMING")"HEALTHY"else"VERIFYING",
       if(validationComplete && progress.phase=="STREAMING")null else progress.failure.orNull,now,if(validationComplete)Long.box(now)else old.view.lastVerifiedAt.map(Long.box).orNull,now+math.max(0L,delay),
       CdcProgressJson.encode(progress),grant.owner,if(progress.phase=="STREAMING" || (phase=="CANCELING" && old.workPool=="TAIL"))"TAIL"else"SNAPSHOT",!Set("PAUSED","CANCELED").contains(phase) && (phase!="STREAMING" || !validationComplete || canceled || old.wakeSequence>progress.deltaAfter),progress.deltaAfter,old.view.taskId)
+    taskLease.foreach(lease => updateTaskLease(c,lease,TaskProgressSnapshot(progress.deltaAfter,progress.revision,
+      Option(progress.completionRoot).filter(_.nonEmpty)),"RELEASED"))
     syncCaptureSubscription(c,old.view.taskId,now)
   }
-  private[cdc] def defer(grant:CdcTaskGrant,delay:Long,now:Long):Unit=transaction {c=>
+  private[cdc] def defer(grant:CdcTaskGrant,delay:Long,now:Long,taskLease:Option[TaskLease]=None):Unit=transaction {c=>
     val old=requireGrant(c,grant)
     update(c,"UPDATE pekko_cdc_grants_v1 SET status='RELEASED',finished_at=? WHERE grant_id=?",now,grant.id)
     update(c,"UPDATE pekko_cdc_tasks_v1 SET grant_id=NULL,grant_owner=NULL,release_status='RELEASED',runtime_health='WAITING',due_at=?,schedulable=TRUE WHERE task_id=?",now+delay,old.view.taskId)
+    taskLease.foreach(lease => updateTaskLease(c,lease,TaskProgressSnapshot(lease.lastLSeq,lease.lastJournalRevision,lease.lastTargetBatch),"RELEASED"))
     syncCaptureSubscription(c,old.view.taskId,now)
   }
-  private[cdc] def finishFailureReleased(grant:CdcTaskGrant,code:String,now:Long):Unit=transaction {c=>
+  private[cdc] def finishFailureReleased(grant:CdcTaskGrant,code:String,now:Long,taskLease:Option[TaskLease]=None):Unit=transaction {c=>
     requireGrant(c,grant)
     update(c,"UPDATE pekko_cdc_grants_v1 SET status='RELEASED',finished_at=? WHERE grant_id=?",now,grant.id)
     update(c,"UPDATE pekko_cdc_tasks_v1 SET phase='PAUSED',runtime_health='PAUSED',release_status='RELEASED',failure_code=?,observed_at=?,schedulable=FALSE,grant_id=NULL,grant_owner=NULL WHERE task_id=?",code,now,grant.task.view.taskId)
+    taskLease.foreach(lease => updateTaskLease(c,lease,TaskProgressSnapshot(lease.lastLSeq,lease.lastJournalRevision,lease.lastTargetBatch),"RELEASED"))
     syncCaptureSubscription(c,grant.task.view.taskId,now)
   }
-  private[cdc] def finishUnknown(grant:CdcTaskGrant,code:String,now:Long):Unit=transaction {c=>
+  private[cdc] def finishUnknown(grant:CdcTaskGrant,code:String,now:Long,taskLease:Option[TaskLease]=None):Unit=transaction {c=>
     val current=owner(c)
     requireGrant(c,grant)
     update(c,"UPDATE pekko_cdc_grants_v1 SET status='UNKNOWN' WHERE grant_id=?",grant.id)
     update(c,"UPDATE pekko_cdc_tasks_v1 SET phase='PAUSED',runtime_health='UNKNOWN',release_status='UNKNOWN',failure_code=?,observed_at=?,schedulable=FALSE WHERE task_id=?",code,now,grant.task.view.taskId)
+    taskLease.foreach(lease => updateTaskLease(c,lease,TaskProgressSnapshot(lease.lastLSeq,lease.lastJournalRevision,lease.lastTargetBatch),"UNKNOWN"))
     syncCaptureSubscription(c,grant.task.view.taskId,now)
     if(current("owner_attempt")==grant.owner && managedOn(c,grant.owner).nonEmpty)
       update(c,"UPDATE pekko_cdc_owner_v1 SET status='UNKNOWN',updated_at=? WHERE platform_id='default'",now)
+  }
+  private def updateTaskLease(c:Connection,lease:TaskLease,progress:TaskProgressSnapshot,state:String):Unit={
+    require(Set("RELEASED","UNKNOWN").contains(state),"invalid task lease transition")
+    val changed=update(c,
+      "UPDATE pekko_cdc_task_lease_v1 SET last_l_seq=CASE WHEN last_l_seq<? THEN ? ELSE last_l_seq END,last_journal_revision=CASE WHEN last_journal_revision<? THEN ? ELSE last_journal_revision END,last_target_batch=COALESCE(?,last_target_batch),state=?,lease_expires_at=NULL,control_revision=control_revision+1,updated_at=? WHERE task_id=? AND worker_id=? AND worker_incarnation=? AND lease_epoch=? AND state='ACTIVE'",
+      progress.lastLSeq,progress.lastLSeq,progress.lastJournalRevision,progress.lastJournalRevision,progress.lastTargetBatch.orNull,state,System.currentTimeMillis(),lease.taskId,lease.workerId,lease.workerIncarnation,lease.leaseEpoch)
+    require(changed==1,"task lease is stale while committing progress")
   }
   /** Bounded scan of new immutable L frames, not a poll of every subscribed table. */
   def dispatch(attempt:String,captures:Set[String],maxFrames:Int,now:Long):CdcDispatchResult=transaction {c=>

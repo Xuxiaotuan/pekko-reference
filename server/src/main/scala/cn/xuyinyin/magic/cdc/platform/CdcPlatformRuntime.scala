@@ -249,7 +249,7 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
           val (continuation,sameOwner)=store.continuationWithProvenance(g)
           val out=kernel.runWithContinuation(current.definition,current.view.taskId,current.view.desiredState=="CANCELED",continuation,sameOwner,()=>stopping.get(),g.pool)
           if(out.releaseConfirmed)store.finish(g,out.progress,out.initializationEvidence,"ADMISSION_READY",out.didWork,out.validationComplete,
-            if(out.progress.phase=="STREAMING")limits.tailDelayMillis else math.max(limits.snapshotDelayMillis,out.nextDelayMillis),now)
+            if(out.progress.phase=="STREAMING")limits.tailDelayMillis else math.max(limits.snapshotDelayMillis,out.nextDelayMillis),now,lease)
           else {
             unknownTaskLeases.synchronized(unknownTaskLeases+=g.id)
             store.finishUnknown(g,ExecutionFailure.ReleaseUnknown,now)
@@ -259,10 +259,10 @@ final class CdcPlatformRuntime(val store:CdcTaskStore,kernel:CdcPlatformKernel,v
           result match {
             case Failure(_:CdcKernelDeferred)=>
               logger.warn("CDC task deferred before execution task={} owner={}",g.task.view.taskId,runtimeAttemptId)
-              try store.defer(g,limits.tailDelayMillis,now)catch {case NonFatal(_)=>ownerState="UNKNOWN";reason=Some("STORAGE_UNAVAILABLE")}
+              try store.defer(g,limits.tailDelayMillis,now,lease)catch {case NonFatal(_)=>ownerState="UNKNOWN";reason=Some("STORAGE_UNAVAILABLE")}
             case Failure(e)=>
               val failure=ExecutionFailure.from(e,"cdc-step")
-              try {if(failure.releaseConfirmed)store.finishFailureReleased(g,failure.code,now)else {store.finishUnknown(g,failure.code,now);if(managedOwner.nonEmpty){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN")}}}catch {case NonFatal(_)=>ownerState="UNKNOWN";reason=Some("STORAGE_UNAVAILABLE")}
+              try {if(failure.releaseConfirmed)store.finishFailureReleased(g,failure.code,now,lease)else {store.finishUnknown(g,failure.code,now,lease);if(managedOwner.nonEmpty){ownerState="UNKNOWN";reason=Some("RELEASE_UNKNOWN")}}}catch {case NonFatal(_)=>ownerState="UNKNOWN";reason=Some("STORAGE_UNAVAILABLE")}
             case _=>()
           }
           workerRuntime.flatMap(_.untrack(g.id)).foreach { value =>
