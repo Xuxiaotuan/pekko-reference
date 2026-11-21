@@ -220,8 +220,8 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
     val now = System.currentTimeMillis()
     val tasks = connection.prepareStatement(
       "SELECT task_id,capture_id FROM pekko_cdc_tasks_v1 WHERE desired_state='RUNNING' AND phase NOT IN ('PAUSED','CANCELED') " +
-        "AND NOT EXISTS (SELECT 1 FROM pekko_cdc_task_lease_v1 l WHERE l.task_id=pekko_cdc_tasks_v1.task_id AND l.state IN ('ACTIVE','DRAINING','UNKNOWN') " +
-        "AND (l.lease_expires_at IS NULL OR l.lease_expires_at>?)) " +
+        "AND NOT EXISTS (SELECT 1 FROM pekko_cdc_task_lease_v1 l WHERE l.task_id=pekko_cdc_tasks_v1.task_id " +
+        "AND (l.state IN ('DRAINING','UNKNOWN') OR (l.state='ACTIVE' AND (l.lease_expires_at IS NULL OR l.lease_expires_at>?)))) " +
         "ORDER BY task_id LIMIT ? FOR UPDATE")
     try {
       tasks.setLong(1, now)
@@ -252,8 +252,8 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
     val existing = connection.prepareStatement("SELECT state,lease_expires_at FROM pekko_cdc_task_lease_v1 WHERE task_id=? FOR UPDATE")
     val current = try { existing.setString(1, taskId); queryOne(existing) } finally existing.close()
     val now = System.currentTimeMillis()
-    val occupied = current.exists(row => Set("ACTIVE", "DRAINING", "UNKNOWN")(row("state")) &&
-      Option(row("lease_expires_at")).forall(_.toLong > now))
+    val occupied = current.exists(row => Set("DRAINING", "UNKNOWN")(row("state")) ||
+      (row("state") == "ACTIVE" && Option(row("lease_expires_at")).forall(_.toLong > now)))
     if (occupied) None
     else {
       val next = connection.prepareStatement("SELECT COALESCE(MAX(lease_epoch),0)+1 AS next_epoch FROM pekko_cdc_task_lease_v1 WHERE task_id=?")

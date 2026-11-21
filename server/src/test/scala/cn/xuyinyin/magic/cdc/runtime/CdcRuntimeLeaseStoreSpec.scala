@@ -106,6 +106,20 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       replacement.head.leaseEpoch should be > oldTask.leaseEpoch
     }
 
+    "must retain an UNKNOWN task lease until an explicit recovery path clears it" in {
+      val url = database()
+      val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits())
+      taskStore.initialize()
+      taskStore.submit(CdcTaskRequest("request", "capture", "orders", "g1", "orders_target"), 1L)
+      val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))
+      val oldWorker = leases.registerWorker("worker-old", "old-incarnation", "{\"snapshotSteps\":1}")
+      val oldTask = leases.claimTasks(oldWorker, 1).head
+      leases.releaseTask(oldTask, "release-unknown", "UNKNOWN") shouldBe true
+      val newWorker = leases.registerWorker("worker-new", "new-incarnation", "{\"snapshotSteps\":1}")
+
+      leases.claimTasks(newWorker, 1) shouldBe empty
+    }
+
     "must initialize the runtime lease schema without the worker task store" in {
       val url = database()
       val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))
