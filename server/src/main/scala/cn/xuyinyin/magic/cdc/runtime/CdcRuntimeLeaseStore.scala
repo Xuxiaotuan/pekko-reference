@@ -5,7 +5,8 @@ import java.util.UUID
 
 /** Records the schema contract actually applied by each runtime initializer. */
 object CdcRuntimeSchemaVersion {
-  val leaseVersion = 3
+  // Versions 2-4 are already occupied by the historical shared schema table.
+  val leaseVersion = 5
   val taskVersion = 4
   val leaseChecksum = "cdc-runtime-lease-v3-epoch-bound-task-progress"
   val taskChecksum = "cdc-task-store-v4-capture-readiness-projection"
