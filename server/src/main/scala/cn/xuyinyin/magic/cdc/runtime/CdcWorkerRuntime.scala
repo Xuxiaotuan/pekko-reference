@@ -112,7 +112,16 @@ final class CdcWorkerRuntime(
 
   def renewTracked(activeGraphs: Int): Boolean = {
     val workerOk = workerLease.get().forall(worker => leases.heartbeatWorker(worker, activeGraphs, runtimeLeaseMillis))
-    val tasksOk = taskLeases.synchronized(taskLeases.values.forall(lease => leases.renewTask(lease, runtimeLeaseMillis)))
+    val (released, tasksOk) = taskLeases.synchronized {
+      val releasedIds = Vector.newBuilder[String]
+      val outcomes = taskLeases.values.map { lease =>
+        if (leases.renewTask(lease, runtimeLeaseMillis)) true
+        else if (leases.taskLeaseReleased(lease)) { releasedIds += lease.taskId; true }
+        else false
+      }
+      releasedIds.result() -> outcomes.forall(identity)
+    }
+    released.foreach(untrack)
     if(!workerOk || !tasksOk)
       org.slf4j.LoggerFactory.getLogger(getClass).warn("CDC worker renewTracked failed workerPresent={} workerOk={} tasksOk={} trackedTasks={} activeGraphs={}",workerLease.get().nonEmpty,workerOk,tasksOk,taskLeases.synchronized(taskLeases.size),activeGraphs)
     workerOk && tasksOk

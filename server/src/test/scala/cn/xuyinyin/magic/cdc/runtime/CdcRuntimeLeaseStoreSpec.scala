@@ -31,6 +31,7 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       val stale = task.copy(leaseEpoch = task.leaseEpoch - 1L)
       leases.renewTask(stale) shouldBe false
       leases.releaseTask(task, "proof") shouldBe true
+      leases.taskLeaseReleased(task) shouldBe true
       leases.releaseCapture(capture) shouldBe true
     }
 

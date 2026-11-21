@@ -534,6 +534,21 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
 
   def renewTask(lease: TaskLease): Boolean = renewTask(lease, defaultLeaseMillis)
 
+  def taskLeaseReleased(lease: TaskLease): Boolean = withConnection { connection =>
+    val statement = connection.prepareStatement(
+      "SELECT worker_id,worker_incarnation,worker_epoch,worker_lease_id,state,release_state FROM pekko_cdc_task_lease_v1 WHERE task_id=?")
+    try {
+      statement.setString(1, lease.taskId)
+      queryOne(statement).exists { row =>
+        row("worker_id") == lease.workerId &&
+          row("worker_incarnation") == lease.workerIncarnation &&
+          row("worker_epoch").toLong == lease.workerEpoch.getOrElse(lease.leaseEpoch) &&
+          Option(row("worker_lease_id")).contains(lease.workerLeaseId.orElse(lease.leaseId).getOrElse("")) &&
+          row("state") == "RELEASED" && row.get("release_state").contains("RELEASED")
+      }
+    } finally statement.close()
+  }
+
   def renewTask(lease: TaskLease, ttlMillis: Long): Boolean = transaction { connection =>
     require(ttlMillis > 0L, "invalid task lease ttl")
     requireLeaseContext(connection, lease)
@@ -618,11 +633,11 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
     require(Set("RELEASED", "UNKNOWN").contains(state), "invalid task release state")
     requireLeaseContext(connection, lease)
     val statement = connection.prepareStatement(
-      "UPDATE pekko_cdc_task_lease_v1 SET state=?,release_proof=?,lease_expires_at=NULL,control_revision=control_revision+1,updated_at=? WHERE task_id=? AND worker_id=? AND worker_incarnation=? AND lease_epoch=? AND state='ACTIVE' AND (lease_id IS NULL OR lease_id=?)")
+      "UPDATE pekko_cdc_task_lease_v1 SET state=?,release_state=?,release_proof=?,lease_expires_at=NULL,control_revision=control_revision+1,updated_at=? WHERE task_id=? AND worker_id=? AND worker_incarnation=? AND lease_epoch=? AND state='ACTIVE' AND (lease_id IS NULL OR lease_id=?)")
     try {
-      statement.setString(1, state); statement.setString(2, proof); statement.setLong(3, System.currentTimeMillis())
-      statement.setString(4, lease.taskId); statement.setString(5, lease.workerId); statement.setString(6, lease.workerIncarnation); statement.setLong(7, lease.leaseEpoch)
-      lease.leaseId match { case Some(value) => statement.setString(8, value); case None => statement.setObject(8, null) }
+      statement.setString(1, state); statement.setString(2, state); statement.setString(3, proof); statement.setLong(4, System.currentTimeMillis())
+      statement.setString(5, lease.taskId); statement.setString(6, lease.workerId); statement.setString(7, lease.workerIncarnation); statement.setLong(8, lease.leaseEpoch)
+      lease.leaseId match { case Some(value) => statement.setString(9, value); case None => statement.setObject(9, null) }
       statement.executeUpdate() == 1
     } finally statement.close()
   }
