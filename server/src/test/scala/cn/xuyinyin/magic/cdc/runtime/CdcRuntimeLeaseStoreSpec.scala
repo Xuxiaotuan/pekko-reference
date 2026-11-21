@@ -84,6 +84,28 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       intercept[IllegalArgumentException](CdcCaptureRuntime.requireIncarnation(current, "incarnation-old")).getMessage should include("capture incarnation is stale")
     }
 
+    "must allow a new worker to claim only after the old task lease expires" in {
+      val url = database()
+      val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits())
+      taskStore.initialize()
+      taskStore.submit(CdcTaskRequest("request", "capture", "orders", "g1", "orders_target"), 1L)
+      val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))
+      val oldWorker = leases.registerWorker("worker-old", "old-incarnation", "{\"snapshotSteps\":1}")
+      val oldTask = leases.claimTasks(oldWorker, 1).head
+      val connection = DriverManager.getConnection(url)
+      try {
+        val update = connection.prepareStatement("UPDATE pekko_cdc_task_lease_v1 SET lease_expires_at=0 WHERE task_id=?")
+        try { update.setString(1, oldTask.taskId); update.executeUpdate() }
+        finally update.close()
+      } finally connection.close()
+
+      val newWorker = leases.registerWorker("worker-new", "new-incarnation", "{\"snapshotSteps\":1}")
+      val replacement = leases.claimTasks(newWorker, 1)
+      replacement.size shouldBe 1
+      replacement.head.workerId shouldBe newWorker.workerId
+      replacement.head.leaseEpoch should be > oldTask.leaseEpoch
+    }
+
     "must initialize the runtime lease schema without the worker task store" in {
       val url = database()
       val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))
