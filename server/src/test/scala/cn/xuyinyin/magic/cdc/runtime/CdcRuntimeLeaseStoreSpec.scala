@@ -60,6 +60,30 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       leases.heartbeatWorker(worker.copy(leaseEpoch = worker.leaseEpoch - 1L), 0, 5000L) shouldBe false
     }
 
+    "must reject an expired worker lease before claiming or renewing work" in {
+      val url = database()
+      val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits())
+      taskStore.initialize()
+      taskStore.submit(CdcTaskRequest("request", "capture", "orders", "g1", "orders_target"), 1L)
+      val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))
+      val worker = leases.registerWorker("worker-expired", "incarnation", "{\"snapshotSteps\":1}")
+      val connection = DriverManager.getConnection(url)
+      try {
+        val update = connection.prepareStatement("UPDATE pekko_cdc_worker_v1 SET lease_expires_at=0 WHERE worker_id=?")
+        try { update.setString(1, worker.workerId); update.executeUpdate() }
+        finally update.close()
+      } finally connection.close()
+
+      intercept[IllegalArgumentException](leases.claimTasks(worker, 1)).getMessage should include("worker lease is stale")
+      leases.heartbeatWorker(worker, 0, 5000L) shouldBe false
+    }
+
+    "must validate a repeated capture acquisition against the requested incarnation" in {
+      val current = CaptureLease("capture", "source-1", "attempt", 3L, "incarnation-current")
+      CdcCaptureRuntime.requireIncarnation(current, "incarnation-current") shouldBe current
+      intercept[IllegalArgumentException](CdcCaptureRuntime.requireIncarnation(current, "incarnation-old")).getMessage should include("capture incarnation is stale")
+    }
+
     "must initialize the runtime lease schema without the worker task store" in {
       val url = database()
       val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))

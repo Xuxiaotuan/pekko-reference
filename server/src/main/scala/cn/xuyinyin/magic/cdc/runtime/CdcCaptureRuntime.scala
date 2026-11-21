@@ -9,6 +9,13 @@ import java.util.concurrent.{Executors,ScheduledExecutorService,TimeUnit}
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext,Future}
 
+object CdcCaptureRuntime {
+  private[runtime] def requireIncarnation(current: CaptureLease, requested: String): CaptureLease = {
+    require(requested.nonEmpty && requested == current.incarnation, "capture incarnation is stale")
+    current
+  }
+}
+
 /** Capture-only runtime. It owns source readers and L, never task grants. */
 final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeLeaseStore)(implicit ec: ExecutionContext)
     extends CaptureRuntimeControl with AutoCloseable {
@@ -73,7 +80,7 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
 
   override def acquire(captureId:String,sourceLineage:String,requestedIncarnation:String):Future[CaptureLease]=Future {
     synchronized {
-      entries.get(captureId).map(_.lease).getOrElse(
+      entries.get(captureId).map(entry => CdcCaptureRuntime.requireIncarnation(entry.lease, requestedIncarnation)).getOrElse(
         leases.acquireCapture(captureId,sourceLineage,requestedIncarnation).getOrElse(
           throw new IllegalStateException("capture owner is not available: "+captureId)))
     }

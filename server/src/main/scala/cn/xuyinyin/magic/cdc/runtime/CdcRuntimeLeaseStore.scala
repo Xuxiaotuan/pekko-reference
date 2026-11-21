@@ -29,9 +29,9 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
   def initialize(): Unit = transaction { connection =>
     val ddl = Vector(
       "CREATE TABLE IF NOT EXISTS pekko_cdc_runtime_schema_version(version INT PRIMARY KEY,checksum CHAR(64) NOT NULL,applied_at BIGINT NOT NULL)",
-      "CREATE TABLE IF NOT EXISTS pekko_cdc_capture_owner_v1(capture_id VARCHAR(64) PRIMARY KEY,source_lineage VARCHAR(255) NOT NULL,owner_attempt VARCHAR(128) NOT NULL,owner_epoch BIGINT NOT NULL,incarnation VARCHAR(128) NOT NULL,state VARCHAR(32) NOT NULL,reader_session VARCHAR(128) NULL,source_offset_digest CHAR(64) NULL,release_proof_id VARCHAR(128) NULL,lease_expires_at BIGINT NULL,last_heartbeat_at BIGINT NULL,control_revision BIGINT NOT NULL DEFAULT 0,fence_token_hash CHAR(64) NULL,updated_at BIGINT NOT NULL,UNIQUE(capture_id,owner_attempt))",
-      "CREATE TABLE IF NOT EXISTS pekko_cdc_worker_v1(worker_id VARCHAR(128) PRIMARY KEY,incarnation VARCHAR(128) NOT NULL,worker_epoch BIGINT NOT NULL,state VARCHAR(32) NOT NULL,capacity_json LONGTEXT NOT NULL,active_graphs INT NOT NULL,heartbeat_at BIGINT NOT NULL,lease_expires_at BIGINT NULL,last_heartbeat_at BIGINT NULL,drain_started_at BIGINT NULL,control_revision BIGINT NOT NULL DEFAULT 0,updated_at BIGINT NOT NULL,UNIQUE(worker_id,incarnation))",
-      "CREATE TABLE IF NOT EXISTS pekko_cdc_task_lease_v1(task_id CHAR(64) PRIMARY KEY,capture_id VARCHAR(64) NOT NULL,worker_id VARCHAR(128) NULL,worker_incarnation VARCHAR(128) NULL,lease_epoch BIGINT NOT NULL,state VARCHAR(32) NOT NULL,last_l_seq BIGINT NOT NULL,last_journal_revision BIGINT NOT NULL,last_target_batch VARCHAR(128) NULL,release_proof LONGTEXT NULL,lease_expires_at BIGINT NULL,renewed_at BIGINT NULL,handoff_id VARCHAR(128) NULL,fence_token_hash CHAR(64) NULL,control_revision BIGINT NOT NULL DEFAULT 0,updated_at BIGINT NOT NULL)",
+      "CREATE TABLE IF NOT EXISTS pekko_cdc_capture_owner_v1(capture_id VARCHAR(64) PRIMARY KEY,source_lineage VARCHAR(255) NOT NULL,owner_attempt VARCHAR(128) NOT NULL,owner_epoch BIGINT NOT NULL,incarnation VARCHAR(128) NOT NULL,state VARCHAR(32) NOT NULL,reader_session VARCHAR(128) NULL,source_offset_digest CHAR(64) NULL,release_proof_id VARCHAR(128) NULL,lease_expires_at BIGINT NULL,last_heartbeat_at BIGINT NULL,control_revision BIGINT NOT NULL DEFAULT 0,fence_token_hash CHAR(64) NULL,lease_id VARCHAR(128) NULL,drain_started_at BIGINT NULL,drain_deadline_at BIGINT NULL,failure_code VARCHAR(64) NULL,last_l_seq BIGINT NULL,last_source_epoch BIGINT NULL,updated_at BIGINT NOT NULL,UNIQUE(capture_id,owner_attempt))",
+      "CREATE TABLE IF NOT EXISTS pekko_cdc_worker_v1(worker_id VARCHAR(128) PRIMARY KEY,incarnation VARCHAR(128) NOT NULL,worker_epoch BIGINT NOT NULL,state VARCHAR(32) NOT NULL,capacity_json LONGTEXT NOT NULL,active_graphs INT NOT NULL,heartbeat_at BIGINT NOT NULL,lease_expires_at BIGINT NULL,last_heartbeat_at BIGINT NULL,drain_started_at BIGINT NULL,drain_deadline_at BIGINT NULL,max_active_graphs INT NULL,failure_code VARCHAR(64) NULL,lease_id VARCHAR(128) NULL,control_revision BIGINT NOT NULL DEFAULT 0,updated_at BIGINT NOT NULL,UNIQUE(worker_id,incarnation))",
+      "CREATE TABLE IF NOT EXISTS pekko_cdc_task_lease_v1(task_id CHAR(64) PRIMARY KEY,capture_id VARCHAR(64) NOT NULL,worker_id VARCHAR(128) NULL,worker_incarnation VARCHAR(128) NULL,lease_epoch BIGINT NOT NULL,state VARCHAR(32) NOT NULL,last_l_seq BIGINT NOT NULL,last_journal_revision BIGINT NOT NULL,last_target_batch VARCHAR(128) NULL,release_proof LONGTEXT NULL,lease_expires_at BIGINT NULL,renewed_at BIGINT NULL,handoff_id VARCHAR(128) NULL,fence_token_hash CHAR(64) NULL,lease_id VARCHAR(128) NULL,last_ack_kind VARCHAR(16) NULL,last_ack_digest CHAR(64) NULL,unknown_since BIGINT NULL,release_state VARCHAR(32) NULL,failure_code VARCHAR(64) NULL,control_revision BIGINT NOT NULL DEFAULT 0,updated_at BIGINT NOT NULL)",
       "CREATE TABLE IF NOT EXISTS pekko_cdc_task_handoff_v1(handoff_id VARCHAR(128) PRIMARY KEY,task_id CHAR(64) NOT NULL,old_worker_id VARCHAR(128) NOT NULL,old_incarnation VARCHAR(128) NOT NULL,old_lease_epoch BIGINT NOT NULL,new_worker_id VARCHAR(128) NULL,new_incarnation VARCHAR(128) NULL,new_lease_epoch BIGINT NULL,state VARCHAR(32) NOT NULL,t_digest CHAR(64) NULL,journal_revision BIGINT NULL,d_seq BIGINT NULL,release_proof LONGTEXT NULL,old_release_state VARCHAR(32) NULL,proof_digest CHAR(64) NULL,new_claimed_at BIGINT NULL,failure_code VARCHAR(64) NULL,created_at BIGINT NOT NULL,updated_at BIGINT NOT NULL)"
     )
     ddl.foreach { sql =>
@@ -41,10 +41,18 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
     val columns=Vector(
       ("pekko_cdc_capture_owner_v1","lease_expires_at","BIGINT NULL"),("pekko_cdc_capture_owner_v1","last_heartbeat_at","BIGINT NULL"),
       ("pekko_cdc_capture_owner_v1","control_revision","BIGINT NOT NULL DEFAULT 0"),("pekko_cdc_capture_owner_v1","fence_token_hash","CHAR(64) NULL"),
+      ("pekko_cdc_capture_owner_v1","lease_id","VARCHAR(128) NULL"),("pekko_cdc_capture_owner_v1","drain_started_at","BIGINT NULL"),
+      ("pekko_cdc_capture_owner_v1","drain_deadline_at","BIGINT NULL"),("pekko_cdc_capture_owner_v1","failure_code","VARCHAR(64) NULL"),
+      ("pekko_cdc_capture_owner_v1","last_l_seq","BIGINT NULL"),("pekko_cdc_capture_owner_v1","last_source_epoch","BIGINT NULL"),
       ("pekko_cdc_worker_v1","lease_expires_at","BIGINT NULL"),("pekko_cdc_worker_v1","last_heartbeat_at","BIGINT NULL"),
-      ("pekko_cdc_worker_v1","drain_started_at","BIGINT NULL"),("pekko_cdc_worker_v1","control_revision","BIGINT NOT NULL DEFAULT 0"),
+      ("pekko_cdc_worker_v1","drain_started_at","BIGINT NULL"),("pekko_cdc_worker_v1","drain_deadline_at","BIGINT NULL"),
+      ("pekko_cdc_worker_v1","max_active_graphs","INT NULL"),("pekko_cdc_worker_v1","failure_code","VARCHAR(64) NULL"),
+      ("pekko_cdc_worker_v1","lease_id","VARCHAR(128) NULL"),("pekko_cdc_worker_v1","control_revision","BIGINT NOT NULL DEFAULT 0"),
       ("pekko_cdc_task_lease_v1","lease_expires_at","BIGINT NULL"),("pekko_cdc_task_lease_v1","renewed_at","BIGINT NULL"),
       ("pekko_cdc_task_lease_v1","handoff_id","VARCHAR(128) NULL"),("pekko_cdc_task_lease_v1","fence_token_hash","CHAR(64) NULL"),
+      ("pekko_cdc_task_lease_v1","lease_id","VARCHAR(128) NULL"),("pekko_cdc_task_lease_v1","last_ack_kind","VARCHAR(16) NULL"),
+      ("pekko_cdc_task_lease_v1","last_ack_digest","CHAR(64) NULL"),("pekko_cdc_task_lease_v1","unknown_since","BIGINT NULL"),
+      ("pekko_cdc_task_lease_v1","release_state","VARCHAR(32) NULL"),("pekko_cdc_task_lease_v1","failure_code","VARCHAR(64) NULL"),
       ("pekko_cdc_task_lease_v1","control_revision","BIGINT NOT NULL DEFAULT 0"),
       ("pekko_cdc_task_handoff_v1","old_release_state","VARCHAR(32) NULL"),("pekko_cdc_task_handoff_v1","proof_digest","CHAR(64) NULL"),
       ("pekko_cdc_task_handoff_v1","new_claimed_at","BIGINT NULL"),("pekko_cdc_task_handoff_v1","failure_code","VARCHAR(64) NULL"))
@@ -105,11 +113,12 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
     val now = System.currentTimeMillis()
     val statement = connection.prepareStatement(
       "UPDATE pekko_cdc_capture_owner_v1 SET last_heartbeat_at=?,lease_expires_at=?,control_revision=control_revision+1,updated_at=? " +
-        "WHERE capture_id=? AND owner_attempt=? AND owner_epoch=? AND incarnation=? AND state='ACTIVE'")
+        "WHERE capture_id=? AND owner_attempt=? AND owner_epoch=? AND incarnation=? AND state='ACTIVE' " +
+        "AND (lease_expires_at IS NULL OR lease_expires_at>?)")
     try {
       statement.setLong(1, now); statement.setLong(2, now + ttlMillis); statement.setLong(3, now)
       statement.setString(4, lease.captureId); statement.setString(5, lease.ownerAttempt)
-      statement.setLong(6, lease.ownerEpoch); statement.setString(7, lease.incarnation)
+      statement.setLong(6, lease.ownerEpoch); statement.setString(7, lease.incarnation); statement.setLong(8, now)
       statement.executeUpdate() == 1
     } finally statement.close()
   }
@@ -180,25 +189,28 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
     require(ttlMillis > 0L, "invalid worker lease ttl")
     val statement = connection.prepareStatement(
       "UPDATE pekko_cdc_worker_v1 SET heartbeat_at=?,lease_expires_at=?,last_heartbeat_at=?,active_graphs=?,control_revision=control_revision+1,updated_at=? " +
-        "WHERE worker_id=? AND incarnation=? AND worker_epoch=? AND state IN ('READY','ACTIVE','DRAINING')")
+        "WHERE worker_id=? AND incarnation=? AND worker_epoch=? AND state IN ('READY','ACTIVE','DRAINING') " +
+        "AND (lease_expires_at IS NULL OR lease_expires_at>?)")
     try {
       val now = System.currentTimeMillis()
       statement.setLong(1, now); statement.setLong(2, now + ttlMillis); statement.setLong(3, now)
       statement.setInt(4, activeGraphs); statement.setLong(5, now)
-      statement.setString(6, worker.workerId); statement.setString(7, worker.incarnation); statement.setLong(8, worker.leaseEpoch)
+      statement.setString(6, worker.workerId); statement.setString(7, worker.incarnation); statement.setLong(8, worker.leaseEpoch); statement.setLong(9, now)
       statement.executeUpdate() == 1
     } finally statement.close()
   }
 
   private def requireCurrentWorker(connection: Connection, worker: WorkerLease): Unit = {
     val statement = connection.prepareStatement(
-      "SELECT incarnation,worker_epoch,state FROM pekko_cdc_worker_v1 WHERE worker_id=? FOR UPDATE")
+      "SELECT incarnation,worker_epoch,state,lease_expires_at FROM pekko_cdc_worker_v1 WHERE worker_id=? FOR UPDATE")
     val current = try {
       statement.setString(1, worker.workerId)
       queryOne(statement)
     } finally statement.close()
+    val now = System.currentTimeMillis()
     require(current.exists(row => row("incarnation") == worker.incarnation &&
-      row("worker_epoch").toLong == worker.leaseEpoch && Set("READY", "ACTIVE").contains(row("state"))),
+      row("worker_epoch").toLong == worker.leaseEpoch && Set("READY", "ACTIVE").contains(row("state")) &&
+      Option(row("lease_expires_at")).forall(_.toLong > now)),
       "worker lease is stale")
   }
 
@@ -268,11 +280,12 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
     require(ttlMillis > 0L, "invalid task lease ttl")
     val statement = connection.prepareStatement(
       "UPDATE pekko_cdc_task_lease_v1 SET renewed_at=?,lease_expires_at=?,control_revision=control_revision+1,updated_at=? " +
-        "WHERE task_id=? AND worker_id=? AND worker_incarnation=? AND lease_epoch=? AND state='ACTIVE'")
+        "WHERE task_id=? AND worker_id=? AND worker_incarnation=? AND lease_epoch=? AND state='ACTIVE' " +
+        "AND (lease_expires_at IS NULL OR lease_expires_at>?)")
     try {
       val now = System.currentTimeMillis()
       statement.setLong(1, now); statement.setLong(2, now + ttlMillis); statement.setLong(3, now)
-      statement.setString(4, lease.taskId); statement.setString(5, lease.workerId); statement.setString(6, lease.workerIncarnation); statement.setLong(7, lease.leaseEpoch)
+      statement.setString(4, lease.taskId); statement.setString(5, lease.workerId); statement.setString(6, lease.workerIncarnation); statement.setLong(7, lease.leaseEpoch); statement.setLong(8, now)
       statement.executeUpdate() == 1
     } finally statement.close()
   }
