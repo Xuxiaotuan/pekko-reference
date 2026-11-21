@@ -484,6 +484,12 @@ final class MySQLCaptureStore(open:()=>Connection,val captureId:String,val linea
   private def find(c:Connection,id:String):Option[CaptureSubscription]=rows(c,"SELECT * FROM pekko_capture_subscriptions WHERE capture_id=? AND request_id=?",captureId,id).headOption.map(checked(c,_))
   private[capture] def subscriptionOn(c:Connection,id:String):Option[CaptureSubscription]=find(c,id)
   def subscription(id:String):Option[CaptureSubscription]=connection(find(_,id))
+  /** Returns the currently effective generation for a table without treating a
+    * different request id as an idempotent retry. */
+  def activeSubscription(table:String):Option[CaptureSubscription]=connection {c=>
+    rows(c,"SELECT * FROM pekko_capture_subscriptions WHERE capture_id=? AND table_name=? AND status IN ('B_PENDING','CAPTURE_READY') ORDER BY request_id LIMIT 1",captureId,table)
+      .headOption.map(checked(c,_))
+  }
   /** Bounded startup inventory; unfinished fences cannot be interpreted as absent work. */
   def pendingBIdsAtMostTwo:Vector[String]=connection {c=>
     c.setAutoCommit(false)

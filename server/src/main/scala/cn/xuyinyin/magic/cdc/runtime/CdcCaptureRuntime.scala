@@ -119,8 +119,13 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
           val phase=rows.getString("phase")
           val current=entry.store.subscription(requestId)
           if(desired=="RUNNING" && !Set("PAUSED","CANCELED").contains(phase) && current.isEmpty) {
-            try entry.reader.subscribe(requestId,table,generation)
-            catch {case error:Throwable=>logger.warn("CDC capture subscription deferred capture={} request={} table={} generation={} reason={}",entry.config.id,requestId,table,generation,error.toString)}
+            entry.store.activeSubscription(table) match {
+              case Some(active) =>
+                pauseConflictingProjection(entry,requestId,table,generation,active)
+              case None =>
+                try entry.reader.subscribe(requestId,table,generation)
+                catch {case error:Throwable=>logger.warn("CDC capture subscription deferred capture={} request={} table={} generation={} reason={}",entry.config.id,requestId,table,generation,error.toString)}
+            }
           } else if(desired=="CANCELED" || phase=="CANCELED") current.foreach { subscription =>
             try {
               subscription.status match {
@@ -138,6 +143,24 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
           }
         } finally rows.close()
       } finally query.close()
+    } finally connection.close()
+  }
+
+  /** A second control request must stop retrying when an older generation is
+    * still effective. The existing subscription remains untouched. */
+  private def pauseConflictingProjection(entry:Entry,requestId:String,table:String,generation:String,active:CaptureSubscription):Unit={
+    val connection=openControl(entry.config)
+    try {
+      val update=connection.prepareStatement(
+        "UPDATE pekko_cdc_capture_subscription_v1 SET state='PAUSED',capture_readiness='PAUSED',initialization_evidence=?,control_revision=control_revision+1,updated_at=? WHERE capture_id=? AND task_id=? AND state NOT IN ('PAUSED','CANCELED')")
+      try {
+        update.setString(1,s"TABLE_ALREADY_SUBSCRIBED activeRequestId=${active.requestId} activeGeneration=${active.generation} requestedRequestId=$requestId requestedGeneration=$generation")
+        update.setLong(2,System.currentTimeMillis())
+        update.setString(3,entry.config.id)
+        update.setString(4,requestId)
+        update.executeUpdate()
+      } finally update.close()
+      logger.warn("CDC capture subscription paused due to active table capture={} request={} table={} generation={} activeRequest={} activeGeneration={}",entry.config.id,requestId,table,generation,active.requestId,active.generation)
     } finally connection.close()
   }
 
