@@ -205,10 +205,10 @@ Pekko CDC 的合理目标不是复制 Flink 的全部能力，而是用更细的
 
 | 内容 | 材料 |
 |---|---|
-| 共享 Reader 和 owner | [`SharedMySQLCapture.scala`](../../../../server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala) |
-| 任务、预算和恢复 | [`CdcPlatformRuntime.scala`](../../../../server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcPlatformRuntime.scala) |
-| ACK proof 与保护引用 | [`CaptureAckPaging.scala`](../../../../server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureAckPaging.scala) |
-| 安全 GC | [`CaptureGcRetention.scala`](../../../../server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureGcRetention.scala) |
+| 共享 Reader 和 owner | [`SharedMySQLCapture.scala`](../../../../common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala) |
+| 任务、预算和恢复 | [`CdcPlatformRuntime.scala`](../../../../common/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcPlatformRuntime.scala) |
+| ACK proof 与保护引用 | [`CaptureAckPaging.scala`](../../../../common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureAckPaging.scala) |
+| 安全 GC | [`CaptureGcRetention.scala`](../../../../common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureGcRetention.scala) |
 | 集群闭环与逐字段对账 | [`cluster-live-20261113`](../../../../docs/experiments/2026-11-12-runtime-gc/cluster-live-20261113/) |
 | 真实失败证据 | [`proof-cursor-snapshot`](../../../../docs/experiments/2026-10-29-proof-cursor-snapshot/) |
 | 对照阅读风格 | [MySQL Monthly](http://mysql.taobao.org/monthly/) |

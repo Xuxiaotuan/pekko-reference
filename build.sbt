@@ -125,7 +125,7 @@ lazy val commonSettings = Seq(
 // ================================
 import com.typesafe.sbt.packager.docker.Cmd
 
-lazy val pekkoServer = Project(id = "pekko-server", base = file("server"))
+lazy val pekkoServer = Project(id = "pekko-server", base = file("common"))
   .enablePlugins(JavaServerAppPackaging, DockerPlugin, AshScriptPlugin)
   .settings(
     commonSettings ++ Seq(
@@ -150,8 +150,8 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("server"))
       // ================================
       // 应用程序配置
       // ================================
-      // The distributable is CDC-only. PekkoServer remains a compatibility
-      // launcher for legacy Workflow experiments and is no longer the default.
+      // The distributable is CDC-only. The runtime entry is explicit and
+      // legacy Workflow launchers are not part of the production image.
       Compile / mainClass := Some("cn.xuyinyin.magic.cdc.runtime.CdcRuntimeMain"),
       
       // ================================
@@ -277,7 +277,7 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("server"))
   )
 
 // The deployable CDC roles are separate application modules.  They reuse the
-// server project as the compatibility/core library while exposing distinct
+// common project as the compatibility/core library while exposing distinct
 // entry points and container images.
 def cdcRoleSettings(moduleName: String, entryPoint: String) = Seq(
   name := moduleName,
@@ -297,14 +297,14 @@ def cdcRoleSettings(moduleName: String, entryPoint: String) = Seq(
   )
 )
 
-lazy val cdcCapture = Project(id = "pekko-cdc-capture", base = file("modules/capture"))
+lazy val cdcCapture = Project(id = "pekko-cdc-capture", base = file("capture"))
   .enablePlugins(JavaServerAppPackaging, DockerPlugin, AshScriptPlugin)
   .dependsOn(pekkoServer)
   .settings(commonSettings ++ cdcRoleSettings(
     "pekko-cdc-capture",
     "cn.xuyinyin.magic.cdc.capture.CaptureMain"))
 
-lazy val cdcWorker = Project(id = "pekko-cdc-worker", base = file("modules/worker"))
+lazy val cdcWorker = Project(id = "pekko-cdc-worker", base = file("worker"))
   .enablePlugins(JavaServerAppPackaging, DockerPlugin, AshScriptPlugin)
   .dependsOn(pekkoServer)
   .settings(commonSettings ++ cdcRoleSettings(

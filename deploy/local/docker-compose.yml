@@ -10,7 +10,7 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ../../server/src/main/resources/db/mysql/pekko-persistence-schema.sql:/docker-entrypoint-initdb.d/001-pekko-persistence.sql:ro
+      - ../../common/src/main/resources/db/mysql/pekko-persistence-schema.sql:/docker-entrypoint-initdb.d/001-pekko-persistence.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -upekko -p$$MYSQL_PASSWORD --silent"]
       interval: 5s
@@ -19,7 +19,7 @@ services:
 
   node1:
     image: ${PEKKO_IMAGE:-pekko-reference:0.1}
-    entrypoint: ["java", "-cp", "/opt/docker/lib/*", "cn.xuyinyin.magic.PekkoServer"]
+    entrypoint: ["java", "-cp", "/opt/docker/lib/*", "cn.xuyinyin.magic.cdc.runtime.CdcRuntimeMain"]
     environment:
       JAVA_TOOL_OPTIONS: -Dconfig.file=/opt/docker/conf/application-prod.conf -Dpekko.cluster.min-nr-of-members=2
       PEKKO_HOSTNAME: node1
@@ -32,7 +32,7 @@ services:
       DB_USER: pekko
       DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
     volumes:
-      - ../../server/src/main/resources:/opt/docker/conf:ro
+      - ../../common/src/main/resources:/opt/docker/conf:ro
     ports:
       - "2551:2551"
       - "8080:8080"
@@ -42,7 +42,7 @@ services:
 
   node2:
     image: ${PEKKO_IMAGE:-pekko-reference:0.1}
-    entrypoint: ["java", "-cp", "/opt/docker/lib/*", "cn.xuyinyin.magic.PekkoServer"]
+    entrypoint: ["java", "-cp", "/opt/docker/lib/*", "cn.xuyinyin.magic.cdc.runtime.CdcRuntimeMain"]
     environment:
       JAVA_TOOL_OPTIONS: -Dconfig.file=/opt/docker/conf/application-prod.conf -Dpekko.cluster.min-nr-of-members=2
       PEKKO_HOSTNAME: node2
@@ -55,7 +55,7 @@ services:
       DB_USER: pekko
       DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
     volumes:
-      - ../../server/src/main/resources:/opt/docker/conf:ro
+      - ../../common/src/main/resources:/opt/docker/conf:ro
     ports:
       - "2552:2551"
       - "8081:8080"

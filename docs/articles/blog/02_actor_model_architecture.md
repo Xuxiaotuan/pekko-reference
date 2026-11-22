@@ -179,7 +179,7 @@ def apply(
 
 #### 2. Idle状态 - 关键实现
 
-```@/Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/actors/WorkflowActor.scala#76:129
+```@/Users/xujiawei/magic/scala-workbench/pekko-reference/common/src/main/scala/cn/xuyinyin/magic/workflow/actors/WorkflowActor.scala#76:129
 private def idle(
   workflow: WorkflowDSL.Workflow,
   executionEngine: WorkflowExecutionEngine,
@@ -242,7 +242,7 @@ private def idle(
 
 #### 3. Running状态处理
 
-```@/Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/actors/WorkflowActor.scala#134:178
+```@/Users/xujiawei/magic/scala-workbench/pekko-reference/common/src/main/scala/cn/xuyinyin/magic/workflow/actors/WorkflowActor.scala#134:178
 private def running(
   workflow: WorkflowDSL.Workflow,
   executionEngine: WorkflowExecutionEngine,

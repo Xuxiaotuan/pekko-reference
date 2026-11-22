@@ -22,17 +22,17 @@ Capture 保持单副本并由 Capture lease 保护 Reader。Worker 至少运行�
 sbt 'pekko-cdc-capture/Docker/publishLocal' 'pekko-cdc-worker/Docker/publishLocal'
 ```
 
-核心共享实现仍位于 `pekko-server` 兼容库中，两个模块只提供独立应用入口和镜像。旧 Workflow、前端和历史持久化迁移不属于这两个生产模块。
+核心共享实现位于 `common`，SBT 项目 ID 仍保留为 `pekko-server` 以兼容既有命令和历史持久化类型。`capture` 与 `worker` 只提供各自的应用入口和镜像。旧 Workflow、前端和历史持久化迁移不属于这两个生产模块。
 
 项目目标是面向单 MySQL 实例的按需常驻 CDC：通过共享 Reader 捕获变更，为新增表执行分页全量与增量衔接，再持续同步到目标。70 万张表是目标场景，尚不是 70 万张真实物理表的容量验收结果。
 
-生产启动类分别是 `cn.xuyinyin.magic.cdc.capture.CaptureMain` 和 `cn.xuyinyin.magic.cdc.worker.WorkerMain`，只装配 CDC 服务和 `/api/v1/cdc-*` 路由。`CdcRuntimeMain` 仅作为旧脚本兼容入口，不是当前生产模块。原 Workflow HTTP、Cron 和管理前端不属于当前入口。历史实验和失败证据仍在 `docs/experiments`，旧前端试验保留在 `server/src/test/examples/legacy-console`。
+生产启动类分别是 `cn.xuyinyin.magic.cdc.capture.CaptureMain` 和 `cn.xuyinyin.magic.cdc.worker.WorkerMain`，只装配 CDC 服务和 `/api/v1/cdc-*` 路由。`CdcRuntimeMain` 仅作为旧脚本兼容入口，不是当前生产模块。原 Workflow HTTP、Cron 和管理前端不属于当前入口。历史实验和失败证据仍在 `docs/experiments`，旧前端试验保留在 `common/src/test/examples/legacy-console`。
 
 生产 `workflow` 目录已移除。旧 Actor、执行器、注册表和 Workflow receipt 投影保留在测试设施；生产仅保留历史状态模型、manifest 迁移及必要的旧表互斥/配额兼容。生产包和排除测试类的真实 MySQL 接管检查见[运行时收敛记录](docs/experiments/2026-11-08-cdc-standalone-entry/retire-workflow-runtime-20261111/README.md)。系列文章见 [CDC 设计系列](docs/articles/cdc-design/README.md)。
 
 ## 构建与启动
 
-使用 Java 17 和仓库指定的 SBT。构建项目 ID 保持 `pekko-server`。
+使用 Java 17 和仓库指定的 SBT。共享 Core 的构建项目 ID 保持 `pekko-server`，物理目录是 `common`。
 
 ```bash
 sbt 'pekko-server/compile' 'pekko-server/Test/compile'
@@ -50,7 +50,7 @@ Journal/Snapshot 和完整组目标账本须由部署流程预建。以下命令
 
 ```bash
 mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_NAME" \
-  < server/src/main/resources/db/mysql/pekko-persistence-schema.sql
+  < common/src/main/resources/db/mysql/pekko-persistence-schema.sql
 ```
 
 必需变量为 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USER` 和 `DB_PASSWORD`。

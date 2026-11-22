@@ -10,4 +10,4 @@
 | `scripts/package.sh` | package、Universal/stage、Docker/stage；不发布镜像 |
 | `python3 scripts/check-layout.py` | 根目录、package 路径、项目 ID 和导航检查 |
 
-完整后端使用 `sbt 'pekko-server/test'`。SBT 项目 ID 仍为 `pekko-server`，物理目录改为 `server`。真实 MySQL 实验仍须显式启用，局部测试不代表端到端验证。历史材料及独立核验器见 [experiments](../docs/experiments)。
+完整共享 Core 使用 `sbt 'pekko-server/test'`。SBT 项目 ID 仍为 `pekko-server`，物理目录是 `common`。部署应用分别是 `pekko-cdc-capture` 和 `pekko-cdc-worker`。真实 MySQL 实验仍须显式启用，局部测试不代表端到端验证。历史材料及独立核验器见 [experiments](../docs/experiments)。

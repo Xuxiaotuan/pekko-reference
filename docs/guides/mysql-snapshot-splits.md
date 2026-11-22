@@ -6,7 +6,7 @@
 
 使用 `mysql.snapshot → mysql.write` 直连；这一步不接受 Transform。读取期间源数据、主键和 Schema 必须保持不变。建议使用受控静态副本或在业务确认的停写窗口运行；配置声明本身不会阻止外部写入。目标建议为空表，其他目标唯一约束也可能导致暂停；本能力不会删除目标多余行。
 
-目标先显式执行现有 `server/src/main/resources/db/mysql/pekko-sync-ledger-schema.sql`，再执行新增的 `pekko-snapshot-batch-evidence-schema.sql`。应用不会自动创建或修改这两张账本表。
+目标先显式执行现有 `common/src/main/resources/db/mysql/pekko-sync-ledger-schema.sql`，再执行新增的 `pekko-snapshot-batch-evidence-schema.sql`。应用不会自动创建或修改这两张账本表。
 
 在原 Source DSL config 中增加：
 

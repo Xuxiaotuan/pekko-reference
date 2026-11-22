@@ -29,41 +29,41 @@
 
 ### New production files
 
-- `server/src/main/scala/cn/xuyinyin/magic/cdc/MySQLCdcEnvelope.scala` — versioned canonical CDC event model and codec.
-- `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceConfig.scala` — workflow-node configuration parser and secret resolution.
-- `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcStateConfig.scala` — application-level JDBC offset/schema-history configuration.
-- `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumBatchBridge.scala` — bounded one-batch callback-to-stream bridge.
-- `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumEngineAccess.scala` — narrow engine lifecycle/committer boundary and real Debezium adapter.
-- `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceNode.scala` — `mysql.cdc` checkpointed source.
-- `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplyConfig.scala` — CDC apply sink configuration.
-- `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNode.scala` — ordered transactional upsert/delete sink.
-- `server/src/main/resources/db/mysql/pekko-cdc-schema.sql` — Debezium JDBC state and isolated acceptance tables.
+- `common/src/main/scala/cn/xuyinyin/magic/cdc/MySQLCdcEnvelope.scala` — versioned canonical CDC event model and codec.
+- `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceConfig.scala` — workflow-node configuration parser and secret resolution.
+- `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcStateConfig.scala` — application-level JDBC offset/schema-history configuration.
+- `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumBatchBridge.scala` — bounded one-batch callback-to-stream bridge.
+- `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumEngineAccess.scala` — narrow engine lifecycle/committer boundary and real Debezium adapter.
+- `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceNode.scala` — `mysql.cdc` checkpointed source.
+- `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplyConfig.scala` — CDC apply sink configuration.
+- `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNode.scala` — ordered transactional upsert/delete sink.
+- `common/src/main/resources/db/mysql/pekko-cdc-schema.sql` — Debezium JDBC state and isolated acceptance tables.
 
 ### New test files
 
-- `server/src/test/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidatorSpec.scala`
-- `server/src/test/scala/cn/xuyinyin/magic/cdc/MySQLCdcEnvelopeSpec.scala`
-- `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceConfigSpec.scala`
-- `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumBatchBridgeSpec.scala`
-- `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceNodeSpec.scala`
-- `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNodeSpec.scala`
-- `server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcProcess.scala`
-- `server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcRecoverySpec.scala`
+- `common/src/test/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidatorSpec.scala`
+- `common/src/test/scala/cn/xuyinyin/magic/cdc/MySQLCdcEnvelopeSpec.scala`
+- `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceConfigSpec.scala`
+- `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumBatchBridgeSpec.scala`
+- `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceNodeSpec.scala`
+- `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNodeSpec.scala`
+- `common/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcProcess.scala`
+- `common/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcRecoverySpec.scala`
 
 ### Modified production/configuration files
 
 - `build.sbt` — Java 17 target, Debezium modules, Docker runtime.
-- `server/src/main/resources/application.conf` — local CDC JDBC state defaults.
-- `server/src/main/resources/application-prod.conf` — production CDC JDBC state environment overrides.
-- `server/src/main/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidator.scala` — validate CDC JDBC state configuration.
-- `server/src/main/scala/cn/xuyinyin/magic/workflow/spi/CheckpointedNodes.scala` — default post-commit source acknowledgement.
-- `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala` — enforce sink/checkpoint/source-ack ordering and resolve CDC secrets.
-- `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidator.scala` — enforce direct CDC source-to-apply-sink and no schedule.
-- `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/registry/NodeRegistry.scala` — register source and sink.
-- `server/src/test/scala/cn/xuyinyin/magic/workflow/WorkflowFixtures.scala` — reusable CDC workflows.
-- `server/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala` — acknowledgement ordering and failure attribution.
-- `server/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidatorSpec.scala` — CDC topology/lifecycle validation.
-- `server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala` — unbounded reliable execution recovery selection.
+- `common/src/main/resources/application.conf` — local CDC JDBC state defaults.
+- `common/src/main/resources/application-prod.conf` — production CDC JDBC state environment overrides.
+- `common/src/main/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidator.scala` — validate CDC JDBC state configuration.
+- `common/src/main/scala/cn/xuyinyin/magic/workflow/spi/CheckpointedNodes.scala` — default post-commit source acknowledgement.
+- `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala` — enforce sink/checkpoint/source-ack ordering and resolve CDC secrets.
+- `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidator.scala` — enforce direct CDC source-to-apply-sink and no schedule.
+- `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/registry/NodeRegistry.scala` — register source and sink.
+- `common/src/test/scala/cn/xuyinyin/magic/workflow/WorkflowFixtures.scala` — reusable CDC workflows.
+- `common/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala` — acknowledgement ordering and failure attribution.
+- `common/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidatorSpec.scala` — CDC topology/lifecycle validation.
+- `common/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala` — unbounded reliable execution recovery selection.
 - `deploy/kubernetes/bigdata-lab/bootstrap-mysql.sh` — idempotent CDC schema/account/Secret bootstrap.
 - `deploy/kubernetes/bigdata-lab/README.md` — CDC bootstrap and acceptance commands.
 
@@ -82,7 +82,7 @@
 
 **Files:**
 - Modify: `build.sbt:18-19, 28-50, 151-175, 180-201, 252-257`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumDependencySpec.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumDependencySpec.scala`
 
 **Interfaces:**
 - Consumes: existing SBT `pekko-server` project and Docker packaging.
@@ -167,7 +167,7 @@ Expected: the smoke test passes; the tree contains one `3.6.1.Final` Debezium li
 Only if explicit commit authorization is granted:
 
 ```bash
-git add build.sbt server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumDependencySpec.scala
+git add build.sbt common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumDependencySpec.scala
 git commit -m "build: add Java 17 Debezium CDC runtime"
 ```
 
@@ -176,13 +176,13 @@ Otherwise leave the files unstaged and record the completed checks in the workin
 ### Task 2: Durable CDC State and Node Configuration
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceConfig.scala`
-- Create: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcStateConfig.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceConfigSpec.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidatorSpec.scala`
-- Modify: `server/src/main/resources/application.conf:99-114`
-- Modify: `server/src/main/resources/application-prod.conf:99-117,134-148`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidator.scala:24-49,200-222`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceConfig.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcStateConfig.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceConfigSpec.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidatorSpec.scala`
+- Modify: `common/src/main/resources/application.conf:99-114`
+- Modify: `common/src/main/resources/application-prod.conf:99-117,134-148`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidator.scala:24-49,200-222`
 
 **Interfaces:**
 - Consumes: `WorkflowDSL.Node`, `JdbcPasswordResolver`, Typesafe `Config`.
@@ -310,21 +310,21 @@ Expected: all cases pass and no output contains the fixture secret.
 Only with explicit commit authorization:
 
 ```bash
-git add server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceConfig.scala \
-  server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcStateConfig.scala \
-  server/src/main/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidator.scala \
-  server/src/main/resources/application.conf \
-  server/src/main/resources/application-prod.conf \
-  server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceConfigSpec.scala \
-  server/src/test/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidatorSpec.scala
+git add common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceConfig.scala \
+  common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcStateConfig.scala \
+  common/src/main/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidator.scala \
+  common/src/main/resources/application.conf \
+  common/src/main/resources/application-prod.conf \
+  common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceConfigSpec.scala \
+  common/src/test/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidatorSpec.scala
 git commit -m "feat: validate durable MySQL CDC configuration"
 ```
 
 ### Task 3: Canonical CDC Envelope and Type Boundary
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/cdc/MySQLCdcEnvelope.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/cdc/MySQLCdcEnvelopeSpec.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/cdc/MySQLCdcEnvelope.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/cdc/MySQLCdcEnvelopeSpec.scala`
 
 **Interfaces:**
 - Consumes: Debezium/Kafka Connect `SourceRecord`, `Struct`, and schemas.
@@ -413,16 +413,16 @@ Then mentally change `u` to `c`, drop `before`, round a decimal, and accept a tr
 Only with explicit commit authorization:
 
 ```bash
-git add server/src/main/scala/cn/xuyinyin/magic/cdc/MySQLCdcEnvelope.scala \
-  server/src/test/scala/cn/xuyinyin/magic/cdc/MySQLCdcEnvelopeSpec.scala
+git add common/src/main/scala/cn/xuyinyin/magic/cdc/MySQLCdcEnvelope.scala \
+  common/src/test/scala/cn/xuyinyin/magic/cdc/MySQLCdcEnvelopeSpec.scala
 git commit -m "feat: define canonical MySQL CDC envelopes"
 ```
 
 ### Task 4: One-Batch Debezium Backpressure Bridge
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumBatchBridge.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumBatchBridgeSpec.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumBatchBridge.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumBatchBridgeSpec.scala`
 
 **Interfaces:**
 - Consumes: decoded `Vector[String]` envelope rows and a narrow `CdcBatchCommitHandle`.
@@ -478,17 +478,17 @@ Run the suite at least 20 times in one JVM using ScalaTest repetition or an inte
 Only with explicit commit authorization:
 
 ```bash
-git add server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumBatchBridge.scala \
-  server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumBatchBridgeSpec.scala
+git add common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumBatchBridge.scala \
+  common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumBatchBridgeSpec.scala
 git commit -m "feat: bridge ordered Debezium batches into Pekko"
 ```
 
 ### Task 5: Sink-to-Actor-to-Source Acknowledgement Ordering
 
 **Files:**
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/spi/CheckpointedNodes.scala:10-31`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:110-197`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala:21-430,569-680`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/spi/CheckpointedNodes.scala:10-31`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:110-197`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala:21-430,569-680`
 
 **Interfaces:**
 - Consumes: existing `SourceBatch`, `SnapshotBoundary`, `BatchCommitResult`, and `ReliableRunContext.checkpointCommitted`.
@@ -588,18 +588,18 @@ Expected: the new ordering cases pass and legacy sources require no changes.
 Only with explicit commit authorization:
 
 ```bash
-git add server/src/main/scala/cn/xuyinyin/magic/workflow/spi/CheckpointedNodes.scala \
-  server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala \
-  server/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala
+git add common/src/main/scala/cn/xuyinyin/magic/workflow/spi/CheckpointedNodes.scala \
+  common/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala \
+  common/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala
 git commit -m "feat: acknowledge sources after durable checkpoints"
 ```
 
 ### Task 6: Real Debezium Engine Adapter and `mysql.cdc` Source
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumEngineAccess.scala`
-- Create: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceNode.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceNodeSpec.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumEngineAccess.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceNode.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceNodeSpec.scala`
 
 **Interfaces:**
 - Consumes: `MySQLCdcSourceConfig`, `MySQLCdcStateConfig`, `MySQLCdcEnvelope`, `DebeziumBatchBridge`, and source acknowledgement hook.
@@ -723,18 +723,18 @@ Expected: tests pass and the JVM exits without a lingering Debezium executor.
 Only with explicit commit authorization:
 
 ```bash
-git add server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumEngineAccess.scala \
-  server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceNode.scala \
-  server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceNodeSpec.scala
+git add common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumEngineAccess.scala \
+  common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceNode.scala \
+  common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLCdcSourceNodeSpec.scala
 git commit -m "feat: stream real MySQL changes with Debezium"
 ```
 
 ### Task 7: Transactional `mysql.cdc.apply` Sink
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplyConfig.scala`
-- Create: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNode.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNodeSpec.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplyConfig.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNode.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNodeSpec.scala`
 
 **Interfaces:**
 - Consumes: `MySQLCdcEnvelope`, schema-bearing `SnapshotBoundary`, target JDBC metadata, `SourceBatch`, and `pekko_sync_batch_ledger`.
@@ -823,22 +823,22 @@ Expected: CDC cases pass and `mysql.write` behavior is unchanged.
 Only with explicit commit authorization:
 
 ```bash
-git add server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplyConfig.scala \
-  server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNode.scala \
-  server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNodeSpec.scala
+git add common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplyConfig.scala \
+  common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNode.scala \
+  common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLCdcApplySinkNodeSpec.scala
 git commit -m "feat: apply CDC events transactionally to MySQL"
 ```
 
 ### Task 8: Registry, Workflow Topology, Secrets, and Actor Lifecycle
 
 **Files:**
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/registry/NodeRegistry.scala:24-45`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidator.scala:17-79`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:216-229`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/WorkflowFixtures.scala:1-88`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidatorSpec.scala:6-43`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala:39-85,422-440`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala:160-190,330-380`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/registry/NodeRegistry.scala:24-45`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidator.scala:17-79`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:216-229`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/WorkflowFixtures.scala:1-88`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidatorSpec.scala:6-43`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala:39-85,422-440`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala:160-190,330-380`
 
 **Interfaces:**
 - Consumes: new node classes and existing workflow metadata/schedule contract.
@@ -909,22 +909,22 @@ Run the three suites from Step 4 plus `EventSourcedWorkflowActorSpec`. Expected:
 Only with explicit commit authorization:
 
 ```bash
-git add server/src/main/scala/cn/xuyinyin/magic/workflow/execution/registry/NodeRegistry.scala \
-  server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidator.scala \
-  server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala \
-  server/src/test/scala/cn/xuyinyin/magic/workflow/WorkflowFixtures.scala \
-  server/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidatorSpec.scala \
-  server/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala \
-  server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala
+git add common/src/main/scala/cn/xuyinyin/magic/workflow/execution/registry/NodeRegistry.scala \
+  common/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidator.scala \
+  common/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala \
+  common/src/test/scala/cn/xuyinyin/magic/workflow/WorkflowFixtures.scala \
+  common/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidatorSpec.scala \
+  common/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala \
+  common/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala
 git commit -m "feat: expose single-node MySQL CDC workflows"
 ```
 
 ### Task 9: Real MySQL Connector and Apply Integration
 
 **Files:**
-- Create: `server/src/main/resources/db/mysql/pekko-cdc-schema.sql`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcProcess.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcRecoverySpec.scala`
+- Create: `common/src/main/resources/db/mysql/pekko-cdc-schema.sql`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcProcess.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcRecoverySpec.scala`
 
 **Interfaces:**
 - Consumes: real `MySQLCdcSourceNode`, `MySQLCdcApplySinkNode`, MySQL 8.4, and environment-provided isolated schema credentials.
@@ -1037,9 +1037,9 @@ Run the external suite twice with fresh connector IDs and ID ranges. Expected: b
 Only with explicit commit authorization:
 
 ```bash
-git add server/src/main/resources/db/mysql/pekko-cdc-schema.sql \
-  server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcProcess.scala \
-  server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcRecoverySpec.scala
+git add common/src/main/resources/db/mysql/pekko-cdc-schema.sql \
+  common/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcProcess.scala \
+  common/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCdcRecoverySpec.scala
 git commit -m "test: verify real MySQL CDC recovery"
 ```
 
@@ -1372,7 +1372,7 @@ Run scoped searches for credential assignment patterns, inline passwords, genera
 ```bash
 git status --short
 git diff --check
-git diff -- build.sbt pekko-server/src deploy/kubernetes/bigdata-lab README.md docs/guides/configuration.md
+git diff -- build.sbt pekko-common/src deploy/kubernetes/bigdata-lab README.md docs/guides/configuration.md
 ```
 
 Preserve `.tasks/` and unrelated parser/test changes. Verify no existing user file was staged, deleted, or overwritten by CDC work.

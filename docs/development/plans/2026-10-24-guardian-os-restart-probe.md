@@ -7,7 +7,7 @@
 
 ## Constraints and review focus
 
-- No server/src/main, build/dependency or existing experiment changes. Preserve all initial tracked bytes.
+- No common/src/main, build/dependency or existing experiment changes. Preserve all initial tracked bytes.
 - Signatures establish provenance only. Proof requires a prebound unit/incarnation/cgroup, closed laboratory start path, successful stop and confirmed empty subtree. Missing initial identity is never an exit proof.
 - G7 records an accepted asynchronous start with no laboratory attach, including an ExecStartPre JVM gate. Closing its job must prevent delayed main/fork after releasing the gate.
 - G10 uses the existing transparent test relay outside the killed cgroup. Preserve actual server connection/transaction evidence before releasing it. The relay is a timing facility, not a production component.

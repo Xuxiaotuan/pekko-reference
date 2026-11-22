@@ -61,7 +61,7 @@ SHA-256(`connectorId`) 的前 32 个小写十六进制字符。这样不同 conn
 Scheduler 或 guardian 的故障接管不会自动接管这条链路。一个控制 schema 对应一个平台
 owner；首版不提供可配置的多平台命名空间。
 
-以下是当前 [`CdcPlatformSettings`](../../server/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcPlatformSettings.scala)
+以下是当前 [`CdcPlatformSettings`](../../common/src/main/scala/cn/xuyinyin/magic/workflow/cdc/CdcPlatformSettings.scala)
 实际读取的 HOCON 结构。保存到权限受控的外部配置文件；`${...}` 是该文件显式引用的必填
 环境变量，示例不包含密码值，也不是新增的隐式环境变量映射。
 
@@ -162,7 +162,7 @@ state observer 没有单独配置字段，使用控制账户；仅有某个库�
 `SHOW GRANTS` 核实直接全局 PROCESS（或全局 ALL PRIVILEGES），不会把角色中的间接权限
 或“查询结果为空”当成完整观察证明。无需为此给 SDK state 账户全局 PROCESS。
 
-[`CaptureResourceObserver`](../../server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureResourceObserver.scala)
+[`CaptureResourceObserver`](../../common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureResourceObserver.scala)
 在 Reader 启动前建立两端原始锚连接，核对 UUID、connection id 与 canary lock，期间不自动
 重连替换锚。服务端会话/事务仍存在、权限不足、锚丢失或归属不明时保持 UNKNOWN。
 source 账号下的 marker/snapshot 短连接也属于同一 capture 的资源，不能人为从统计中排除。
@@ -250,7 +250,7 @@ Sink。分支、合流、环和断开的节点不在 MVP 范围。
 
 ```bash
 mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_NAME" \
-  < server/src/main/resources/db/mysql/pekko-persistence-schema.sql
+  < common/src/main/resources/db/mysql/pekko-persistence-schema.sql
 ```
 
 所有节点必须连接同一个专用数据库。不要让不同环境共享同一 schema，也不要把

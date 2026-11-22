@@ -4,7 +4,7 @@
 
 ## 启用与入口
 
-默认关闭。先在控制数据库显式执行 `server/src/main/resources/db/mysql/pekko-table-scheduling-schema.sql`；H2 本地环境有同名 H2 脚本。已有 Journal 表、目标批次账本及摘要表仍需分别部署，不自动迁移现有任务。
+默认关闭。先在控制数据库显式执行 `common/src/main/resources/db/mysql/pekko-table-scheduling-schema.sql`；H2 本地环境有同名 H2 脚本。已有 Journal 表、目标批次账本及摘要表仍需分别部署，不自动迁移现有任务。
 
 配置位于 `pekko.workflow.table-scheduling`：
 

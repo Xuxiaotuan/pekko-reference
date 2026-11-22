@@ -46,12 +46,12 @@
 ### Task 1: Add durable credential-binding and cutover records
 
 **Files:**
-- Create: `server/src/main/resources/db/mysql/pekko-snapshot-cutover-schema.sql`
-- Create: `server/src/main/resources/db/h2/pekko-snapshot-cutover-schema.sql`
-- Create: `server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotCutoverModels.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/CdcManagedControlStore.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/ManagedControlTransactions.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotCutoverStoreSpec.scala`
+- Create: `common/src/main/resources/db/mysql/pekko-snapshot-cutover-schema.sql`
+- Create: `common/src/main/resources/db/h2/pekko-snapshot-cutover-schema.sql`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotCutoverModels.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/CdcManagedControlStore.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/ManagedControlTransactions.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotCutoverStoreSpec.scala`
 
 **Interfaces:**
 - Produces `CutoverAuthorizationKey(deploymentId, hostId, operationId, oldOwnerId, oldManifest, policyHash)`.
@@ -67,11 +67,11 @@
 ### Task 2: Implement the atomic cutover authorizer
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotCutoverAuthorizer.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyAccountLockIntent.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorStore.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/ManagedOwnerStore.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotCutoverAuthorizerSpec.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotCutoverAuthorizer.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/LegacyAccountLockIntent.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorStore.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/ManagedOwnerStore.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotCutoverAuthorizerSpec.scala`
 
 **Interfaces:**
 - `authorize(control: SupervisorControl, oldWorker: SnapshotWorkerLaunch, receipt: String, lockPlan: LegacyAccountLockIntent.Plan, grants: Vector[TableGrant], bindings: Vector[CredentialBinding]): CutoverAuthorizationKey`.
@@ -86,13 +86,13 @@
 ### Task 3: Bind runtime credentials without changing persisted definitions
 
 **Files:**
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotOwnerJdbc.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/snapshot/SnapshotSplitExecutor.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceNode.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkNode.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/workflow/execution/SnapshotCredentialBindingSpec.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/workflow/connectors/mysql/ManagedCredentialBindingSpec.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotOwnerJdbc.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/snapshot/SnapshotSplitExecutor.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceNode.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkNode.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/workflow/execution/SnapshotCredentialBindingSpec.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/workflow/connectors/mysql/ManagedCredentialBindingSpec.scala`
 
 **Interfaces:**
 - `SnapshotOwnerJdbc.authorizedBinding(workflowId, executionId, nodeId, role, originalConfig): Option[CredentialBinding]`.
@@ -108,11 +108,11 @@
 ### Task 4: Connect the new policy and binding to worker startup
 
 **Files:**
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotOwnerBootstrap.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingStore.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingRuntime.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorProcesses.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/CutoverWorkerStartupSpec.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotOwnerBootstrap.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingStore.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/TableSchedulingRuntime.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotSupervisorProcesses.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/workflow/scheduling/CutoverWorkerStartupSpec.scala`
 
 - [x] Require an enrolled guardian launch ticket, exact launch profile, cutover operation and new policy identity before constructing a migrated legacy Workflow store.
 - [x] Make an old binary with the old policy fail closed after the policy marker changes.
@@ -123,8 +123,8 @@
 ### Task 5: Real MySQL + Journal + Sink recovery matrix
 
 **Files:**
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLSnapshotTakeoverSpec.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCutoverAuthorizationSpec.scala`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLSnapshotTakeoverSpec.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/workflow/integration/RealMySQLCutoverAuthorizationSpec.scala`
 - Create: `docs/experiments/2026-11-09-persistent-cutover-authorization/README.md`
 
 - [x] Use an exclusive lab pool and a real old Workflow worker, independent production guardian process, Actor Journal and MySQL Sink. `RealMySQLSupervisorMainSpec` now verifies the actual GuardianMain/SupervisorMain/worker JVM path; the cutover authorization operator command remains a separate boundary.

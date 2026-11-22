@@ -44,10 +44,10 @@ C 阶段随后获批实施，实际会话边界和真实回归见 [C 阶段记�
 
 源码入口：
 
-- [PekkoGuardian](../../../server/src/main/scala/cn/xuyinyin/magic/bootstrap/PekkoGuardian.scala)
-- [工作流与源能力校验](../../../server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidator.scala)
-- [查询](../../../server/src/main/scala/cn/xuyinyin/magic/workflow/query/WorkflowQueryService.scala)、[注册表](../../../server/src/main/scala/cn/xuyinyin/magic/workflow/execution/registry/NodeRegistry.scala)
-- [后端 API](../../../server/src/main/scala/cn/xuyinyin/magic/api/http/routes/WorkflowRoutes.scala)、[前端调用](../../../console/src/features/workflows/api.ts)
+- [PekkoGuardian](../../../common/src/main/scala/cn/xuyinyin/magic/bootstrap/PekkoGuardian.scala)
+- [工作流与源能力校验](../../../common/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidator.scala)
+- [查询](../../../common/src/main/scala/cn/xuyinyin/magic/workflow/query/WorkflowQueryService.scala)、[注册表](../../../common/src/main/scala/cn/xuyinyin/magic/workflow/execution/registry/NodeRegistry.scala)
+- [后端 API](../../../common/src/main/scala/cn/xuyinyin/magic/api/http/routes/WorkflowRoutes.scala)、[前端调用](../../../console/src/features/workflows/api.ts)
 
 本地代码图缓存位于 `/tmp`，只辅助产生候选。图会将经 SQL/配置使用的对象列为“无调用者”，不能直接据此删除。源码引用检查也不能证明没有仓库外调用方；迁移需提供运行入口变更说明。
 

@@ -18,7 +18,7 @@ import scala.jdk.CollectionConverters._
 import scala.concurrent.{Await,ExecutionContext}
 import scala.concurrent.duration._
 
-/** Actual production main classes and fixed PekkoServer worker, without replacing their launch factory. */
+/** Actual production main classes and fixed CDC runtime worker, without replacing their launch factory. */
 class RealMySQLSupervisorMainSpec extends AnyWordSpec with Matchers {
   import CdcJournalWindowSupport._
   import SnapshotGuardianWire._
@@ -79,7 +79,7 @@ class RealMySQLSupervisorMainSpec extends AnyWordSpec with Matchers {
         guardian=start("guardian",SnapshotGuardianMain.getClass.getName.stripSuffix("$"))
         awaitCondition("real guardian RPC socket",20.seconds){Files.exists(settings.socket)}
         val a=start("A",SnapshotSupervisorMain.getClass.getName.stripSuffix("$"))
-        awaitCondition("fixed production PekkoServer completed the original snapshot",70.seconds){cn.xuyinyin.magic.cdc.control.LegacySupervisorHarness.tableStore(settings).get("table-00").exists(_.state=="completed")}
+        awaitCondition("fixed production CDC runtime completed the original snapshot",70.seconds){cn.xuyinyin.magic.cdc.control.LegacySupervisorHarness.tableStore(settings).get("table-00").exists(_.state=="completed")}
         val old=settings.metadata.pending.head.bootId;write(dir,"before-restart.json",SupervisorRecoveryTest.capture(settings,schema));a.kill()
         val b=start("B",SnapshotSupervisorMain.getClass.getName.stripSuffix("$"))
         awaitCondition("production supervisor replacement retired old worker and started successor",40.seconds){settings.metadata.launch(old).exists(_.phase=="retired") && settings.metadata.pending.exists(_.bootId!=old)}
@@ -87,7 +87,7 @@ class RealMySQLSupervisorMainSpec extends AnyWordSpec with Matchers {
         val data=after.fields("data").asJsObject;data.fields("comparison").asJsObject.fields("equal") shouldBe JsBoolean(true)
         data.fields("T").asInstanceOf[JsArray].elements.size shouldBe 5;data.fields("audit").asInstanceOf[JsArray].elements.size shouldBe 10
         cn.xuyinyin.magic.cdc.control.LegacySupervisorHarness.tableStore(settings).get("table-00").get.executionId shouldBe Some(execution)
-        write(dir,"result.json",JsObject("scenario"->JsString("ACTUAL_MAIN_STARTUP_RESTART"),"schema"->JsString(schema),"outcome"->JsString("CONVERGED"),"D"->JsString("N/A"),"originalExecution"->JsString(execution),"fixedProductionWorkerMain"->JsString("cn.xuyinyin.magic.PekkoServer")))
+        write(dir,"result.json",JsObject("scenario"->JsString("ACTUAL_MAIN_STARTUP_RESTART"),"schema"->JsString(schema),"outcome"->JsString("CONVERGED"),"D"->JsString("N/A"),"originalExecution"->JsString(execution),"fixedProductionWorkerMain"->JsString("cn.xuyinyin.magic.cdc.runtime.CdcRuntimeMain")))
         success=true
       }catch{case e:Throwable=>write(dir,"failure.json",JsObject("errorClass"->JsString(e.getClass.getName),"state"->SupervisorRecoveryTest.capture(settings,schema)));throw e}
       finally {

@@ -23,14 +23,14 @@
 
 | 编号 | 当前代码定位 | 本轮核实的行为 |
 |---|---|---|
-| P1 | `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumEngineAccess.scala:25–27,133–139,189–254` | `start` 返回运行终止 Future；正常关闭才成功，意外退出或异常失败。它不提供就绪 Future，也未接 ConnectorCallback。 |
-| P2 | `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala:59–101` | start 建源控制表、取得状态库命名锁、记 PROFILE；有 L 证据时要求 history、D 及 ACK proof 存在；随后异步启动 SDK。检查没有禁止 INITIAL。 |
+| P1 | `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumEngineAccess.scala:25–27,133–139,189–254` | `start` 返回运行终止 Future；正常关闭才成功，意外退出或异常失败。它不提供就绪 Future，也未接 ConnectorCallback。 |
+| P2 | `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala:59–101` | start 建源控制表、取得状态库命名锁、记 PROFILE；有 L 证据时要求 history、D 及 ACK proof 存在；随后异步启动 SDK。检查没有禁止 INITIAL。 |
 | P3 | 同文件 `:80–95,190–201,214–232` | 配置 `no_data`、全库表包含、Schema 事件；subscribe 只检查已有 Schema/JDBC 一致性，再 register 和写 B。已有 Schema 可以来自上一个 attempt。 |
 | P4 | 同文件 `:119–155,182–186,246–255` | 源 B 控制事务先提交；只有捕获 ROW 与对应事务 END 后才 bind B；L cover 在原始 ACK 前；ACK 返回不是实际 D 写成证明。 |
-| P5 | `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/MySQLCaptureStore.scala:123–180,201–231` | B_PENDING 与 BARRIER 绑定分离；bind 原子写 BARRIER/路由；verifyOffset 验证 D 对应 ACK proof 链，未验证 SDK 此次是否沿用该起点。 |
+| P5 | `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/MySQLCaptureStore.scala:123–180,201–231` | B_PENDING 与 BARRIER 绑定分离；bind 原子写 BARRIER/路由；verifyOffset 验证 D 对应 ACK proof 链，未验证 SDK 此次是否沿用该起点。 |
 | P6 | 同文件 `:51–55,145–165,210–214` | 没有源 marker 的 COMMIT 结果列、startup evidence 或 attempt 列。`hasEvidence` 只看 ACK/BARRIER/GROUP，不看 PROFILE/SCHEMA/B_PENDING。 |
-| P7 | `server/src/test/scala/cn/xuyinyin/magic/workflow/integration/SharedCaptureMatrixWorker.scala:111–118`；`SharedCaptureMatrixSpec.scala:82–86` | worker 在 `capture.start()` 返回后立即打印 PROCESS_READY；R02 等旧 Schema、只 PREPARE 后崩溃，恢复一见 PROCESS_READY 就 subscribe。 |
-| P8 | `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureModels.scala:6–26` | CapturePoint 是 ROW occurrence；路由区间为 B 之后、K 及之前。它不是 SDK 完整恢复 offset。`initialized` 固定为 false。 |
+| P7 | `common/src/test/scala/cn/xuyinyin/magic/workflow/integration/SharedCaptureMatrixWorker.scala:111–118`；`SharedCaptureMatrixSpec.scala:82–86` | worker 在 `capture.start()` 返回后立即打印 PROCESS_READY；R02 等旧 Schema、只 PREPARE 后崩溃，恢复一见 PROCESS_READY 就 subscribe。 |
+| P8 | `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureModels.scala:6–26` | CapturePoint 是 ROW occurrence；路由区间为 B 之后、K 及之前。它不是 SDK 完整恢复 offset。`initialized` 固定为 false。 |
 
 R02 的原始事实取自 [r02-startup-boundary.json](../../experiments/2026-10-25-bootstrap/r02-startup-boundary.json)、[README](../../experiments/2026-10-25-bootstrap/README.md) 和 [binlog 截段](../../experiments/2026-10-25-bootstrap/r02-startup-window.txt)：
 

@@ -32,9 +32,9 @@ printf '%s' "${MYSQL_CDC_PASSWORD}" >"${cdc_secret_password_file}"
 chmod 0600 "${workflow_password_input_file}" "${cdc_secret_password_file}"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "${script_dir}/../../.." && pwd)"
-persistence_schema="${repository_root}/server/src/main/resources/db/mysql/pekko-persistence-schema.sql"
-ledger_schema="${repository_root}/server/src/main/resources/db/mysql/pekko-sync-ledger-schema.sql"
-cdc_schema="${repository_root}/server/src/main/resources/db/mysql/pekko-cdc-schema.sql"
+persistence_schema="${repository_root}/common/src/main/resources/db/mysql/pekko-persistence-schema.sql"
+ledger_schema="${repository_root}/common/src/main/resources/db/mysql/pekko-sync-ledger-schema.sql"
+cdc_schema="${repository_root}/common/src/main/resources/db/mysql/pekko-cdc-schema.sql"
 
 for schema in "${persistence_schema}" "${ledger_schema}" "${cdc_schema}"; do
   [[ -f "${schema}" ]] || { echo "required schema is missing: ${schema}" >&2; exit 1; }

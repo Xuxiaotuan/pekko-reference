@@ -1,17 +1,55 @@
-# 目录与兼容入口
+# 目录布局
 
-当前 CDC 基线是 `master` 分支。两个生产 SBT 应用模块是 `pekko-cdc-capture` 和 `pekko-cdc-worker`。核心兼容代码暂存于 `pekko-server`，不作为生产部署模块。Capture 模块的默认入口是 `cn.xuyinyin.magic.cdc.capture.CaptureMain`，Worker 模块的默认入口是 `cn.xuyinyin.magic.cdc.worker.WorkerMain`。管理前端已从产品源码移除；早期前端试验保存在 `server/src/test/examples/legacy-console`。
+仓库只保留 `common`、`capture`、`worker` 三个源码目录。`common` 是共享 CDC Core，后两个是可部署应用。构建产物和 IDE 元数据不属于项目目录，默认被 `.gitignore` 排除。
 
-Capture 部署运行一个副本并持有 SharedMySQLCapture。Worker 至少运行两个副本，通过 Control DB lease 竞争任务，任务 Graph 与 Capture Reader 分离。
+```text
+pekko-reference/
+├── common/                         # pekko-server 兼容项目，共享 CDC Core
+│   ├── src/main/scala/.../cdc/     # 协议、状态、恢复、Journal 和生命周期
+│   ├── src/main/scala/.../connectors/mysql/
+│   ├── src/main/resources/         # 配置和数据库 schema
+│   └── src/test/                   # 单测、集成测试和历史兼容夹具
+├── capture/                        # pekko-cdc-capture，单 Capture 入口
+└── worker/                         # pekko-cdc-worker，至少两个 Worker 入口
+├── deploy/
+│   ├── kubernetes/                 # K8s 与 bigdata-lab 清单
+│   ├── kubesphere/                 # 构建、镜像和部署流水线
+│   └── local/                      # 本地 Compose 配置
+├── docs/
+│   ├── architecture/               # 架构和数据流说明
+│   ├── guides/                     # 配置、部署和运行指南
+│   ├── articles/                   # 对外技术文章
+│   ├── development/                # 设计、计划和目录约定
+│   ├── experiments/                # 实验原始材料、失败证据和对账结果
+│   └── archive/                    # 历史实现和迁移说明
+├── scripts/                        # 构建、检查和实验辅助脚本
+├── .tasks/                         # 用户保留的任务记录，不参与生产编译
+├── build.sbt                       # SBT 聚合入口
+└── README.md                       # 项目入口
+```
 
-CDC 平台协调与任务控制位于 `server/src/main/scala/cn/xuyinyin/magic/cdc/platform`，引导流程位于 `cdc/bootstrap`，检查点位于 `cdc/checkpoint`，Split 状态与读取协调位于 `cdc/snapshot`，启动入口位于 `cdc/runtime`，旧 Workflow 节点接口和静态快照执行器位于 `cdc/compat/nodes`，MySQL 捕获与应用位于 `connectors/mysql`。旧 Workflow HTTP、Cron、Sharding 和 Server 仅保留为测试材料，不属于生产 Compile 源集。
+## 生产边界
 
-`cdc/control` 还包含受管容量配置和数据库恢复许可视图。旧执行节点的凭据重绑定位于 `workflow/execution/WorkflowCredentialBinding`；受管 JDBC 不再直接接收 Workflow 节点类型。共享 Reader 的 Debezium 配置、状态表命名及 offset 编码位于 `connectors/mysql/source/MySQLDebeziumConnector`。CDC supervisor 的配置、worker 启动设置和 owner bootstrap 位于 `cdc/guardian`，历史 supervisor/guardian 主类名保留；MySQL 排空观察及数据库身份读取位于 `cdc/guardian`；owner 接口仍由旧包限定实现，以免扩大信任边界。控制事务、guardian capability 和旧执行器尚未全部解耦。
+Capture 只持有 SharedMySQLCapture 和一个 Reader。Worker 通过 Control DB 的 TaskLease 竞争任务，并为每张表独立 materialize TableCdcGraph。生产部署只使用 `capture` 和 `worker`，两者都依赖 `common`，`common` 不单独部署。
 
-## 尚未完成的兼容迁移
+`common` 的 SBT 项目 ID 仍叫 `pekko-server`，这是命令和历史持久化兼容名称。根目录的 `pekko-server` 仅是指向 `common` 的兼容性符号链接，不是第二份代码。
 
-生产源码仍有 `workflow` 目录。部分仍在使用的类型存储在 Pekko Journal 或 Snapshot 中；`actors`、`execution`、`model` 和 `scheduling` 中仍混有旧 Workflow 编排与共享兼容实现。不能把这些目录称为已经清理完成。
+## 兼容与历史边界
 
-`BootstrapJournal.Advanced`、`BootstrapProgress`、`BatchCheckpoint` 等现有 JVM 类名可能出现在 Jackson manifest 中。迁移时必须保留旧数据的解码路径，验证旧 Journal 和 Snapshot 样本后再删除旧类。历史 Workflow 事件已迁到 `cdc/compat`，由 JacksonMigration 识别旧类名；18 种旧序列化样本和 4 条历史 MySQL Journal 事件的解码通过。将一组 4 条历史事件原始字节写入隔离 MySQL 后，当前 Actor 恢复了指定 checkpoint；完整历史数据库原地升级及旧程序读取新事件尚未验证；本次目录重构也尚未覆盖全部持久化类型。
+`common/src/test/examples/legacy-console` 只保存旧接口测试夹具。旧 Workflow 的历史类型、迁移样本和失败记录归档在 `docs/archive`、`docs/experiments` 或测试源码中，不进入 Capture/Worker 的生产入口。
 
-历史 `docs/experiments` 保持原路径和证据，不把旧版本测试结果提升为迁移版本的端到端保证。`console/node_modules` 和 `console/dist` 是本机旧生成物，未纳入 Git，也未在本轮删除。
+`docs/experiments` 是证据目录，不能因为后续实验通过而覆盖或删除先前失败材料。文章中的源码链接应指向 `common`、`capture` 或 `worker` 的当前路径，历史版本链接单独标注提交号。
+
+## 本地生成物
+
+以下目录会在本机构建或打开 IDE 后重新生成，不纳入仓库：
+
+```text
+target/                 # 根、common、capture、worker、project 的构建输出
+.idea/ .metals/ .bsp/   # IDE 和 Metals 元数据
+.openidea/ .superpowers/
+console/node_modules/   # 旧前端的本地依赖，仅用于历史试验
+__pycache__/ logs/
+```
+
+实验原始材料应写入 `docs/experiments`，不要把结果保存到 `target`，否则清理构建目录会丢失证据。

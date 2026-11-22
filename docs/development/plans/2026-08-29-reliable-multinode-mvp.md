@@ -27,13 +27,13 @@
 ### Task 1: Linear Pipeline Contract and Structured Results
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidator.scala`
-- Create: `server/src/main/scala/cn/xuyinyin/magic/workflow/engine/ExecutionModels.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/executors/TransformExecutor.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidatorSpec.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala`
-- Create test fixture: `server/src/test/scala/cn/xuyinyin/magic/workflow/WorkflowFixtures.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidator.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/workflow/engine/ExecutionModels.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/executors/TransformExecutor.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowValidatorSpec.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala`
+- Create test fixture: `common/src/test/scala/cn/xuyinyin/magic/workflow/WorkflowFixtures.scala`
 
 **Interfaces:**
 - Produces `WorkflowValidator.validate(workflow): Either[Vector[WorkflowValidationError], ValidatedPipeline]`.
@@ -95,10 +95,10 @@ Expected before: `nodeResults` is absent. Expected after: engine executes only t
 ### Task 2: Persistent Workflow Protocol and Entity State
 
 **Files:**
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/events/WorkflowEvents.scala`
-- Rewrite: `server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorSpec.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/events/WorkflowEvents.scala`
+- Rewrite: `common/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorSpec.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala`
 
 **Interfaces:**
 - Consumes Task 1 `ExecutionResult`.
@@ -166,14 +166,14 @@ Expected after: workflow definition, revision, terminal status, and schedule wat
 
 **Files:**
 - Modify: `build.sbt`
-- Create: `server/src/main/resources/application-jdbc.conf`
-- Modify: `server/src/main/resources/application-prod.conf`
-- Modify: `server/src/main/resources/application-dev.conf`
-- Modify: `server/src/test/resources/application-test.conf`
-- Create: `server/src/main/resources/db/mysql/pekko-persistence-schema.sql`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidator.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/PekkoServer.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/infrastructure/config/JdbcPersistenceConfigSpec.scala`
+- Create: `common/src/main/resources/application-jdbc.conf`
+- Modify: `common/src/main/resources/application-prod.conf`
+- Modify: `common/src/main/resources/application-dev.conf`
+- Modify: `common/src/test/resources/application-test.conf`
+- Create: `common/src/main/resources/db/mysql/pekko-persistence-schema.sql`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidator.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/PekkoServer.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/infrastructure/config/JdbcPersistenceConfigSpec.scala`
 
 **Interfaces:**
 - Produces MySQL `jdbc-journal`, `jdbc-snapshot-store`, and `jdbc-read-journal` configuration using one shared Slick database.
@@ -228,11 +228,11 @@ Expected: recovery passes with JDBC Journal and Snapshot Store.
 ### Task 4: Sharding and Stateless Supervisor
 
 **Files:**
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/infrastructure/cluster/sharding/WorkflowSharding.scala`
-- Rewrite: `server/src/main/scala/cn/xuyinyin/magic/workflow/actors/WorkflowSupervisor.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/bootstrap/PekkoGuardian.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/infrastructure/cluster/sharding/WorkflowShardingPropertySpec.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowSupervisorSpec.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/infrastructure/cluster/sharding/WorkflowSharding.scala`
+- Rewrite: `common/src/main/scala/cn/xuyinyin/magic/workflow/actors/WorkflowSupervisor.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/bootstrap/PekkoGuardian.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/infrastructure/cluster/sharding/WorkflowShardingPropertySpec.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/workflow/actors/WorkflowSupervisorSpec.scala`
 
 **Interfaces:**
 - Consumes Task 2 commands and replies.
@@ -271,13 +271,13 @@ Expected: one message per request, non-negative Shard IDs, and no fake Workflow.
 ### Task 5: Persistent Cluster Singleton Scheduler
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/workflow/scheduler/ScheduleCalculator.scala`
-- Create: `server/src/main/scala/cn/xuyinyin/magic/workflow/scheduler/SchedulerCoordinator.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/bootstrap/PekkoGuardian.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/workflow/scheduler/ScheduleCalculator.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/workflow/scheduler/SchedulerCoordinator.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/bootstrap/PekkoGuardian.scala`
 - Retire from active wiring: `WorkflowScheduler.scala`, `SchedulerManager.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/workflow/scheduler/ScheduleCalculatorSpec.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/workflow/scheduler/SchedulerCoordinatorSpec.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/workflow/scheduler/SchedulerCoordinatorRecoverySpec.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/workflow/scheduler/ScheduleCalculatorSpec.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/workflow/scheduler/SchedulerCoordinatorSpec.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/workflow/scheduler/SchedulerCoordinatorRecoverySpec.scala`
 
 **Interfaces:**
 - Consumes `ExecuteScheduled` and workflow replies.
@@ -340,8 +340,8 @@ Expected: calculation, acknowledgement, retry, and recovery tests pass.
 ### Task 6: MySQL Sink Batch Failure Semantics
 
 **Files:**
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkNode.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkNodeSpec.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkNode.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkNodeSpec.scala`
 
 **Interfaces:**
 - Produces failed materialized Future on batch failure and exact successful row count.
@@ -377,20 +377,20 @@ Expected: exact batch count and propagated failure tests pass.
 ### Task 7: Consistent HTTP, History, Readiness, and Test Discovery
 
 **Files:**
-- Rewrite: `server/src/main/scala/cn/xuyinyin/magic/api/http/routes/WorkflowRoutes.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/api/http/routes/EventHistoryRoutes.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/api/http/routes/SchedulerRoutes.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/api/http/routes/HttpRoutes.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/bootstrap/PekkoClusterService.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/infrastructure/cluster/HealthChecker.scala`
-- Create: `server/src/main/scala/cn/xuyinyin/magic/workflow/query/WorkflowQueryService.scala`
+- Rewrite: `common/src/main/scala/cn/xuyinyin/magic/api/http/routes/WorkflowRoutes.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/api/http/routes/EventHistoryRoutes.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/api/http/routes/SchedulerRoutes.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/api/http/routes/HttpRoutes.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/bootstrap/PekkoClusterService.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/infrastructure/cluster/HealthChecker.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/workflow/query/WorkflowQueryService.scala`
 - Modify: `build.sbt`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/tags/ExternalIntegration.scala`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/MySQLRealPerformanceTest.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/api/http/routes/WorkflowRoutesSpec.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/api/http/routes/EventHistoryRoutesSpec.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/api/http/routes/SchedulerRoutesSpec.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/api/http/routes/HealthRoutesSpec.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/tags/ExternalIntegration.scala`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/MySQLRealPerformanceTest.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/api/http/routes/WorkflowRoutesSpec.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/api/http/routes/EventHistoryRoutesSpec.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/api/http/routes/SchedulerRoutesSpec.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/api/http/routes/HealthRoutesSpec.scala`
 
 **Interfaces:**
 - Consumes Tasks 2 and 5 typed replies.
@@ -444,10 +444,10 @@ Expected: HTTP tests pass and every test source compiles without connecting to a
 ### Task 8: Two-Node Recovery, Scheduler Failover, and Final Evidence
 
 **Files:**
-- Create: `server/src/test/scala/cn/xuyinyin/magic/workflow/integration/TwoNodeWorkflowRecoverySpec.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/workflow/integration/SchedulerFailoverSpec.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/workflow/integration/MySQLPersistenceRecoverySpec.scala`
-- Create: `server/src/test/resources/application-multinode-test.conf`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/workflow/integration/TwoNodeWorkflowRecoverySpec.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/workflow/integration/SchedulerFailoverSpec.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/workflow/integration/MySQLPersistenceRecoverySpec.scala`
+- Create: `common/src/test/resources/application-multinode-test.conf`
 - Modify: `README.md`, `docs/guides/configuration.md`, `docs/guides/deployment.md`, `docker-compose.yml`
 
 **Interfaces:**

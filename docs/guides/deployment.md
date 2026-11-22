@@ -6,7 +6,7 @@
 - 每个节点可通过其 `PEKKO_HOSTNAME:PEKKO_PORT` 相互访问。
 - 所有节点使用相同 ActorSystem 名称和同一 MySQL 持久化数据库。
 - MySQL schema 已由
-  `server/src/main/resources/db/mysql/pekko-persistence-schema.sql`
+  `common/src/main/resources/db/mysql/pekko-persistence-schema.sql`
   初始化。
 
 工作流 JDBC Journal/Snapshot 由部署流程预建，生产进程不会自动创建、drop 或 truncate
@@ -48,7 +48,7 @@ down 已终止地址。
 
 ```bash
 mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_NAME" \
-  < server/src/main/resources/db/mysql/pekko-persistence-schema.sql
+  < common/src/main/resources/db/mysql/pekko-persistence-schema.sql
 ```
 
 为每个环境创建独立数据库和最小权限账号。升级前备份，并在预发布环境验证 schema
@@ -69,9 +69,9 @@ JVM 启用 `pekko.workflow.cdc-platform.enabled=true`。已有集群的 workflow
 
 ```bash
 mysql -h "$CDC_STATE_HOST" -P "$CDC_STATE_PORT" -u "$CDC_SCHEMA_ADMIN" -p "$CDC_STATE_DATABASE" \
-  < server/src/main/resources/db/mysql/pekko-persistence-schema.sql
+  < common/src/main/resources/db/mysql/pekko-persistence-schema.sql
 mysql -h "$CDC_STATE_HOST" -P "$CDC_STATE_PORT" -u "$CDC_SCHEMA_ADMIN" -p "$CDC_STATE_DATABASE" \
-  < server/src/main/resources/db/mysql/pekko-sync-cdc-group-ledger-schema.sql
+  < common/src/main/resources/db/mysql/pekko-sync-cdc-group-ledger-schema.sql
 ```
 
 第一个脚本提供真实 Actor Journal/Snapshot/Read Journal 所需表；第二个提供完整组目标账本，

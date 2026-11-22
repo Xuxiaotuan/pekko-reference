@@ -1,5 +1,6 @@
 package cn.xuyinyin.magic
 
+import cn.xuyinyin.magic.cdc.runtime.CdcRuntime
 import cn.xuyinyin.magic.cdc.platform._
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
@@ -42,23 +43,23 @@ class CdcStandaloneRoutesSpec extends AnyWordSpecLike with Matchers with Scalate
   """)
   "Standalone CDC routes" should {
     "reject disabled, managed, and v2 configurations before opening resources" in {
-      intercept[IllegalArgumentException](CdcStandalone.start(ConfigFactory.empty()))
-      intercept[IllegalArgumentException](CdcStandalone.start(
+      intercept[IllegalArgumentException](CdcRuntime.start(ConfigFactory.empty()))
+      intercept[IllegalArgumentException](CdcRuntime.start(
         ConfigFactory.parseString("pekko.cdc-standalone.managed-worker=true").withFallback(platform())))
-      intercept[IllegalArgumentException](CdcStandalone.start(
+      intercept[IllegalArgumentException](CdcRuntime.start(
         ConfigFactory.parseString("pekko.workflow.snapshot-ha.enabled=true").withFallback(platform())))
-      intercept[IllegalArgumentException](CdcStandalone.start(platform(",source-fence-v2=true,source-observer-username=observer,source-observer-password=observer")))
+      intercept[IllegalArgumentException](CdcRuntime.start(platform(",source-fence-v2=true,source-observer-username=observer,source-observer-password=observer")))
     }
     "require an explicit loopback management endpoint" in {
-      CdcStandalone.httpAddress(ConfigFactory.parseString("pekko.cdc-standalone.http.port=0")) shouldBe ("127.0.0.1" -> 0)
-      intercept[IllegalArgumentException](CdcStandalone.httpAddress(ConfigFactory.empty()))
-      intercept[IllegalArgumentException](CdcStandalone.httpAddress(ConfigFactory.parseString(
+      CdcRuntime.httpAddress(ConfigFactory.parseString("pekko.cdc-standalone.http.port=0")) shouldBe ("127.0.0.1" -> 0)
+      intercept[IllegalArgumentException](CdcRuntime.httpAddress(ConfigFactory.empty()))
+      intercept[IllegalArgumentException](CdcRuntime.httpAddress(ConfigFactory.parseString(
         "pekko.cdc-standalone.http { host=0.0.0.0, port=8080 }")))
     }
 
     "expose CDC operations and no workflow, schedule, or front-end routes" in {
       val service = new Service
-      val route = CdcStandalone.routes(service)(system.dispatcher)
+      val route = CdcRuntime.routes(service)(system.dispatcher)
       val body = JsObject("requestId" -> JsString(request.requestId), "captureId" -> JsString(request.captureId),
         "table" -> JsString(request.table), "generation" -> JsString(request.generation), "targetTable" -> JsString(request.targetTable))
       Post("/api/v1/cdc-tasks", HttpEntity(ContentTypes.`application/json`, body.compactPrint)) ~> route ~> check {

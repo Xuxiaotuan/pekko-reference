@@ -143,7 +143,7 @@ final case class CaptureAckPageIdentity(
 )
 ```
 
-源码位置：`server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureAckPaging.scala:7-10`。
+源码位置：`common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureAckPaging.scala:7-10`。
 
 `proofId = SHA256(canonical(identity))`。身份中有三类信息：
 
@@ -176,9 +176,9 @@ CdcManagedRecovery.recover
        └─ recordFenceReleased / Journal verifier / target receipt
 ```
 
-`CdcManagedRecovery` 的注释已经写明：旧 owner 的 source fence、Journal 和 reader release 必须在同一恢复许可中重新核验；COMMIT 回复丢失时，只接受一个新事务读回完整持久 binding 的结果。源码位置：`server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcManagedRecovery.scala:20-112`、`:170-253`。
+`CdcManagedRecovery` 的注释已经写明：旧 owner 的 source fence、Journal 和 reader release 必须在同一恢复许可中重新核验；COMMIT 回复丢失时，只接受一个新事务读回完整持久 binding 的结果。源码位置：`common/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcManagedRecovery.scala:20-112`、`:170-253`。
 
-`CdcTaskStore` 维护的是控制索引，不是 kernel Journal、原始 L、SDK D 或目标 receipt 的替代品。初始化时创建 `pekko_cdc_b_recovery_v1`、`pekko_cdc_b_fence_v2`、`pekko_cdc_b_receipt_v2`、`pekko_cdc_b_proof_anchor_v2` 等表；源码位置：`server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcTaskStore.scala:44-73`。
+`CdcTaskStore` 维护的是控制索引，不是 kernel Journal、原始 L、SDK D 或目标 receipt 的替代品。初始化时创建 `pekko_cdc_b_recovery_v1`、`pekko_cdc_b_fence_v2`、`pekko_cdc_b_receipt_v2`、`pekko_cdc_b_proof_anchor_v2` 等表；源码位置：`common/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcTaskStore.scala:44-73`。
 
 `withReadyProofState` 的关键顺序是：锁定 owner、任务、recovery permit、fence、proof anchor；对旧 witness 做 `verifyExactOn`；再读取当前 D；只有 `advancedIfCompleteOn` 得到 `COVERED`，并且新 witness 携带旧 head/digest，Journal 才能进入可恢复状态。源码位置：`CdcTaskStore.scala:467-495`。
 
@@ -356,12 +356,12 @@ T、J、D 各自记录不同事实。L 把 Source 的 ACK 和 ancestry 固定下
 
 | 内容 | 路径 |
 | --- | --- |
-| proof identity、pinned witness、exact/advanced verify | `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureAckPaging.scala:7-112` |
+| proof identity、pinned witness、exact/advanced verify | `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureAckPaging.scala:7-112` |
 | 分页 BUILD/VERIFY、revision、128 步预算 | `.../CaptureAckPaging.scala:236-310` |
 | proof GC 候选、引用保护、删除顺序 | `.../CaptureAckPaging.scala:164-197` |
-| capture descriptor、Journal projection、ACK coverage | `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/MySQLCaptureStore.scala` |
-| fence receipt、Journal consume、reader recovery gate | `server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcTaskStore.scala:170-227, 380-495` |
-| source fence、guardian 和恢复入口 | `server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcManagedRecovery.scala:20-233` |
+| capture descriptor、Journal projection、ACK coverage | `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/MySQLCaptureStore.scala` |
+| fence receipt、Journal consume、reader recovery gate | `common/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcTaskStore.scala:170-227, 380-495` |
+| source fence、guardian 和恢复入口 | `common/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcManagedRecovery.scala:20-233` |
 | 长链预算失败与分页结果 | `docs/experiments/2026-11-12-runtime-gc/cluster-live-20261113/gc-ack-proof-budget-20261113/` |
 | proof GC 与逐字段对账 | `docs/experiments/2026-11-12-runtime-gc/cluster-live-20261113/gc-ack-proof-gc-20261113/` |
 

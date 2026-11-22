@@ -41,10 +41,10 @@ Task 1 freezes shared contracts and must complete first. Tasks 2, 3, and 4 then 
 ### Task 1: Freeze the Reliable-Batch Contracts
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/workflow/checkpoint/CheckpointModels.scala`
-- Create: `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/ReliableRunContext.scala`
-- Create: `server/src/main/scala/cn/xuyinyin/magic/workflow/spi/CheckpointedNodes.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/workflow/checkpoint/CheckpointModelsSpec.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/workflow/checkpoint/CheckpointModels.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/ReliableRunContext.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/workflow/spi/CheckpointedNodes.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/workflow/checkpoint/CheckpointModelsSpec.scala`
 
 **Interfaces:**
 - Produces: `SourceCursor`, `SnapshotBoundary`, `SourceBatch`, `BatchCheckpoint`, `BatchCommitResult`, `BatchId`.
@@ -150,10 +150,10 @@ Confirm only the four Task 1 files plus the approved spec and plan are new or mo
 ### Task 2: Persist Snapshot Boundaries and Batch Checkpoints in the Workflow Actor
 
 **Files:**
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/events/WorkflowEvents.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorSpec.scala`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/events/WorkflowEvents.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorSpec.scala`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala`
 
 **Interfaces:**
 - Consumes: checkpoint types from Task 1.
@@ -262,9 +262,9 @@ Run `git diff --check` and record changed files and test counts in the task repo
 ### Task 3: Implement the Numeric-Primary-Key MySQL Snapshot Source
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceConfig.scala`
-- Create: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceNode.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceNodeSpec.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceConfig.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceNode.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceNodeSpec.scala`
 
 **Interfaces:**
 - Consumes: `CheckpointedNodeSource`, `SnapshotBoundary`, `SourceBatch`, `BatchCheckpoint`, and `BatchId` from Task 1.
@@ -329,10 +329,10 @@ Run `git diff --check`; confirm `MySQLSourceNode.scala`, actor, engine, sink, an
 ### Task 4: Add Transactional Batch Idempotency to the MySQL Sink
 
 **Files:**
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkNode.scala`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkNodeSpec.scala`
-- Create: `server/src/main/resources/db/mysql/pekko-sync-ledger-schema.sql`
-- Create: `server/src/test/resources/schema/h2/pekko-sync-ledger-schema.sql`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkNode.scala`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkNodeSpec.scala`
+- Create: `common/src/main/resources/db/mysql/pekko-sync-ledger-schema.sql`
+- Create: `common/src/test/resources/schema/h2/pekko-sync-ledger-schema.sql`
 
 **Interfaces:**
 - Consumes: `CheckpointedNodeSink`, `SourceBatch`, `BatchCheckpoint`, `Committed`, and `AlreadyCommitted` from Task 1.
@@ -396,15 +396,15 @@ Run `git diff --check`; confirm actor, source, engine, and registry files are un
 ### Task 5: Integrate Reliable Batch Execution and Actor Recovery
 
 **Files:**
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/registry/NodeRegistry.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala`
-- Modify: `server/src/main/resources/application.conf`
-- Modify: `server/src/main/resources/application-dev.conf`
-- Modify: `server/src/main/resources/application-prod.conf`
-- Modify: `server/src/test/resources/application-test.conf`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/registry/NodeRegistry.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala`
+- Modify: `common/src/main/resources/application.conf`
+- Modify: `common/src/main/resources/application-dev.conf`
+- Modify: `common/src/main/resources/application-prod.conf`
+- Modify: `common/src/test/resources/application-test.conf`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala`
 
 **Interfaces:**
 - Consumes: all Task 1 contracts, Task 2 actor state/protocol, Task 3 source, and Task 4 sink.
@@ -486,9 +486,9 @@ Run `git diff --check` and inspect `git diff --stat`. Confirm integration did no
 ### Task 6: Prove Two-Node Batch Recovery End to End
 
 **Files:**
-- Create: `server/src/test/scala/cn/xuyinyin/magic/workflow/integration/ResumableFullSyncRecoverySpec.scala`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/integration/TwoNodeWorkflowRecoverySpec.scala` only if a reusable helper must be made package-visible.
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/WorkflowFixtures.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/workflow/integration/ResumableFullSyncRecoverySpec.scala`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/integration/TwoNodeWorkflowRecoverySpec.scala` only if a reusable helper must be made package-visible.
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/WorkflowFixtures.scala`
 
 **Interfaces:**
 - Consumes: shared JDBC multi-node fixture, `mysql.snapshot`, idempotent MySQL sink, reliable engine, and actor recovery.

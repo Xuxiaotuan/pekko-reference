@@ -5,11 +5,8 @@ import com.typesafe.config.ConfigFactory
 /**
  * CDC-only production entry point.
  *
- * The implementation is delegated to the existing standalone bootstrap
- * during the package migration. This makes the runtime boundary explicit
- * without changing Journal, checkpoint, or recovery serialization. The old
- * `CdcStandalone` symbol remains as a compatibility entry for existing launch
- * scripts and tests.
+ * The implementation is delegated to the standalone bootstrap while keeping
+ * Journal, checkpoint, and recovery serialization unchanged.
  */
 object CdcRuntimeMain {
   def main(args: Array[String]): Unit = {

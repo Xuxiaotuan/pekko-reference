@@ -53,7 +53,7 @@
 
 ### ClusterListener实现
 
-```@/Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/infrastructure/cluster/ClusterListener.scala#58:98
+```@/Users/xujiawei/magic/scala-workbench/pekko-reference/common/src/main/scala/cn/xuyinyin/magic/infrastructure/cluster/ClusterListener.scala#58:98
 def apply(): Behavior[Event] = Behaviors.setup { ctx =>
   // 订阅成员事件
   val memberEventAdapter = ctx.messageAdapter(MemberChange)
@@ -166,7 +166,7 @@ pekko.cluster {
 
 ### 角色感知处理
 
-```@/Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/infrastructure/cluster/ClusterListener.scala#100:120
+```@/Users/xujiawei/magic/scala-workbench/pekko-reference/common/src/main/scala/cn/xuyinyin/magic/infrastructure/cluster/ClusterListener.scala#100:120
 case MemberUp(member) =>
   val role = getMemberRole(member)
   ctx.log.info("🚀 Member is Up: {} [Role: {}]",

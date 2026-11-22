@@ -1,5 +1,6 @@
 package cn.xuyinyin.magic
 
+import cn.xuyinyin.magic.cdc.runtime.CdcRuntime
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.actor.CoordinatedShutdown
 import org.apache.pekko.actor.typed.ActorSystem
@@ -21,7 +22,7 @@ class CdcStandaloneShutdownSpec extends AnyWordSpec with Matchers {
       try {
         val state = new AtomicReference("UNKNOWN")
         val calls = new AtomicInteger()
-        val result = CdcStandalone.awaitStopped(() => { calls.incrementAndGet(); () }, () => state.get(), 2.seconds)
+        val result = CdcRuntime.awaitStopped(() => { calls.incrementAndGet(); () }, () => state.get(), 2.seconds)
         result.isCompleted shouldBe false
         system.scheduler.scheduleOnce(200.millis, new Runnable { def run(): Unit = state.set("STOPPED") })
         Await.result(result, 3.seconds) shouldBe org.apache.pekko.Done
@@ -35,7 +36,7 @@ class CdcStandaloneShutdownSpec extends AnyWordSpec with Matchers {
       implicit val ec: ExecutionContext = system.executionContext
       try {
         val calls = new AtomicInteger()
-        val result = CdcStandalone.awaitStopped(() => { calls.incrementAndGet(); () }, () => "UNKNOWN", 250.millis)
+        val result = CdcRuntime.awaitStopped(() => { calls.incrementAndGet(); () }, () => "UNKNOWN", 250.millis)
         intercept[TimeoutException](Await.result(result, 3.seconds))
         calls.get() shouldBe 1
       } finally { system.terminate(); Await.result(system.whenTerminated, 10.seconds) }
@@ -43,19 +44,19 @@ class CdcStandaloneShutdownSpec extends AnyWordSpec with Matchers {
 
     "keep its wait inside the configured coordinated shutdown phase" in {
       val default = ConfigFactory.parseString("pekko.coordinated-shutdown.default-phase-timeout = 5s")
-      CdcStandalone.shutdownWait(default) shouldBe 4750.millis
+      CdcRuntime.shutdownWait(default) shouldBe 4750.millis
       val overrideConfig = ConfigFactory.parseString(
         "pekko.coordinated-shutdown.phases.before-actor-system-terminate.timeout = 2s").withFallback(default)
-      CdcStandalone.shutdownWait(overrideConfig) shouldBe 1750.millis
+      CdcRuntime.shutdownWait(overrideConfig) shouldBe 1750.millis
     }
 
     "use a standalone phase budget while respecting an explicit phase override" in {
       val default = ConfigFactory.parseString("pekko.coordinated-shutdown.default-phase-timeout = 5s")
-      CdcStandalone.shutdownWait(CdcStandalone.standaloneConfig(default)) shouldBe 15.seconds
+      CdcRuntime.shutdownWait(CdcRuntime.standaloneConfig(default)) shouldBe 15.seconds
       val configured = ConfigFactory.parseString(
         "pekko.coordinated-shutdown.phases.before-actor-system-terminate.timeout = 2s").withFallback(default)
-      CdcStandalone.shutdownWait(CdcStandalone.standaloneConfig(configured)) shouldBe 1750.millis
-      CdcStandalone.standaloneConfig(configured).getString("pekko.actor.provider") shouldBe "local"
+      CdcRuntime.shutdownWait(CdcRuntime.standaloneConfig(configured)) shouldBe 1750.millis
+      CdcRuntime.standaloneConfig(configured).getString("pekko.actor.provider") shouldBe "local"
     }
 
     "wait for the confirmed status when invoked by coordinated shutdown" in {
@@ -65,7 +66,7 @@ class CdcStandaloneShutdownSpec extends AnyWordSpec with Matchers {
       val state = new AtomicReference("UNKNOWN")
       val calls = new AtomicInteger()
       CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate, "test-cdc-release") { () =>
-        CdcStandalone.awaitStopped(() => { calls.incrementAndGet(); () }, () => state.get(), 2.seconds)
+        CdcRuntime.awaitStopped(() => { calls.incrementAndGet(); () }, () => state.get(), 2.seconds)
       }
       val shutdown = CoordinatedShutdown(system).run(CoordinatedShutdown.UnknownReason)
       system.scheduler.scheduleOnce(200.millis, new Runnable { def run(): Unit = state.set("STOPPED") })

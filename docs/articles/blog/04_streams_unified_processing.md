@@ -142,7 +142,7 @@ val source6 = Source.future(Future.successful(42))
 
 #### 项目中的MySQL Source
 
-```@/Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLSource.scala#36:77
+```@/Users/xujiawei/magic/scala-workbench/pekko-reference/common/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sources/MySQLSource.scala#36:77
 override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] = {
   // 解析配置
   val host = node.config.fields.get("host").map(_.convertTo[String]).getOrElse("localhost")
@@ -269,7 +269,7 @@ val sink6: Sink[Int, Future[Done]] =
 
 #### 项目中的MySQL Sink
 
-```@/Users/xujiawei/magic/scala-workbench/pekko-reference/server/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sinks/MySQLSink.scala#40:84
+```@/Users/xujiawei/magic/scala-workbench/pekko-reference/common/src/main/scala/cn/xuyinyin/magic/workflow/nodes/sinks/MySQLSink.scala#40:84
 override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)
                       (implicit ec: ExecutionContext): Sink[String, Future[Done]] = {
   val database = node.config.fields.get("database").map(_.convertTo[String])

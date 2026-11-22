@@ -32,8 +32,8 @@
 
 **Files:**
 - Modify: `build.sbt:36-39,238-240`
-- Create: `server/src/main/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSourceConfig.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSourceConfigSpec.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSourceConfig.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSourceConfigSpec.scala`
 
 **Interfaces:**
 - Produces:
@@ -138,8 +138,8 @@ Run `git diff --check` and inspect only the three task files. If commit is later
 
 ```bash
 git add build.sbt \
-  server/src/main/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSourceConfig.scala \
-  server/src/test/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSourceConfigSpec.scala
+  common/src/main/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSourceConfig.scala \
+  common/src/test/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSourceConfigSpec.scala
 git commit -m "feat(kafka): define bounded source configuration"
 ```
 
@@ -148,8 +148,8 @@ git commit -m "feat(kafka): define bounded source configuration"
 ### Task 2: Gravitino topic resolver
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/connectors/kafka/GravitinoTopicResolver.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/connectors/kafka/GravitinoTopicResolverSpec.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/connectors/kafka/GravitinoTopicResolver.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/connectors/kafka/GravitinoTopicResolverSpec.scala`
 
 **Interfaces:**
 - Consumes: `KafkaSourceConfig`, `DirectKafkaConnection`, `GravitinoKafkaConnection`
@@ -226,8 +226,8 @@ sbt 'pekko-server/testOnly cn.xuyinyin.magic.workflow.nodes.sources.GravitinoTop
 If commit is authorized:
 
 ```bash
-git add server/src/main/scala/cn/xuyinyin/magic/connectors/kafka/GravitinoTopicResolver.scala \
-  server/src/test/scala/cn/xuyinyin/magic/connectors/kafka/GravitinoTopicResolverSpec.scala
+git add common/src/main/scala/cn/xuyinyin/magic/connectors/kafka/GravitinoTopicResolver.scala \
+  common/src/test/scala/cn/xuyinyin/magic/connectors/kafka/GravitinoTopicResolverSpec.scala
 git commit -m "feat(kafka): resolve topics through Gravitino"
 ```
 
@@ -236,8 +236,8 @@ git commit -m "feat(kafka): resolve topics through Gravitino"
 ### Task 3: Versioned Kafka boundary and cursor codec
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/connectors/kafka/KafkaCheckpointCodec.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/connectors/kafka/KafkaCheckpointCodecSpec.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/connectors/kafka/KafkaCheckpointCodec.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/connectors/kafka/KafkaCheckpointCodecSpec.scala`
 
 **Interfaces:**
 - Produces:
@@ -294,14 +294,14 @@ If commit is authorized, commit the two codec files as
 ### Task 4: Bounded multi-partition Kafka source
 
 **Files:**
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/spi/CheckpointedNodes.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:106-178`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceNode.scala:20-44`
-- Replace: `server/src/main/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSource.scala`
-- Create: `server/src/main/scala/cn/xuyinyin/magic/connectors/kafka/KafkaClientAccess.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSourceSpec.scala`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceNodeSpec.scala`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/spi/CheckpointedNodes.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngine.scala:106-178`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceNode.scala:20-44`
+- Replace: `common/src/main/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSource.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/connectors/kafka/KafkaClientAccess.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/connectors/kafka/KafkaSourceSpec.scala`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceNodeSpec.scala`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala`
 
 **Interfaces:**
 - Change `CheckpointedNodeSource.discoverBoundary` to:
@@ -487,9 +487,9 @@ If commit is authorized, stage only the nine files above and commit as
 ### Task 5: Workflow-level Kafka progress
 
 **Files:**
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala:100-450`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorSpec.scala`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActor.scala:100-450`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorSpec.scala`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/actors/EventSourcedWorkflowActorRecoverySpec.scala`
 
 **Interfaces:**
 - Produce:
@@ -605,12 +605,12 @@ If commit is authorized, commit the three actor files as
 ### Task 6: Environment-backed MySQL passwords
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/connectors/jdbc/JdbcPasswordResolver.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceConfig.scala`
-- Create: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkConfig.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkNode.scala`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceNodeSpec.scala`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkNodeSpec.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/connectors/jdbc/JdbcPasswordResolver.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceConfig.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkConfig.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkNode.scala`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/source/MySQLSnapshotSourceNodeSpec.scala`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/connectors/mysql/sink/MySQLSinkNodeSpec.scala`
 
 **Interfaces:**
 - Produce:
@@ -668,9 +668,9 @@ If commit is authorized, stage only the six files and commit as
 ### Task 7: Reliable Kafka-to-sink integration regression
 
 **Files:**
-- Create: `server/src/test/scala/cn/xuyinyin/magic/connectors/kafka/BoundedKafkaRecoverySpec.scala`
-- Modify: `server/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/workflow/execution/registry/NodeRegistry.scala` only if construction must pass a production dependency explicitly.
+- Create: `common/src/test/scala/cn/xuyinyin/magic/connectors/kafka/BoundedKafkaRecoverySpec.scala`
+- Modify: `common/src/test/scala/cn/xuyinyin/magic/workflow/execution/WorkflowExecutionEngineSpec.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/workflow/execution/registry/NodeRegistry.scala` only if construction must pass a production dependency explicitly.
 
 **Interfaces:**
 - Consumes: real `KafkaSource` batching contract, `ReliableRunContext`,
@@ -983,7 +983,7 @@ Both Kubernetes nodes are Linux AMD64 with Docker runtimes. Run:
 ```bash
 docker buildx build --platform linux/amd64 \
   -t pekko-reference:bounded-kafka-mvp \
-  --load server/target/docker/stage
+  --load common/target/docker/stage
 docker image inspect pekko-reference:bounded-kafka-mvp \
   --format '{{.Architecture}} {{.Os}}'
 ```
@@ -1115,10 +1115,10 @@ exactly-once unsupported, and Binlog CDC not implemented.
 
 **Files:**
 - Modify: `build.sbt`
-- Modify: `server/src/main/resources/reference.conf`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidator.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/bootstrap/PekkoClusterService.scala`
-- Create: `server/src/test/scala/cn/xuyinyin/magic/bootstrap/ClusterBootstrapConfigSpec.scala`
+- Modify: `common/src/main/resources/reference.conf`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/infrastructure/config/ConfigValidator.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/bootstrap/PekkoClusterService.scala`
+- Create: `common/src/test/scala/cn/xuyinyin/magic/bootstrap/ClusterBootstrapConfigSpec.scala`
 - Modify: `deploy/kubernetes/bigdata-lab/application-k8s.conf`
 - Modify: `deploy/kubernetes/bigdata-lab/statefulset.yaml`
 - Modify: `deploy/kubernetes/bigdata-lab/kustomization.yaml`

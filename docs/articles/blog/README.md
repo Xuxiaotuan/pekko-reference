@@ -213,7 +213,7 @@
 
 - **GitHub仓库**: https://github.com/Xuxiaotuan/pekko-reference
 - **API文档**: [待完善]
-- **示例代码**: `server/src/main/scala`
+- **示例代码**: `common/src/main/scala`
 
 ### 官方文档
 

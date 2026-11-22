@@ -94,8 +94,8 @@ class PoolTests(unittest.TestCase):
         self.assertNotIn('state_password', json.dumps(self.p.public_slot('a')))
 
     def test_freeze_copies_classpath_and_rejects_tampering(self):
-        repo = self.root / 'repo'; (repo / 'server/src').mkdir(parents=True)
-        (repo / 'server/src/X.scala').write_text('original source')
+        repo = self.root / 'repo'; (repo / 'common/src').mkdir(parents=True)
+        (repo / 'common/src/X.scala').write_text('original source')
         (repo / 'build.sbt').write_text('build')
         classes = repo / 'classes'; classes.mkdir(); (classes / 'X.class').write_bytes(b'original')
         dep = self.root / 'external.jar'; dep.write_bytes(b'original jar')

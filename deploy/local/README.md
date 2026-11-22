@@ -11,4 +11,4 @@ docker compose up -d
 
 直接使用本目录配置时，显式保留项目名：`docker compose -p pekko-reference -f deploy/local/docker-compose.yml ...`。不同项目名会生成不同资源名，不应将新建卷误认为原数据丢失。
 
-Compose 挂载 `server/src/main/resources` 中的配置和 SQL。Kubernetes 环境模板另见 [kubernetes](../kubernetes/bigdata-lab/README.md)。本地配置不是生产高可用证明。
+Compose 挂载 `common/src/main/resources` 中的配置和 SQL。Kubernetes 环境模板另见 [kubernetes](../kubernetes/bigdata-lab/README.md)。本地配置不是生产高可用证明。

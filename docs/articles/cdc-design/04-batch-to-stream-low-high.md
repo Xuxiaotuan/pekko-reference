@@ -323,11 +323,11 @@ LOW/HIGH、B/K/F 解决的是一张新表如何安全进入持续流；最后还
 
 | 责任 | 入口 |
 |---|---|
-| 共享 Reader、控制 marker、原始 ACK | [`SharedMySQLCapture.scala`](../../../server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala) |
-| 启动与任务装配 | [`CdcBootstrapKernel.scala`](../../../server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcBootstrapKernel.scala) |
-| 任务资源、恢复和状态 | [`CdcPlatformRuntime.scala`](../../../server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcPlatformRuntime.scala) |
-| Journal 与批次 receipt | [`BootstrapJournal.scala`](../../../server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapJournal.scala) |
-| ACK proof 分页 | [`CaptureAckPaging.scala`](../../../server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureAckPaging.scala) |
+| 共享 Reader、控制 marker、原始 ACK | [`SharedMySQLCapture.scala`](../../../common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala) |
+| 启动与任务装配 | [`CdcBootstrapKernel.scala`](../../../common/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcBootstrapKernel.scala) |
+| 任务资源、恢复和状态 | [`CdcPlatformRuntime.scala`](../../../common/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcPlatformRuntime.scala) |
+| Journal 与批次 receipt | [`BootstrapJournal.scala`](../../../common/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapJournal.scala) |
+| ACK proof 分页 | [`CaptureAckPaging.scala`](../../../common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureAckPaging.scala) |
 | 真实闭环与 GC 材料 | [`cluster-live-20261113`](../../experiments/2026-11-12-runtime-gc/cluster-live-20261113/) |
 | 跨重启分页反例 | [`proof-cursor-snapshot`](../../experiments/2026-10-29-proof-cursor-snapshot/) |
 

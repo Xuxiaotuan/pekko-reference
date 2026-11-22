@@ -2,7 +2,6 @@ package cn.xuyinyin.magic.test.week1
 
 import cn.xuyinyin.magic.infrastructure.cluster.{NodeRole, HealthChecker}
 import cn.xuyinyin.magic.infrastructure.config.PekkoConfig
-import cn.xuyinyin.magic.PekkoServer
 import com.typesafe.scalalogging.Logger
 
 /**

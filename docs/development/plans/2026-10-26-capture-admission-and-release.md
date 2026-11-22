@@ -26,10 +26,10 @@ E/F 当前采用 **SQL 冷控制索引 + 活动步骤的 Bootstrap Journal**：�
 
 | 事实 | 源码或原始证据 | 对改造的约束 |
 |---|---|---|
-| `start(): Future[Done]` 返回运行终止 Future，未提供 ready | [`DebeziumEngineAccess.scala`](../../../server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumEngineAccess.scala) | 保留旧签名；另提供准入证据，不能改变 Future 含义 |
-| 当前 `start` 在恢复检查前创建控制表；恢复检查未禁止 INITIAL | [`SharedMySQLCapture.scala`](../../../server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala) | 已有捕获域先只读检查，不能重建丢失控制表后将空表解释为未提交 |
+| `start(): Future[Done]` 返回运行终止 Future，未提供 ready | [`DebeziumEngineAccess.scala`](../../../common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/DebeziumEngineAccess.scala) | 保留旧签名；另提供准入证据，不能改变 Future 含义 |
+| 当前 `start` 在恢复检查前创建控制表；恢复检查未禁止 INITIAL | [`SharedMySQLCapture.scala`](../../../common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala) | 已有捕获域先只读检查，不能重建丢失控制表后将空表解释为未提交 |
 | 当前 subscribe 检查 Schema 后 register 并写 B；历史 Schema 可来自旧 attempt | 同上 | 准入门必须在登记新意图及源提交前 |
-| `cover` 在原始 ACK 前保存，ACK 返回不等于 D durable | 同上及 [`MySQLCaptureStore.scala`](../../../server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/MySQLCaptureStore.scala) | ready 要实读 SDK D；不由应用伪造、修补或代写 D |
+| `cover` 在原始 ACK 前保存，ACK 返回不等于 D durable | 同上及 [`MySQLCaptureStore.scala`](../../../common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/MySQLCaptureStore.scala) | ready 要实读 SDK D；不由应用伪造、修补或代写 D |
 | 已绑定 B、实际 D=INITIAL，重启后新 witness 到 T/J，旧更新五字段仍旧 | [启动探针](../../experiments/2026-10-25-capture-startup/README.md) | 这是限定配置下的真实反例；已有这类状态先暂停，不能称自动补齐 |
 | JVM exit 0 后，两个槽的服务端 dump 未在 5 秒内归零，后续约 149 秒观察时归零 | [双槽报告](../../experiments/2026-10-25-cdc-lab-pool/README.md) | 释放迟延事实成立；精确耗时及根因未确定，不能预先归因于 SDK 缺陷 |
 | close 中 `current.close()` 是同步调用，2 秒截止用于 tasks-starting 重试；executor 等待发生在它返回之后 | `DebeziumEngineAccess.scala` 的 `closeEngineWithRetry/close` | 现有数字不能证明整个 close 调用有界；要测试同步 close 不返回 |
@@ -111,7 +111,7 @@ E/F 当前采用 **SQL 冷控制索引 + 活动步骤的 Bootstrap Journal**：�
 
 ### B0：连接归属的前置门槛
 
-- JDBC 连接在执行业务前登记 source/state UUID、当前数据库启动上下文、connection/thread 身份、角色、attempt 和 operation；可借鉴旧 [`SnapshotOwnerJdbc`](../../../server/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotOwnerJdbc.scala) 的方法，但不启用其静态快照 HA 上下文或沿用旧 owner 票据。
+- JDBC 连接在执行业务前登记 source/state UUID、当前数据库启动上下文、connection/thread 身份、角色、attempt 和 operation；可借鉴旧 [`SnapshotOwnerJdbc`](../../../common/src/main/scala/cn/xuyinyin/magic/workflow/scheduling/SnapshotOwnerJdbc.scala) 的方法，但不启用其静态快照 HA 上下文或沿用旧 owner 票据。
 - SDK 内部 JDBC 与 Binlog Dump socket 不等同应用 sourceConnection，必须分别验证归属。测试用专用账号、独占实例、原始连接/端点证据建立映射；若生产适配需要专用 capture 账号，这是需明确的部署约束，不能从共享账号下的一条 PROCESSLIST 猜出归属。
 - 不只凭 connection ID/PID；要关联可信创建记录与实例启动上下文。数据库重启、归属不明、权限不足或观察窗口不一致都返回 UNKNOWN。没有事务记录也不证明 Binlog Dump 连接已经结束。
 - 本计划不授予全库扫描后 KILL 用户连接的能力。无法取得归属或可靠观察时可安全暂停，但 B0 的“正常可复用”正例仍须通过；不能用永久 UNKNOWN 冒充完整实现。

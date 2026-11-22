@@ -292,7 +292,7 @@ skip-name-resolve=ON
 
 def source_manifest(repo):
     repo = Path(repo)
-    files = [f for folder in ['server/src','project'] if (repo/folder).exists()
+    files = [f for folder in ['common/src','project'] if (repo/folder).exists()
              for f in (repo/folder).rglob('*') if f.is_file() and 'target' not in f.relative_to(repo).parts]
     files += [repo/'build.sbt'] if (repo/'build.sbt').exists() else []
     return {str(f.relative_to(repo)):digest(f) for f in sorted(files)}
@@ -315,8 +315,8 @@ def freeze(repo, destination, classpath):
         for f in before: archive.write(repo/f,f)
     if before != source_manifest(repo): raise ValueError('source changed during freeze; failed candidate retained')
     text = json.dumps(before,sort_keys=True).encode()
-    test = {p:v for p,v in before.items() if p.startswith('server/src/test/')}
-    production = {p:v for p,v in before.items() if not p.startswith('server/src/test/')}
+    test = {p:v for p,v in before.items() if p.startswith('common/src/test/')}
+    production = {p:v for p,v in before.items() if not p.startswith('common/src/test/')}
     manifest = {'tool_sha256':digest(__file__), 'source_manifest':before,'source_sha256':hashlib.sha256(text).hexdigest(),
                 'production_sha256':hashlib.sha256(json.dumps(production,sort_keys=True).encode()).hexdigest(),
                 'test_sha256':hashlib.sha256(json.dumps(test,sort_keys=True).encode()).hexdigest(),
@@ -466,7 +466,7 @@ def main():
             result=subprocess.run(['sbt','project pekko-server','Test / compile','Test / fullClasspath'],cwd=args.repo,env=env,stdout=log,stderr=subprocess.STDOUT)
         if result.returncode:raise SystemExit(result.returncode)
         if before!=source_manifest(args.repo):raise ValueError('source changed during build; do not freeze')
-        cp=(args.repo/'server/target/streams/test/fullClasspath/_global/streams/export').read_text().strip().split(os.pathsep)
+        cp=(args.repo/'common/target/streams/test/fullClasspath/_global/streams/export').read_text().strip().split(os.pathsep)
         print(freeze(args.repo,args.output,cp));return
     pool=Pool(args.config)
     if args.action=='acquire':

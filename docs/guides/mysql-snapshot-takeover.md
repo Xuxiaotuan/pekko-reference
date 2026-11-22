@@ -4,7 +4,7 @@
 
 ## 部署前提
 
-默认关闭。在**停写、旧 worker 已退出且遗留数据库工作已结束**的维护窗口，显式部署 `server/src/main/resources/db/mysql/pekko-snapshot-ownership-schema.sql` 的六张控制表；原调度、Journal、Snapshot、目标账本和页证据表仍分别部署。不能把已有未知归属的活跃授权直接导入此模式，也不支持与旧二进制混跑。控制库、Journal/Snapshot、目标业务表、账本及摘要表必须使用 InnoDB；目标端在运行时核查。
+默认关闭。在**停写、旧 worker 已退出且遗留数据库工作已结束**的维护窗口，显式部署 `common/src/main/resources/db/mysql/pekko-snapshot-ownership-schema.sql` 的六张控制表；原调度、Journal、Snapshot、目标账本和页证据表仍分别部署。不能把已有未知归属的活跃授权直接导入此模式，也不支持与旧二进制混跑。控制库、Journal/Snapshot、目标业务表、账本及摘要表必须使用 InnoDB；目标端在运行时核查。
 
 每个受管 worker JVM 在创建 ActorSystem **之前**调用 `SnapshotOwnerBootstrap.prepare`（服务启动入口已接入），使用 supervisor 分配的全新 UUID boot ID。一个 JVM 只安装一个 owner 上下文，不能重用 boot ID。Source、Sink、共享 Journal/Snapshot 池的物理连接在交给业务代码前登记，控制池每次借用也登记自身连接。数据库端点必须固定为 MySQL host:port，配置中的其他 Source/Sink 实例提前列入清单。
 

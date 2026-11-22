@@ -29,8 +29,8 @@
 ### Task 1: Savepoint domain model and digest
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/cdc/savepoint/CdcSavepointModels.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/cdc/savepoint/CdcSavepointModelsSpec.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/cdc/savepoint/CdcSavepointModels.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/cdc/savepoint/CdcSavepointModelsSpec.scala`
 
 - [x] Define `CaptureEpoch`, `TableCheckpointRef`, `CdcSavepointHeader`, `CdcSavepointPage`, `CdcSavepointStatus`.
 - [x] Define canonical JSON and SHA-256 digest functions.
@@ -39,9 +39,9 @@
 ### Task 2: Control-store persistence
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/cdc/savepoint/CdcSavepointStore.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcTaskStore.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/cdc/savepoint/CdcSavepointStoreSpec.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/cdc/savepoint/CdcSavepointStore.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcTaskStore.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/cdc/savepoint/CdcSavepointStoreSpec.scala`
 
 - [x] Add idempotent Savepoint tables to `CdcTaskStore.initialize`.
 - [x] Implement `create`, `appendPage`, `seal`, `readSealed`, and `delete` with manifest checks.
@@ -50,8 +50,8 @@
 ### Task 3: Shared Reader epoch
 
 **Files:**
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/cdc/savepoint/CaptureEpochSpec.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/cdc/savepoint/CaptureEpochSpec.scala`
 
 - [x] Add read-only epoch snapshot and monotonic seal operation.
 - [x] Bind epoch to capture id, lineage, current L sequence, route digest and table-set digest.
@@ -60,9 +60,9 @@
 ### Task 4: Runtime Savepoint coordinator
 
 **Files:**
-- Create: `server/src/main/scala/cn/xuyinyin/magic/cdc/savepoint/CdcSavepointCoordinator.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcBootstrapKernel.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/cdc/savepoint/CdcSavepointCoordinatorSpec.scala`
+- Create: `common/src/main/scala/cn/xuyinyin/magic/cdc/savepoint/CdcSavepointCoordinator.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcBootstrapKernel.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/cdc/savepoint/CdcSavepointCoordinatorSpec.scala`
 
 - [x] Build deterministic table references from persisted task continuations.
 - [x] Create header, write pages, seal manifest, and expose sealed restore reads.
@@ -71,9 +71,9 @@
 ### Task 5: Runtime service boundary
 
 **Files:**
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcTaskService.scala` equivalent in `CdcTaskModels.scala` and `CdcPlatformRuntime.scala`
-- Modify: `server/src/main/scala/cn/xuyinyin/magic/api/http/routes/CdcTaskRoutes.scala`
-- Test: `server/src/test/scala/cn/xuyinyin/magic/api/http/routes/CdcSavepointRoutesSpec.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcTaskService.scala` equivalent in `CdcTaskModels.scala` and `CdcPlatformRuntime.scala`
+- Modify: `common/src/main/scala/cn/xuyinyin/magic/api/http/routes/CdcTaskRoutes.scala`
+- Test: `common/src/test/scala/cn/xuyinyin/magic/api/http/routes/CdcSavepointRoutesSpec.scala`
 
 - [x] Add internal create/restore methods and HTTP boundaries.
 - [x] Keep API errors explicit and avoid exposing unsealed manifests.

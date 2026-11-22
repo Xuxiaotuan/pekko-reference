@@ -83,7 +83,7 @@ T、J、D 和 L 分别描述目标效果、Actor 接受进度、SDK 恢复上下
 
 ## 2. 哪些状态参与决策，哪些资源不能持久化恢复
 
-[BootstrapProgress](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapProtocol.scala#L44)主要保存：
+[BootstrapProgress](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/common/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapProtocol.scala#L44)主要保存：
 
 ```scala
 upper, planned, nextLower, index,
@@ -103,11 +103,11 @@ U 和 spec 回答“原来负责哪个范围”；manifest 回答“可否重交
 
 要求是：同一个逻辑范围在失败前后不改变，未封存输入不能被当成跨读视图可拼接的结果。
 
-[原实验版本的恢复分支](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapRunner.scala#L202)检查窗口 manifest。没有封存时，新 attempt 登记 `spool.spec(w)` 的原值，appliedPage 归零，再读取原范围；旧 RAW 与失败材料保留。
+[原实验版本的恢复分支](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/common/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapRunner.scala#L202)检查窗口 manifest。没有封存时，新 attempt 登记 `spool.spec(w)` 的原值，appliedPage 归零，再读取原范围；旧 RAW 与失败材料保留。
 
 推理分三步：RR 的一致性属于旧连接事务；故障后只剩若干 RAW 页，并没有“剩余页面属于同一时刻”的证明；这些 RAW 尚未对目标产生 baseline 效果，因此可以放弃本 attempt，重新夹住 LOW/HIGH 并整段读取。重算范围会改变原责任边界，接续旧游标则会把不同视图拼在一起。
 
-新调度路径还要处理同 owner 的缓存替换。`step` 正常返回、JDBC close 已确认，只能证明这一轮资源可让出；它没有让旧 RR 事务跨越 Runner 对象重建。当前 [`BootstrapStepContinuation`](https://github.com/Xuxiaotuan/pekko-reference/blob/9653daa/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapStep.scala)区分两个条件：
+新调度路径还要处理同 owner 的缓存替换。`step` 正常返回、JDBC close 已确认，只能证明这一轮资源可让出；它没有让旧 RR 事务跨越 Runner 对象重建。当前 [`BootstrapStepContinuation`](https://github.com/Xuxiaotuan/pekko-reference/blob/9653daa/common/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapStep.scala)区分两个条件：
 
 ```text
 有 window + 没有 spool manifest + J 未接受 manifest 且 appliedPage=0
@@ -128,7 +128,7 @@ J 已接受 manifest 或已接受页效果 + 对应 seal 丢失
 
 要求是：一旦输出封存，同一窗口/页 identity 只允许同一 manifest 和内容；T 领先 J 时，恢复核实原效果，不重新定义那项效果。
 
-[BootstrapStore.seal](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapStore.scala#L76)在状态事务保存 FINAL 页和 manifest；[BootstrapTarget](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapTarget.scala#L44)在目标事务内核对认领、查询 receipt，必要时一起提交页 DML 与 receipt。Runner 随后才更新 J.appliedPage。
+[BootstrapStore.seal](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/common/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapStore.scala#L76)在状态事务保存 FINAL 页和 manifest；[BootstrapTarget](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/common/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapTarget.scala#L44)在目标事务内核对认领、查询 receipt，必要时一起提交页 DML 与 receipt。Runner 随后才更新 J.appliedPage。
 
 因此目标事务只有两类已知结果：未提交时没有这项 receipt 与效果，重交原页；已提交时二者同时存在，核对同一 payload 后不再次执行该页 DML。若客户端不知道 COMMIT 结果，仍协调同一 identity，不能换一个内容后重试。已有 receipt 但内容不同，意味着证据冲突，应停止。
 
@@ -152,7 +152,7 @@ J 已接受 manifest 或已接受页效果 + 对应 seal 丢失
 
 每完成一段，`spool.complete`接到范围摘要链，J 推进 index/nextLower。全部范围完成后登记固定 operation 的 F，J 进入 REPLAYING，起点是原 B。重复请求核实原 F，不选择当前更新的位点替代它。
 
-[replay](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapRunner.scala#L156)先提交目标完整组，再推进 J.deltaAfter；没有剩余 GROUP 时，游标明确落在 F 帧序号。空表也不需要伪造一个业务组。随后[audit](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapRunner.scala#L87)核对范围连续、封存证明、目标页 receipt 和 B→F 组账本；它审计保存的证明，不是重新全量查询源表对账。
+[replay](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/common/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapRunner.scala#L156)先提交目标完整组，再推进 J.deltaAfter；没有剩余 GROUP 时，游标明确落在 F 帧序号。空表也不需要伪造一个业务组。随后[audit](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/common/src/main/scala/cn/xuyinyin/magic/cdc/bootstrap/BootstrapRunner.scala#L87)核对范围连续、封存证明、目标页 receipt 和 B→F 组账本；它审计保存的证明，不是重新全量查询源表对账。
 
 Runner 先写激活 T，再由 J 接受 STREAMING。若在两者之间崩溃，恢复重新审计、复用同一激活 receipt，不能凭它单独声称业务已经发布。I21 切点的 J 仍为 ACTIVATING、F 序号 54；恢复保留证明后转入 STREAMING，继续到 L 序号 57。这就是 G3 的代表性实测窗口。
 
@@ -183,9 +183,9 @@ Runner 先写激活 T，再由 J 接受 STREAMING。若在两者之间崩溃，�
                   └→ 表消费者应用目标T → Actor接受J
 ```
 
-[accept](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala#L181)先执行 `store.cover(...)` 再调用原始句柄；covered 不等于 D 已落盘，ACK 链完整也不等于未观察区间连续。已有 B 而原始 D=INITIAL 时，必须在 SDK 重选点前作连续性判定，不能用之后变成非 INITIAL 的 D 覆盖启动事实。
+[accept](https://github.com/Xuxiaotuan/pekko-reference/blob/55fad0cf27f3a289dbb5d4fb4f2a31d60a661059/common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/SharedMySQLCapture.scala#L181)先执行 `store.cover(...)` 再调用原始句柄；covered 不等于 D 已落盘，ACK 链完整也不等于未观察区间连续。已有 B 而原始 D=INITIAL 时，必须在 SDK 重选点前作连续性判定，不能用之后变成非 INITIAL 的 D 覆盖启动事实。
 
-[`CaptureStartupGuard`](https://github.com/Xuxiaotuan/pekko-reference/blob/9653daa/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureStartupGuard.scala)已经把这项判定接到 Engine 创建之前。[A1/A2 真实实验](../../experiments/2026-10-27-capture-admission/README.md)确认旧 PREPARED/INITIAL 与 B-bound/INITIAL 被拒绝，Engine 创建次数为 0；后者的旧五字段差异保留。新 B 另需本 attempt 的生命周期、原始 ACK 和完成态实际 D，而不是仅凭旧 Schema 或一次 start Future。
+[`CaptureStartupGuard`](https://github.com/Xuxiaotuan/pekko-reference/blob/9653daa/common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureStartupGuard.scala)已经把这项判定接到 Engine 创建之前。[A1/A2 真实实验](../../experiments/2026-10-27-capture-admission/README.md)确认旧 PREPARED/INITIAL 与 B-bound/INITIAL 被拒绝，Engine 创建次数为 0；后者的旧五字段差异保留。新 B 另需本 attempt 的生命周期、原始 ACK 和完成态实际 D，而不是仅凭旧 Schema 或一次 start Future。
 
 这闭合的是“能否从这些已识别状态继续”的准入决策，没有证明旧缺失事件被补进 L。若旧命名空间已静默跳点再写出合法完成态 D，现有引用校验只能核实已交付输入，不能重建从未交付的变化。当时源 marker COMMIT 不确定会保留原 operation 并暂停，不重新写一个 B 来逃避判断；后续候选须先完成隔离与持久证据校验。
 
@@ -193,7 +193,7 @@ Runner 先写激活 T，再由 J 接受 STREAMING。若在两者之间崩溃，�
 
 把阻塞 `run` 拆成 `step` 后，持久控制索引记录 task 定义、期望状态和待执行条件。`BootstrapJournal` 继续记录数据协议的接受事实。两者职责不同：SQL 中“已领取”不是 J 已接受，“已初始化”投影也不能替代目标激活 receipt。
 
-[`CdcTaskStore`](https://github.com/Xuxiaotuan/pekko-reference/blob/9653daa/server/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcTaskStore.scala)先在事务中核对 owner、预算和候选，写 ACTIVE grant，然后才交给有限 worker。worker 使用真实 Journal、L 与目标执行一步。确认本轮资源释放后，事务同时记下 clean progress、让出 grant 和安排下次工作；结果未知时 grant 进入 UNKNOWN，仍计入预算。
+[`CdcTaskStore`](https://github.com/Xuxiaotuan/pekko-reference/blob/9653daa/common/src/main/scala/cn/xuyinyin/magic/cdc/platform/CdcTaskStore.scala)先在事务中核对 owner、预算和候选，写 ACTIVE grant，然后才交给有限 worker。worker 使用真实 Journal、L 与目标执行一步。确认本轮资源释放后，事务同时记下 clean progress、让出 grant 和安排下次工作；结果未知时 grant 进入 UNKNOWN，仍计入预算。
 
 对每个资源池，安全不变量是：
 
@@ -223,7 +223,7 @@ clean continuation 是这种让出协议的附属证据：它只对原 owner 生
 
 取消是持久业务命令。未执行的 QUEUED 任务可以在尚未获得 execution/J/B 时终止，保存独立的 `PREEXEC_CANCEL` 证明，初始化证明仍为空。已经绑定 B 的订阅则经 K 结束捕获，并核实在途 T/J 与资源释放。取消不删除目标，未激活目标可能保留部分数据；PAUSED 没有通用 Resume，不能强行改状态逃过原证据。
 
-停止 Reader 是另一个协议。[受管释放](https://github.com/Xuxiaotuan/pekko-reference/blob/9653daa/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureReleaseGuard.scala)把事实拆开：
+停止 Reader 是另一个协议。[受管释放](https://github.com/Xuxiaotuan/pekko-reference/blob/9653daa/common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureReleaseGuard.scala)把事实拆开：
 
 | 事实 | 要证明什么 | 证明不了什么 |
 |---|---|---|
@@ -232,7 +232,7 @@ clean continuation 是这种让出协议的附属证据：它只对原 owner 生
 | owner 释放 | 原 owner 连接已关，并在关闭后再次核实服务端 | 本地方法返回不等于命名锁与服务器资源均释放 |
 | reusable | 上述事实及 observer 关闭都成立 | 仅超时、仅无事务或仅本地线程退出都不成立 |
 
-[`CaptureResourceObserver`](https://github.com/Xuxiaotuan/pekko-reference/blob/9653daa/server/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureResourceObserver.scala)用启动前打开、禁止重连的源/状态连接绑定 server UUID、connection id 和 canary lock，并要求 PROCESS 可见性。账号专属于该 capture；source 的 marker/snapshot 短连接也在其观察域内。全局 Journal/控制库账号与该 capture 的专属状态账号分离。专属账号覆盖 SDK offset/history、Reader owner 和全部 L 连接；L 仍在原 controlState 数据库，改变的是连接凭据。无法确认归属的孤儿事务保守保留未知。
+[`CaptureResourceObserver`](https://github.com/Xuxiaotuan/pekko-reference/blob/9653daa/common/src/main/scala/cn/xuyinyin/magic/connectors/mysql/source/capture/CaptureResourceObserver.scala)用启动前打开、禁止重连的源/状态连接绑定 server UUID、connection id 和 canary lock，并要求 PROCESS 可见性。账号专属于该 capture；source 的 marker/snapshot 短连接也在其观察域内。全局 Journal/控制库账号与该 capture 的专属状态账号分离。专属账号覆盖 SDK offset/history、Reader owner 和全部 L 连接；L 仍在原 controlState 数据库，改变的是连接凭据。无法确认归属的孤儿事务保守保留未知。
 
 observer 锚点丢失、权限不足、服务端仍有会话时返回 UNKNOWN，不能以另连一个 observer 或等待超时恢复额度。同一 close operation 可以在较晚确认真实释放后变为 reusable，但不可不断创建新 close 线程。兼容旧 `close` 的本地行为和受管 `requestClose/refreshRelease` 必须单列；旧接口本地结束不能被调用方升级为资源复用许可。
 
