@@ -1,0 +1,8 @@
+NAME                                READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS    IMAGES                                                          SELECTOR
+deployment.apps/pekko-cdc-capture   1/1     1            1           26h   cdc-capture   100.97.53.78:5001/xxt/pekko-cdc-capture:build-32-1cc9fb25f3da   app=pekko-cdc-capture
+deployment.apps/pekko-cdc-worker    2/2     2            2           26h   cdc-worker    100.97.53.78:5001/xxt/pekko-cdc-worker:build-32-1cc9fb25f3da    app=pekko-cdc-worker
+
+NAME                                     READY   STATUS    RESTARTS       AGE    IP              NODE   NOMINATED NODE   READINESS GATES
+pod/pekko-cdc-capture-66c9b5c7bb-2x7rh   1/1     Running   2 (127m ago)   127m   10.233.65.226   xjw    <none>           <none>
+pod/pekko-cdc-worker-6967bcf847-nx77c    1/1     Running   0              126m   10.233.65.194   xjw    <none>           <none>
+pod/pekko-cdc-worker-6967bcf847-q6n7f    1/1     Running   0              126m   10.233.65.5     xjw    <none>           <none>
