@@ -13,33 +13,51 @@ import scala.concurrent.duration._
  * Journal enters STREAMING, the materialized TableCdcGraph owns the tail
  * source, target commit, Journal update and L projection behind this seam.
  */
-final class TableCdcGraphRuntime private (private val runner: Option[BootstrapRunner], private val graph: Option[TableCdcGraph]) {
+trait TableGraphLifecycle {
+  def state: BootstrapProgress
+  def step(stop: () => Boolean, continuation: Option[BootstrapProgress]): BootstrapStepResult
+  def run(stop: () => Boolean): Unit
+  def requestGcCheckpoint(): Unit
+  def gcCheckpointRequested: Boolean
+  def bootstrapRunner: Option[BootstrapRunner]
+}
+
+private final class BootstrapRunnerLifecycle(runner: BootstrapRunner) extends TableGraphLifecycle {
+  override def state: BootstrapProgress = runner.state
+  override def step(stop: () => Boolean, continuation: Option[BootstrapProgress]): BootstrapStepResult = runner.step(stop, continuation)
+  override def run(stop: () => Boolean): Unit = runner.run(stop)
+  override def requestGcCheckpoint(): Unit = runner.requestGcCheckpoint()
+  override def gcCheckpointRequested: Boolean = runner.gcCheckpointRequested
+  override def bootstrapRunner: Option[BootstrapRunner] = Some(runner)
+}
+
+final class TableCdcGraphRuntime private (private val lifecycle: Option[TableGraphLifecycle], private val graph: Option[TableCdcGraph]) {
   private val materialized = new AtomicReference[Option[TableGraphMaterialized]](None)
   def bootstrapRunner: BootstrapRunner =
-    runner.getOrElse(throw new IllegalStateException("bootstrap runner is unavailable for a materialized table graph"))
-  def state: BootstrapProgress = bootstrapRunner.state
+    lifecycle.flatMap(_.bootstrapRunner).getOrElse(throw new IllegalStateException("bootstrap runner is unavailable for a materialized table graph"))
+  def state: BootstrapProgress = lifecycle.map(_.state).getOrElse(throw new IllegalStateException("table graph state is unavailable"))
   def step(stop: () => Boolean = () => false, continuation: Option[BootstrapProgress] = None): BootstrapStepResult = {
     implicit val graphEc: ExecutionContext = ExecutionContext.parasitic
-    val activeRunner                       = bootstrapRunner
+    val activeLifecycle                   = lifecycle.getOrElse(throw new IllegalStateException("table graph lifecycle is unavailable"))
     // Snapshot phases remain owned by BootstrapRunner. Once Journal has
     // durably entered STREAMING, the materialized graph owns the tail source,
     // target commit, Journal update and L projection.
-    if (graph.nonEmpty && activeRunner.state.phase == "STREAMING" && !activeRunner.gcCheckpointRequested) {
+    if (graph.nonEmpty && activeLifecycle.state.phase == "STREAMING" && !activeLifecycle.gcCheckpointRequested) {
       if (stop()) stopMaterialized()
       else if (materialized.get().isEmpty) {
         val running = Await.result(graph.get.materializeRecovered(), 40.seconds)
         require(materialized.compareAndSet(None, Some(running)), "table graph materialization raced")
       }
-      BootstrapStepResult(activeRunner.state, false, true, 250, validationComplete = true)
+      BootstrapStepResult(activeLifecycle.state, false, true, 250, validationComplete = true)
     } else {
-      if (activeRunner.gcCheckpointRequested) stopMaterialized()
+      if (activeLifecycle.gcCheckpointRequested) stopMaterialized()
       if (stop()) stopMaterialized()
-      activeRunner.step(stop, continuation)
+      activeLifecycle.step(stop, continuation)
     }
   }
-  def run(stop: () => Boolean = () => false): Unit = bootstrapRunner.run(stop)
-  def requestGcCheckpoint(): Unit                  = bootstrapRunner.requestGcCheckpoint()
-  def gcCheckpointRequested: Boolean               = bootstrapRunner.gcCheckpointRequested
+  def run(stop: () => Boolean = () => false): Unit = lifecycle.getOrElse(throw new IllegalStateException("table graph lifecycle is unavailable")).run(stop)
+  def requestGcCheckpoint(): Unit = lifecycle.getOrElse(throw new IllegalStateException("table graph lifecycle is unavailable")).requestGcCheckpoint()
+  def gcCheckpointRequested: Boolean = lifecycle.exists(_.gcCheckpointRequested)
 
   /** Stop the tail graph before cancellation, GC sealing, or owner release. */
   def stopMaterialized(): Unit = materialized.getAndSet(None).foreach { running =>
@@ -54,11 +72,11 @@ final class TableCdcGraphRuntime private (private val runner: Option[BootstrapRu
 object TableCdcGraphRuntime {
   def fromBootstrap(runner: BootstrapRunner): TableCdcGraphRuntime = {
     require(runner != null, "table CDC graph runtime requires a bootstrap runner")
-    new TableCdcGraphRuntime(Some(runner), None)
+    new TableCdcGraphRuntime(Some(new BootstrapRunnerLifecycle(runner)), None)
   }
   def fromBootstrap(runner: BootstrapRunner, graph: TableCdcGraph): TableCdcGraphRuntime = {
     require(runner != null && graph != null, "table CDC graph runtime requires bootstrap and streaming graph")
-    new TableCdcGraphRuntime(Some(runner), Some(graph))
+    new TableCdcGraphRuntime(Some(new BootstrapRunnerLifecycle(runner)), Some(graph))
   }
   def fromGraph(graph: TableCdcGraph): TableCdcGraphRuntime = {
     require(graph != null, "table CDC graph runtime requires a graph")

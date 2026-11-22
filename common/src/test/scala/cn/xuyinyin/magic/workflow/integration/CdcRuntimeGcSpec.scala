@@ -66,6 +66,7 @@ class CdcRuntimeGcSpec extends AnyWordSpec with Matchers {
           "pekko_capture_schemas",
           "pekko_capture_gc_state_v1",
           "pekko_capture_consumers_v1",
+          "pekko_capture_epochs_v1",
           "pekko_capture_gc_retention_v1",
           "pekko_capture_gc_pins_v1")
         val gcTables          = sdkTables ++ Vector("pekko_capture_gc_checkpoints_v1", "pekko_capture_gc_frames_v1", "pekko_capture_gc_operations_v1")
