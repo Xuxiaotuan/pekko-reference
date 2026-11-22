@@ -434,10 +434,11 @@ final class CdcPlatformRuntime(
         }
         if (r.isFailure && !preAdmissionBusy && !stopping.get()) {
           logger.warn(
-            "CDC poll failed attempt={} ownerState={} reason={}",
+            "CDC poll failed attempt={} ownerState={} reason={} message={}",
             runtimeAttemptId,
             ownerState,
-            r.failed.toOption.map(_.getClass.getName).getOrElse("unknown"))
+            r.failed.toOption.map(_.getClass.getName).getOrElse("unknown"),
+            r.failed.toOption.flatMap(e => Option(e.getMessage)).getOrElse(""))
           ownerState = "UNKNOWN"; reason = Some("STORAGE_UNAVAILABLE")
         }
         r

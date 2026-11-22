@@ -51,9 +51,40 @@ final class CdcBootstrapKernel(
     settings.limits.snapshotSteps + settings.limits.tailSteps)
   private case class Capture(settings: CdcCaptureSettings, store: MySQLCaptureStore, reader: SharedMySQLCapture)
   private case class Session(graph: TableCdcGraphRuntime, journal: ActorRef[BootstrapJournal.Command], target: BootstrapTarget, pool: String)
-  private val capturesById           = mutable.Map.empty[String, Capture]
-  private val gcById                 = mutable.Map.empty[String, CdcGcCoordinator]
-  private val recoveryOnly           = mutable.Set.empty[String]
+  private val capturesById  = mutable.Map.empty[String, Capture]
+  private val gcById        = mutable.Map.empty[String, CdcGcCoordinator]
+  private val recoveryOnly  = mutable.Set.empty[String]
+  private val recoveryReady = mutable.Set.empty[String]
+
+  private def markCaptureReady(captureId: String): Unit = synchronized {
+    captureViews =
+      captureViews.map(view => if (view.captureId == captureId) view.copy(readiness = "ADMISSION_READY", runtimeHealth = "HEALTHY") else view)
+  }
+
+  private def awaitCaptureReady(captureId: String, reader: SharedMySQLCapture): Unit = {
+    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30L)
+    def ready    = reader.bootstrapReady || reader.streamingConnected.contains(true)
+    while (!ready && System.nanoTime() < deadline) {
+      reader.startupEvidence
+      if (!ready) Thread.sleep(50L)
+    }
+    if (!ready) {
+      val evidence = reader.startupEvidence
+      observe(
+        "CAPTURE_RECOVERY_READY_TIMEOUT",
+        JsObject(
+          "captureId"          -> JsString(captureId),
+          "phase"              -> JsString(evidence.phase),
+          "snapshot"           -> JsString(evidence.snapshot),
+          "currentCheckpoint"  -> JsString(evidence.currentCheckpoint),
+          "durableAck"         -> JsNumber(evidence.durableAck),
+          "confirmedAck"       -> JsNumber(evidence.confirmedAck),
+          "streamingConnected" -> reader.streamingConnected.map(JsBoolean(_)).getOrElse(JsNull)))
+      throw new CdcKernelDeferred
+    }
+    synchronized { recoveryOnly.remove(captureId); recoveryReady.add(captureId) }
+    markCaptureReady(captureId)
+  }
   private val sessions               = mutable.Map.empty[String, Session]
   private val reservations           = mutable.Map.empty[String, String]
   private var peakSessions           = 0
@@ -234,10 +265,7 @@ final class CdcBootstrapKernel(
       if (deferred.contains(cfg.id)) synchronized { recoveryOnly += cfg.id }
       else if (captureEnabled) reader.start()
       else
-        synchronized {
-          captureViews =
-            captureViews.map(view => if (view.captureId == cfg.id) view.copy(readiness = "ADMISSION_READY", runtimeHealth = "HEALTHY") else view)
-        }
+        markCaptureReady(cfg.id)
     }
     if (!stopping.get())
       try refresh.scheduleWithFixedDelay(new Runnable { def run(): Unit = refreshCaptures() }, 0L, 250L, TimeUnit.MILLISECONDS)
@@ -252,20 +280,24 @@ final class CdcBootstrapKernel(
       current.foreach { c =>
         if (nextEvidence.getOrElse(c.settings.id, 0L) <= now) {
           val view =
-            try {
-              val e = c.reader.startupEvidence
-              nextEvidence.update(c.settings.id, now + (if (e.phase == "ADMISSION_READY") 2000L else 250L))
-              CdcCaptureView(
-                c.settings.id,
-                c.settings.source.database,
-                e.phase,
-                if (e.phase == "ADMISSION_READY" && c.reader.streamingConnected.contains(true)) "HEALTHY"
-                else if (e.phase == "STARTING") "STARTING"
-                else "UNKNOWN",
-                e.reasonCode)
-            } catch {
-              case NonFatal(_) => CdcCaptureView(c.settings.id, c.settings.source.database, "UNKNOWN", "UNKNOWN", Some("CAPTURE_UNAVAILABLE"))
-            }
+            if (synchronized(recoveryReady.contains(c.settings.id))) {
+              nextEvidence.update(c.settings.id, now + 2000L)
+              CdcCaptureView(c.settings.id, c.settings.source.database, "ADMISSION_READY", "HEALTHY", None)
+            } else
+              try {
+                val e = c.reader.startupEvidence
+                nextEvidence.update(c.settings.id, now + (if (e.phase == "ADMISSION_READY") 2000L else 250L))
+                CdcCaptureView(
+                  c.settings.id,
+                  c.settings.source.database,
+                  e.phase,
+                  if (e.phase == "ADMISSION_READY" && c.reader.streamingConnected.contains(true)) "HEALTHY"
+                  else if (e.phase == "STARTING") "STARTING"
+                  else "UNKNOWN",
+                  e.reasonCode)
+              } catch {
+                case NonFatal(_) => CdcCaptureView(c.settings.id, c.settings.source.database, "UNKNOWN", "UNKNOWN", Some("CAPTURE_UNAVAILABLE"))
+              }
           observations = observations.updated(c.settings.id, System.nanoTime())
           captureViews = captureViews.map(old => if (old.captureId == view.captureId) view else old)
         }
@@ -482,7 +514,9 @@ final class CdcBootstrapKernel(
               if (paused) {
                 val gate   = outcome.readerGate.getOrElse(throw new IllegalStateException("reader recovery gate missing"))
                 val reader = synchronized(capturesById(task.captureId).reader)
-                reader.installRecoveryGate(gate); reader.start(); synchronized { recoveryOnly.remove(task.captureId) }
+                reader.installRecoveryGate(gate)
+                reader.start()
+                awaitCaptureReady(task.captureId, reader)
               }
               throw new CdcKernelDeferred
             }

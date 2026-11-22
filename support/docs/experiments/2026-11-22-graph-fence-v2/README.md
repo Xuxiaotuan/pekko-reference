@@ -25,6 +25,12 @@
 
 因此本轮真实故障矩阵结论是 `evidence_incomplete`。没有把 Graph 单测、source fence 存储测试或 bigdata-lab 两 Worker owner admission 结果升级成 source fence v2 + guardian + Graph + Sink 的端到端通过。
 
+## bigdata-lab V2_READER 实际复跑
+
+在 `cdc-runtime-acceptance` 中创建了两个临时 MySQL 8.0.36 实例，业务 `bigdata-lab/mysql` 未复用。Worker 已完成 Guardian attestation、managed manifest、runtime、Capture 和 HTTP ready。`PROXY_COMMIT_OK_DROPPED` 真实发生，旧 owner 的 Source binlog 会话最终由 Guardian 证明排空，新 owner 消费了恢复许可，Reader 收到 `B_BOUND` 和 `BARRIER`，订阅进入 `CAPTURE_READY`。
+
+最终 Sink 对账仍未通过。新 owner 控制轮询在 `ManagedOwnerStore.registerInstance` 资源登记竞态处失败，任务回到 `QUEUED`，`03-v2-reader-b-captured.json` 显示 384 个字段范围内缺失 64 行。该结果属于真实故障失败证据，不能用测试套件的清理 PASS 代替端到端一致性。原始材料见 [`k8s-v2-reader-20261122`](k8s-v2-reader-20261122/README.md)。
+
 ## bigdata-lab 边界
 
 当前 `bigdata-lab` 的 Capture/Worker 仍配置 `source-fence-v2=false`。本轮没有修改生产 ConfigMap、Secret、Deployment 或业务 MySQL。现有线上证据只支持一 Capture、两 Worker 的 owner admission 互斥，不能支持 v2 自动接管结论。

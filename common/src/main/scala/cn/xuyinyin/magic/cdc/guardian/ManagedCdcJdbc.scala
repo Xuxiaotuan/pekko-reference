@@ -28,9 +28,19 @@ object ManagedCdcJdbc {
   }
   def taggedUrl(url: String, identity: SnapshotOwnerIdentity, role: String): String = {
     require(Set("journal", "source", "target", "control").contains(role))
-    val parts = url.split("\\?", 2); val parameters = if (parts.length == 1) Vector.empty else parts(1).split("&").toVector
-    require(!parameters.exists(_.startsWith("connectionAttributes=")), "managed connection attributes cannot be overridden")
-    parts(0) + "?" + (parameters :+ s"connectionAttributes=pekko_owner:${identity.bootId},pekko_role:$role" :+ s"pekkoOwnerRole=$role").mkString("&")
+    val parts              = url.split("\\?", 2)
+    val parameters         = if (parts.length == 1) Vector.empty else parts(1).split("&").toVector
+    val expectedAttributes = s"pekko_owner:${identity.bootId},pekko_role:$role"
+    val existingAttributes = parameters.find(_.startsWith("connectionAttributes=")).map(_.stripPrefix("connectionAttributes="))
+    val existingRole       = parameters.find(_.startsWith("pekkoOwnerRole=")).map(_.stripPrefix("pekkoOwnerRole="))
+    existingAttributes match {
+      case Some(value) =>
+        require(value == expectedAttributes && existingRole.contains(role), "managed connection attributes cannot be overridden")
+        url
+      case None =>
+        require(existingRole.isEmpty, "managed owner role cannot be overridden")
+        parts(0) + "?" + (parameters :+ s"connectionAttributes=$expectedAttributes" :+ s"pekkoOwnerRole=$role").mkString("&")
+    }
   }
   def configure(config: HikariConfig, role: String): Unit = context.foreach { ctx =>
     require(ctx.routes.contains(endpoint(config.getJdbcUrl)), "database endpoint is not in the fixed managed manifest")
