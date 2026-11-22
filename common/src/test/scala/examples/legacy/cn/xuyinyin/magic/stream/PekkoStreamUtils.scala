@@ -8,7 +8,7 @@ import org.apache.pekko.stream._
 import scala.collection.immutable
 
 /**
- * https://pekko.apache.org/docs/pekko/current/stream/stream-graphs.html#predefined-shapes
+ * https://pekko.apache.org/support/docs/pekko/current/stream/stream-graphs.html#predefined-shapes
  *
  * @author : XuJiaWei
  * @since : 2024-09-23 23:31

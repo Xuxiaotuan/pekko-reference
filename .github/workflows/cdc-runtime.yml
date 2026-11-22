@@ -6,10 +6,13 @@ on:
   push:
     branches: [main, master]
     paths:
-      - 'server/**'
+      - 'common/**'
+      - 'capture/**'
+      - 'worker/**'
+      - 'support/scripts/**'
       - 'build.sbt'
       - 'project/**'
-      - 'deploy/kubernetes/bigdata-lab/cdc-runtime/**'
+      - 'support/deploy/kubernetes/cdc-runtime/**'
       - '.github/workflows/cdc-runtime.yml'
   workflow_dispatch:
     inputs:
@@ -100,7 +103,7 @@ jobs:
         run: |
           capture_image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-capture:${GITHUB_SHA}"
           worker_image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-worker:${GITHUB_SHA}"
-          kubectl kustomize deploy/kubernetes/bigdata-lab/cdc-runtime \
+          kubectl kustomize support/deploy/kubernetes/cdc-runtime \
             | sed -e "s#ghcr.io/xuxiaotuan/pekko-reference/cdc-capture:dev#$capture_image#g" \
                   -e "s#ghcr.io/xuxiaotuan/pekko-reference/cdc-worker:dev#$worker_image#g" \
             | kubectl apply --dry-run=server -f -
@@ -108,7 +111,7 @@ jobs:
         run: |
           capture_image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-capture:${GITHUB_SHA}"
           worker_image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-worker:${GITHUB_SHA}"
-          kubectl kustomize deploy/kubernetes/bigdata-lab/cdc-runtime \
+          kubectl kustomize support/deploy/kubernetes/cdc-runtime \
             | sed -e "s#ghcr.io/xuxiaotuan/pekko-reference/cdc-capture:dev#$capture_image#g" \
                   -e "s#ghcr.io/xuxiaotuan/pekko-reference/cdc-worker:dev#$worker_image#g" \
             | kubectl apply --server-side --field-manager=cdc-runtime-pipeline -f -

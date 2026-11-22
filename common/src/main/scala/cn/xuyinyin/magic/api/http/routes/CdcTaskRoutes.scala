@@ -1,6 +1,7 @@
 package cn.xuyinyin.magic.api.http.routes
 
 import cn.xuyinyin.magic.cdc.platform._
+import cn.xuyinyin.magic.cdc.savepoint.CdcSavepointHeader
 import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import org.apache.pekko.http.scaladsl.model.{StatusCode, StatusCodes}
 import org.apache.pekko.http.scaladsl.server.{Directives, ExceptionHandler, Route}
@@ -27,7 +28,7 @@ final class CdcTaskRoutes(service: Option[CdcTaskService])(implicit ec: Executio
   private def capture(value: CdcCaptureView): JsObject = JsObject("captureId" -> JsString(value.captureId),
     "database" -> JsString(value.database), "readiness" -> JsString(value.readiness),
     "runtimeHealth" -> JsString(value.runtimeHealth), "reason" -> optional(value.reason))
-  private def savepoint(value: cn.xuyinyin.magic.cdc.savepoint.CdcSavepointHeader): JsObject = JsObject(
+  private def savepoint(value: CdcSavepointHeader): JsObject = JsObject(
     "savepointId"->JsString(value.savepointId),"captureId"->JsString(value.captureId),"sourceLineage"->JsString(value.sourceLineage),
     "epoch"->JsNumber(value.epoch.epoch),"sealedSequence"->JsNumber(value.epoch.sealedSequence),"capturePosition"->optional(value.epoch.capturePosition),
     "routeDigest"->JsString(value.epoch.routeDigest),"tableSetDigest"->JsString(value.tableSetDigest),"pageCount"->JsNumber(value.pageCount),

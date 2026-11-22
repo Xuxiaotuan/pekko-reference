@@ -27,7 +27,7 @@ class CaptureStartupRecoverySpec extends AnyWordSpec with Matchers {
         require(sys.env.get("CDC_LAB_EXCLUSIVE_LEASE").exists(_.nonEmpty),"explicit exclusive lease required")
         val suffix=UUID.randomUUID().toString.replace("-","").take(12)
         val schema="pekko_test_cdc_window_"+suffix;val captureId="startup_"+suffix
-        val root=Path.of(sys.env.getOrElse("CAPTURE_STARTUP_EVIDENCE","docs/experiments/2026-10-25-capture-startup"))
+        val root=Path.of(sys.env.getOrElse("CAPTURE_STARTUP_EVIDENCE","support/docs/experiments/2026-10-25-capture-startup"))
         val dir=root.resolve(variant+"-"+suffix).toAbsolutePath;Files.createDirectories(dir)
         initialize(source,schema);initialize(state,schema)
         def sql(s:Settings,q:String):Unit=withConnection(s,schema)(executeSql(_,q))

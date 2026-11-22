@@ -125,7 +125,10 @@ lazy val commonSettings = Seq(
 // ================================
 import com.typesafe.sbt.packager.docker.Cmd
 
-lazy val pekkoServer = Project(id = "pekko-server", base = file("common"))
+// Keep the historical SBT project ID so existing commands such as
+// `sbt 'pekko-server/test'` continue to work. The physical source root is
+// now `common`, and the deployable roles remain separate projects below.
+lazy val cdcCommon = Project(id = "pekko-server", base = file("common"))
   .enablePlugins(JavaServerAppPackaging, DockerPlugin, AshScriptPlugin)
   .settings(
     commonSettings ++ Seq(
@@ -299,14 +302,14 @@ def cdcRoleSettings(moduleName: String, entryPoint: String) = Seq(
 
 lazy val cdcCapture = Project(id = "pekko-cdc-capture", base = file("capture"))
   .enablePlugins(JavaServerAppPackaging, DockerPlugin, AshScriptPlugin)
-  .dependsOn(pekkoServer)
+  .dependsOn(cdcCommon)
   .settings(commonSettings ++ cdcRoleSettings(
     "pekko-cdc-capture",
     "cn.xuyinyin.magic.cdc.capture.CaptureMain"))
 
 lazy val cdcWorker = Project(id = "pekko-cdc-worker", base = file("worker"))
   .enablePlugins(JavaServerAppPackaging, DockerPlugin, AshScriptPlugin)
-  .dependsOn(pekkoServer)
+  .dependsOn(cdcCommon)
   .settings(commonSettings ++ cdcRoleSettings(
     "pekko-cdc-worker",
     "cn.xuyinyin.magic.cdc.worker.WorkerMain"))
@@ -317,7 +320,7 @@ lazy val cdcWorker = Project(id = "pekko-cdc-worker", base = file("worker"))
 lazy val root = (project in file("."))
   .settings(commonSettings)
   .aggregate(
-    pekkoServer,
+    cdcCommon,
     cdcCapture,
     cdcWorker
   )

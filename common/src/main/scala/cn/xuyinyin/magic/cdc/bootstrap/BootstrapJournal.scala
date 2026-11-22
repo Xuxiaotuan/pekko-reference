@@ -1,5 +1,6 @@
 package cn.xuyinyin.magic.cdc.bootstrap
 
+import cn.xuyinyin.magic.cdc.recovery.{CdcExecutionException, ExecutionFailure}
 import cn.xuyinyin.magic.common.CborSerializable
 import org.apache.pekko.actor.typed.{ActorRef,Behavior,Scheduler}
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
@@ -145,8 +146,8 @@ final class BootstrapJournalAccess(ref:ActorRef[BootstrapJournal.Command])(impli
       ref.ask[BootstrapJournal.Result](r=>BootstrapJournal.Write(s.revision,n,r)).flatMap {x=>
         if(x.accepted)Future.successful(x.state)
         else if(x.state.revision!=s.revision && left>0)loop(left-1)
-        else Future.failed(new cn.xuyinyin.magic.cdc.recovery.CdcExecutionException(
-          cn.xuyinyin.magic.cdc.recovery.ExecutionFailure("checkpoint_rejected","bootstrap-journal"),new IllegalStateException("bootstrap checkpoint explicitly rejected")))
+        else Future.failed(new CdcExecutionException(
+          ExecutionFailure("checkpoint_rejected","bootstrap-journal"),new IllegalStateException("bootstrap checkpoint explicitly rejected")))
       }
     }
     loop(8)

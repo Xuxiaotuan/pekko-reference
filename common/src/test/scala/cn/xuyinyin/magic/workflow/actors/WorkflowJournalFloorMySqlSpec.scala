@@ -48,7 +48,7 @@ class WorkflowJournalFloorMySqlSpec extends AnyWordSpec with Matchers {
       val ddl = getClass.getClassLoader.getResourceAsStream("db/mysql/pekko-persistence-schema.sql")
       val schemaSql = try scala.io.Source.fromInputStream(ddl).mkString finally ddl.close()
       val conn = open()
-      val saved = java.nio.file.Files.readString(java.nio.file.Path.of("docs/experiments/2026-10-25-capture-startup/R02-original-trigger-eaa005be087a/final.json")).parseJson.asJsObject
+      val saved = java.nio.file.Files.readString(java.nio.file.Path.of("support/docs/experiments/2026-10-25-capture-startup/R02-original-trigger-eaa005be087a/final.json")).parseJson.asJsObject
       val rows = saved.fields("worker").asJsObject.fields("J").asInstanceOf[JsArray].elements
       val workflowId = "old-replay-" + suffix
       try {

@@ -1,4 +1,4 @@
 #!/bin/sh
-# Compatibility entry; canonical implementation is scripts/test.sh.
+# Compatibility entry; canonical implementation is support/scripts/test.sh.
 set -eu
-exec "$(dirname "$0")/scripts/test.sh" "$@"
+exec "$(dirname "$0")/support/scripts/test.sh" "$@"

@@ -1,8 +1,9 @@
 package cn.xuyinyin.magic.cdc.bootstrap
 
-import cn.xuyinyin.magic.cdc.MySQLCdcGroup
+import cn.xuyinyin.magic.cdc.{CdcReplaySink, MySQLCdcGroup}
+import cn.xuyinyin.magic.cdc.bootstrap.{CdcReplaySink => WorkflowCdcReplaySink}
 import cn.xuyinyin.magic.connectors.mysql.source.capture._
-import cn.xuyinyin.magic.cdc.recovery.ExecutionFailure
+import cn.xuyinyin.magic.cdc.recovery.{CdcExecutionException, ExecutionFailure}
 import java.sql.Connection
 import java.util.concurrent.{Semaphore,TimeUnit}
 import scala.concurrent.{Await,ExecutionContext,Future}
@@ -31,17 +32,17 @@ final case class BootstrapLimits(chunkRows:Int=32,pageRows:Int=8,groupBatch:Int=
   */
 final class BootstrapRunner(val id:String,val table:String,val generation:String,definition:String,
   capture:SharedMySQLCapture,logStore:MySQLCaptureStore,spool:BootstrapStore,target:BootstrapTarget,
-  journal:BootstrapJournalAccess,source:BootstrapSnapshot,sink:cn.xuyinyin.magic.cdc.CdcReplaySink,
+  journal:BootstrapJournalAccess,source:BootstrapSnapshot,sink:CdcReplaySink,
   database:String,leaseOpen:()=>Connection,admission:BootstrapAdmission,limits:BootstrapLimits=BootstrapLimits(),
   observe:(String,JsObject)=>Unit=(_,_)=>(),journalProgressVerifier:Option[BootstrapJournalProgressVerifier]=None)(implicit sinkEc:ExecutionContext) {
   /** Retain the pre-separation constructor descriptor for compiled Workflow adapters. */
   def this(id:String,table:String,generation:String,definition:String,capture:SharedMySQLCapture,
     logStore:MySQLCaptureStore,spool:BootstrapStore,target:BootstrapTarget,journal:BootstrapJournalAccess,
-    source:BootstrapSnapshot,sink:cn.xuyinyin.magic.cdc.bootstrap.CdcReplaySink,database:String,
+    source:BootstrapSnapshot,sink:WorkflowCdcReplaySink,database:String,
     leaseOpen:()=>Connection,admission:BootstrapAdmission,limits:BootstrapLimits,
     observe:(String,JsObject)=>Unit,journalProgressVerifier:Option[BootstrapJournalProgressVerifier])(implicit sinkEc:ExecutionContext) =
     this(id,table,generation,definition,capture,logStore,spool,target,journal,source,
-      sink:cn.xuyinyin.magic.cdc.CdcReplaySink,database,leaseOpen,admission,limits,observe,journalProgressVerifier)(sinkEc)
+      sink:CdcReplaySink,database,leaseOpen,admission,limits,observe,journalProgressVerifier)(sinkEc)
   require(id.matches("[A-Za-z0-9_-]{1,96}"))
   private val boundDefinition=MySQLCdcGroup.canonical(JsObject("version"->JsNumber(1),"definition"->JsString(definition),
     "capture"->JsString(logStore.captureId),"lineage"->JsString(logStore.lineage),"database"->JsString(database),"table"->JsString(table),
@@ -49,7 +50,7 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
   private val log=new CapturedLogReader(logStore,database)
   private def waitFor[A](f:Future[A]):A=Await.result(f,40.seconds)
   private def waitSink[A](f:Future[A]):A=try waitFor(f) catch {
-    case e:java.util.concurrent.TimeoutException=>throw new cn.xuyinyin.magic.cdc.recovery.CdcExecutionException(
+    case e:java.util.concurrent.TimeoutException=>throw new CdcExecutionException(
       ExecutionFailure(ExecutionFailure.ReleaseUnknown,"bootstrap-replay-wait",releaseConfirmed=false),e)
   }
   def state:BootstrapProgress=waitFor(journal.read())

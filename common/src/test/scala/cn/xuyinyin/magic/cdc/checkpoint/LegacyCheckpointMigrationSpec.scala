@@ -13,7 +13,7 @@ import spray.json.DefaultJsonProtocol._
 class LegacyCheckpointMigrationSpec extends AnyWordSpec with Matchers {
   "checkpoint migration" should {
     "read an actual checkpoint Journal event captured from an older MySQL experiment" in {
-      val path=java.nio.file.Path.of("docs/experiments/2026-10-25-capture-startup/R02-original-trigger-eaa005be087a/final.json")
+      val path=java.nio.file.Path.of("support/docs/experiments/2026-10-25-capture-startup/R02-original-trigger-eaa005be087a/final.json")
       val root=java.nio.file.Files.readString(path).parseJson.asJsObject.fields
       val records=root("worker").asJsObject.fields("J").asInstanceOf[JsArray].elements
       val event=records.map(_.asJsObject.fields).find(_.get("decodedType").contains(JsString("ExecutionCheckpointAdvanced"))).get

@@ -1,11 +1,9 @@
 package cn.xuyinyin.magic.cdc.control
 
 import cn.xuyinyin.magic.workflow.scheduling.{TableResourceDemand, ScheduledTableDefinition, ScheduledTable, TableGrant, ScheduledTableSummary}
+import cn.xuyinyin.magic.cdc.checkpoint.BatchId
+import cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState
 
-
-import cn.xuyinyin.magic.cdc.control.CdcManagedControlStore
-
-import cn.xuyinyin.magic.cdc.control.SchedulingLimits
 
 import java.sql.{Connection, ResultSet}
 import javax.sql.DataSource
@@ -15,7 +13,7 @@ import javax.sql.DataSource
   */
 final class TableSchedulingStore(dataSource: DataSource, val limits: SchedulingLimits, ownershipEnabled: Boolean = false,
   cutover:Option[CdcManagedControlStore.CutoverIdentity]=None)
-  extends ManagedControlTransactions(dataSource, cutover.fold(cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.sha256(limits.toString))(_.policyHash(limits)),
+  extends ManagedControlTransactions(dataSource, cutover.fold(SnapshotSplitState.sha256(limits.toString))(_.policyHash(limits)),
     allowPolicyInitialization=cutover.isEmpty) {
   val ownership: Option[SnapshotOwnershipStore] = Option.when(ownershipEnabled)(new SnapshotOwnershipStore(this))
   private val occupied = "('held','recovering','running','drained','unknown')"
@@ -52,7 +50,7 @@ final class TableSchedulingStore(dataSource: DataSource, val limits: SchedulingL
       if (previous.exists(t => t.executionId.contains(executionId) && t.definition != d))
         throw new IllegalStateException("an execution request cannot change its definition")
       val current = register(c, d)
-      val requestId = cn.xuyinyin.magic.cdc.checkpoint.BatchId.sha256("table-request",d.workflowId,requestKey,0L)
+      val requestId = BatchId.sha256("table-request",d.workflowId,requestKey,0L)
       val prior = query(c,"SELECT execution_id FROM pekko_table_requests WHERE request_id=?",Seq(requestId))(_.getString(1)).headOption
       if (prior.exists(_ != executionId) || (prior.nonEmpty && !current.executionId.contains(executionId)))
         throw new IllegalStateException("stale table scheduling request")

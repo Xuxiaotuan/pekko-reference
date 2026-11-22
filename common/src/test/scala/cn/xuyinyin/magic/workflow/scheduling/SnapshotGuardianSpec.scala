@@ -76,7 +76,7 @@ class SnapshotGuardianSpec extends AnyWordSpec with Matchers {
   }
   "guardian signed evidence" should {
     "verify an isolation receipt saved before control identities were moved" in {
-      val path=java.nio.file.Path.of("docs/experiments/2026-11-08-cdc-standalone-entry/managed-cdc-c1-20261111/C1-e791978ead66/02-isolated.json")
+      val path=java.nio.file.Path.of("support/docs/experiments/2026-11-08-cdc-standalone-entry/managed-cdc-c1-20261111/C1-e791978ead66/02-isolated.json")
       val root=java.nio.file.Files.readString(path).parseJson.asJsObject.fields
       val managed=root("managedOwners").asInstanceOf[JsArray].elements.head.asJsObject.fields
       val launch=root("guardian").asJsObject.fields("launches").asInstanceOf[JsArray].elements.head.asJsObject.fields

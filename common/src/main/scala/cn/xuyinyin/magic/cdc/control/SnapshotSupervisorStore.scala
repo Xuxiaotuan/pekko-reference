@@ -1,13 +1,7 @@
 package cn.xuyinyin.magic.cdc.control
 
 
-import cn.xuyinyin.magic.cdc.guardian.{ManagedJvmIsolation}
-
-
-
-
-import cn.xuyinyin.magic.cdc.guardian.{SnapshotWorkerLaunch}
-import cn.xuyinyin.magic.cdc.guardian.{GuardianBinding, SupervisorControl, SnapshotOwnerIdentity}
+import cn.xuyinyin.magic.cdc.guardian.{GuardianBinding, GuardianStore, ManagedJvmIsolation, SnapshotGuardianService, SnapshotOwnerIdentity, SnapshotWorkerLaunch, SupervisorControl}
 import java.sql.{Connection,ResultSet}
 import java.util.UUID
 
@@ -20,10 +14,10 @@ final class SnapshotSupervisorStore(val store:ManagedControlTransactions,val own
   require(maxWorkers>0 && maxWorkers<=1024 && ownerRegistry!=null)
   require(ownerRegistry.transactionOwner eq store,"guardian and owner must share the same transaction context")
   /** Creates the sole adapter; package-private storage mutations are never returned to callers. */
-  def guardianService(isolation:cn.xuyinyin.magic.cdc.guardian.ManagedJvmIsolation,
-    builder:SnapshotWorkerLaunch=>ProcessBuilder,key:java.security.PrivateKey):cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianService = {
+  def guardianService(isolation:ManagedJvmIsolation,
+    builder:SnapshotWorkerLaunch=>ProcessBuilder,key:java.security.PrivateKey):SnapshotGuardianService = {
     val self=this
-    val view=new cn.xuyinyin.magic.cdc.guardian.GuardianStore {
+    val view=new GuardianStore {
       def binding= self.binding
       def maxWorkers= self.maxWorkers
       def bindGuardianCapability(id:String):Unit=self.bindGuardianCapability(id)
@@ -37,7 +31,7 @@ final class SnapshotSupervisorStore(val store:ManagedControlTransactions,val own
       def cancel(control:SupervisorControl,boot:String):Unit=self.cancel(control,boot)
       def fenced[A](control:SupervisorControl)(f: => A):A=self.fenced(control)(f)
     }
-    new cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianService(view,isolation,builder,key)
+    new SnapshotGuardianService(view,isolation,builder,key)
   }
   import store.{query,update,transaction}
   private val ha=ownerRegistry

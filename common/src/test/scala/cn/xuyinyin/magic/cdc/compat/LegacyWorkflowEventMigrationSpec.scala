@@ -40,7 +40,7 @@ class LegacyWorkflowEventMigrationSpec extends AnyWordSpec with Matchers {
       } finally kit.shutdownTestKit()
     }
     "read all events from a preserved real MySQL Journal sequence" in {
-      val path=java.nio.file.Path.of("docs/experiments/2026-10-25-capture-startup/R02-original-trigger-eaa005be087a/final.json")
+      val path=java.nio.file.Path.of("support/docs/experiments/2026-10-25-capture-startup/R02-original-trigger-eaa005be087a/final.json")
       val root=java.nio.file.Files.readString(path).parseJson.asJsObject.fields
       val events=root("worker").asJsObject.fields("J").asInstanceOf[JsArray].elements
       val kit=ActorTestKit("actual-workflow-event-migration")

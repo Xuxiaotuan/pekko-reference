@@ -26,7 +26,7 @@ npm run build
 - 调度：`/schedules`；暂停计划不停止当前执行。新建/编辑仍使用已有后端 API，本页不提供入口。
 - 监控：`/dashboard` 和 `/cluster`；错误/未采集明确显示未知，不用 0 冒充测量值。
 
-[本轮真实联调、HTTP 故障证据与未验证范围](../docs/experiments/2026-10-19-stage-b-console/README.md)。
+[本轮真实联调、HTTP 故障证据与未验证范围](../../../../../support/docs/experiments/2026-10-19-stage-b-console/README.md)。
 这不是生产部署、真实 MySQL CDC 恢复或 70 万任务容量证明。
 
 ---

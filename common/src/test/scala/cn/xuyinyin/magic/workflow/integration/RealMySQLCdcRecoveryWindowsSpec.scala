@@ -10,7 +10,7 @@ import java.nio.file.{Files, Path}
 import java.util.UUID
 import scala.concurrent.duration._
 
-/** Seven historical windows; original C2 failure evidence stays immutable in docs/experiments.
+/** Seven historical windows; original C2 failure evidence stays immutable in support/docs/experiments.
   * Disposable MySQL only. Raw records/ACKs, target ledger/audit, real serialized Actor Journal,
   * durable D and independent six-field table comparisons are retained per scenario.
   */

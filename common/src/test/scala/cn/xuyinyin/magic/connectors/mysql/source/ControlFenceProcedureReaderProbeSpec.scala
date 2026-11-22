@@ -111,7 +111,7 @@ class ControlFenceProcedureReaderProbeSpec extends AnyWordSpec with Matchers {
         var c=open(sourceUrl);var stoppedSource=false
         def lab(action:String,crash:Boolean):Unit={
             require(port==25521 && sys.env.get("FENCE_SOURCE_CRASH_ALLOWED").contains("1"),"source crash is not authorized for this fixture")
-            val args=Vector("python3","scripts/experiments/cdc-lab-pool/pool.py","--config",sys.env("CDC_LAB_CONFIG"),action,
+            val args=Vector("python3","support/scripts/experiments/cdc-lab-pool/pool.py","--config",sys.env("CDC_LAB_CONFIG"),action,
               "--token-file",sys.env("CDC_LAB_TOKEN"),"--role","source")++(if(crash)Vector("--crash")else Vector.empty)++Vector("a")
             val p=new ProcessBuilder(args:_*).redirectErrorStream(true).start();val out=scala.io.Source.fromInputStream(p.getInputStream)
             val text=try out.mkString finally out.close();val exit=p.waitFor();Files.writeString(dir.resolve("lab-"+action+".txt"),s"exit=$exit\n$text")

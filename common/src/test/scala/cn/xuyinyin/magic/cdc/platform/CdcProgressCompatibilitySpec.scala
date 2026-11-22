@@ -24,7 +24,7 @@ class CdcProgressCompatibilitySpec extends AnyWordSpec with Matchers {
       CdcProgressJson.decode(CdcProgressJson.encode(current)) shouldBe current
     }
     "deserialize the preserved pre-change real MySQL Journal CBOR payloads" in {
-      val path=Path.of("docs/experiments/2026-11-05-cdc-flow-refactor/managed/C1-7bc6494fa216/03-recovered.json")
+      val path=Path.of("support/docs/experiments/2026-11-05-cdc-flow-refactor/managed/C1-7bc6494fa216/03-recovered.json")
       val records=Files.readString(path).parseJson.asJsObject.fields("J").asInstanceOf[JsArray].elements
       records.nonEmpty shouldBe true
       val kit=ActorTestKit("legacy-bootstrap-cbor")

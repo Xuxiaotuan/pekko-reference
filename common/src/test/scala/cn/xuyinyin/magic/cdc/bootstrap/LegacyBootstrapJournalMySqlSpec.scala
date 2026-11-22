@@ -25,7 +25,7 @@ class LegacyBootstrapJournalMySqlSpec extends AnyWordSpec with Matchers {
       val user = sys.env("CDC_MANAGED_TEST_USER")
       val password = sys.env("CDC_MANAGED_TEST_PASSWORD")
       val expectedUuid = sys.env("CAPTURE_EXPECT_STATE_UUID")
-      val fixture = Path.of("docs/experiments/2026-11-05-cdc-flow-refactor/managed/C1-7bc6494fa216/03-recovered.json")
+      val fixture = Path.of("support/docs/experiments/2026-11-05-cdc-flow-refactor/managed/C1-7bc6494fa216/03-recovered.json")
       val record = Files.readString(fixture).parseJson.asJsObject.fields("J").asInstanceOf[JsArray].elements.head.asJsObject.fields
       val id = "legacy-compat-" + UUID.randomUUID().toString
       val persistenceId = "bootstrap-v1-" + id

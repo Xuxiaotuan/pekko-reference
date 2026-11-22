@@ -1,7 +1,9 @@
 package cn.xuyinyin.magic.cdc.capture
 
+import cn.xuyinyin.magic.cdc.runtime.CdcCaptureRuntimeMain
+
 /** Application module for the shared MySQL capture role. */
 object CaptureMain {
   def main(args: Array[String]): Unit =
-    cn.xuyinyin.magic.cdc.runtime.CdcCaptureRuntimeMain.main(args)
+    CdcCaptureRuntimeMain.main(args)
 }

@@ -1,6 +1,7 @@
 package cn.xuyinyin.magic.cdc.runtime
 
 import cn.xuyinyin.magic.api.http.routes.CdcTaskRoutes
+import cn.xuyinyin.magic.cdc.guardian.{ManagedCdcJdbc, SnapshotOwnerBootstrap}
 import cn.xuyinyin.magic.cdc.platform.{CdcPlatformExtension, CdcPlatformRuntime, CdcPlatformSettings, CdcTaskService}
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
@@ -78,13 +79,13 @@ object CdcRuntime {
     require(grace.length > 0 && grace < phase, "HTTP shutdown grace must be less than the coordinated shutdown timeout")
     // A local actor provider starts no cluster, sharding, scheduler, or frontend.
     // All other settings, including journal and serialization, remain unchanged.
-    val prepared=if(managed) cn.xuyinyin.magic.cdc.guardian.SnapshotOwnerBootstrap.prepare(config) else config
+    val prepared=if(managed) SnapshotOwnerBootstrap.prepare(config) else config
     val local = standaloneConfig(prepared)
     val stopWait = shutdownWait(local)
     val system = try ActorSystem[Nothing](Behaviors.empty, config.getString("pekko.pekko-sys"), local)
-      catch {case NonFatal(error)=>if(managed)cn.xuyinyin.magic.cdc.guardian.ManagedCdcJdbc.context.foreach(_.close());throw error}
+      catch {case NonFatal(error)=>if(managed)ManagedCdcJdbc.context.foreach(_.close());throw error}
     implicit val ec: ExecutionContext = system.executionContext
-    if(managed)system.whenTerminated.onComplete(_=>cn.xuyinyin.magic.cdc.guardian.ManagedCdcJdbc.context.foreach(_.close()))(ExecutionContext.parasitic)
+    if(managed)system.whenTerminated.onComplete(_=>ManagedCdcJdbc.context.foreach(_.close()))(ExecutionContext.parasitic)
     implicit val classic: org.apache.pekko.actor.ActorSystem = system.classicSystem
     try {
       val service = CdcPlatformExtension(system).service.getOrElse(throw new IllegalStateException("CDC platform unavailable"))
