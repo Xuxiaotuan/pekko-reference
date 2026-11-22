@@ -11,14 +11,12 @@ import scala.concurrent.Await
 object CdcCaptureRuntimeMain {
   def main(args: Array[String]): Unit = {
     require(args.isEmpty, "configure CaptureRuntime through the application configuration")
-    val config = ConfigFactory.load()
-    val settings = CdcPlatformSettings.load(config).getOrElse(
-      throw new IllegalArgumentException("CDC platform must be enabled"))
-    val state = settings.captures.head.controlState
-    val leases = new CdcRuntimeLeaseStore(() =>
-      DriverManager.getConnection(state.jdbcUrl, state.username, state.password))
+    val config                        = ConfigFactory.load()
+    val settings                      = CdcPlatformSettings.load(config).getOrElse(throw new IllegalArgumentException("CDC platform must be enabled"))
+    val state                         = settings.captures.head.controlState
+    val leases                        = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(state.jdbcUrl, state.username, state.password))
     implicit val ec: ExecutionContext = ExecutionContext.global
-    val runtime = new CdcCaptureRuntime(settings, leases)
+    val runtime                       = new CdcCaptureRuntime(settings, leases)
     runtime.start()
     sys.addShutdownHook(Await.result(runtime.stop(), Duration.Inf))
     Await.result(scala.concurrent.Promise[Unit]().future, Duration.Inf)

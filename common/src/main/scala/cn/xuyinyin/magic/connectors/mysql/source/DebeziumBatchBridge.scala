@@ -8,11 +8,10 @@ trait CdcBatchCommitHandle {
 }
 
 final case class BridgedCdcBatch(
-  deliveryToken: Long,
-  batchId: String,
-  rows: Vector[String],
-  cursorValue: String
-)
+    deliveryToken: Long,
+    batchId: String,
+    rows: Vector[String],
+    cursorValue: String)
 
 /**
  * Bridges Debezium's blocking callback to a later stream acknowledgement.
@@ -24,23 +23,22 @@ final case class BridgedCdcBatch(
  * work, wakes a blocked taker, and rejects all later operations.
  */
 final class DebeziumBatchBridge {
-  private final class BatchEntry(
-    val deliveryToken: Long,
-    val batchId: String,
-    val rows: Vector[String],
-    val cursorValue: String,
-    val commitHandle: CdcBatchCommitHandle,
-    val completion: CompletableFuture[Unit]
-  )
+  final private class BatchEntry(
+      val deliveryToken: Long,
+      val batchId: String,
+      val rows: Vector[String],
+      val cursorValue: String,
+      val commitHandle: CdcBatchCommitHandle,
+      val completion: CompletableFuture[Unit])
 
-  private val queue = new ArrayBlockingQueue[Option[BatchEntry]](1)
-  private val monitor = new AnyRef
-  private var closed = false
-  private var pending = Map.empty[Long, BatchEntry]
-  private var active = Option.empty[BatchEntry]
-  private var claimed = Option.empty[BatchEntry]
-  private var taking = false
-  private var nextToken = 1L
+  private val queue      = new ArrayBlockingQueue[Option[BatchEntry]](1)
+  private val monitor    = new AnyRef
+  private var closed     = false
+  private var pending    = Map.empty[Long, BatchEntry]
+  private var active     = Option.empty[BatchEntry]
+  private var claimed    = Option.empty[BatchEntry]
+  private var taking     = false
+  private var nextToken  = 1L
   private var asyncTaker = Option.empty[Promise[BridgedCdcBatch]]
 
   /** Empty CDC streams retain a promise, never a JDBC worker thread. */
@@ -66,11 +64,10 @@ final class DebeziumBatchBridge {
   }
 
   def publish(
-    batchId: String,
-    rows: Vector[String],
-    cursorValue: String,
-    commitHandle: CdcBatchCommitHandle
-  ): Unit = {
+      batchId: String,
+      rows: Vector[String],
+      cursorValue: String,
+      commitHandle: CdcBatchCommitHandle): Unit = {
     require(batchId != null, "batchId must not be null")
     require(rows != null, "rows must not be null")
     require(cursorValue != null, "cursorValue must not be null")
@@ -178,7 +175,7 @@ final class DebeziumBatchBridge {
           }
         }
         throw error
-      }
+    }
   }
 
   def fail(deliveryToken: Long, batchId: String, cause: Throwable): Unit = {
@@ -250,7 +247,7 @@ final class DebeziumBatchBridge {
 
   private def rethrow(cause: Throwable): Nothing = cause match {
     case error: RuntimeException => throw error
-    case error: Error => throw error
-    case error => throw new RuntimeException(error)
+    case error: Error            => throw error
+    case error                   => throw new RuntimeException(error)
   }
 }

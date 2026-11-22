@@ -18,34 +18,36 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * MySQL真实写入性能测试
- * 
+ *
  * 测试场景：
  * 1. 读取10万条真实数据
  * 2. 写入10万条数据到真实MySQL
  * 3. 端到端完整同步性能测试
- * 
+ *
  * 准备工作：
  * mysql -h 100.82.226.63 -P 31765 -u root -pasd123456 test < .tasks/prepare-perf-test.sql
- * 
+ *
  * 运行方式：
  * sbt "project pekko-server" "testOnly *MySQLRealPerformanceTest"
- * 
+ *
  * @author : Xuxiaotuan
  * @since : 2024-03-22
  */
 class MySQLRealPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
 
-  // 加载test配置并创建ActorSystem  
+  // 加载test配置并创建ActorSystem
   implicit val system: ActorSystem[Nothing] = {
-    val testConfig = ConfigFactory.parseString(
-      """
+    val testConfig = ConfigFactory
+      .parseString(
+        """
       pekko.cluster.seed-nodes = []
       pekko.remote.artery.canonical.port = 0
       """
-    ).withFallback(ConfigFactory.load("application-test"))
-    
+      )
+      .withFallback(ConfigFactory.load("application-test"))
+
     ActorSystem[Nothing](
-      Behaviors.empty, 
+      Behaviors.empty,
       "RealPerfTestSystem",
       testConfig
     )
@@ -66,10 +68,10 @@ class MySQLRealPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndA
   val dbUser = "root"
   val dbPass = "asd123456"
 
-  "真实MySQL读取" should "从perf_test_source表读取数据" taggedAs(ExternalIntegration) in {
-    println("\n" + "="*70)
+  "真实MySQL读取" should "从perf_test_source表读取数据" taggedAs (ExternalIntegration) in {
+    println("\n" + "=" * 70)
     println("🔍 真实MySQL性能测试 1: 读取大量数据")
-    println("="*70)
+    println("=" * 70)
 
     val workflow = WorkflowDSL.Workflow(
       id = "perf-test-read",
@@ -86,12 +88,12 @@ class MySQLRealPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndA
           label = "MySQL Source",
           position = WorkflowDSL.Position(100, 100),
           config = JsObject(
-            "host" -> JsString(dbHost),
-            "port" -> JsNumber(dbPort),
-            "database" -> JsString(dbName),
-            "username" -> JsString(dbUser),
-            "password" -> JsString(dbPass),
-            "sql" -> JsString("SELECT id, name, email, age, score, status FROM perf_test_source"),
+            "host"      -> JsString(dbHost),
+            "port"      -> JsNumber(dbPort),
+            "database"  -> JsString(dbName),
+            "username"  -> JsString(dbUser),
+            "password"  -> JsString(dbPass),
+            "sql"       -> JsString("SELECT id, name, email, age, score, status FROM perf_test_source"),
             "fetchSize" -> JsNumber(1000)
           )
         ),
@@ -117,21 +119,21 @@ class MySQLRealPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndA
       )
     )
 
-    val engine = new WorkflowExecutionEngine()
+    val engine      = new WorkflowExecutionEngine()
     val executionId = s"perf-read-${System.currentTimeMillis()}"
-    
+
     val rowCounter = new AtomicInteger(0)
-    val startTime = System.currentTimeMillis()
-    
+    val startTime  = System.currentTimeMillis()
+
     val onLog = (msg: String) => {
       if (msg.contains("MySQL Source")) {
         println(s"[READ] $msg")
       }
-      
+
       // 统计行数
       val count = rowCounter.incrementAndGet()
       if (count % 10000 == 0) {
-        val elapsed = (System.currentTimeMillis() - startTime) / 1000.0
+        val elapsed    = (System.currentTimeMillis() - startTime) / 1000.0
         val throughput = count / elapsed
         println(f"📊 读取进度: $count%,d 行 | 耗时: ${elapsed}%.2fs | 吞吐量: ${throughput}%,.0f 行/秒")
       }
@@ -142,27 +144,27 @@ class MySQLRealPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndA
       120.seconds
     )
 
-    val totalTime = (System.currentTimeMillis() - startTime) / 1000.0
-    val totalRows = rowCounter.get()
+    val totalTime  = (System.currentTimeMillis() - startTime) / 1000.0
+    val totalRows  = rowCounter.get()
     val throughput = totalRows / totalTime
 
-    println("\n" + "="*70)
+    println("\n" + "=" * 70)
     println("✅ MySQL读取性能测试完成！")
-    println("="*70)
+    println("=" * 70)
     println(f"📊 读取行数: $totalRows%,d 行")
     println(f"⏱️  总耗时: ${totalTime}%.3f 秒")
     println(f"🚀 读取吞吐量: ${throughput}%,.0f 行/秒")
     println(f"💾 预估数据量: ${totalRows * 200 / 1024 / 1024}%,d MB (假设每行200字节)")
-    println("="*70 + "\n")
+    println("=" * 70 + "\n")
 
     result.success shouldBe true
     totalRows should be > 0
   }
 
-  "真实MySQL写入" should "写入大量数据到perf_test_sink表" taggedAs(ExternalIntegration) in {
-    println("\n" + "="*70)
+  "真实MySQL写入" should "写入大量数据到perf_test_sink表" taggedAs (ExternalIntegration) in {
+    println("\n" + "=" * 70)
     println("✍️  真实MySQL性能测试 2: 写入大量数据")
-    println("="*70)
+    println("=" * 70)
 
     // 先清空目标表
     println("🗑️  清空目标表 perf_test_sink...")
@@ -193,12 +195,12 @@ class MySQLRealPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndA
           label = "MySQL Source",
           position = WorkflowDSL.Position(100, 100),
           config = JsObject(
-            "host" -> JsString(dbHost),
-            "port" -> JsNumber(dbPort),
-            "database" -> JsString(dbName),
-            "username" -> JsString(dbUser),
-            "password" -> JsString(dbPass),
-            "sql" -> JsString("SELECT id, name, email, age, score, status FROM perf_test_source"),
+            "host"      -> JsString(dbHost),
+            "port"      -> JsNumber(dbPort),
+            "database"  -> JsString(dbName),
+            "username"  -> JsString(dbUser),
+            "password"  -> JsString(dbPass),
+            "sql"       -> JsString("SELECT id, name, email, age, score, status FROM perf_test_source"),
             "fetchSize" -> JsNumber(1000)
           )
         ),
@@ -209,14 +211,14 @@ class MySQLRealPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndA
           label = "MySQL Sink",
           position = WorkflowDSL.Position(400, 100),
           config = JsObject(
-            "host" -> JsString(dbHost),
-            "port" -> JsNumber(dbPort),
-            "database" -> JsString(dbName),
-            "table" -> JsString("perf_test_sink"),
-            "username" -> JsString(dbUser),
-            "password" -> JsString(dbPass),
+            "host"      -> JsString(dbHost),
+            "port"      -> JsNumber(dbPort),
+            "database"  -> JsString(dbName),
+            "table"     -> JsString("perf_test_sink"),
+            "username"  -> JsString(dbUser),
+            "password"  -> JsString(dbPass),
             "batchSize" -> JsNumber(1000),
-            "mode" -> JsString("insert")
+            "mode"      -> JsString("insert")
           )
         )
       ),
@@ -233,24 +235,24 @@ class MySQLRealPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndA
       )
     )
 
-    val engine = new WorkflowExecutionEngine()
+    val engine      = new WorkflowExecutionEngine()
     val executionId = s"perf-write-${System.currentTimeMillis()}"
-    
+
     val rowCounter = new AtomicInteger(0)
-    val startTime = System.currentTimeMillis()
-    
+    val startTime  = System.currentTimeMillis()
+
     val onLog = (msg: String) => {
       if (msg.contains("MySQL Source") || msg.contains("MySQL Sink")) {
         if (msg.contains("已写入") || msg.contains("连接MySQL") || msg.contains("执行查询")) {
           println(s"[WRITE] $msg")
         }
       }
-      
+
       // 统计写入行数
       if (msg.contains("已写入")) {
         val count = rowCounter.incrementAndGet() * 1000 // batchSize=1000
         if (count % 10000 == 0) {
-          val elapsed = (System.currentTimeMillis() - startTime) / 1000.0
+          val elapsed    = (System.currentTimeMillis() - startTime) / 1000.0
           val throughput = count / elapsed
           println(f"📊 写入进度: $count%,d 行 | 耗时: ${elapsed}%.2fs | 吞吐量: ${throughput}%,.0f 行/秒")
         }
@@ -271,7 +273,7 @@ class MySQLRealPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndA
       dbPass
     )
     val verifyStmt = verifyConn.createStatement()
-    val rs = verifyStmt.executeQuery("SELECT COUNT(*) FROM perf_test_sink")
+    val rs         = verifyStmt.executeQuery("SELECT COUNT(*) FROM perf_test_sink")
     rs.next()
     val writtenRows = rs.getInt(1)
     rs.close()
@@ -280,25 +282,25 @@ class MySQLRealPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndA
 
     val throughput = writtenRows / totalTime
 
-    println("\n" + "="*70)
+    println("\n" + "=" * 70)
     println("✅ MySQL写入性能测试完成！")
-    println("="*70)
+    println("=" * 70)
     println(f"📊 写入行数: $writtenRows%,d 行")
     println(f"⏱️  总耗时: ${totalTime}%.3f 秒")
     println(f"🚀 写入吞吐量: ${throughput}%,.0f 行/秒")
     println(f"📦 批量大小: 1000 行/批")
     println(f"🔄 总批次数: ${writtenRows / 1000}%,d 批")
     println(f"⚡ 每批耗时: ${totalTime / (writtenRows / 1000.0) * 1000}%.2f ms")
-    println("="*70 + "\n")
+    println("=" * 70 + "\n")
 
     result.success shouldBe true
     writtenRows should be > 0
   }
 
-  "性能对比" should "生成真实MySQL性能报告" taggedAs(ExternalIntegration) in {
-    println("\n" + "="*70)
+  "性能对比" should "生成真实MySQL性能报告" taggedAs (ExternalIntegration) in {
+    println("\n" + "=" * 70)
     println("📊 PekkoSync 真实MySQL性能测试报告")
-    println("="*70)
+    println("=" * 70)
     println()
     println("测试环境:")
     println(s"  • 数据库: MySQL $dbHost:$dbPort")
@@ -322,7 +324,7 @@ class MySQLRealPerformanceTest extends AnyFlatSpec with Matchers with BeforeAndA
     println("  📈 集群模式测试 (3节点)")
     println("  📈 CDC实时同步测试")
     println("  📈 大数据量测试 (百万级)")
-    println("="*70 + "\n")
+    println("=" * 70 + "\n")
 
     true shouldBe true
   }

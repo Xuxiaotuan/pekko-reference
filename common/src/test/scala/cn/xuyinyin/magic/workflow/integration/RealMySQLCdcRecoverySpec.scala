@@ -38,16 +38,16 @@ class RealMySQLCdcRecoverySpec extends AnyWordSpec with Matchers {
       if (!sys.env.get("RUN_MYSQL_CDC_EXTERNAL").contains("1")) {
         cancel("external_blocked: set RUN_MYSQL_CDC_EXTERNAL=1 to run the real MySQL CDC suite")
       }
-      val settings = Settings.requireEnvironment()
-      val runId = UUID.randomUUID().toString.replace("-", "")
-      val connectorId = s"cdc-$runId"
-      val executionId = s"execution-$runId"
-      val idStart = java.lang.Long.parseUnsignedLong(runId.take(12), 16) * 10L
-      val idEnd = idStart + 3L
-      val first = idStart
-      val second = idStart + 1L
-      val third = idStart + 2L
-      val fourth = idStart + 3L
+      val settings            = Settings.requireEnvironment()
+      val runId               = UUID.randomUUID().toString.replace("-", "")
+      val connectorId         = s"cdc-$runId"
+      val executionId         = s"execution-$runId"
+      val idStart             = java.lang.Long.parseUnsignedLong(runId.take(12), 16) * 10L
+      val idEnd               = idStart + 3L
+      val first               = idStart
+      val second              = idStart + 1L
+      val third               = idStart + 2L
+      val fourth              = idStart + 3L
       var child: ChildProcess = null
 
       withConnection(settings) { connection =>
@@ -62,22 +62,30 @@ class RealMySQLCdcRecoverySpec extends AnyWordSpec with Matchers {
       try {
         child = startChild("snapshot-and-stream", settings, connectorId, executionId, idStart, idEnd, flushMillis = 0)
         child.awaitLine("CDC_STATUS ", 30.seconds)
-        awaitTarget(settings, idStart, idEnd, Vector(
-          TestRow(first, runId, "baseline-one", BigDecimal("10.10"), Some("one"), at(1)),
-          TestRow(second, runId, "baseline-two", BigDecimal("20.20"), None, at(2)),
-          TestRow(third, runId, "baseline-three", BigDecimal("30.30"), Some("three"), at(3))
-        ))
+        awaitTarget(
+          settings,
+          idStart,
+          idEnd,
+          Vector(
+            TestRow(first, runId, "baseline-one", BigDecimal("10.10"), Some("one"), at(1)),
+            TestRow(second, runId, "baseline-two", BigDecimal("20.20"), None, at(2)),
+            TestRow(third, runId, "baseline-three", BigDecimal("30.30"), Some("three"), at(3))
+          ))
 
         withConnection(settings) { connection =>
           insertRow(connection, TestRow(fourth, runId, "live-insert", BigDecimal("40.40"), Some("four"), at(4)))
           updateRow(connection, TestRow(first, runId, "live-updated", BigDecimal("11.11"), Some("one-updated"), at(5)))
           deleteSourceRow(connection, second)
         }
-        awaitTarget(settings, idStart, idEnd, Vector(
-          TestRow(first, runId, "live-updated", BigDecimal("11.11"), Some("one-updated"), at(5)),
-          TestRow(third, runId, "baseline-three", BigDecimal("30.30"), Some("three"), at(3)),
-          TestRow(fourth, runId, "live-insert", BigDecimal("40.40"), Some("four"), at(4))
-        ))
+        awaitTarget(
+          settings,
+          idStart,
+          idEnd,
+          Vector(
+            TestRow(first, runId, "live-updated", BigDecimal("11.11"), Some("one-updated"), at(5)),
+            TestRow(third, runId, "baseline-three", BigDecimal("30.30"), Some("three"), at(3)),
+            TestRow(fourth, runId, "live-insert", BigDecimal("40.40"), Some("four"), at(4))
+          ))
         requireConnectorState(settings, connectorId)
         val firstPid = child.pid
         child.stopGracefully()
@@ -91,10 +99,14 @@ class RealMySQLCdcRecoverySpec extends AnyWordSpec with Matchers {
           updateRow(connection, TestRow(third, runId, "resumed-updated", BigDecimal("33.33"), Some("three-resumed"), at(6)))
           deleteSourceRow(connection, fourth)
         }
-        awaitTarget(settings, idStart, idEnd, Vector(
-          TestRow(first, runId, "live-updated", BigDecimal("11.11"), Some("one-updated"), at(5)),
-          TestRow(third, runId, "resumed-updated", BigDecimal("33.33"), Some("three-resumed"), at(6))
-        ))
+        awaitTarget(
+          settings,
+          idStart,
+          idEnd,
+          Vector(
+            TestRow(first, runId, "live-updated", BigDecimal("11.11"), Some("one-updated"), at(5)),
+            TestRow(third, runId, "resumed-updated", BigDecimal("33.33"), Some("three-resumed"), at(6))
+          ))
         child.stopGracefully()
         child.awaitExit(30.seconds) shouldBe 0
         child = null
@@ -115,10 +127,14 @@ class RealMySQLCdcRecoverySpec extends AnyWordSpec with Matchers {
         withConnection(settings) { connection =>
           updateRow(connection, TestRow(first, runId, "replay-window", BigDecimal("12.12"), Some("eligible"), at(7)))
         }
-        awaitTarget(settings, idStart, idEnd, Vector(
-          TestRow(first, runId, "replay-window", BigDecimal("12.12"), Some("eligible"), at(7)),
-          TestRow(third, runId, "resumed-updated", BigDecimal("33.33"), Some("three-resumed"), at(6))
-        ))
+        awaitTarget(
+          settings,
+          idStart,
+          idEnd,
+          Vector(
+            TestRow(first, runId, "replay-window", BigDecimal("12.12"), Some("eligible"), at(7)),
+            TestRow(third, runId, "resumed-updated", BigDecimal("33.33"), Some("three-resumed"), at(6))
+          ))
         child.awaitExit(30.seconds) should not be 0
         child = null
         storedOffset(settings, connectorId) shouldBe Some(offsetBeforeReplayWindow)
@@ -133,9 +149,13 @@ class RealMySQLCdcRecoverySpec extends AnyWordSpec with Matchers {
           updateRow(connection, TestRow(third, runId, "recovery-final", BigDecimal("34.34"), None, at(8)))
           deleteSourceRow(connection, first)
         }
-        awaitTarget(settings, idStart, idEnd, Vector(
-          TestRow(third, runId, "recovery-final", BigDecimal("34.34"), None, at(8))
-        ))
+        awaitTarget(
+          settings,
+          idStart,
+          idEnd,
+          Vector(
+            TestRow(third, runId, "recovery-final", BigDecimal("34.34"), None, at(8))
+          ))
         requireConnectorState(settings, connectorId)
         child.stopGracefully()
         child.awaitExit(30.seconds) shouldBe 0
@@ -163,16 +183,15 @@ private object RealMySQLCdcRecoverySpec {
     "MYSQL_CDC_TEST_SERVER_ID"
   )
 
-  private final case class Settings(
-    host: String,
-    port: Int,
-    database: String,
-    writerUser: String,
-    writerPassword: String,
-    readerUser: String,
-    readerPassword: String,
-    serverId: Long
-  ) {
+  final private case class Settings(
+      host: String,
+      port: Int,
+      database: String,
+      writerUser: String,
+      writerPassword: String,
+      readerUser: String,
+      readerPassword: String,
+      serverId: Long) {
     val jdbcUrl: String =
       s"jdbc:mysql://$host:$port/$database?useSSL=false&allowPublicKeyRetrieval=true" +
         "&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true"
@@ -193,7 +212,7 @@ private object RealMySQLCdcRecoverySpec {
       if (missing.nonEmpty) {
         org.scalatest.Assertions.fail(s"missing required MySQL CDC environment variables: ${missing.mkString(", ")}")
       }
-      val port = parseLong("MYSQL_CDC_TEST_PORT", 1L, 65535L).toInt
+      val port     = parseLong("MYSQL_CDC_TEST_PORT", 1L, 65535L).toInt
       val serverId = parseLong("MYSQL_CDC_TEST_SERVER_ID", 1L, 4294967295L)
       Settings(
         host = sys.env("MYSQL_CDC_TEST_HOST"),
@@ -208,8 +227,9 @@ private object RealMySQLCdcRecoverySpec {
     }
 
     private def parseLong(name: String, minimum: Long, maximum: Long): Long = {
-      val parsed = try sys.env(name).toLong
-      catch { case _: NumberFormatException => org.scalatest.Assertions.fail(s"$name must be an integer") }
+      val parsed =
+        try sys.env(name).toLong
+        catch { case _: NumberFormatException => org.scalatest.Assertions.fail(s"$name must be an integer") }
       if (parsed < minimum || parsed > maximum) {
         org.scalatest.Assertions.fail(s"$name must be between $minimum and $maximum")
       }
@@ -225,29 +245,31 @@ private object RealMySQLCdcRecoverySpec {
     }
   }
 
-  private final case class TestRow(
-    id: Long,
-    runId: String,
-    status: String,
-    amount: BigDecimal,
-    note: Option[String],
-    updatedAt: LocalDateTime
-  )
+  final private case class TestRow(
+      id: Long,
+      runId: String,
+      status: String,
+      amount: BigDecimal,
+      note: Option[String],
+      updatedAt: LocalDateTime)
 
-  private final class ChildProcess(process: Process, secrets: Vector[String]) {
+  final private class ChildProcess(process: Process, secrets: Vector[String]) {
     private val output = new LinkedBlockingQueue[String]()
-    private val tail = new ConcurrentLinkedDeque[String]()
-    private val input = new BufferedWriter(new OutputStreamWriter(process.getOutputStream))
-    private val drain = new Thread(() => {
-      val source = IoSource.fromInputStream(process.getInputStream)
-      try source.getLines().foreach { raw =>
-        val line = redact(raw)
-        output.put(line)
-        tail.addLast(line)
-        while (tail.size() > 200) tail.removeFirst()
-      }
-      finally source.close()
-    }, s"mysql-cdc-child-output-${process.pid()}")
+    private val tail   = new ConcurrentLinkedDeque[String]()
+    private val input  = new BufferedWriter(new OutputStreamWriter(process.getOutputStream))
+    private val drain = new Thread(
+      () => {
+        val source = IoSource.fromInputStream(process.getInputStream)
+        try
+          source.getLines().foreach { raw =>
+            val line = redact(raw)
+            output.put(line)
+            tail.addLast(line)
+            while (tail.size() > 200) tail.removeFirst()
+          }
+        finally source.close()
+      },
+      s"mysql-cdc-child-output-${process.pid()}")
     drain.setDaemon(true)
     drain.start()
 
@@ -284,20 +306,19 @@ private object RealMySQLCdcRecoverySpec {
       secrets.foldLeft(Option(value).getOrElse(""))((current, secret) => current.replace(secret, "<redacted>"))
 
     private def exitValue: String = if (process.isAlive) "running" else process.exitValue().toString
-    private def tailText: String = tail.toArray.mkString(" | ")
+    private def tailText: String  = tail.toArray.mkString(" | ")
   }
 
   private def startChild(
-    mode: String,
-    settings: Settings,
-    connectorId: String,
-    executionId: String,
-    idStart: Long,
-    idEnd: Long,
-    flushMillis: Int
-  ): ChildProcess = {
+      mode: String,
+      settings: Settings,
+      connectorId: String,
+      executionId: String,
+      idStart: Long,
+      idEnd: Long,
+      flushMillis: Int): ChildProcess = {
     val mainClass = RealMySQLCdcProcess.getClass.getName.stripSuffix("$")
-    val java = Path.of(System.getProperty("java.home"), "bin", "java").toString
+    val java      = Path.of(System.getProperty("java.home"), "bin", "java").toString
     val builder = new ProcessBuilder(
       java,
       "-cp",
@@ -332,10 +353,15 @@ private object RealMySQLCdcRecoverySpec {
       .flatten
       .filter(_.getProtocol == "file")
       .map(url => Path.of(url.toURI).toString)
-    val propertyEntries = System.getProperty("java.class.path", "")
-      .split(File.pathSeparator).iterator.filter(_.nonEmpty)
+    val propertyEntries = System
+      .getProperty("java.class.path", "")
+      .split(File.pathSeparator)
+      .iterator
+      .filter(_.nonEmpty)
     val testClasses = Option(getClass.getProtectionDomain.getCodeSource)
-      .map(_.getLocation).filter(_.getProtocol == "file").iterator
+      .map(_.getLocation)
+      .filter(_.getProtocol == "file")
+      .iterator
       .map(url => Path.of(url.toURI).toString)
     (testClasses ++ loaderEntries ++ propertyEntries).toSeq.distinct.mkString(File.pathSeparator)
   }
@@ -348,7 +374,7 @@ private object RealMySQLCdcRecoverySpec {
   }
 
   private def executeResource(connection: Connection, resource: String): Unit = {
-    val sql = resourceText(resource)
+    val sql       = resourceText(resource)
     val statement = connection.createStatement()
     try sql.split(";").iterator.map(_.trim).filter(_.nonEmpty).foreach(statement.execute)
     finally statement.close()
@@ -526,7 +552,7 @@ private object RealMySQLCdcRecoverySpec {
     }
 
   private def awaitCondition(timeout: FiniteDuration, failure: => String)(condition: => Boolean): Unit = {
-    val deadline = timeout.fromNow
+    val deadline  = timeout.fromNow
     var satisfied = condition
     while (!satisfied && deadline.hasTimeLeft()) {
       Thread.sleep(200L)

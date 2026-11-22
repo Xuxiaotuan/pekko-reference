@@ -7,15 +7,15 @@ import spray.json._
 class MySQLCdcSourceConfigSpec extends STSpec {
   private val secret = "source-password-should-not-leak"
   private val required = Map[String, JsValue](
-    "connectorId" -> JsString("orders-cdc-v1"),
-    "host" -> JsString("mysql"),
-    "port" -> JsNumber(3306),
-    "database" -> JsString("pekko_workflow"),
-    "table" -> JsString("source_orders"),
-    "username" -> JsString("pekko_cdc"),
-    "passwordEnv" -> JsString("MYSQL_CDC_PASSWORD"),
-    "serverId" -> JsNumber(54001),
-    "maxBatchSize" -> JsNumber(100),
+    "connectorId"        -> JsString("orders-cdc-v1"),
+    "host"               -> JsString("mysql"),
+    "port"               -> JsNumber(3306),
+    "database"           -> JsString("pekko_workflow"),
+    "table"              -> JsString("source_orders"),
+    "username"           -> JsString("pekko_cdc"),
+    "passwordEnv"        -> JsString("MYSQL_CDC_PASSWORD"),
+    "serverId"           -> JsNumber(54001),
+    "maxBatchSize"       -> JsNumber(100),
     "pollIntervalMillis" -> JsNumber(500)
   )
 
@@ -41,8 +41,11 @@ class MySQLCdcSourceConfigSpec extends STSpec {
   "MySQLCdcSourceConfig" should {
     "reject group mode without an explicit trusted streaming baseline" in {
       intercept[IllegalArgumentException] {
-        parse("groupProtocol" -> JsObject("replicationId" -> JsString("orders"),
-          "generation" -> JsString("g1"), "sourceLineage" -> JsString("fixed-server-uuid")))
+        parse(
+          "groupProtocol" -> JsObject(
+            "replicationId" -> JsString("orders"),
+            "generation"    -> JsString("g1"),
+            "sourceLineage" -> JsString("fixed-server-uuid")))
       }.getMessage should include("initializedTarget")
     }
 
@@ -62,7 +65,7 @@ class MySQLCdcSourceConfigSpec extends STSpec {
     }
 
     "reject a missing connector ID without exposing the resolved password" in {
-      assertRedacted("connectorId" -> JsString("")) .getMessage should include("connectorId")
+      assertRedacted("connectorId" -> JsString("")).getMessage should include("connectorId")
     }
 
     "reject unsafe SQL identifiers without exposing the resolved password" in {

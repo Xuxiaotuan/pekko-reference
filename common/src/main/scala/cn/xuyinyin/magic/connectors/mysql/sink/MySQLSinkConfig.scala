@@ -6,35 +6,33 @@ import cn.xuyinyin.magic.connectors.jdbc.JdbcPasswordResolver
 import spray.json._
 
 final case class MySQLSinkConfig(
-  host: String,
-  port: Int,
-  database: String,
-  table: String,
-  username: String,
-  password: String,
-  batchSize: Int,
-  mode: String
-)
+    host: String,
+    port: Int,
+    database: String,
+    table: String,
+    username: String,
+    password: String,
+    batchSize: Int,
+    mode: String)
 
 object MySQLSinkConfig {
   def parse(
-    node: WorkflowDSL.Node,
-    getenv: String => Option[String] = sys.env.get
-  ): MySQLSinkConfig = {
+      node: WorkflowDSL.Node,
+      getenv: String => Option[String] = sys.env.get): MySQLSinkConfig = {
     val fields = node.config.fields
 
     def getString(key: String, default: Option[String] = None): String =
       fields.get(key) match {
         case Some(JsString(value)) => value
-        case None => default.getOrElse(throw new IllegalArgumentException(s"MySQL sink缺少${key}配置"))
-        case _ => throw new IllegalArgumentException(s"${key}必须是字符串类型")
+        case None                  => default.getOrElse(throw new IllegalArgumentException(s"MySQL sink缺少${key}配置"))
+        case _                     => throw new IllegalArgumentException(s"${key}必须是字符串类型")
       }
 
     def getInt(key: String, default: Int): Int =
       fields.get(key) match {
         case Some(JsNumber(value)) => value.toInt
-        case None => default
-        case _ => throw new IllegalArgumentException(s"${key}必须是数字类型")
+        case None                  => default
+        case _                     => throw new IllegalArgumentException(s"${key}必须是数字类型")
       }
 
     val config = MySQLSinkConfig(

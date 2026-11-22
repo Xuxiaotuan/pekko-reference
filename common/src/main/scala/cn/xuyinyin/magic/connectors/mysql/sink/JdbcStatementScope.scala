@@ -5,7 +5,7 @@ import scala.collection.mutable
 import scala.util.control.NonFatal
 
 /** Statements belong to one batch transaction, never to an adapter or table lifetime. */
-private[sink] final class JdbcStatementScope(connection: Connection) extends AutoCloseable {
+final private[sink] class JdbcStatementScope(connection: Connection) extends AutoCloseable {
   private val statements = mutable.LinkedHashMap.empty[String, PreparedStatement]
 
   def prepare(sql: String): PreparedStatement =

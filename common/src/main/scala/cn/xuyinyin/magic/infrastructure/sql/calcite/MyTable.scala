@@ -14,7 +14,7 @@ class MyTable extends AbstractTable {
     builder.add("id", typeFactory.createSqlType(SqlTypeName.INTEGER))        // 添加 id 列
     builder.add("name", typeFactory.createSqlType(SqlTypeName.VARCHAR, 255)) // 添加 name 列
     builder.add("age", typeFactory.createSqlType(SqlTypeName.INTEGER))       // 添加 age 列
-    builder.add("salary", typeFactory.createSqlType(SqlTypeName.INTEGER))       // 添加 age 列
+    builder.add("salary", typeFactory.createSqlType(SqlTypeName.INTEGER))    // 添加 age 列
     builder.build()
   }
 }

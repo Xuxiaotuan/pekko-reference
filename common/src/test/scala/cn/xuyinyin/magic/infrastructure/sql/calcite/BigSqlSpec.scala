@@ -167,8 +167,9 @@ class BigSqlSpec extends STSpec {
 
     "repository fixture mysql to pg" in {
       val source = Source.fromResource("calcite/big-mysql.sql")
-      val sql = try source.mkString
-      finally source.close()
+      val sql =
+        try source.mkString
+        finally source.close()
       println(s"原始 SQL 长度：${sql.length}")
 
       // 1. 配置解析器，注意设置 MySQL 的相关配置

@@ -8,6 +8,7 @@ import spray.json.JsObject
 final case class ExecutionTask(id: String, name: String)
 
 final case class ExecutionNode(id: String, role: String, nodeType: String, label: String, config: JsObject) {
+
   /** Compatibility boundary for existing connectors; never reconstruct the editor definition. */
   private[workflow] def connectorNode: Node = Node(id, role, nodeType, label, Position(0, 0), config)
 }
@@ -22,23 +23,22 @@ sealed trait ExecutionPlan {
   def resumable: Boolean
 }
 
-final case class RowStreamPlan(task: ExecutionTask, pipeline: ExecutionPipeline, source: NodeSource, sink: NodeSink)
-  extends ExecutionPlan {
+final case class RowStreamPlan(task: ExecutionTask, pipeline: ExecutionPipeline, source: NodeSource, sink: NodeSink) extends ExecutionPlan {
   override val resumable: Boolean = false
 }
 
 sealed trait CheckpointedExecutionPlan extends ExecutionPlan {
   def source: CheckpointedNodeSource
   def sink: CheckpointedNodeSink
-  override final val resumable: Boolean = true
+  final override val resumable: Boolean = true
 }
 
-final case class MySqlCdcPlan(task: ExecutionTask, pipeline: ExecutionPipeline,
-  source: CheckpointedNodeSource, sink: CheckpointedNodeSink) extends CheckpointedExecutionPlan
+final case class MySqlCdcPlan(task: ExecutionTask, pipeline: ExecutionPipeline, source: CheckpointedNodeSource, sink: CheckpointedNodeSink)
+    extends CheckpointedExecutionPlan
 
-final case class CheckpointedLinearPlan(task: ExecutionTask, pipeline: ExecutionPipeline,
-  source: CheckpointedNodeSource, sink: CheckpointedNodeSink) extends CheckpointedExecutionPlan
+final case class CheckpointedLinearPlan(task: ExecutionTask, pipeline: ExecutionPipeline, source: CheckpointedNodeSource, sink: CheckpointedNodeSink)
+    extends CheckpointedExecutionPlan
 
 sealed trait PlanCompilationFailure
 final case class InvalidWorkflowPlan(errors: Vector[WorkflowValidationError]) extends PlanCompilationFailure
-final case class CheckpointSinkRequired(pipeline: ExecutionPipeline) extends PlanCompilationFailure
+final case class CheckpointSinkRequired(pipeline: ExecutionPipeline)          extends PlanCompilationFailure

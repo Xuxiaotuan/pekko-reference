@@ -9,43 +9,43 @@ import com.typesafe.scalalogging.Logger
 
 /**
  * 集群事件监听器
- * 
+ *
  * 监听并记录所有集群事件，包括：
  * - 成员加入/离开
  * - Leader变更
  * - 不可达节点
  * - 可达节点恢复
- * 
+ *
  * @author : Xuxiaotuan
  * @since : 2024-11-28
  */
 object ClusterEventListener {
-  
+
   private val logger = Logger(getClass)
-  
+
   sealed trait Command
-  private case class MemberEventWrapper(event: MemberEvent) extends Command
+  private case class MemberEventWrapper(event: MemberEvent)             extends Command
   private case class ReachabilityEventWrapper(event: ReachabilityEvent) extends Command
-  private case class LeaderChangedWrapper(event: LeaderChanged) extends Command
-  
+  private case class LeaderChangedWrapper(event: LeaderChanged)         extends Command
+
   def apply(): Behavior[Command] = Behaviors.setup { context =>
-    val cluster = Cluster(context.system)
+    val cluster     = Cluster(context.system)
     val selfAddress = cluster.selfMember.address.toString
-    
+
     // 订阅集群事件
     val memberEventAdapter = context.messageAdapter[MemberEvent](MemberEventWrapper)
     cluster.subscriptions ! Subscribe(memberEventAdapter, classOf[MemberEvent])
-    
+
     val reachabilityEventAdapter = context.messageAdapter[ReachabilityEvent](ReachabilityEventWrapper)
     cluster.subscriptions ! Subscribe(reachabilityEventAdapter, classOf[ReachabilityEvent])
-    
+
     val leaderChangedAdapter = context.messageAdapter[LeaderChanged](LeaderChangedWrapper)
     cluster.subscriptions ! Subscribe(leaderChangedAdapter, classOf[LeaderChanged])
-    
+
     logger.info("ClusterEventListener started, monitoring cluster events")
-    
+
     var currentLeader: Option[String] = None
-    
+
     Behaviors.receiveMessage {
       case MemberEventWrapper(event) =>
         event match {
@@ -56,7 +56,7 @@ object ClusterEventListener {
               "joining",
               member.roles
             )
-            
+
           case MemberUp(member) =>
             logger.info(s"Member is Up: ${member.address}")
             ClusterEventLogger.logMemberEvent(
@@ -64,7 +64,7 @@ object ClusterEventListener {
               "up",
               member.roles
             )
-            
+
           case MemberLeft(member) =>
             logger.info(s"Member left: ${member.address}")
             ClusterEventLogger.logMemberEvent(
@@ -72,7 +72,7 @@ object ClusterEventListener {
               "leaving",
               member.roles
             )
-            
+
           case MemberExited(member) =>
             logger.info(s"Member exited: ${member.address}")
             ClusterEventLogger.logMemberEvent(
@@ -80,7 +80,7 @@ object ClusterEventListener {
               "exiting",
               member.roles
             )
-            
+
           case MemberRemoved(member, previousStatus) =>
             logger.info(s"Member removed: ${member.address} (was $previousStatus)")
             ClusterEventLogger.logMemberEvent(
@@ -88,12 +88,12 @@ object ClusterEventListener {
               "removed",
               member.roles
             )
-            
+
           case _ =>
             logger.debug(s"Other member event: $event")
         }
         Behaviors.same
-        
+
       case ReachabilityEventWrapper(event) =>
         event match {
           case UnreachableMember(member) =>
@@ -102,22 +102,22 @@ object ClusterEventListener {
               member.address.toString,
               selfAddress
             )
-            
+
           case ReachableMember(member) =>
             logger.info(s"Member is reachable again: ${member.address}")
             ClusterEventLogger.logReachableMember(member.address.toString)
         }
         Behaviors.same
-        
+
       case LeaderChangedWrapper(LeaderChanged(leaderOption)) =>
         val newLeader = leaderOption.map(_.toString).getOrElse("none")
         logger.info(s"Leader changed: ${currentLeader.getOrElse("none")} -> $newLeader")
-        
+
         if (leaderOption.isDefined) {
           ClusterEventLogger.logLeaderChanged(currentLeader, newLeader)
           currentLeader = Some(newLeader)
         }
-        
+
         Behaviors.same
     }
   }

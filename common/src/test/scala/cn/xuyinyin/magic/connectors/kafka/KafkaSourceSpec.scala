@@ -6,7 +6,7 @@ import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL
 import com.typesafe.config.ConfigFactory
 import org.apache.kafka.clients.consumer.{ConsumerConfig, OffsetOutOfRangeException}
 import org.apache.kafka.common.TopicPartition
-import org.apache.pekko.{NotUsed}
+import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.typed.ActorSystem
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.kafka.ConsumerSettings
@@ -20,15 +20,17 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 
 class KafkaSourceSpec extends STSpec {
-  private implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](
+  implicit private val system: ActorSystem[Nothing] = ActorSystem[Nothing](
     Behaviors.empty[Nothing],
     "kafka-source-spec",
-    ConfigFactory.parseString(
-      """pekko.actor.provider = local
-        |pekko.coordinated-shutdown.exit-jvm = off""".stripMargin
-    ).withFallback(ConfigFactory.load("application-test"))
+    ConfigFactory
+      .parseString(
+        """pekko.actor.provider = local
+          |pekko.coordinated-shutdown.exit-jvm = off""".stripMargin
+      )
+      .withFallback(ConfigFactory.load("application-test"))
   )
-  private implicit val ec: ExecutionContext = system.executionContext
+  implicit private val ec: ExecutionContext = system.executionContext
 
   override protected def afterAll(): Unit = {
     system.terminate()
@@ -40,10 +42,13 @@ class KafkaSourceSpec extends STSpec {
     "retain unconfirmed cleanup when opening a session poller fails" in {
       val scope = new cn.xuyinyin.magic.workflow.spi.SourceResourceScope
       val failure = new cn.xuyinyin.magic.workflow.spi.SourceAcquisitionCleanupFailed(
-        new IllegalStateException("seek failed"), new IllegalStateException("consumer close failed"))
+        new IllegalStateException("seek failed"),
+        new IllegalStateException("consumer close failed"))
       val factory = new KafkaPartitionPollerFactory {
-        def open(settings: org.apache.pekko.kafka.ConsumerSettings[String, String],
-          partition: org.apache.kafka.common.TopicPartition, start: Long): KafkaPartitionPoller = throw failure
+        def open(
+            settings: org.apache.pekko.kafka.ConsumerSettings[String, String],
+            partition: org.apache.kafka.common.TopicPartition,
+            start: Long): KafkaPartitionPoller = throw failure
       }
       val access = new PekkoKafkaClientAccess(factory).inSession(scope)
       val stream = access.records(ResolvedKafkaTopic("topic", "127.0.0.1:9092"), 0, 0, 1).runWith(Sink.ignore)
@@ -61,7 +66,7 @@ class KafkaSourceSpec extends STSpec {
           1 -> Vector(KafkaRecord(1, 0, "p1-0"), KafkaRecord(1, 1, "p1-1"))
         )
       )
-      val source = new KafkaSource(StaticResolver("events", "kafka:9092"), access, () => 1000L)
+      val source   = new KafkaSource(StaticResolver("events", "kafka:9092"), access, () => 1000L)
       val boundary = Await.result(source.discoverBoundary(kafkaNode(chunkSize = 2), None, _ => ()), 2.seconds)
       val batches = Await.result(
         source.createBatches(kafkaNode(chunkSize = 2), "execution-1", boundary, None, _ => ()).runWith(Sink.seq),
@@ -107,7 +112,7 @@ class KafkaSourceSpec extends STSpec {
       batches.map(_.rows) shouldBe Seq(Vector("p1-1", "p1-2"))
       batches.map(_.batchSequence) shouldBe Seq(2L)
       KafkaCheckpointCodec.decodeCursor(batches.head.cursor.value) shouldBe
-        KafkaCursorV1(Map(0 -> 3L, 1 -> 3L), recordsConsumed = 6L)
+      KafkaCursorV1(Map(0 -> 3L, 1 -> 3L), recordsConsumed = 6L)
     }
 
     "copy prior offsets into a new scheduled boundary and restart the per-run count" in {
@@ -130,7 +135,7 @@ class KafkaSourceSpec extends STSpec {
       )
       val source = new KafkaSource(StaticResolver("events", "kafka:9092"), access, () => 2000L)
 
-      val nextBoundary = Await.result(source.discoverBoundary(kafkaNode(chunkSize = 2), Some(previous), _ => ()), 2.seconds)
+      val nextBoundary    = Await.result(source.discoverBoundary(kafkaNode(chunkSize = 2), Some(previous), _ => ()), 2.seconds)
       val decodedBoundary = KafkaCheckpointCodec.decodeBoundary(nextBoundary.upperBound.get)
       val batches = Await.result(
         source.createBatches(kafkaNode(chunkSize = 2), "execution-2", nextBoundary, Some(previous), _ => ()).runWith(Sink.seq),
@@ -148,10 +153,10 @@ class KafkaSourceSpec extends STSpec {
     }
 
     "stop exactly at the configured record limit" in {
-      val records = Vector.tabulate(10)(offset => KafkaRecord(0, offset.toLong, s"value-$offset"))
-      val access = FakeKafkaClientAccess(Vector(KafkaPartitionBoundary(0, 0, 10)), Map(0 -> records))
-      val source = new KafkaSource(StaticResolver("events", "kafka:9092"), access, () => 1000L)
-      val node = kafkaNode(chunkSize = 2, maxRecords = 3)
+      val records    = Vector.tabulate(10)(offset => KafkaRecord(0, offset.toLong, s"value-$offset"))
+      val access     = FakeKafkaClientAccess(Vector(KafkaPartitionBoundary(0, 0, 10)), Map(0 -> records))
+      val source     = new KafkaSource(StaticResolver("events", "kafka:9092"), access, () => 1000L)
+      val node       = kafkaNode(chunkSize = 2, maxRecords = 3)
       val discovered = Await.result(source.discoverBoundary(node, None, _ => ()), 2.seconds)
 
       val batches = Await.result(source.createBatches(node, "execution-limit", discovered, None, _ => ()).runWith(Sink.seq), 2.seconds)
@@ -166,7 +171,7 @@ class KafkaSourceSpec extends STSpec {
         Vector(KafkaPartitionBoundary(0, 0, 1)),
         Map(0 -> Vector(KafkaRecord(0, 0, "late")))
       )
-      val source = new KafkaSource(resolver, access, () => 1000L)
+      val source            = new KafkaSource(resolver, access, () => 1000L)
       val persistedBoundary = boundary(1000L, Vector(KafkaPartitionBoundary(0, 0, 1)))
 
       val batches = Await.result(
@@ -181,9 +186,9 @@ class KafkaSourceSpec extends STSpec {
 
     "fail precisely when a prior next offset is below the broker beginning offset" in {
       val previousBoundary = boundary(1000L, Vector(KafkaPartitionBoundary(0, 0, 5)))
-      val previous = checkpoint(previousBoundary, sequence = 0L, nextOffsets = Map(0 -> 2L), recordsConsumed = 2L)
-      val access = FakeKafkaClientAccess(Vector(KafkaPartitionBoundary(0, 5, 10)), Map.empty)
-      val source = new KafkaSource(StaticResolver("events", "kafka:9092"), access, () => 2000L)
+      val previous         = checkpoint(previousBoundary, sequence = 0L, nextOffsets = Map(0 -> 2L), recordsConsumed = 2L)
+      val access           = FakeKafkaClientAccess(Vector(KafkaPartitionBoundary(0, 5, 10)), Map.empty)
+      val source           = new KafkaSource(StaticResolver("events", "kafka:9092"), access, () => 2000L)
 
       val failure = intercept[IllegalArgumentException] {
         Await.result(source.discoverBoundary(kafkaNode(), Some(previous), _ => ()), 2.seconds)
@@ -199,7 +204,7 @@ class KafkaSourceSpec extends STSpec {
         boundaries = Vector.empty,
         recordsByPartition = Map(0 -> Vector(KafkaRecord(0, 7, null)))
       )
-      val source = new KafkaSource(StaticResolver("events", "kafka:9092"), access, () => 1000L)
+      val source            = new KafkaSource(StaticResolver("events", "kafka:9092"), access, () => 1000L)
       val persistedBoundary = boundary(121000L, Vector(KafkaPartitionBoundary(0, 7, 8)))
 
       val failure = intercept[IllegalArgumentException] {
@@ -220,7 +225,7 @@ class KafkaSourceSpec extends STSpec {
         boundaries = Vector(KafkaPartitionBoundary(0, 100, 200)),
         recordsByPartition = Map(0 -> Vector(KafkaRecord(0, 0, "persisted")))
       )
-      val source = new KafkaSource(resolver, access, () => 1000L)
+      val source            = new KafkaSource(resolver, access, () => 1000L)
       val persistedBoundary = boundary(121000L, Vector(KafkaPartitionBoundary(0, 0, 1)))
 
       val batches = Await.result(
@@ -234,28 +239,30 @@ class KafkaSourceSpec extends STSpec {
     }
 
     "fail an expired persisted start offset without resolver or metadata rediscovery" in {
-      val resolver = StaticResolver("events", "kafka:9092")
+      val resolver      = StaticResolver("events", "kafka:9092")
       val metadataCalls = new AtomicInteger(0)
       val access = new KafkaClientAccess {
-        override def partitionOffsets(topic: ResolvedKafkaTopic, reset: KafkaOffsetReset)
-          (implicit ec: ExecutionContext): Future[Vector[KafkaPartitionBoundary]] = {
+        override def partitionOffsets(
+            topic: ResolvedKafkaTopic,
+            reset: KafkaOffsetReset
+          )(implicit ec: ExecutionContext): Future[Vector[KafkaPartitionBoundary]] = {
           metadataCalls.incrementAndGet()
           Future.successful(Vector.empty)
         }
 
         override def records(
-          topic: ResolvedKafkaTopic,
-          partition: Int,
-          startOffset: Long,
-          endOffset: Long
-        ): Source[KafkaRecord, NotUsed] =
-          Source.failed(new OffsetOutOfRangeException(
-            Map(new TopicPartition(topic.topic, partition) -> Long.box(startOffset)).asJava
-          ))
+            topic: ResolvedKafkaTopic,
+            partition: Int,
+            startOffset: Long,
+            endOffset: Long): Source[KafkaRecord, NotUsed] =
+          Source.failed(
+            new OffsetOutOfRangeException(
+              Map(new TopicPartition(topic.topic, partition) -> Long.box(startOffset)).asJava
+            ))
       }
-      val source = new KafkaSource(resolver, access, () => 1000L)
+      val source            = new KafkaSource(resolver, access, () => 1000L)
       val persistedBoundary = boundary(121000L, Vector(KafkaPartitionBoundary(0, 2, 5)))
-      val resume = checkpoint(persistedBoundary, sequence = 0L, nextOffsets = Map(0 -> 2L), recordsConsumed = 0L)
+      val resume            = checkpoint(persistedBoundary, sequence = 0L, nextOffsets = Map(0 -> 2L), recordsConsumed = 0L)
 
       val failure = intercept[OffsetOutOfRangeException] {
         Await.result(
@@ -271,19 +278,21 @@ class KafkaSourceSpec extends STSpec {
     }
 
     "complete sparse partitions by consumer position and continue to later partitions" in {
-      val factory = new ScriptedKafkaPartitionPollerFactory(Map(
-        0 -> Vector(
-          KafkaPoll(Vector(KafkaRecord(0, 0, "p0-0")), position = 1L),
-          KafkaPoll(Vector(KafkaRecord(0, 5, "p0-5")), position = 6L),
-          KafkaPoll(Vector.empty, position = 10L)
-        ),
-        1 -> Vector(KafkaPoll(Vector(KafkaRecord(1, 0, "p1-0")), position = 1L))
-      ))
+      val factory = new ScriptedKafkaPartitionPollerFactory(
+        Map(
+          0 -> Vector(
+            KafkaPoll(Vector(KafkaRecord(0, 0, "p0-0")), position = 1L),
+            KafkaPoll(Vector(KafkaRecord(0, 5, "p0-5")), position = 6L),
+            KafkaPoll(Vector.empty, position = 10L)
+          ),
+          1 -> Vector(KafkaPoll(Vector(KafkaRecord(1, 0, "p1-0")), position = 1L))
+        ))
       val access = new PekkoKafkaClientAccess(factory)
-      val topic = ResolvedKafkaTopic("events", "kafka:9092")
+      val topic  = ResolvedKafkaTopic("events", "kafka:9092")
 
       val records = Await.result(
-        access.records(topic, partition = 0, startOffset = 0L, endOffset = 10L)
+        access
+          .records(topic, partition = 0, startOffset = 0L, endOffset = 10L)
           .concat(access.records(topic, partition = 1, startOffset = 0L, endOffset = 1L))
           .runWith(Sink.seq),
         2.seconds
@@ -299,14 +308,15 @@ class KafkaSourceSpec extends STSpec {
     }
 
     "persist consumer-position progress after sparse trailing gaps" in {
-      val factory = new ScriptedKafkaPartitionPollerFactory(Map(
-        0 -> Vector(
-          KafkaPoll(Vector(KafkaRecord(0, 0, "p0-0")), position = 1L),
-          KafkaPoll(Vector(KafkaRecord(0, 5, "p0-5")), position = 6L),
-          KafkaPoll(Vector.empty, position = 10L)
-        ),
-        1 -> Vector(KafkaPoll(Vector(KafkaRecord(1, 0, "p1-0")), position = 1L))
-      ))
+      val factory = new ScriptedKafkaPartitionPollerFactory(
+        Map(
+          0 -> Vector(
+            KafkaPoll(Vector(KafkaRecord(0, 0, "p0-0")), position = 1L),
+            KafkaPoll(Vector(KafkaRecord(0, 5, "p0-5")), position = 6L),
+            KafkaPoll(Vector.empty, position = 10L)
+          ),
+          1 -> Vector(KafkaPoll(Vector(KafkaRecord(1, 0, "p1-0")), position = 1L))
+        ))
       val access = new PekkoKafkaClientAccess(factory)
       val source = new KafkaSource(StaticResolver("events", "kafka:9092"), access, () => 1000L)
       val persistedBoundary = boundary(
@@ -318,36 +328,40 @@ class KafkaSourceSpec extends STSpec {
       )
 
       val batches = Await.result(
-        source.createBatches(
-          kafkaNode(chunkSize = 10),
-          "execution-sparse",
-          persistedBoundary,
-          None,
-          _ => ()
-        ).runWith(Sink.seq),
+        source
+          .createBatches(
+            kafkaNode(chunkSize = 10),
+            "execution-sparse",
+            persistedBoundary,
+            None,
+            _ => ()
+          )
+          .runWith(Sink.seq),
         2.seconds
       )
 
       batches.flatMap(_.rows) shouldBe Vector("p0-0", "p0-5", "p1-0")
       KafkaCheckpointCodec.decodeCursor(batches.last.cursor.value).nextOffsets shouldBe
-        Map(0 -> 10L, 1 -> 1L)
+      Map(0 -> 10L, 1 -> 1L)
       factory.closedPartitions shouldBe Set(0, 1)
     }
 
     "close the manually assigned consumer when downstream cancels" in {
-      val factory = new ScriptedKafkaPartitionPollerFactory(Map(
-        0 -> Vector(
-          KafkaPoll(
-            Vector(KafkaRecord(0, 0, "first"), KafkaRecord(0, 1, "buffered")),
-            position = 2L
-          ),
-          KafkaPoll(Vector.empty, position = 10L)
-        )
-      ))
+      val factory = new ScriptedKafkaPartitionPollerFactory(
+        Map(
+          0 -> Vector(
+            KafkaPoll(
+              Vector(KafkaRecord(0, 0, "first"), KafkaRecord(0, 1, "buffered")),
+              position = 2L
+            ),
+            KafkaPoll(Vector.empty, position = 10L)
+          )
+        ))
       val access = new PekkoKafkaClientAccess(factory)
 
       val records = Await.result(
-        access.records(ResolvedKafkaTopic("events", "kafka:9092"), 0, 0L, 10L)
+        access
+          .records(ResolvedKafkaTopic("events", "kafka:9092"), 0, 0L, 10L)
           .take(1L)
           .runWith(Sink.seq),
         2.seconds
@@ -370,44 +384,42 @@ class KafkaSourceSpec extends STSpec {
   }
 
   private def kafkaNode(
-    chunkSize: Int = 10,
-    maxRecords: Long = 50L,
-    maxDurationSeconds: Long = 120L
-  ): WorkflowDSL.Node = WorkflowDSL.Node(
+      chunkSize: Int = 10,
+      maxRecords: Long = 50L,
+      maxDurationSeconds: Long = 120L): WorkflowDSL.Node = WorkflowDSL.Node(
     id = "source-1",
     `type` = "source",
     nodeType = "kafka.consumer",
     label = "Kafka",
     position = WorkflowDSL.Position(0, 0),
     config = JsObject(
-      "topic" -> JsString("events"),
-      "brokers" -> JsString("kafka:9092"),
-      "offsetReset" -> JsString("earliest"),
-      "chunkSize" -> JsNumber(chunkSize),
-      "maxRecords" -> JsNumber(maxRecords),
+      "topic"              -> JsString("events"),
+      "brokers"            -> JsString("kafka:9092"),
+      "offsetReset"        -> JsString("earliest"),
+      "chunkSize"          -> JsNumber(chunkSize),
+      "maxRecords"         -> JsNumber(maxRecords),
       "maxDurationSeconds" -> JsNumber(maxDurationSeconds)
     )
   )
 
   private def boundary(
-    deadline: Long,
-    partitions: Vector[KafkaPartitionBoundary]
-  ): SnapshotBoundary = {
-    val encoded = KafkaCheckpointCodec.encodeBoundary(KafkaBoundaryV1(
-      topic = "events",
-      bootstrapServers = "kafka:9092",
-      deadlineEpochMillis = deadline,
-      partitions = partitions
-    ))
+      deadline: Long,
+      partitions: Vector[KafkaPartitionBoundary]): SnapshotBoundary = {
+    val encoded = KafkaCheckpointCodec.encodeBoundary(
+      KafkaBoundaryV1(
+        topic = "events",
+        bootstrapServers = "kafka:9092",
+        deadlineEpochMillis = deadline,
+        partitions = partitions
+      ))
     SnapshotBoundary("source-1", "kafka:events", Some(encoded))
   }
 
   private def checkpoint(
-    boundary: SnapshotBoundary,
-    sequence: Long,
-    nextOffsets: Map[Int, Long],
-    recordsConsumed: Long
-  ): BatchCheckpoint = BatchCheckpoint(
+      boundary: SnapshotBoundary,
+      sequence: Long,
+      nextOffsets: Map[Int, Long],
+      recordsConsumed: Long): BatchCheckpoint = BatchCheckpoint(
     sourceNodeId = boundary.sourceNodeId,
     partitionId = boundary.partitionId,
     batchSequence = sequence,
@@ -421,7 +433,7 @@ class KafkaSourceSpec extends STSpec {
     targetRowsWritten = recordsConsumed
   )
 
-  private final case class StaticResolver(topic: String, brokers: String) extends KafkaTopicResolver {
+  final private case class StaticResolver(topic: String, brokers: String) extends KafkaTopicResolver {
     val calls = new AtomicInteger(0)
 
     override def resolve(config: KafkaSourceConfig)(implicit ec: ExecutionContext): Future[ResolvedKafkaTopic] = {
@@ -430,43 +442,45 @@ class KafkaSourceSpec extends STSpec {
     }
   }
 
-  private final case class FakeKafkaClientAccess(
-    boundaries: Vector[KafkaPartitionBoundary],
-    recordsByPartition: Map[Int, Vector[KafkaRecord]]
-  ) extends KafkaClientAccess {
+  final private case class FakeKafkaClientAccess(
+      boundaries: Vector[KafkaPartitionBoundary],
+      recordsByPartition: Map[Int, Vector[KafkaRecord]])
+      extends KafkaClientAccess {
     val metadataCalls = new AtomicInteger(0)
 
-    override def partitionOffsets(topic: ResolvedKafkaTopic, reset: KafkaOffsetReset)
-      (implicit ec: ExecutionContext): Future[Vector[KafkaPartitionBoundary]] = {
+    override def partitionOffsets(
+        topic: ResolvedKafkaTopic,
+        reset: KafkaOffsetReset
+      )(implicit ec: ExecutionContext): Future[Vector[KafkaPartitionBoundary]] = {
       metadataCalls.incrementAndGet()
       Future.successful(boundaries)
     }
 
     override def records(
-      topic: ResolvedKafkaTopic,
-      partition: Int,
-      startOffset: Long,
-      endOffset: Long
-    ): Source[KafkaRecord, NotUsed] =
-      Source(recordsByPartition.getOrElse(partition, Vector.empty)
-        .filter(record => record.offset >= startOffset && record.offset < endOffset))
+        topic: ResolvedKafkaTopic,
+        partition: Int,
+        startOffset: Long,
+        endOffset: Long): Source[KafkaRecord, NotUsed] =
+      Source(
+        recordsByPartition
+          .getOrElse(partition, Vector.empty)
+          .filter(record => record.offset >= startOffset && record.offset < endOffset))
   }
 
-  private final class ScriptedKafkaPartitionPollerFactory(
-    scripts: Map[Int, Vector[KafkaPoll]]
-  ) extends KafkaPartitionPollerFactory {
-    private val pollCounts = mutable.Map.empty[Int, Int]
-    private val closed = mutable.Set.empty[Int]
+  final private class ScriptedKafkaPartitionPollerFactory(
+      scripts: Map[Int, Vector[KafkaPoll]])
+      extends KafkaPartitionPollerFactory {
+    private val pollCounts                                         = mutable.Map.empty[Int, Int]
+    private val closed                                             = mutable.Set.empty[Int]
     val settings: mutable.Buffer[ConsumerSettings[String, String]] = mutable.Buffer.empty
 
     def pollsByPartition: Map[Int, Int] = pollCounts.toMap
-    def closedPartitions: Set[Int] = closed.toSet
+    def closedPartitions: Set[Int]      = closed.toSet
 
     override def open(
-      consumerSettings: ConsumerSettings[String, String],
-      topicPartition: TopicPartition,
-      startOffset: Long
-    ): KafkaPartitionPoller = {
+        consumerSettings: ConsumerSettings[String, String],
+        topicPartition: TopicPartition,
+        startOffset: Long): KafkaPartitionPoller = {
       settings += consumerSettings
       val partition = topicPartition.partition()
       val remaining = mutable.Queue.from(scripts.getOrElse(partition, Vector.empty))

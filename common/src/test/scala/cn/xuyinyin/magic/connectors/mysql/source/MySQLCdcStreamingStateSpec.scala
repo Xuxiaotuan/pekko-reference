@@ -7,7 +7,7 @@ import java.util.{Properties, UUID}
 class MySQLCdcStreamingStateSpec extends STSpec {
   "group protocol streaming baseline" should {
     "reject unfinished snapshots and missing offsets instead of starting at current binlog" in {
-      val url = "jdbc:h2:mem:group_offset_" + UUID.randomUUID().toString.replace("-", "") + ";MODE=MySQL;DB_CLOSE_DELAY=-1"
+      val url        = "jdbc:h2:mem:group_offset_" + UUID.randomUUID().toString.replace("-", "") + ";MODE=MySQL;DB_CLOSE_DELAY=-1"
       val connection = DriverManager.getConnection(url, "sa", "")
       val properties = new Properties()
       properties.setProperty("offset.storage.jdbc.connection.url", url)

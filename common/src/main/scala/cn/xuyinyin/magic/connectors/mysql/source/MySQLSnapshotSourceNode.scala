@@ -23,18 +23,19 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource wit
   protected[source] def getenv(name: String): Option[String] = sys.env.get(name)
 
   override def discoverBoundary(
-    node: WorkflowDSL.Node,
-    resumeFrom: Option[BatchCheckpoint],
-    onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] = {
+      node: WorkflowDSL.Node,
+      resumeFrom: Option[BatchCheckpoint],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] = {
     val config = MySQLSnapshotSourceConfig.parse(node, getenv)
     Future {
       var dataSource: HikariDataSource = null
-      var connection: Connection = null
+      var connection: Connection       = null
       try {
-        dataSource = if (node.config.fields.contains("splitRows"))
-          createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
-        else createDataSource(config.host, config.port, config.database, config.username, config.password)
+        dataSource =
+          if (node.config.fields.contains("splitRows"))
+            createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
+          else createDataSource(config.host, config.port, config.database, config.username, config.password)
         connection = dataSource.getConnection
         val projection = resolveProjection(connection, config)
         val upperBound = maxPrimaryKey(connection, projection, node.config.fields.contains("splitRows"))
@@ -47,53 +48,69 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource wit
   }
 
   override def createBatches(
-    node: WorkflowDSL.Node,
-    executionId: String,
-    boundary: SnapshotBoundary,
-    resumeFrom: Option[BatchCheckpoint],
-    onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] =
+      node: WorkflowDSL.Node,
+      executionId: String,
+      boundary: SnapshotBoundary,
+      resumeFrom: Option[BatchCheckpoint],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] =
     batchSession(node, executionId, boundary, resumeFrom, onLog, blockingEc, managed = false).source
 
-  override def openBatches(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
-    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext)
-    (implicit blockingEc: ExecutionContext): BatchSourceSession =
+  override def openBatches(
+      node: WorkflowDSL.Node,
+      executionId: String,
+      boundary: SnapshotBoundary,
+      resumeFrom: Option[BatchCheckpoint],
+      onLog: String => Unit,
+      closeEc: ExecutionContext
+    )(implicit blockingEc: ExecutionContext): BatchSourceSession =
     batchSession(node, executionId, boundary, resumeFrom, onLog, closeEc, managed = true)
 
-  private def batchSession(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
-    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext, managed: Boolean)
-    (implicit blockingEc: ExecutionContext): BatchSourceSession = {
+  private def batchSession(
+      node: WorkflowDSL.Node,
+      executionId: String,
+      boundary: SnapshotBoundary,
+      resumeFrom: Option[BatchCheckpoint],
+      onLog: String => Unit,
+      closeEc: ExecutionContext,
+      managed: Boolean
+    )(implicit blockingEc: ExecutionContext): BatchSourceSession = {
     val config = MySQLSnapshotSourceConfig.parse(node, getenv)
     validateBoundary(node, boundary, resumeFrom)
 
     boundary.upperBound match {
       case None => BatchSourceSession(Source.empty, () => Future.successful(Done))
       case Some(upperBound) =>
-        val initialCursor = resumeFrom.map(_.cursor.value)
+        val initialCursor   = resumeFrom.map(_.cursor.value)
         val initialSequence = resumeFrom.map(_.batchSequence + 1L).getOrElse(0L)
         BatchSourceSession.resource[BatchReader](
           create = () => Future(openBatchReader(config, upperBound, initialCursor, initialSequence))(blockingEc),
           read = reader => Future(reader.nextBatch(node.id, executionId))(blockingEc),
-          closeResource = reader => Future {
-            reader.close()
-            Done
-          }(closeEc),
+          closeResource = reader =>
+            Future {
+              reader.close()
+              Done
+            }(closeEc),
           managed = managed,
           drainReads = true
         )
     }
   }
 
-  override def discoverSplit(node: WorkflowDSL.Node, plan: cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitPlanState,
-    lower: Option[String], index: Long)(implicit ec: ExecutionContext): Future[Option[cn.xuyinyin.magic.cdc.snapshot.SnapshotSplit]] = Future {
+  override def discoverSplit(
+      node: WorkflowDSL.Node,
+      plan: cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitPlanState,
+      lower: Option[String],
+      index: Long
+    )(implicit ec: ExecutionContext): Future[Option[cn.xuyinyin.magic.cdc.snapshot.SnapshotSplit]] = Future {
     val config = MySQLSnapshotSourceConfig.parse(node, getenv)
     plan.upper.flatMap { upper =>
-      val ds = createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
+      val ds                     = createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
       var connection: Connection = null
       try {
         connection = ds.getConnection
         val projection = resolveProjection(connection, config)
-        val predicate = lower.fold("")(_ => s"${quote(projection.primaryKey)} > ? AND ")
+        val predicate  = lower.fold("")(_ => s"${quote(projection.primaryKey)} > ? AND ")
         val sql = s"SELECT MAX(chunk_key) FROM (SELECT ${quote(projection.primaryKey)} AS chunk_key FROM ${quote(projection.table)} " +
           s"WHERE $predicate${quote(projection.primaryKey)} <= ? ORDER BY ${quote(projection.primaryKey)} LIMIT ?) AS chunk_keys"
         val statement = connection.prepareStatement(sql)
@@ -103,62 +120,83 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource wit
           lower.foreach { key => statement.setBigDecimal(p, new java.math.BigDecimal(key)); p += 1 }
           statement.setBigDecimal(p, new java.math.BigDecimal(upper)); statement.setInt(p + 1, plan.splitRows)
           val rs = statement.executeQuery()
-          try { rs.next(); Option(rs.getObject(1)).map(v => cn.xuyinyin.magic.cdc.snapshot.SnapshotSplit(
-            s"${plan.id}:$index", index, lower, canonicalDecimal(v))) } finally rs.close()
+          try {
+            rs.next();
+            Option(rs.getObject(1)).map(v => cn.xuyinyin.magic.cdc.snapshot.SnapshotSplit(s"${plan.id}:$index", index, lower, canonicalDecimal(v)))
+          } finally rs.close()
         } finally statement.close()
       } finally closeSplitMetadata(connection, ds)
     }
   }
 
-  override def openSplit(node: WorkflowDSL.Node, executionId: String, plan: cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitPlanState,
-    split: cn.xuyinyin.magic.cdc.snapshot.SnapshotSplit, checkpoint: Option[BatchCheckpoint], onLog: String => Unit,
-    closeEc: ExecutionContext)(implicit ec: ExecutionContext): BatchSourceSession = {
+  override def openSplit(
+      node: WorkflowDSL.Node,
+      executionId: String,
+      plan: cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitPlanState,
+      split: cn.xuyinyin.magic.cdc.snapshot.SnapshotSplit,
+      checkpoint: Option[BatchCheckpoint],
+      onLog: String => Unit,
+      closeEc: ExecutionContext
+    )(implicit ec: ExecutionContext): BatchSourceSession = {
     require(plan.sourceNodeId == node.id && split.id == s"${plan.id}:${split.index}", "snapshot split identity mismatch")
-    checkpoint.foreach { c => require(c.partitionId == split.id && c.sourceNodeId == node.id &&
-      c.cursor.upperBound == split.upper && c.cursor.kind == cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind,
-      "snapshot split checkpoint mismatch") }
+    checkpoint.foreach { c =>
+      require(
+        c.partitionId == split.id && c.sourceNodeId == node.id &&
+          c.cursor.upperBound == split.upper && c.cursor.kind == cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind,
+        "snapshot split checkpoint mismatch")
+    }
     val config = MySQLSnapshotSourceConfig.parse(node, getenv).copy(chunkSize = plan.pageRows)
     BatchSourceSession.resource[BatchReader](
-      () => Future {
-        val reader = openBatchReader(config, split.upper, checkpoint.map(_.cursor.value).orElse(split.lower),
-          checkpoint.fold(0L)(_.batchSequence + 1L), splitMode = true)
-        reader.partition = split.id
-        reader.cursorKind = cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind
-        reader.maxPageBytes = plan.maxPageBytes
-        reader
-      }(ec),
+      () =>
+        Future {
+          val reader = openBatchReader(
+            config,
+            split.upper,
+            checkpoint.map(_.cursor.value).orElse(split.lower),
+            checkpoint.fold(0L)(_.batchSequence + 1L),
+            splitMode = true)
+          reader.partition = split.id
+          reader.cursorKind = cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind
+          reader.maxPageBytes = plan.maxPageBytes
+          reader
+        }(ec),
       r => Future(r.nextBatch(node.id, executionId))(ec),
-      r => Future { r.close(); Done }(closeEc), managed = false, drainReads = true)
+      r => Future { r.close(); Done }(closeEc),
+      managed = false,
+      drainReads = true)
   }
 
   private def closeSplitMetadata(resources: AutoCloseable*): Unit = {
     var failure: Throwable = null
     resources.filter(_ != null).foreach { resource =>
       try resource.close()
-      catch { case scala.util.control.NonFatal(error) =>
-        if (failure == null) failure = error else failure.addSuppressed(error)
+      catch {
+        case scala.util.control.NonFatal(error) =>
+          if (failure == null) failure = error else failure.addSuppressed(error)
       }
     }
-    if (failure != null) throw new cn.xuyinyin.magic.cdc.recovery.CdcExecutionException(
-      cn.xuyinyin.magic.cdc.recovery.ExecutionFailure("local_release_unconfirmed", "snapshot-metadata-close", releaseConfirmed = false), failure)
+    if (failure != null)
+      throw new cn.xuyinyin.magic.cdc.recovery.CdcExecutionException(
+        cn.xuyinyin.magic.cdc.recovery.ExecutionFailure("local_release_unconfirmed", "snapshot-metadata-close", releaseConfirmed = false),
+        failure)
   }
 
   protected[source] def createSplitDataSource(host: String, port: Int, database: String, username: String, password: String): HikariDataSource = {
     val config = new HikariConfig()
-    config.setJdbcUrl(s"jdbc:mysql://$host:$port/$database?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&useCursorFetch=true&socketTimeout=30000&connectTimeout=5000")
+    config.setJdbcUrl(
+      s"jdbc:mysql://$host:$port/$database?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&useCursorFetch=true&socketTimeout=30000&connectTimeout=5000")
     config.setUsername(username); config.setPassword(password); config.setDriverClassName("com.mysql.cj.jdbc.Driver")
     config.setMaximumPoolSize(1); config.setMinimumIdle(0); config.setConnectionTimeout(10000)
-    cn.xuyinyin.magic.cdc.control.SnapshotOwnerJdbc.configure(config,"source")
+    cn.xuyinyin.magic.cdc.control.SnapshotOwnerJdbc.configure(config, "source")
     new HikariDataSource(config)
   }
 
   protected[source] def createDataSource(
-    host: String,
-    port: Int,
-    database: String,
-    username: String,
-    password: String
-  ): HikariDataSource = {
+      host: String,
+      port: Int,
+      database: String,
+      username: String,
+      password: String): HikariDataSource = {
     val config = new HikariConfig()
     config.setJdbcUrl(s"jdbc:mysql://$host:$port/$database?useSSL=false&serverTimezone=UTC")
     config.setUsername(username)
@@ -168,21 +206,21 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource wit
     config.setMinimumIdle(0)
     config.setConnectionTimeout(30000)
     config.setConnectionTestQuery("SELECT 1")
-    cn.xuyinyin.magic.cdc.control.SnapshotOwnerJdbc.configure(config,"source")
+    cn.xuyinyin.magic.cdc.control.SnapshotOwnerJdbc.configure(config, "source")
     new HikariDataSource(config)
   }
 
   private def openBatchReader(
-    config: MySQLSnapshotSourceConfig,
-    upperBound: String,
-    cursor: Option[String],
-    sequence: Long,
-    splitMode: Boolean = false
-  ): BatchReader = {
+      config: MySQLSnapshotSourceConfig,
+      upperBound: String,
+      cursor: Option[String],
+      sequence: Long,
+      splitMode: Boolean = false): BatchReader = {
     var dataSource: HikariDataSource = null
-    var connection: Connection = null
+    var connection: Connection       = null
     try {
-      dataSource = if (splitMode) createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
+      dataSource =
+        if (splitMode) createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
         else createDataSource(config.host, config.port, config.database, config.username, config.password)
       connection = dataSource.getConnection
       val projection = resolveProjection(connection, config)
@@ -200,10 +238,9 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource wit
   }
 
   private def validateBoundary(
-    node: WorkflowDSL.Node,
-    boundary: SnapshotBoundary,
-    resumeFrom: Option[BatchCheckpoint]
-  ): Unit = {
+      node: WorkflowDSL.Node,
+      boundary: SnapshotBoundary,
+      resumeFrom: Option[BatchCheckpoint]): Unit = {
     require(boundary.sourceNodeId == node.id, "snapshot boundary source does not match node")
     require(boundary.partitionId == PartitionId, "snapshot boundary partition is unsupported")
     resumeFrom.foreach { checkpoint =>
@@ -215,10 +252,11 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource wit
 
   private def resolveProjection(connection: Connection, config: MySQLSnapshotSourceConfig): ResolvedProjection = {
     val metadata = connection.getMetaData
-    val catalog = Option(connection.getCatalog).filter(_.nonEmpty)
+    val catalog = Option(connection.getCatalog)
+      .filter(_.nonEmpty)
       .getOrElse(throw new IllegalArgumentException("snapshot source connection has no current catalog"))
-    val schema = Option(connection.getSchema).filter(_.nonEmpty)
-    val table = metadataIdentifier(metadata, config.table)
+    val schema      = Option(connection.getSchema).filter(_.nonEmpty)
+    val table       = metadataIdentifier(metadata, config.table)
     val primaryKeys = primaryKeyColumns(metadata, catalog, schema, table)
     if (primaryKeys.size != 1) {
       throw new IllegalArgumentException("snapshot source requires exactly one primary key column")
@@ -234,12 +272,13 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource wit
     val resolvedColumns = config.columns.map { configured =>
       availableColumns.filter(_.name.equalsIgnoreCase(configured)) match {
         case Vector(column) => column
-        case Vector() => throw new IllegalArgumentException(s"configured column metadata was not found: $configured")
-        case _ => throw new IllegalArgumentException(s"configured column metadata is ambiguous: $configured")
+        case Vector()       => throw new IllegalArgumentException(s"configured column metadata was not found: $configured")
+        case _              => throw new IllegalArgumentException(s"configured column metadata is ambiguous: $configured")
       }
     }
     val primaryKey = primaryKeys.head
-    val column = availableColumns.find(_.name == primaryKey)
+    val column = availableColumns
+      .find(_.name == primaryKey)
       .getOrElse(throw new IllegalArgumentException("configured primaryKey column metadata was not found"))
 
     if (column.nullable != DatabaseMetaData.columnNoNulls) {
@@ -258,48 +297,51 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource wit
   }
 
   private def primaryKeyColumns(
-    metadata: DatabaseMetaData,
-    catalog: String,
-    schema: Option[String],
-    table: String
-  ): Vector[String] =
+      metadata: DatabaseMetaData,
+      catalog: String,
+      schema: Option[String],
+      table: String): Vector[String] =
     // JDBC specifies the getPrimaryKeys table argument as a table name, not a pattern.
     using(metadata.getPrimaryKeys(catalog, schema.orNull, table)) { resultSet =>
-      Iterator.continually(resultSet.next()).takeWhile(identity)
+      Iterator
+        .continually(resultSet.next())
+        .takeWhile(identity)
         .filter(_ => matchesMetadataRow(resultSet, catalog, schema, table, None))
         .map(_ => resultSet.getString("COLUMN_NAME"))
         .toVector
     }
 
   private def columnMetadata(
-    metadata: DatabaseMetaData,
-    catalog: String,
-    schema: Option[String],
-    table: String
-  ): Vector[ColumnMetadata] =
-    using(metadata.getColumns(
-      catalog,
-      schema.orNull,
-      escapeMetadataPattern(metadata, table),
-      null
-    )) { resultSet =>
-      Iterator.continually(resultSet.next()).takeWhile(identity)
+      metadata: DatabaseMetaData,
+      catalog: String,
+      schema: Option[String],
+      table: String): Vector[ColumnMetadata] =
+    using(
+      metadata.getColumns(
+        catalog,
+        schema.orNull,
+        escapeMetadataPattern(metadata, table),
+        null
+      )) { resultSet =>
+      Iterator
+        .continually(resultSet.next())
+        .takeWhile(identity)
         .filter(_ => matchesMetadataRow(resultSet, catalog, schema, table, None))
-        .map(_ => ColumnMetadata(
-          resultSet.getString("COLUMN_NAME"),
-          resultSet.getInt("DATA_TYPE"),
-          resultSet.getInt("NULLABLE")
-        ))
+        .map(_ =>
+          ColumnMetadata(
+            resultSet.getString("COLUMN_NAME"),
+            resultSet.getInt("DATA_TYPE"),
+            resultSet.getInt("NULLABLE")
+          ))
         .toVector
     }
 
   private def matchesMetadataRow(
-    resultSet: ResultSet,
-    catalog: String,
-    schema: Option[String],
-    table: String,
-    column: Option[String]
-  ): Boolean =
+      resultSet: ResultSet,
+      catalog: String,
+      schema: Option[String],
+      table: String,
+      column: Option[String]): Boolean =
     resultSet.getString("TABLE_CAT") == catalog &&
       schema.forall(expected => resultSet.getString("TABLE_SCHEM") == expected) &&
       resultSet.getString("TABLE_NAME") == table &&
@@ -313,10 +355,11 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource wit
   private def escapeMetadataPattern(metadata: DatabaseMetaData, identifier: String): String = {
     val escape = metadata.getSearchStringEscape
     if (escape == null || escape.isEmpty) identifier
-    else identifier
-      .replace(escape, escape + escape)
-      .replace("_", escape + "_")
-      .replace("%", escape + "%")
+    else
+      identifier
+        .replace(escape, escape + escape)
+        .replace("_", escape + "_")
+        .replace("%", escape + "%")
   }
 
   private def maxPrimaryKey(connection: Connection, projection: ResolvedProjection, bounded: Boolean = false): Option[String] = {
@@ -348,41 +391,44 @@ class MySQLSnapshotSourceNode extends NodeSource with CheckpointedNodeSource wit
 }
 
 object MySQLSnapshotSourceNode {
-  private val PartitionId = "pk-range-0"
+  private val PartitionId  = "pk-range-0"
   private val NumericTypes = Set(Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIGINT, Types.NUMERIC, Types.DECIMAL)
 
-  private final case class ColumnMetadata(name: String, jdbcType: Int, nullable: Int)
-  private final case class ResolvedProjection(
-    table: String,
-    columns: Vector[String],
-    primaryKey: String,
-    primaryKeyIndex: Int
-  )
+  final private case class ColumnMetadata(name: String, jdbcType: Int, nullable: Int)
+  final private case class ResolvedProjection(
+      table: String,
+      columns: Vector[String],
+      primaryKey: String,
+      primaryKeyIndex: Int)
 
-  private final class BatchReader(
-    config: MySQLSnapshotSourceConfig,
-    projection: ResolvedProjection,
-    dataSource: HikariDataSource,
-    connection: Connection,
-    upperBound: String,
-    initialCursor: Option[String],
-    initialSequence: Long
-  ) extends AutoCloseable {
-    var partition: String = PartitionId
+  final private class BatchReader(
+      config: MySQLSnapshotSourceConfig,
+      projection: ResolvedProjection,
+      dataSource: HikariDataSource,
+      connection: Connection,
+      upperBound: String,
+      initialCursor: Option[String],
+      initialSequence: Long)
+      extends AutoCloseable {
+    var partition: String  = PartitionId
     var cursorKind: String = "mysql.numeric-pk"
-    var maxPageBytes: Int = Int.MaxValue
-    private var cursor = initialCursor
-    private var sequence = initialSequence
+    var maxPageBytes: Int  = Int.MaxValue
+    private var cursor     = initialCursor
+    private var sequence   = initialSequence
 
     def nextBatch(sourceNodeId: String, executionId: String): Option[SourceBatch] = {
       val (sql, hasCursor) = cursor match {
         case Some(_) =>
-          (s"SELECT ${projection.columns.map(quote).mkString(", ")} FROM ${quote(projection.table)} " +
-            s"WHERE ${quote(projection.primaryKey)} > ? AND ${quote(projection.primaryKey)} <= ? " +
-            s"ORDER BY ${quote(projection.primaryKey)} ASC LIMIT ?", true)
+          (
+            s"SELECT ${projection.columns.map(quote).mkString(", ")} FROM ${quote(projection.table)} " +
+              s"WHERE ${quote(projection.primaryKey)} > ? AND ${quote(projection.primaryKey)} <= ? " +
+              s"ORDER BY ${quote(projection.primaryKey)} ASC LIMIT ?",
+            true)
         case None =>
-          (s"SELECT ${projection.columns.map(quote).mkString(", ")} FROM ${quote(projection.table)} " +
-            s"WHERE ${quote(projection.primaryKey)} <= ? ORDER BY ${quote(projection.primaryKey)} ASC LIMIT ?", false)
+          (
+            s"SELECT ${projection.columns.map(quote).mkString(", ")} FROM ${quote(projection.table)} " +
+              s"WHERE ${quote(projection.primaryKey)} <= ? ORDER BY ${quote(projection.primaryKey)} ASC LIMIT ?",
+            false)
       }
       val statement = connection.prepareStatement(sql)
       if (cursorKind == cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind) {
@@ -400,9 +446,9 @@ object MySQLSnapshotSourceNode {
 
         val resultSet = statement.executeQuery()
         try {
-          val rows = Vector.newBuilder[String]
+          val rows                       = Vector.newBuilder[String]
           var lastCursor: Option[String] = None
-          var encodedBytes = 0L
+          var encodedBytes               = 0L
           while (resultSet.next()) {
             val row = rowAsJson(resultSet)
             if (maxPageBytes != Int.MaxValue) {

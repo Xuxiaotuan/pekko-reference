@@ -13,18 +13,18 @@ import scala.util.Random
  * 模拟MySQL binlog事件，生成CDC数据流
  */
 class CdcDataSimulator extends LazyLogging {
-  
-  private val eventIdGenerator = new AtomicLong(1L)
+
+  private val eventIdGenerator        = new AtomicLong(1L)
   private val binlogPositionGenerator = new AtomicLong(1L)
-  private val random = new Random()
-  
+  private val random                  = new Random()
+
   // 模拟的用户数据
-  private val users = scala.collection.mutable.Map[Long, User]()
+  private val users  = scala.collection.mutable.Map[Long, User]()
   private val orders = scala.collection.mutable.Map[Long, Order]()
-  
+
   // 初始化一些测试数据
   initializeTestData()
-  
+
   /**
    * 初始化测试数据
    */
@@ -41,7 +41,7 @@ class CdcDataSimulator extends LazyLogging {
       )
       users.put(i, user)
     }
-    
+
     // 初始化订单数据
     for (i <- 1 to 20) {
       val order = Order(
@@ -55,10 +55,10 @@ class CdcDataSimulator extends LazyLogging {
       )
       orders.put(i, order)
     }
-    
+
     logger.info(s"初始化测试数据完成: ${users.size}个用户, ${orders.size}个订单")
   }
-  
+
   /**
    * 生成用户表的CDC事件
    */
@@ -68,7 +68,7 @@ class CdcDataSimulator extends LazyLogging {
       case 1 => UPDATE
       case 2 => DELETE
     }
-    
+
     eventType match {
       case INSERT =>
         val newUserId = users.keys.max + 1
@@ -82,9 +82,9 @@ class CdcDataSimulator extends LazyLogging {
         )
         users.put(newUserId, newUser)
         createCdcEvent("users", INSERT, None, Some(userToMap(newUser)))
-        
+
       case UPDATE =>
-        val userId = users.keys.toSeq(random.nextInt(users.size))
+        val userId       = users.keys.toSeq(random.nextInt(users.size))
         val existingUser = users(userId)
         val updatedUser = existingUser.copy(
           name = s"更新用户$userId",
@@ -93,14 +93,14 @@ class CdcDataSimulator extends LazyLogging {
         )
         users.put(userId, updatedUser)
         createCdcEvent("users", UPDATE, Some(userToMap(existingUser)), Some(userToMap(updatedUser)))
-        
+
       case DELETE =>
-        val userId = users.keys.toSeq(random.nextInt(users.size))
+        val userId      = users.keys.toSeq(random.nextInt(users.size))
         val deletedUser = users.remove(userId).get
         createCdcEvent("users", DELETE, Some(userToMap(deletedUser)), None)
     }
   }
-  
+
   /**
    * 生成订单表的CDC事件
    */
@@ -110,7 +110,7 @@ class CdcDataSimulator extends LazyLogging {
       case 1 => UPDATE
       case 2 => DELETE
     }
-    
+
     eventType match {
       case INSERT =>
         val newOrderId = orders.keys.max + 1
@@ -125,9 +125,9 @@ class CdcDataSimulator extends LazyLogging {
         )
         orders.put(newOrderId, newOrder)
         createCdcEvent("orders", INSERT, None, Some(orderToMap(newOrder)))
-        
+
       case UPDATE =>
-        val orderId = orders.keys.toSeq(random.nextInt(orders.size))
+        val orderId       = orders.keys.toSeq(random.nextInt(orders.size))
         val existingOrder = orders(orderId)
         val updatedOrder = existingOrder.copy(
           status = if (existingOrder.status == "进行中") "已完成" else "进行中",
@@ -136,14 +136,14 @@ class CdcDataSimulator extends LazyLogging {
         )
         orders.put(orderId, updatedOrder)
         createCdcEvent("orders", UPDATE, Some(orderToMap(existingOrder)), Some(orderToMap(updatedOrder)))
-        
+
       case DELETE =>
-        val orderId = orders.keys.toSeq(random.nextInt(orders.size))
+        val orderId      = orders.keys.toSeq(random.nextInt(orders.size))
         val deletedOrder = orders.remove(orderId).get
         createCdcEvent("orders", DELETE, Some(orderToMap(deletedOrder)), None)
     }
   }
-  
+
   /**
    * 随机生成CDC事件
    */
@@ -153,16 +153,15 @@ class CdcDataSimulator extends LazyLogging {
       case 1 => generateOrderCdcEvent()
     }
   }
-  
+
   /**
    * 创建CDC事件
    */
   private def createCdcEvent(
-    tableName: String,
-    eventType: CdcEventType,
-    beforeData: Option[Map[String, Any]],
-    afterData: Option[Map[String, Any]]
-  ): CdcEvent = {
+      tableName: String,
+      eventType: CdcEventType,
+      beforeData: Option[Map[String, Any]],
+      afterData: Option[Map[String, Any]]): CdcEvent = {
     CdcEvent(
       eventId = s"event_${eventIdGenerator.getAndIncrement()}",
       tableName = tableName,
@@ -173,36 +172,36 @@ class CdcDataSimulator extends LazyLogging {
       binlogPosition = binlogPositionGenerator.getAndIncrement()
     )
   }
-  
+
   /**
    * 将User对象转换为Map
    */
   private def userToMap(user: User): Map[String, Any] = {
     Map(
-      "id" -> user.id,
-      "name" -> user.name,
-      "email" -> user.email,
-      "age" -> user.age,
+      "id"         -> user.id,
+      "name"       -> user.name,
+      "email"      -> user.email,
+      "age"        -> user.age,
       "created_at" -> user.createdAt.toString,
       "updated_at" -> user.updatedAt.toString
     )
   }
-  
+
   /**
    * 将Order对象转换为Map
    */
   private def orderToMap(order: Order): Map[String, Any] = {
     Map(
-      "id" -> order.id,
-      "user_id" -> order.userId,
+      "id"           -> order.id,
+      "user_id"      -> order.userId,
       "product_name" -> order.productName,
-      "amount" -> order.amount.toString,
-      "status" -> order.status,
-      "created_at" -> order.createdAt.toString,
-      "updated_at" -> order.updatedAt.toString
+      "amount"       -> order.amount.toString,
+      "status"       -> order.status,
+      "created_at"   -> order.createdAt.toString,
+      "updated_at"   -> order.updatedAt.toString
     )
   }
-  
+
   /**
    * 获取当前数据统计
    */
@@ -214,7 +213,7 @@ class CdcDataSimulator extends LazyLogging {
       lastBinlogPosition = binlogPositionGenerator.get() - 1
     )
   }
-  
+
   /**
    * 重置模拟器
    */
@@ -242,8 +241,8 @@ class CdcDataSimulator extends LazyLogging {
  * 数据统计信息
  */
 case class DataStats(
-  userCount: Int,
-  orderCount: Int,
-  lastEventId: Long,
-  lastBinlogPosition: Long
-) extends CborSerializable
+    userCount: Int,
+    orderCount: Int,
+    lastEventId: Long,
+    lastBinlogPosition: Long)
+    extends CborSerializable

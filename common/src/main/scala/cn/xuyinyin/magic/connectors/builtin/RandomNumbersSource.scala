@@ -17,21 +17,21 @@ class RandomNumbersSource extends NodeSource {
 
   override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] = {
     val count = node.config.fields.get("count") match {
-      case Some(JsString(s)) => s.toInt  // 将字符串转换为整数
+      case Some(JsString(s)) => s.toInt // 将字符串转换为整数
       case Some(JsNumber(n)) => n.toInt
-      case _ => 100  // 默认值
+      case _                 => 100     // 默认值
     }
 
     val min = node.config.fields.get("min") match {
-      case Some(JsString(s)) => s.toInt  // 将字符串转换为整数
+      case Some(JsString(s)) => s.toInt // 将字符串转换为整数
       case Some(JsNumber(n)) => n.toInt
-      case _ => 1  // 默认值
+      case _                 => 1       // 默认值
     }
 
     val max = node.config.fields.get("max") match {
-      case Some(JsString(s)) => s.toInt  // 将字符串转换为整数
+      case Some(JsString(s)) => s.toInt // 将字符串转换为整数
       case Some(JsNumber(n)) => n.toInt
-      case _ => 100  // 默认值
+      case _                 => 100     // 默认值
     }
 
     onLog(s"生成随机数: $count 个 (范围: $min-$max)")

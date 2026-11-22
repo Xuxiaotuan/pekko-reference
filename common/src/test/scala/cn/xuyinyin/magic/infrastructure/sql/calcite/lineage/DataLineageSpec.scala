@@ -66,15 +66,16 @@ class DataLineageSpec extends STSpec {
       go(project.getInput)
       project.getProjects.asScala.zipWithIndex.foreach { case (expr, idx) =>
         val targetField = currentContext(idx)
-        val inputRefs = extractInputRefs(expr)
+        val inputRefs   = extractInputRefs(expr)
         // 处理复合表达式的情况
         val origins = inputRefs.flatMap { ref =>
           val originPath = getOriginPath(project.getInput, ref.getIndex)
           lineageMap.getOrElse(originPath, Set.empty)
         }.toSet
         // 只有输入字段为空时才标记为表达式
-        lineageMap(targetField) = if (origins.nonEmpty) origins
-        else Set(ColumnOrigin("expression", expr.toString))
+        lineageMap(targetField) =
+          if (origins.nonEmpty) origins
+          else Set(ColumnOrigin("expression", expr.toString))
       }
       currentContext = oldContext
     }
@@ -122,7 +123,7 @@ class DataLineageSpec extends STSpec {
         case project: Project =>
           project.getProjects.get(idx) match {
             case ref: RexInputRef => findOrigin(project.getInput, ref.getIndex)
-            case _ => findOrigin(project.getInput, idx) // 表达式索引处理
+            case _                => findOrigin(project.getInput, idx) // 表达式索引处理
           }
 
         case join: Join =>
@@ -174,16 +175,16 @@ class DataLineageSpec extends STSpec {
 
     private def handleAggregate(agg: Aggregate): Unit = {
       // 处理聚合字段
-      agg.getInput.getRowType.getFieldList.asScala.zipWithIndex.foreach {
-        case (field, idx) =>
-          val origin = getQualifiedInputName(agg.getInput, idx)
-          lineageMap(field.getName) = lineageMap.getOrElse(origin, Set.empty)
+      agg.getInput.getRowType.getFieldList.asScala.zipWithIndex.foreach { case (field, idx) =>
+        val origin = getQualifiedInputName(agg.getInput, idx)
+        lineageMap(field.getName) = lineageMap.getOrElse(origin, Set.empty)
       }
     }
 
   }
 
   "Data Lineage Analysis" should {
+
     /**
      * === Processing Project ===
      * Output fields: employee_id, ENAME
@@ -208,7 +209,6 @@ class DataLineageSpec extends STSpec {
      * ENAME -> ColumnOrigin(MYSCHEMA.EMP,ENAME)
      * employee_id -> ColumnOrigin(MYSCHEMA.EMP,EMPNO)
      * MYSCHEMA.EMP.EMPNO -> ColumnOrigin(MYSCHEMA.EMP,EMPNO)
-     *
      */
     "trace column origins with aliases" in {
       val sql =
@@ -218,15 +218,15 @@ class DataLineageSpec extends STSpec {
           |WHERE e.EMPNO > 100
           |""".stripMargin
       val (optimizedRelNode: RelNode, _) = parseAndOptimize(sql)
-      val visitor = new LineageVisitor()
+      val visitor                        = new LineageVisitor()
       visitor.go(optimizedRelNode)
       val lineage = visitor.lineageMap
       // 打印血缘关系
       println("\nFinal Lineage Map:")
-      lineage.foreach { case (field, origins) => println(s"$field -> ${origins.mkString(", ")}")}
+      lineage.foreach { case (field, origins) => println(s"$field -> ${origins.mkString(", ")}") }
       // 验证结果
-      lineage.getOrElse("employee_id", Set.empty) should contain (ColumnOrigin("MYSCHEMA.EMP", "EMPNO"))
-      lineage.getOrElse("ENAME", Set.empty) should contain (ColumnOrigin("MYSCHEMA.EMP", "ENAME"))
+      lineage.getOrElse("employee_id", Set.empty) should contain(ColumnOrigin("MYSCHEMA.EMP", "EMPNO"))
+      lineage.getOrElse("ENAME", Set.empty) should contain(ColumnOrigin("MYSCHEMA.EMP", "ENAME"))
     }
 
     /**
@@ -256,14 +256,14 @@ class DataLineageSpec extends STSpec {
           |FROM MYSCHEMA.EMP e
           |""".stripMargin
       val (rel, _) = parseAndOptimize(sql)
-      val visitor = new LineageVisitor()
+      val visitor  = new LineageVisitor()
       visitor.go(rel)
       val lineage = visitor.lineageMap
       // 打印血缘关系
       println(s"\nFinal Lineage Map: $lineage")
-      lineage.foreach { case (field, origins) => println(s"$field -> ${origins.mkString(", ")}")}
-      lineage.getOrElse("emp_id_plus", Set.empty) should contain (ColumnOrigin("MYSCHEMA.EMP", "EMPNO"))
-      lineage.getOrElse("lower_name", Set.empty) should contain (ColumnOrigin("MYSCHEMA.EMP", "ENAME"))
+      lineage.foreach { case (field, origins) => println(s"$field -> ${origins.mkString(", ")}") }
+      lineage.getOrElse("emp_id_plus", Set.empty) should contain(ColumnOrigin("MYSCHEMA.EMP", "EMPNO"))
+      lineage.getOrElse("lower_name", Set.empty) should contain(ColumnOrigin("MYSCHEMA.EMP", "ENAME"))
     }
   }
 
@@ -277,10 +277,12 @@ class DataLineageSpec extends STSpec {
     val rootSchema: SchemaPlus = Frameworks.createRootSchema(true)
     rootSchema.add("MYSCHEMA", new SingleMySchema())
 
-    val config = Frameworks.newConfigBuilder()
+    val config = Frameworks
+      .newConfigBuilder()
       .defaultSchema(rootSchema.getSubSchema("MYSCHEMA"))
       .parserConfig(
-        SqlParser.config()
+        SqlParser
+          .config()
           .withLex(Lex.MYSQL)
           .withCaseSensitive(false)
       )
@@ -291,9 +293,9 @@ class DataLineageSpec extends STSpec {
     try {
       planner = Frameworks.getPlanner(config)
 
-      val parsedSql = planner.parse(sql)
+      val parsedSql    = planner.parse(sql)
       val validatedSql = planner.validate(parsedSql)
-      val originalRel = planner.rel(validatedSql).project
+      val originalRel  = planner.rel(validatedSql).project
 
       val hepProgram = new HepProgramBuilder()
         .addRuleInstance(CoreRules.FILTER_INTO_JOIN)

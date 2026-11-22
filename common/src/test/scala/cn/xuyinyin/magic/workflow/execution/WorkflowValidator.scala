@@ -15,7 +15,7 @@ object WorkflowValidator {
   private val supportedTransformTypes = TransformExecutor.supportedTypes
 
   def validate(workflow: Workflow, registry: NodeRegistry = NodeRegistry.builtins()): Either[Vector[WorkflowValidationError], ValidatedPipeline] = {
-    val errors = mutable.ArrayBuffer.empty[WorkflowValidationError]
+    val errors    = mutable.ArrayBuffer.empty[WorkflowValidationError]
     val nodesById = workflow.nodes.groupBy(_.id)
 
     nodesById.iterator.collect { case (id, nodes) if nodes.size > 1 => id }.toVector.sorted.foreach { id =>
@@ -29,9 +29,9 @@ object WorkflowValidator {
       }
     }
 
-    val sources = workflow.nodes.filter(_.`type` == "source")
+    val sources    = workflow.nodes.filter(_.`type` == "source")
     val transforms = workflow.nodes.filter(_.`type` == "transform")
-    val sinks = workflow.nodes.filter(_.`type` == "sink")
+    val sinks      = workflow.nodes.filter(_.`type` == "sink")
     val knownRoles = Set("source", "transform", "sink")
 
     workflow.nodes.filterNot(node => knownRoles.contains(node.`type`)).foreach { node =>
@@ -51,7 +51,7 @@ object WorkflowValidator {
     if (sinks.size != 1) errors += WorkflowValidationError("sink_count", "Workflow must contain exactly one sink")
 
     val validEdges = workflow.edges.filter(edge => nodeMap.contains(edge.source) && nodeMap.contains(edge.target))
-    val outgoing = validEdges.groupBy(_.source)
+    val outgoing   = validEdges.groupBy(_.source)
     validEdges.groupBy(_.source).iterator.collect { case (id, edges) if edges.size > 1 => id }.toVector.sorted.foreach { id =>
       errors += WorkflowValidationError("branch_not_supported", s"Node $id has more than one outgoing edge")
     }
@@ -65,19 +65,21 @@ object WorkflowValidator {
 
     if (errors.nonEmpty) Left(errors.toVector)
     else {
-      val source = sources.head
-      val sink = sinks.head
-      val path = walkPath(source, nodeMap, outgoing)
+      val source  = sources.head
+      val sink    = sinks.head
+      val path    = walkPath(source, nodeMap, outgoing)
       val pathIds = path.map(_.id).toSet
 
       if (path.lastOption.forall(_.id != sink.id) || pathIds.size != workflow.nodes.size) {
         Left(Vector(WorkflowValidationError("disconnected_node", "Every node must belong to the Source to Sink path")))
       } else {
-        val pipeline = ValidatedPipeline(source, path.drop(1).dropRight(1), sink)
+        val pipeline  = ValidatedPipeline(source, path.drop(1).dropRight(1), sink)
         val cdcErrors = Vector.newBuilder[WorkflowValidationError]
         if (source.nodeType == "mysql.snapshot" && source.config.fields.contains("splitRows")) {
           if (source.config.fields.get("snapshotConsistency") != Some(spray.json.JsString("quiescent")))
-            cdcErrors += WorkflowValidationError("snapshot_split_consistency_required", "Split snapshots require snapshotConsistency=quiescent; concurrent source changes are unsupported")
+            cdcErrors += WorkflowValidationError(
+              "snapshot_split_consistency_required",
+              "Split snapshots require snapshotConsistency=quiescent; concurrent source changes are unsupported")
           if (pipeline.transforms.nonEmpty || sink.nodeType != "mysql.write")
             cdcErrors += WorkflowValidationError("snapshot_split_pipeline", "Split snapshots currently require a direct mysql.write sink")
         }
@@ -126,11 +128,10 @@ object WorkflowValidator {
   }
 
   private def walkPath(
-    source: Node,
-    nodesById: Map[String, Node],
-    outgoing: Map[String, List[cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.Edge]]
-  ): Vector[Node] = {
-    val path = mutable.ArrayBuffer(source)
+      source: Node,
+      nodesById: Map[String, Node],
+      outgoing: Map[String, List[cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.Edge]]): Vector[Node] = {
+    val path    = mutable.ArrayBuffer(source)
     var current = source
 
     while (outgoing.contains(current.id)) {
@@ -143,7 +144,7 @@ object WorkflowValidator {
 
   private def hasCycle(nodeIds: Iterable[String], outgoing: Map[String, List[cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.Edge]]): Boolean = {
     val visiting = mutable.Set.empty[String]
-    val visited = mutable.Set.empty[String]
+    val visited  = mutable.Set.empty[String]
 
     def visit(nodeId: String): Boolean = {
       if (visiting.contains(nodeId)) true

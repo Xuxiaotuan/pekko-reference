@@ -14,7 +14,7 @@ import spray.json._
 
 class GravitinoTopicResolverSpec extends AnyWordSpec with Matchers {
   private val catalogPath = "/api/metalakes/pekko/catalogs/bigdata-kafka"
-  private val topicPath = s"$catalogPath/schemas/default/topics/events"
+  private val topicPath   = s"$catalogPath/schemas/default/topics/events"
 
   private val directConfig = KafkaSourceConfig(
     "events",
@@ -33,7 +33,7 @@ class GravitinoTopicResolverSpec extends AnyWordSpec with Matchers {
       val resolver = new DefaultKafkaTopicResolver()
 
       Await.result(resolver.resolve(directConfig), 2.seconds) shouldBe
-        ResolvedKafkaTopic("events", "kafka:9092")
+      ResolvedKafkaTopic("events", "kafka:9092")
     }
 
     "load a Kafka catalog and topic from Gravitino" in withServer(
@@ -44,7 +44,7 @@ class GravitinoTopicResolverSpec extends AnyWordSpec with Matchers {
       val resolver = new DefaultKafkaTopicResolver()
 
       Await.result(resolver.resolve(gravitinoConfig(uri)), 2.seconds) shouldBe
-        ResolvedKafkaTopic("events", "kafka:9092")
+      ResolvedKafkaTopic("events", "kafka:9092")
     }
 
     "reject invalid Gravitino catalog and topic responses" in {
@@ -61,17 +61,16 @@ class GravitinoTopicResolverSpec extends AnyWordSpec with Matchers {
   }
 
   private def catalog(
-    code: Int = 0,
-    catalogType: String = "messaging",
-    provider: String = "kafka",
-    properties: JsObject = JsObject("bootstrap.servers" -> JsString("kafka:9092"))
-  ): String =
+      code: Int = 0,
+      catalogType: String = "messaging",
+      provider: String = "kafka",
+      properties: JsObject = JsObject("bootstrap.servers" -> JsString("kafka:9092"))): String =
     JsObject(
       "code" -> JsNumber(code),
       "catalog" -> JsObject(
-        "name" -> JsString("bigdata-kafka"),
-        "type" -> JsString(catalogType),
-        "provider" -> JsString(provider),
+        "name"       -> JsString("bigdata-kafka"),
+        "type"       -> JsString(catalogType),
+        "provider"   -> JsString(provider),
         "properties" -> properties
       )
     ).compactPrint
@@ -80,17 +79,16 @@ class GravitinoTopicResolverSpec extends AnyWordSpec with Matchers {
     JsObject(
       "code" -> JsNumber(code),
       "topic" -> JsObject(
-        "name" -> JsString(name),
+        "name"       -> JsString(name),
         "properties" -> JsObject.empty
       )
     ).compactPrint
 
   private def failureFor(
-    catalogJson: String = catalog(),
-    topicJson: String = topic(),
-    catalogStatus: Int = 200,
-    topicStatus: Int = 200
-  ): IllegalStateException =
+      catalogJson: String = catalog(),
+      topicJson: String = topic(),
+      catalogStatus: Int = 200,
+      topicStatus: Int = 200): IllegalStateException =
     withServer(catalogJson, topicJson, catalogStatus, topicStatus) { uri =>
       intercept[IllegalStateException] {
         Await.result(new DefaultKafkaTopicResolver().resolve(gravitinoConfig(uri)), 2.seconds)
@@ -98,30 +96,32 @@ class GravitinoTopicResolverSpec extends AnyWordSpec with Matchers {
     }
 
   private def withServer[T](
-    catalogJson: String,
-    topicJson: String,
-    catalogStatus: Int = 200,
-    topicStatus: Int = 200,
-    expectBothPaths: Boolean = false
-  )(body: URI => T): T = {
+      catalogJson: String,
+      topicJson: String,
+      catalogStatus: Int = 200,
+      topicStatus: Int = 200,
+      expectBothPaths: Boolean = false
+    )(body: URI => T): T = {
     val requestedPaths = new ConcurrentLinkedQueue[String]()
-    val server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0)
-    server.createContext("/", new HttpHandler {
-      override def handle(exchange: HttpExchange): Unit = {
-        val path = exchange.getRequestURI.getPath
-        requestedPaths.add(path)
-        val (status, response) = path match {
-          case `catalogPath` => catalogStatus -> catalogJson
-          case `topicPath` => topicStatus -> topicJson
-          case _ => 404 -> "{}"
+    val server         = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0)
+    server.createContext(
+      "/",
+      new HttpHandler {
+        override def handle(exchange: HttpExchange): Unit = {
+          val path = exchange.getRequestURI.getPath
+          requestedPaths.add(path)
+          val (status, response) = path match {
+            case `catalogPath` => catalogStatus -> catalogJson
+            case `topicPath`   => topicStatus   -> topicJson
+            case _             => 404           -> "{}"
+          }
+          val bytes = response.getBytes(StandardCharsets.UTF_8)
+          exchange.getResponseHeaders.add("Content-Type", "application/json")
+          exchange.sendResponseHeaders(status, bytes.length)
+          try exchange.getResponseBody.write(bytes)
+          finally exchange.close()
         }
-        val bytes = response.getBytes(StandardCharsets.UTF_8)
-        exchange.getResponseHeaders.add("Content-Type", "application/json")
-        exchange.sendResponseHeaders(status, bytes.length)
-        try exchange.getResponseBody.write(bytes)
-        finally exchange.close()
-      }
-    })
+      })
     server.start()
 
     try {

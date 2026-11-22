@@ -1,6 +1,5 @@
 package cn.xuyinyin.magic.connectors.mysql.sink
 
-
 import cn.xuyinyin.magic.cdc.checkpoint.{AlreadyCommitted, BatchCheckpoint, BatchCommitResult, Committed, SnapshotBoundary, SourceBatch}
 import cn.xuyinyin.magic.cdc.recovery.{CdcExecutionException, ExecutionFailure}
 import cn.xuyinyin.magic.cdc.{CdcOperation, MySQLCdcEnvelope, MySQLCdcGroup, MySQLCdcGroupProtocol}
@@ -27,15 +26,14 @@ class MySQLCdcApplyEngine {
   protected[sink] def beforeLedgerClaim(batchId: String): Unit = ()
 
   /** Invoked inside the target transaction before any group or row is written. */
-  protected[magic] def beforeTargetWrite(connection: Connection, config: MySQLCdcApplyConfig,
-    workflowId: String, batch: SourceBatch): Unit = ()
+  protected[magic] def beforeTargetWrite(connection: Connection, config: MySQLCdcApplyConfig, workflowId: String, batch: SourceBatch): Unit = ()
 
   protected[sink] def targetTypeName(rows: ResultSet): String = requiredMetadata(rows, "TYPE_NAME")
 
   private[magic] def validateReadyConfigured(
-    config: MySQLCdcApplyConfig,
-    onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Future[Done] = {
+      config: MySQLCdcApplyConfig,
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Future[Done] = {
     Future {
       var connection: Connection = null
       try {
@@ -46,16 +44,16 @@ class MySQLCdcApplyEngine {
         Done
       } catch {
         case error: IllegalStateException => throw error
-        case NonFatal(error) => throw new IllegalStateException("MySQL CDC apply readiness validation failed", error)
+        case NonFatal(error)              => throw new IllegalStateException("MySQL CDC apply readiness validation failed", error)
       } finally close(connection)
     }(blockingEc)
   }
 
   private[magic] def validateSourceBoundaryConfigured(
-    config: MySQLCdcApplyConfig,
-    boundary: SnapshotBoundary,
-    onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Future[Done] = {
+      config: MySQLCdcApplyConfig,
+      boundary: SnapshotBoundary,
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Future[Done] = {
     val identity = parseBoundary(boundary)
     Future {
       var connection: Connection = null
@@ -68,15 +66,19 @@ class MySQLCdcApplyEngine {
         Done
       } catch {
         case error: IllegalStateException => throw error
-        case NonFatal(error) => throw new IllegalStateException("MySQL CDC source boundary validation failed", error)
+        case NonFatal(error)              => throw new IllegalStateException("MySQL CDC source boundary validation failed", error)
       } finally close(connection)
     }(blockingEc)
   }
 
   private[magic] def commitBatchConfigured(
-    config:MySQLCdcApplyConfig,workflowId:String,executionId:String,batch:SourceBatch,
-    transformedRows:Vector[String],onLog:String=>Unit
-  )(implicit blockingEc:ExecutionContext):Future[BatchCommitResult] = {
+      config: MySQLCdcApplyConfig,
+      workflowId: String,
+      executionId: String,
+      batch: SourceBatch,
+      transformedRows: Vector[String],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = {
     Future {
       if (transformedRows.size != batch.rows.size) {
         throw new IllegalStateException("CDC transformed row count does not match source row count")
@@ -86,16 +88,15 @@ class MySQLCdcApplyEngine {
         require(transformedRows == batch.rows, "CDC group transformations are not supported")
         transformedRows.map(MySQLCdcGroup.parse(_, protocol))
       }
-      val envelopes = groups.map(_.flatMap(_.members.map(_._2))).getOrElse(transformedRows.map(parseEnvelope))
+      val envelopes              = groups.map(_.flatMap(_.members.map(_._2))).getOrElse(transformedRows.map(parseEnvelope))
       var connection: Connection = null
       try {
         connection = openConnection(config)
         val target = resolveTarget(connection, config)
         validateCompatibility(identity, target)
         // Validate every event before any ledger claim, including replayed groups.
-        val plannedGroups = groups.map(_.map(group =>
-          group -> group.members.map { case (_, envelope) => plan(envelope, identity, target) }))
-        val planned = if (groups.isEmpty) envelopes.map(envelope => plan(envelope, identity, target)) else Vector.empty
+        val plannedGroups = groups.map(_.map(group => group -> group.members.map { case (_, envelope) => plan(envelope, identity, target) }))
+        val planned       = if (groups.isEmpty) envelopes.map(envelope => plan(envelope, identity, target)) else Vector.empty
         val checkpoint = BatchCheckpoint(
           batch.sourceNodeId,
           batch.partitionId,
@@ -113,16 +114,20 @@ class MySQLCdcApplyEngine {
           val appliedGroups = using(new JdbcStatementScope(connection)) { statements =>
             var applied = 0
             plannedGroups.get.foreach { case (group, events) =>
-              val evidence = MySQLCdcGroup.canonical(JsObject("identity" -> batch.cursor.upperBound.parseJson,
-                "targetTable" -> JsString(target.name), "group" -> group.canonicalJson.parseJson))
+              val evidence = MySQLCdcGroup.canonical(
+                JsObject(
+                  "identity"    -> batch.cursor.upperBound.parseJson,
+                  "targetTable" -> JsString(target.name),
+                  "group"       -> group.canonicalJson.parseJson))
               val select = statements.prepare("SELECT evidence FROM pekko_sync_cdc_group_ledger WHERE group_id = ? FOR UPDATE")
               select.setString(1, group.groupId)
               val existing = using(select.executeQuery())(rows => Option.when(rows.next())(rows.getString(1)))
               existing match {
                 case Some(value) =>
-                  if (value != evidence) throw new CdcExecutionException(
-                    ExecutionFailure(ExecutionFailure.ProtocolConflict,"group-evidence",Some(batch.batchId)),
-                    new IllegalStateException(s"conflicting CDC group evidence: ${group.groupId}"))
+                  if (value != evidence)
+                    throw new CdcExecutionException(
+                      ExecutionFailure(ExecutionFailure.ProtocolConflict, "group-evidence", Some(batch.batchId)),
+                      new IllegalStateException(s"conflicting CDC group evidence: ${group.groupId}"))
                 case None =>
                   val insert = statements.prepare("INSERT INTO pekko_sync_cdc_group_ledger(group_id,evidence) VALUES (?,?)")
                   insert.setString(1, group.groupId); insert.setString(2, evidence); insert.executeUpdate()
@@ -132,42 +137,47 @@ class MySQLCdcApplyEngine {
             }
             applied
           } // All statements close before COMMIT; a close failure still rolls this transaction back.
-          try connection.commit() catch {
-            case NonFatal(error) => throw new CdcExecutionException(
-              ExecutionFailure(ExecutionFailure.CommitUnknown,"target-commit",Some(batch.batchId)),error)
+          try connection.commit()
+          catch {
+            case NonFatal(error) =>
+              throw new CdcExecutionException(ExecutionFailure(ExecutionFailure.CommitUnknown, "target-commit", Some(batch.batchId)), error)
           }
-          safeLog(onLog, s"CDC complete groups covered batchId=${batch.batchId} newGroups=$appliedGroups replayedGroups=${groups.get.size - appliedGroups}")
+          safeLog(
+            onLog,
+            s"CDC complete groups covered batchId=${batch.batchId} newGroups=$appliedGroups replayedGroups=${groups.get.size - appliedGroups}")
           if (appliedGroups > 0) Committed(checkpoint) else AlreadyCommitted(checkpoint)
-        } else findLedger(connection, batch.batchId) match {
-          case Some(existing) =>
-            connection.rollback()
-            if (existing == expected) AlreadyCommitted(existing.checkpoint)
-            else throw conflictingLedger(batch.batchId)
-          case None =>
-            beforeLedgerClaim(batch.batchId)
-            val duplicate = try {
-              insertLedger(connection, expected)
-              None
-            } catch {
-              case sql: SQLException if isDuplicateKey(sql) =>
-                connection.rollback()
-                Some(sql)
-            }
-            duplicate match {
-              case Some(sql) =>
-                findLedger(connection, expected.batchId) match {
-                  case Some(existing) if existing == expected => AlreadyCommitted(existing.checkpoint)
-                  case Some(_) => throw conflictingLedger(expected.batchId)
-                  case None => throw new IllegalStateException("MySQL CDC ledger claim failed", sql)
+        } else
+          findLedger(connection, batch.batchId) match {
+            case Some(existing) =>
+              connection.rollback()
+              if (existing == expected) AlreadyCommitted(existing.checkpoint)
+              else throw conflictingLedger(batch.batchId)
+            case None =>
+              beforeLedgerClaim(batch.batchId)
+              val duplicate =
+                try {
+                  insertLedger(connection, expected)
+                  None
+                } catch {
+                  case sql: SQLException if isDuplicateKey(sql) =>
+                    connection.rollback()
+                    Some(sql)
                 }
-              case None =>
-                using(new JdbcStatementScope(connection)) { statements =>
-                  planned.foreach(applyEvent(statements, target, _))
-                }
-                connection.commit()
-                Committed(checkpoint)
-            }
-        }
+              duplicate match {
+                case Some(sql) =>
+                  findLedger(connection, expected.batchId) match {
+                    case Some(existing) if existing == expected => AlreadyCommitted(existing.checkpoint)
+                    case Some(_)                                => throw conflictingLedger(expected.batchId)
+                    case None                                   => throw new IllegalStateException("MySQL CDC ledger claim failed", sql)
+                  }
+                case None =>
+                  using(new JdbcStatementScope(connection)) { statements =>
+                    planned.foreach(applyEvent(statements, target, _))
+                  }
+                  connection.commit()
+                  Committed(checkpoint)
+              }
+          }
         safeLog(onLog, s"MySQL CDC delivery covered batchId=${batch.batchId} events=${envelopes.size}")
         result
       } catch {
@@ -182,9 +192,9 @@ class MySQLCdcApplyEngine {
   }
 
   private def resolveTarget(connection: Connection, config: MySQLCdcApplyConfig): TargetTable = {
-    val metadata = connection.getMetaData
-    val catalog = Option(connection.getCatalog).filter(_.nonEmpty).getOrElse(config.database)
-    val schema = Option(connection.getSchema).filter(_.nonEmpty)
+    val metadata  = connection.getMetaData
+    val catalog   = Option(connection.getCatalog).filter(_.nonEmpty).getOrElse(config.database)
+    val schema    = Option(connection.getSchema).filter(_.nonEmpty)
     val tableName = metadataIdentifier(metadata, config.table)
     val columns = using(metadata.getColumns(catalog, schema.orNull, escapePattern(metadata, tableName), null)) { rows =>
       val builder = Vector.newBuilder[TargetColumn]
@@ -229,12 +239,17 @@ class MySQLCdcApplyEngine {
     if (primaryKeys.size != 1) {
       throw new IllegalStateException("MySQL CDC apply target requires exactly one primary key")
     }
-    val primaryKey = columns.find(_.name.equalsIgnoreCase(primaryKeys.head)).getOrElse(
-      throw new IllegalStateException("MySQL CDC target primary key metadata is missing")
-    )
-    val quote = Option(metadata.getIdentifierQuoteString).map(_.trim).filter(_.nonEmpty).getOrElse(
-      throw new IllegalStateException("JDBC target does not support quoted identifiers")
-    )
+    val primaryKey = columns
+      .find(_.name.equalsIgnoreCase(primaryKeys.head))
+      .getOrElse(
+        throw new IllegalStateException("MySQL CDC target primary key metadata is missing")
+      )
+    val quote = Option(metadata.getIdentifierQuoteString)
+      .map(_.trim)
+      .filter(_.nonEmpty)
+      .getOrElse(
+        throw new IllegalStateException("JDBC target does not support quoted identifiers")
+      )
     TargetTable(tableName, columns, primaryKey, quote)
   }
 
@@ -246,9 +261,10 @@ class MySQLCdcApplyEngine {
     }
     val sourceNames = identity.columns.map(_.lowerName).toSet
     identity.columns.foreach { source =>
-      val targetColumn = target.byLowerName.getOrElse(source.lowerName, {
-        throw new IllegalStateException(s"target is missing source column ${source.name}")
-      })
+      val targetColumn = target.byLowerName.getOrElse(
+        source.lowerName, {
+          throw new IllegalStateException(s"target is missing source column ${source.name}")
+        })
       if (!compatibleType(source, targetColumn)) {
         throw new IllegalStateException(
           s"source type ${source.typeName} (${source.jdbcType}) for ${source.name} cannot be applied losslessly " +
@@ -256,10 +272,12 @@ class MySQLCdcApplyEngine {
         )
       }
     }
-    target.columns.find(column => !sourceNames.contains(column.lowerName) && !column.nullable && column.defaultValue.isEmpty)
-      .foreach(column => throw new IllegalStateException(
-        s"required extra target column ${column.name} has no default"
-      ))
+    target.columns
+      .find(column => !sourceNames.contains(column.lowerName) && !column.nullable && column.defaultValue.isEmpty)
+      .foreach(column =>
+        throw new IllegalStateException(
+          s"required extra target column ${column.name} has no default"
+        ))
   }
 
   private def plan(envelope: MySQLCdcEnvelope, identity: StreamIdentity, target: TargetTable): PlannedEvent = {
@@ -272,7 +290,7 @@ class MySQLCdcApplyEngine {
     val boundKey = bindValue(target.primaryKey, keyValue)
     def checkedImage(image: JsObject, path: String): Vector[(TargetColumn, BoundValue)] = {
       val expected = identity.columns.map(_.lowerName).toSet
-      val actual = image.fields.keys.map(_.toLowerCase(Locale.ROOT)).toSet
+      val actual   = image.fields.keys.map(_.toLowerCase(Locale.ROOT)).toSet
       if (actual != expected) {
         throw new IllegalStateException(s"CDC $path image is not a complete source row")
       }
@@ -293,7 +311,7 @@ class MySQLCdcApplyEngine {
         Upsert(checkedImage(after, "after"))
       case CdcOperation.Update =>
         val before = envelope.before.getOrElse(throw new IllegalStateException("CDC update requires before image"))
-        val after = envelope.after.getOrElse(throw new IllegalStateException("CDC update requires after image"))
+        val after  = envelope.after.getOrElse(throw new IllegalStateException("CDC update requires after image"))
         requireSameKey(before, "before")
         requireSameKey(after, "after")
         Upsert(checkedImage(after, "after"))
@@ -307,17 +325,17 @@ class MySQLCdcApplyEngine {
   private def applyEvent(statements: JdbcStatementScope, target: TargetTable, event: PlannedEvent): Unit = event match {
     case Upsert(values) =>
       val columns = values.map(_._1)
-      val nonKey = columns.filterNot(_.name.equalsIgnoreCase(target.primaryKey.name))
-      val assignments = if (nonKey.nonEmpty) nonKey.map(column =>
-        s"${target.quoted(column.name)}=VALUES(${target.quoted(column.name)})"
-      ) else Vector(s"${target.quoted(target.primaryKey.name)}=VALUES(${target.quoted(target.primaryKey.name)})")
+      val nonKey  = columns.filterNot(_.name.equalsIgnoreCase(target.primaryKey.name))
+      val assignments =
+        if (nonKey.nonEmpty) nonKey.map(column => s"${target.quoted(column.name)}=VALUES(${target.quoted(column.name)})")
+        else Vector(s"${target.quoted(target.primaryKey.name)}=VALUES(${target.quoted(target.primaryKey.name)})")
       val sql = s"INSERT INTO ${target.quoted(target.name)} (${columns.map(c => target.quoted(c.name)).mkString(", ")}) " +
         s"VALUES (${Vector.fill(columns.size)("?").mkString(", ")}) ON DUPLICATE KEY UPDATE ${assignments.mkString(", ")}"
       val statement = statements.prepare(sql)
       values.zipWithIndex.foreach { case ((_, value), index) => set(statement, index + 1, value) }
       statement.executeUpdate()
     case Delete(key) =>
-      val sql = s"DELETE FROM ${target.quoted(target.name)} WHERE ${target.quoted(target.primaryKey.name)} = ?"
+      val sql       = s"DELETE FROM ${target.quoted(target.name)} WHERE ${target.quoted(target.primaryKey.name)} = ?"
       val statement = statements.prepare(sql)
       set(statement, 1, key)
       statement.executeUpdate()
@@ -327,99 +345,106 @@ class MySQLCdcApplyEngine {
     if (value == JsNull) {
       if (!column.nullable) throw new IllegalStateException(s"target column ${column.name} does not allow null")
       NullValue(column.jdbcType)
-    } else column.jdbcType match {
-      case Types.BOOLEAN | Types.BIT => value match {
-        case JsBoolean(v) => ObjectValue(column.jdbcType, Boolean.box(v))
-        case _ => conversion(column)
+    } else
+      column.jdbcType match {
+        case Types.BOOLEAN | Types.BIT =>
+          value match {
+            case JsBoolean(v) => ObjectValue(column.jdbcType, Boolean.box(v))
+            case _            => conversion(column)
+          }
+        case Types.TINYINT =>
+          val number = exactLong(value, column)
+          if (number < Byte.MinValue || number > Byte.MaxValue) conversion(column)
+          IntegralValue(column.jdbcType, number.toByte)
+        case Types.SMALLINT =>
+          val number = exactLong(value, column)
+          if (number < Short.MinValue || number > Short.MaxValue) conversion(column)
+          IntegralValue(column.jdbcType, number.toShort)
+        case Types.INTEGER =>
+          val number = exactLong(value, column)
+          if (number < Int.MinValue || number > Int.MaxValue) conversion(column)
+          IntegralValue(column.jdbcType, number.toInt)
+        case Types.BIGINT => IntegralValue(column.jdbcType, exactLong(value, column))
+        case Types.NUMERIC | Types.DECIMAL =>
+          val decimal = value match {
+            case JsString(text)   => parseDecimal(text, column)
+            case JsNumber(number) => number.bigDecimal
+            case _                => conversion(column)
+          }
+          val scaled =
+            try decimal.setScale(column.scale, RoundingMode.UNNECESSARY)
+            catch { case _: ArithmeticException => conversion(column) }
+          if (column.size > 0 && scaled.precision() > column.size) conversion(column)
+          ObjectValue(column.jdbcType, scaled)
+        case Types.REAL =>
+          val original  = jsonNumber(value, column)
+          val converted = original.toFloat
+          if (!java.lang.Float.isFinite(converted) || BigDecimal.decimal(converted) != original) conversion(column)
+          ObjectValue(column.jdbcType, Float.box(converted))
+        case Types.FLOAT | Types.DOUBLE =>
+          val original  = jsonNumber(value, column)
+          val converted = original.toDouble
+          if (!java.lang.Double.isFinite(converted) || BigDecimal.decimal(converted) != original) conversion(column)
+          ObjectValue(column.jdbcType, Double.box(converted))
+        case Types.CHAR | Types.VARCHAR | Types.LONGVARCHAR | Types.NCHAR | Types.NVARCHAR | Types.LONGNVARCHAR =>
+          val text = value match { case JsString(v) => v; case _ => conversion(column) }
+          if (column.size > 0 && text.length > column.size) conversion(column)
+          ObjectValue(column.jdbcType, text)
+        case Types.DATE =>
+          val text = string(value, column)
+          ObjectValue(column.jdbcType, java.sql.Date.valueOf(parseDate(text, column)))
+        case Types.TIME =>
+          val text = string(value, column)
+          val time = parseTime(text, column)
+          requireFractionalPrecision(time.getNano, column)
+          ObjectValue(column.jdbcType, time)
+        case Types.TIME_WITH_TIMEZONE =>
+          val text = string(value, column)
+          val time = parseOffsetTime(text, column)
+          requireFractionalPrecision(time.getNano, column)
+          ObjectValue(column.jdbcType, time)
+        case Types.TIMESTAMP =>
+          val text = string(value, column)
+          parseTimestamp(text, column)
+        case Types.TIMESTAMP_WITH_TIMEZONE =>
+          val text = string(value, column)
+          ObjectValue(column.jdbcType, parseOffsetTimestamp(text, column))
+        case Types.OTHER if column.typeName.equalsIgnoreCase("JSON") =>
+          ObjectValue(column.jdbcType, string(value, column))
+        case _ => throw new IllegalStateException(s"unsupported target column type ${column.name}: ${column.typeName}")
       }
-      case Types.TINYINT =>
-        val number = exactLong(value, column)
-        if (number < Byte.MinValue || number > Byte.MaxValue) conversion(column)
-        IntegralValue(column.jdbcType, number.toByte)
-      case Types.SMALLINT =>
-        val number = exactLong(value, column)
-        if (number < Short.MinValue || number > Short.MaxValue) conversion(column)
-        IntegralValue(column.jdbcType, number.toShort)
-      case Types.INTEGER =>
-        val number = exactLong(value, column)
-        if (number < Int.MinValue || number > Int.MaxValue) conversion(column)
-        IntegralValue(column.jdbcType, number.toInt)
-      case Types.BIGINT => IntegralValue(column.jdbcType, exactLong(value, column))
-      case Types.NUMERIC | Types.DECIMAL =>
-        val decimal = value match {
-          case JsString(text) => parseDecimal(text, column)
-          case JsNumber(number) => number.bigDecimal
-          case _ => conversion(column)
-        }
-        val scaled = try decimal.setScale(column.scale, RoundingMode.UNNECESSARY)
-        catch { case _: ArithmeticException => conversion(column) }
-        if (column.size > 0 && scaled.precision() > column.size) conversion(column)
-        ObjectValue(column.jdbcType, scaled)
-      case Types.REAL =>
-        val original = jsonNumber(value, column)
-        val converted = original.toFloat
-        if (!java.lang.Float.isFinite(converted) || BigDecimal.decimal(converted) != original) conversion(column)
-        ObjectValue(column.jdbcType, Float.box(converted))
-      case Types.FLOAT | Types.DOUBLE =>
-        val original = jsonNumber(value, column)
-        val converted = original.toDouble
-        if (!java.lang.Double.isFinite(converted) || BigDecimal.decimal(converted) != original) conversion(column)
-        ObjectValue(column.jdbcType, Double.box(converted))
-      case Types.CHAR | Types.VARCHAR | Types.LONGVARCHAR | Types.NCHAR | Types.NVARCHAR | Types.LONGNVARCHAR =>
-        val text = value match { case JsString(v) => v; case _ => conversion(column) }
-        if (column.size > 0 && text.length > column.size) conversion(column)
-        ObjectValue(column.jdbcType, text)
-      case Types.DATE =>
-        val text = string(value, column)
-        ObjectValue(column.jdbcType, java.sql.Date.valueOf(parseDate(text, column)))
-      case Types.TIME =>
-        val text = string(value, column)
-        val time = parseTime(text, column)
-        requireFractionalPrecision(time.getNano, column)
-        ObjectValue(column.jdbcType, time)
-      case Types.TIME_WITH_TIMEZONE =>
-        val text = string(value, column)
-        val time = parseOffsetTime(text, column)
-        requireFractionalPrecision(time.getNano, column)
-        ObjectValue(column.jdbcType, time)
-      case Types.TIMESTAMP =>
-        val text = string(value, column)
-        parseTimestamp(text, column)
-      case Types.TIMESTAMP_WITH_TIMEZONE =>
-        val text = string(value, column)
-        ObjectValue(column.jdbcType, parseOffsetTimestamp(text, column))
-      case Types.OTHER if column.typeName.equalsIgnoreCase("JSON") =>
-        ObjectValue(column.jdbcType, string(value, column))
-      case _ => throw new IllegalStateException(s"unsupported target column type ${column.name}: ${column.typeName}")
-    }
   }
 
   private def exactLong(value: JsValue, column: TargetColumn): Long = value match {
     case JsNumber(number) if number.isWhole && number.isValidLong => number.toLong
-    case _ => conversion(column)
+    case _                                                        => conversion(column)
   }
 
   private def jsonNumber(value: JsValue, column: TargetColumn): BigDecimal = value match {
     case JsNumber(number) => number
-    case _ => conversion(column)
+    case _                => conversion(column)
   }
 
   private def parseDecimal(value: String, column: TargetColumn): java.math.BigDecimal =
-    try new java.math.BigDecimal(value) catch { case _: NumberFormatException => conversion(column) }
+    try new java.math.BigDecimal(value)
+    catch { case _: NumberFormatException => conversion(column) }
 
   private def string(value: JsValue, column: TargetColumn): String = value match {
     case JsString(text) => text
-    case _ => conversion(column)
+    case _              => conversion(column)
   }
 
   private def parseDate(value: String, column: TargetColumn): LocalDate =
-    try LocalDate.parse(value) catch { case NonFatal(_) => conversion(column) }
+    try LocalDate.parse(value)
+    catch { case NonFatal(_) => conversion(column) }
 
   private def parseTime(value: String, column: TargetColumn): LocalTime =
-    try LocalTime.parse(value) catch { case NonFatal(_) => conversion(column) }
+    try LocalTime.parse(value)
+    catch { case NonFatal(_) => conversion(column) }
 
   private def parseOffsetTime(value: String, column: TargetColumn): OffsetTime =
-    try OffsetTime.parse(value) catch { case NonFatal(_) => conversion(column) }
+    try OffsetTime.parse(value)
+    catch { case NonFatal(_) => conversion(column) }
 
   private def parseTimestamp(value: String, column: TargetColumn): BoundValue = {
     try InstantValue(Instant.parse(value))
@@ -433,7 +458,8 @@ class MySQLCdcApplyEngine {
   }
 
   private def parseOffsetTimestamp(value: String, column: TargetColumn): OffsetDateTime =
-    try OffsetDateTime.parse(value) catch { case NonFatal(_) => conversion(column) }
+    try OffsetDateTime.parse(value)
+    catch { case NonFatal(_) => conversion(column) }
 
   private def requireFractionalPrecision(nanos: Int, column: TargetColumn): Unit = {
     if (column.scale < 0 || column.scale > 9) {
@@ -447,46 +473,50 @@ class MySQLCdcApplyEngine {
     throw new IllegalStateException(s"CDC value cannot be converted losslessly for target column ${column.name}")
 
   private def set(statement: PreparedStatement, index: Int, value: BoundValue): Unit = value match {
-    case NullValue(jdbcType) => statement.setNull(index, jdbcType)
-    case IntegralValue(Types.TINYINT, v: Byte) => statement.setByte(index, v)
+    case NullValue(jdbcType)                     => statement.setNull(index, jdbcType)
+    case IntegralValue(Types.TINYINT, v: Byte)   => statement.setByte(index, v)
     case IntegralValue(Types.SMALLINT, v: Short) => statement.setShort(index, v)
-    case IntegralValue(Types.INTEGER, v: Int) => statement.setInt(index, v)
-    case IntegralValue(Types.BIGINT, v: Long) => statement.setLong(index, v)
-    case InstantValue(v) => statement.setTimestamp(index, Timestamp.from(v), Calendar.getInstance(UtcTimeZone))
-    case ObjectValue(jdbcType, v) => statement.setObject(index, v, jdbcType)
-    case other => statement.setObject(index, other.value, other.jdbcType)
+    case IntegralValue(Types.INTEGER, v: Int)    => statement.setInt(index, v)
+    case IntegralValue(Types.BIGINT, v: Long)    => statement.setLong(index, v)
+    case InstantValue(v)                         => statement.setTimestamp(index, Timestamp.from(v), Calendar.getInstance(UtcTimeZone))
+    case ObjectValue(jdbcType, v)                => statement.setObject(index, v, jdbcType)
+    case other                                   => statement.setObject(index, other.value, other.jdbcType)
   }
 
   private def validateGroupLedger(connection: Connection, targetTable: String): Unit = {
     require(connection.getMetaData.supportsTransactions(), "CDC group protocol requires transactional storage")
     val pk = using(connection.getMetaData.getPrimaryKeys(connection.getCatalog, connection.getSchema, "pekko_sync_cdc_group_ledger")) { rows =>
-      val keys = Vector.newBuilder[(Int,String)]
+      val keys = Vector.newBuilder[(Int, String)]
       while (rows.next()) keys += rows.getInt("KEY_SEQ") -> rows.getString("COLUMN_NAME").toLowerCase(Locale.ROOT)
       keys.result().sortBy(_._1).map(_._2)
     }
-    if (pk != Vector("group_id")) throw new CdcExecutionException(
-      ExecutionFailure(ExecutionFailure.ProtocolConflict,"group-ledger"),
-      new IllegalStateException("CDC group ledger requires group_id as its single PRIMARY KEY"))
+    if (pk != Vector("group_id"))
+      throw new CdcExecutionException(
+        ExecutionFailure(ExecutionFailure.ProtocolConflict, "group-ledger"),
+        new IllegalStateException("CDC group ledger requires group_id as its single PRIMARY KEY"))
     if (connection.getMetaData.getDatabaseProductName.equalsIgnoreCase("MySQL")) {
       Vector(targetTable, "pekko_sync_cdc_group_ledger").foreach { table =>
-        using(connection.prepareStatement("SELECT ENGINE FROM information_schema.tables WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?")) { statement =>
-          statement.setString(1, table)
-          using(statement.executeQuery()) { rows =>
-            if (!rows.next() || !"InnoDB".equalsIgnoreCase(rows.getString(1)))
-              throw new IllegalStateException(s"CDC group protocol requires InnoDB for $table")
-          }
+        using(connection.prepareStatement("SELECT ENGINE FROM information_schema.tables WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?")) {
+          statement =>
+            statement.setString(1, table)
+            using(statement.executeQuery()) { rows =>
+              if (!rows.next() || !"InnoDB".equalsIgnoreCase(rows.getString(1)))
+                throw new IllegalStateException(s"CDC group protocol requires InnoDB for $table")
+            }
         }
       }
     }
-    using(connection.prepareStatement(
-      "SELECT group_id,evidence,committed_at FROM pekko_sync_cdc_group_ledger WHERE 1 = 0"
-    ))(_.executeQuery().close())
+    using(
+      connection.prepareStatement(
+        "SELECT group_id,evidence,committed_at FROM pekko_sync_cdc_group_ledger WHERE 1 = 0"
+      ))(_.executeQuery().close())
   }
 
-  private def validateLedger(connection: Connection): Unit = using(connection.prepareStatement(
-    s"SELECT batch_id, workflow_id, execution_id, source_node_id, partition_id, batch_sequence, " +
-      s"cursor_kind, cursor_value, upper_bound, source_rows, target_rows, committed_at FROM $LedgerTable WHERE 1 = 0"
-  ))(_.executeQuery().close())
+  private def validateLedger(connection: Connection): Unit = using(
+    connection.prepareStatement(
+      s"SELECT batch_id, workflow_id, execution_id, source_node_id, partition_id, batch_sequence, " +
+        s"cursor_kind, cursor_value, upper_bound, source_rows, target_rows, committed_at FROM $LedgerTable WHERE 1 = 0"
+    ))(_.executeQuery().close())
 
   private def findLedger(connection: Connection, batchId: String): Option[LedgerRecord] = using(
     connection.prepareStatement(
@@ -561,9 +591,10 @@ class MySQLCdcApplyEngine {
     if (!boundary.partitionId.startsWith("mysql-cdc:")) {
       throw new IllegalStateException("CDC boundary partition is unsupported")
     }
-    val identity = parseIdentity(boundary.upperBound.getOrElse(
-      throw new IllegalStateException("CDC boundary stream identity is missing")
-    ))
+    val identity = parseIdentity(
+      boundary.upperBound.getOrElse(
+        throw new IllegalStateException("CDC boundary stream identity is missing")
+      ))
     if (boundary.partitionId != s"mysql-cdc:${identity.connectorId}") {
       throw new IllegalStateException("CDC boundary partition does not match connector")
     }
@@ -571,8 +602,9 @@ class MySQLCdcApplyEngine {
   }
 
   private def parseIdentity(json: String): StreamIdentity = {
-    val fields = try json.parseJson.asJsObject.fields
-    catch { case NonFatal(_) => throw new IllegalStateException("CDC stream identity is malformed") }
+    val fields =
+      try json.parseJson.asJsObject.fields
+      catch { case NonFatal(_) => throw new IllegalStateException("CDC stream identity is malformed") }
     val grouped = fields.get("version").contains(JsNumber(2))
     val expected = Set("version", "connectorId", "database", "table", "primaryKey", "columns", "schemaFingerprint") ++
       (if (grouped) Set("groupProtocol") else Set.empty[String])
@@ -581,29 +613,30 @@ class MySQLCdcApplyEngine {
     }
     def required(name: String): String = fields.get(name) match {
       case Some(JsString(value)) if value.nonEmpty => value
-      case _ => throw new IllegalStateException(s"CDC stream identity $name is invalid")
+      case _                                       => throw new IllegalStateException(s"CDC stream identity $name is invalid")
     }
     val columns = fields("columns") match {
-      case JsArray(values) if values.nonEmpty => values.map {
-        case JsObject(column) if column.keySet == Set("name", "jdbcType", "typeName") =>
-          val name = column.get("name") match {
-            case Some(JsString(value)) => requireIdentifier(value, "source column")
-            case _ => throw new IllegalStateException("CDC stream identity column name is invalid")
-          }
-          val jdbcType = column.get("jdbcType") match {
-            case Some(JsNumber(value)) if value.isValidInt && SupportedSourceTypes.contains(value.toInt) => value.toInt
-            case _ => throw new IllegalStateException("CDC stream identity column type is invalid")
-          }
-          val typeName = column.get("typeName") match {
-            case Some(JsString(value)) if value.nonEmpty => value
-            case _ => throw new IllegalStateException("CDC stream identity column type name is invalid")
-          }
-          if (IntegralTypes.contains(jdbcType) && typeName.toUpperCase(Locale.ROOT).contains("UNSIGNED")) {
-            throw new IllegalStateException(s"unsupported source UNSIGNED integral type for $name: $typeName")
-          }
-          SourceColumn(name, jdbcType, typeName)
-        case _ => throw new IllegalStateException("CDC stream identity columns are invalid")
-      }.toVector
+      case JsArray(values) if values.nonEmpty =>
+        values.map {
+          case JsObject(column) if column.keySet == Set("name", "jdbcType", "typeName") =>
+            val name = column.get("name") match {
+              case Some(JsString(value)) => requireIdentifier(value, "source column")
+              case _                     => throw new IllegalStateException("CDC stream identity column name is invalid")
+            }
+            val jdbcType = column.get("jdbcType") match {
+              case Some(JsNumber(value)) if value.isValidInt && SupportedSourceTypes.contains(value.toInt) => value.toInt
+              case _ => throw new IllegalStateException("CDC stream identity column type is invalid")
+            }
+            val typeName = column.get("typeName") match {
+              case Some(JsString(value)) if value.nonEmpty => value
+              case _                                       => throw new IllegalStateException("CDC stream identity column type name is invalid")
+            }
+            if (IntegralTypes.contains(jdbcType) && typeName.toUpperCase(Locale.ROOT).contains("UNSIGNED")) {
+              throw new IllegalStateException(s"unsupported source UNSIGNED integral type for $name: $typeName")
+            }
+            SourceColumn(name, jdbcType, typeName)
+          case _ => throw new IllegalStateException("CDC stream identity columns are invalid")
+        }.toVector
       case _ => throw new IllegalStateException("CDC stream identity columns are missing")
     }
     if (columns.map(_.lowerName).distinct.size != columns.size) {
@@ -630,7 +663,7 @@ class MySQLCdcApplyEngine {
 
   private def parseEnvelope(json: String): MySQLCdcEnvelope = MySQLCdcEnvelope.parse(json) match {
     case Right(envelope) => envelope
-    case Left(failure) => throw new IllegalStateException(s"invalid CDC envelope: ${failure.message}")
+    case Left(failure)   => throw new IllegalStateException(s"invalid CDC envelope: ${failure.message}")
   }
 
   private def exactField(value: JsObject, name: String, path: String): JsValue = {
@@ -646,22 +679,24 @@ class MySQLCdcApplyEngine {
     error.getErrorCode == 1062 || Option(error.getSQLState).exists(state => state == "23505" || state == "23000")
 
   private def supportedTarget(column: TargetColumn): Boolean = column.jdbcType match {
-    case Types.BOOLEAN | Types.BIT | Types.TINYINT | Types.SMALLINT | Types.INTEGER | Types.BIGINT |
-         Types.NUMERIC | Types.DECIMAL | Types.REAL | Types.FLOAT | Types.DOUBLE |
-         Types.CHAR | Types.VARCHAR | Types.LONGVARCHAR | Types.NCHAR | Types.NVARCHAR | Types.LONGNVARCHAR |
-         Types.DATE | Types.TIME | Types.TIME_WITH_TIMEZONE | Types.TIMESTAMP | Types.TIMESTAMP_WITH_TIMEZONE => true
+    case Types.BOOLEAN | Types.BIT | Types.TINYINT | Types.SMALLINT | Types.INTEGER | Types.BIGINT | Types.NUMERIC | Types.DECIMAL | Types.REAL |
+        Types.FLOAT | Types.DOUBLE | Types.CHAR | Types.VARCHAR | Types.LONGVARCHAR | Types.NCHAR | Types.NVARCHAR | Types.LONGNVARCHAR | Types.DATE |
+        Types.TIME | Types.TIME_WITH_TIMEZONE | Types.TIMESTAMP | Types.TIMESTAMP_WITH_TIMEZONE =>
+      true
     case Types.OTHER if column.typeName.equalsIgnoreCase("JSON") => true
-    case _ => false
+    case _                                                       => false
   }
 
   private def compatibleType(source: SourceColumn, target: TargetColumn): Boolean = {
     (IntegralRanks.get(source.jdbcType), IntegralRanks.get(target.jdbcType)) match {
-      case (Some(sourceRank), Some(targetRank)) => targetRank >= sourceRank
-      case (Some(_), None) | (None, Some(_)) => false
+      case (Some(sourceRank), Some(targetRank))                   => targetRank >= sourceRank
+      case (Some(_), None) | (None, Some(_))                      => false
       case (None, None) if BooleanTypes.contains(source.jdbcType) => BooleanTypes.contains(target.jdbcType)
       case (None, None) if DecimalTypes.contains(source.jdbcType) => DecimalTypes.contains(target.jdbcType)
-      case (None, None) if TextTypeNames(source.typeName.toUpperCase(Locale.ROOT)) &&
-        TextTypeNames(target.typeName.toUpperCase(Locale.ROOT)) => true
+      case (None, None)
+          if TextTypeNames(source.typeName.toUpperCase(Locale.ROOT)) &&
+            TextTypeNames(target.typeName.toUpperCase(Locale.ROOT)) =>
+        true
       case (None, None) => source.jdbcType == target.jdbcType
     }
   }
@@ -683,9 +718,11 @@ class MySQLCdcApplyEngine {
   }
 
   private def requiredMetadata(rows: ResultSet, name: String): String =
-    Option(rows.getString(name)).filter(_.nonEmpty).getOrElse(
-      throw new IllegalStateException(s"JDBC target metadata $name is missing")
-    )
+    Option(rows.getString(name))
+      .filter(_.nonEmpty)
+      .getOrElse(
+        throw new IllegalStateException(s"JDBC target metadata $name is missing")
+      )
 
   private def requireIdentifier(value: String, label: String): String = {
     if (value.matches("[A-Za-z_][A-Za-z0-9_]*")) value
@@ -693,16 +730,22 @@ class MySQLCdcApplyEngine {
   }
 
   private def rollback(connection: Connection): Unit =
-    if (connection != null) try connection.rollback() catch { case NonFatal(_) => () }
+    if (connection != null)
+      try connection.rollback()
+      catch { case NonFatal(_) => () }
 
   private def close(connection: Connection): Unit =
-    if (connection != null) try connection.close() catch { case NonFatal(_) => () }
+    if (connection != null)
+      try connection.close()
+      catch { case NonFatal(_) => () }
 
   private def safeLog(onLog: String => Unit, message: String): Unit =
-    try onLog(message) catch { case NonFatal(_) => () }
+    try onLog(message)
+    catch { case NonFatal(_) => () }
 
   private def using[A <: AutoCloseable, B](resource: A)(body: A => B): B =
-    try body(resource) finally if (resource != null) resource.close()
+    try body(resource)
+    finally if (resource != null) resource.close()
 }
 
 object MySQLCdcApplyEngine {
@@ -712,11 +755,11 @@ object MySQLCdcApplyEngine {
     s"jdbc:mysql://${config.host}:${config.port}/${config.database}" +
       "?useSSL=false&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&connectTimeout=5000&socketTimeout=30000"
 
-  private val LedgerTable = "pekko_sync_batch_ledger"
+  private val LedgerTable   = "pekko_sync_batch_ledger"
   private val IntegralRanks = Map(Types.TINYINT -> 1, Types.SMALLINT -> 2, Types.INTEGER -> 3, Types.BIGINT -> 4)
   private val IntegralTypes = IntegralRanks.keySet
-  private val BooleanTypes = Set(Types.BOOLEAN, Types.BIT)
-  private val DecimalTypes = Set(Types.NUMERIC, Types.DECIMAL)
+  private val BooleanTypes  = Set(Types.BOOLEAN, Types.BIT)
+  private val DecimalTypes  = Set(Types.NUMERIC, Types.DECIMAL)
   private val TextTypeNames = Set("TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT")
   private val SupportedSourceTypes = BooleanTypes ++ IntegralTypes ++ DecimalTypes ++ Set(
     Types.REAL,
@@ -736,58 +779,54 @@ object MySQLCdcApplyEngine {
   )
   private val TenPowers = Array(1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000)
 
-  private final case class SourceColumn(name: String, jdbcType: Int, typeName: String) {
+  final private case class SourceColumn(name: String, jdbcType: Int, typeName: String) {
     val lowerName: String = name.toLowerCase(Locale.ROOT)
   }
 
-  private final case class StreamIdentity(
-    connectorId: String,
-    database: String,
-    table: String,
-    primaryKey: String,
-    columns: Vector[SourceColumn],
-    schemaFingerprint: String,
-    groupProtocol: Option[MySQLCdcGroupProtocol]
-  )
+  final private case class StreamIdentity(
+      connectorId: String,
+      database: String,
+      table: String,
+      primaryKey: String,
+      columns: Vector[SourceColumn],
+      schemaFingerprint: String,
+      groupProtocol: Option[MySQLCdcGroupProtocol])
 
-  private final case class TargetColumn(
-    name: String,
-    jdbcType: Int,
-    typeName: String,
-    nullable: Boolean,
-    defaultValue: Option[String],
-    ordinal: Int,
-    size: Int,
-    scale: Int
-  ) {
+  final private case class TargetColumn(
+      name: String,
+      jdbcType: Int,
+      typeName: String,
+      nullable: Boolean,
+      defaultValue: Option[String],
+      ordinal: Int,
+      size: Int,
+      scale: Int) {
     val lowerName: String = name.toLowerCase(Locale.ROOT)
   }
 
-  private final case class TargetTable(
-    name: String,
-    columns: Vector[TargetColumn],
-    primaryKey: TargetColumn,
-    quote: String
-  ) {
+  final private case class TargetTable(
+      name: String,
+      columns: Vector[TargetColumn],
+      primaryKey: TargetColumn,
+      quote: String) {
     val byLowerName: Map[String, TargetColumn] = columns.map(column => column.lowerName -> column).toMap
-    def quoted(identifier: String): String = s"$quote$identifier$quote"
+    def quoted(identifier: String): String     = s"$quote$identifier$quote"
   }
 
-  private sealed trait BoundValue { def jdbcType: Int; def value: Any }
-  private final case class NullValue(jdbcType: Int) extends BoundValue { val value: Any = null }
-  private final case class IntegralValue(jdbcType: Int, value: Any) extends BoundValue
-  private final case class InstantValue(value: Instant) extends BoundValue { val jdbcType: Int = Types.TIMESTAMP }
-  private final case class ObjectValue(jdbcType: Int, value: Any) extends BoundValue
+  sealed private trait BoundValue { def jdbcType: Int; def value: Any }
+  final private case class NullValue(jdbcType: Int)                 extends BoundValue { val value: Any = null               }
+  final private case class IntegralValue(jdbcType: Int, value: Any) extends BoundValue
+  final private case class InstantValue(value: Instant)             extends BoundValue { val jdbcType: Int = Types.TIMESTAMP }
+  final private case class ObjectValue(jdbcType: Int, value: Any)   extends BoundValue
 
-  private sealed trait PlannedEvent
-  private final case class Upsert(values: Vector[(TargetColumn, BoundValue)]) extends PlannedEvent
-  private final case class Delete(key: BoundValue) extends PlannedEvent
+  sealed private trait PlannedEvent
+  final private case class Upsert(values: Vector[(TargetColumn, BoundValue)]) extends PlannedEvent
+  final private case class Delete(key: BoundValue)                            extends PlannedEvent
 
-  private final case class LedgerRecord(
-    batchId: String,
-    workflowId: String,
-    executionId: String,
-    checkpoint: BatchCheckpoint
-  )
+  final private case class LedgerRecord(
+      batchId: String,
+      workflowId: String,
+      executionId: String,
+      checkpoint: BatchCheckpoint)
 
 }

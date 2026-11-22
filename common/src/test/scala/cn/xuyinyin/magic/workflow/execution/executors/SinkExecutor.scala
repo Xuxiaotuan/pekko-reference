@@ -9,28 +9,27 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * Sink节点执行器
- * 
+ *
  * 使用NodeRegistry查找和执行节点
- * 
+ *
  * @author : Xuxiaotuan
  * @since : 2024-11-15
  */
 class SinkExecutor(registry: NodeRegistry = NodeRegistry.builtins()) extends NodeExecutor {
-  
+
   override def supportedTypes: Set[String] = registry.supportedSinkTypes
-  
+
   /**
    * 创建Sink (使用NodeRegistry)
    */
-  def createSink(node: WorkflowDSL.Node, onLog: String => Unit)
-                (implicit ec: ExecutionContext): Sink[String, Future[Done]] = {
+  def createSink(node: WorkflowDSL.Node, onLog: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] = {
     registry.findSink(node.nodeType) match {
       case Some(nodeSink) =>
         nodeSink.createSink(node, onLog)
       case None =>
         throw new IllegalArgumentException(
           s"不支持的Sink类型: ${node.nodeType}\n" +
-          s"支持的类型: ${supportedTypes.mkString(", ")}"
+            s"支持的类型: ${supportedTypes.mkString(", ")}"
         )
     }
   }

@@ -63,7 +63,6 @@ trait STPekkoSpec extends AnyWordSpecLike with BeforeAndAfterEach {
    */
   def probeRef[M](func: ActorRef[M] => Any)(implicit system: ActorSystem[_]): TestProbe[M] = testProbeRef(func)
 
-
   /**
    * Enhancement for TestProbe
    */
@@ -98,6 +97,5 @@ trait STPekkoSpec extends AnyWordSpecLike with BeforeAndAfterEach {
      */
     def receivePFIn(max: FiniteDuration)(assert: M => Any): M = receiveMessagePFIn(max)(assert)
   }
-
 
 }

@@ -21,7 +21,7 @@ import scala.io.Source
 import scala.jdk.CollectionConverters._
 
 object RealMySQLReliableFullSyncSpec {
-  private final case class Settings(host: String, port: Int, user: String, password: String) {
+  final private case class Settings(host: String, port: Int, user: String, password: String) {
     val adminUrl: String =
       s"jdbc:mysql://$host:$port/?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
 
@@ -31,15 +31,15 @@ object RealMySQLReliableFullSyncSpec {
 
   private object Settings {
     def fromSystemProperties(): Option[Settings] = for {
-      host <- sys.props.get("pekko.test.mysql.host").filter(_.nonEmpty)
-      port <- sys.props.get("pekko.test.mysql.port").flatMap(_.toIntOption)
-      user <- sys.props.get("pekko.test.mysql.user").filter(_.nonEmpty)
+      host     <- sys.props.get("pekko.test.mysql.host").filter(_.nonEmpty)
+      port     <- sys.props.get("pekko.test.mysql.port").flatMap(_.toIntOption)
+      user     <- sys.props.get("pekko.test.mysql.user").filter(_.nonEmpty)
       password <- sys.props.get("pekko.test.mysql.password")
     } yield Settings(host, port, user, password)
   }
 
-  private final case class CommitObservation(sequence: Long, outcome: String)
-  private final case class LedgerRow(sequence: Long, cursor: String)
+  final private case class CommitObservation(sequence: Long, outcome: String)
+  final private case class LedgerRow(sequence: Long, cursor: String)
 }
 
 class RealMySQLReliableFullSyncSpec extends AnyWordSpec with Matchers {
@@ -52,14 +52,14 @@ class RealMySQLReliableFullSyncSpec extends AnyWordSpec with Matchers {
       val settings = Settings.fromSystemProperties().getOrElse {
         cancel("set pekko.test.mysql.{host,port,user,password} system properties")
       }
-      val schema = s"pekko_test_reliable_${UUID.randomUUID().toString.replace("-", "").take(12)}"
-      val workflowId = s"real-mysql-${UUID.randomUUID()}"
-      val executionId = s"execution-${UUID.randomUUID()}"
-      val sourceRows = Vector(1L -> "row-1", 2L -> "row-2", 5L -> "row-5", 9L -> "row-9", 12L -> "row-12")
-      val boundaryRef = new AtomicReference[SnapshotBoundary]()
-      val failFirstCheckpoint = new AtomicBoolean(true)
-      val recoveredCheckpoints = new ConcurrentLinkedQueue[BatchCheckpoint]()
-      val observingSink = new ObservingMySQLSink
+      val schema                = s"pekko_test_reliable_${UUID.randomUUID().toString.replace("-", "").take(12)}"
+      val workflowId            = s"real-mysql-${UUID.randomUUID()}"
+      val executionId           = s"execution-${UUID.randomUUID()}"
+      val sourceRows            = Vector(1L -> "row-1", 2L -> "row-2", 5L -> "row-5", 9L -> "row-9", 12L -> "row-12")
+      val boundaryRef           = new AtomicReference[SnapshotBoundary]()
+      val failFirstCheckpoint   = new AtomicBoolean(true)
+      val recoveredCheckpoints  = new ConcurrentLinkedQueue[BatchCheckpoint]()
+      val observingSink         = new ObservingMySQLSink
       var testKit: ActorTestKit = null
 
       createSchema(settings, schema)
@@ -69,7 +69,7 @@ class RealMySQLReliableFullSyncSpec extends AnyWordSpec with Matchers {
         testKit = ActorTestKit(s"real-mysql-reliable-${UUID.randomUUID()}")
         implicit val executionContext: ExecutionContext = testKit.system.executionContext
         lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)(testKit.system, executionContext)
-        val workflow = fullSyncWorkflow(workflowId, settings, schema)
+        val workflow    = fullSyncWorkflow(workflowId, settings, schema)
 
         val interrupted = Await.result(
           engine.execute(
@@ -140,33 +140,35 @@ class RealMySQLReliableFullSyncSpec extends AnyWordSpec with Matchers {
     }
   }
 
-  private final class ObservingMySQLSink extends MySQLSinkNode {
+  final private class ObservingMySQLSink extends MySQLSinkNode {
     private val commits = new ConcurrentLinkedQueue[CommitObservation]()
 
     def observations: Vector[CommitObservation] = commits.iterator().asScala.toVector
 
     override def commitBatch(
-      node: Node,
-      workflowId: String,
-      executionId: String,
-      batch: SourceBatch,
-      transformedRows: Vector[String],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] =
-      super.commitBatch(node, workflowId, executionId, batch, transformedRows, onLog).map { result =>
-        val outcome = result match {
-          case Committed(_) => "committed"
-          case AlreadyCommitted(_) => "already_committed"
-        }
-        commits.add(CommitObservation(batch.batchSequence, outcome))
-        result
-      }(blockingEc)
+        node: Node,
+        workflowId: String,
+        executionId: String,
+        batch: SourceBatch,
+        transformedRows: Vector[String],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] =
+      super
+        .commitBatch(node, workflowId, executionId, batch, transformedRows, onLog)
+        .map { result =>
+          val outcome = result match {
+            case Committed(_)        => "committed"
+            case AlreadyCommitted(_) => "already_committed"
+          }
+          commits.add(CommitObservation(batch.batchSequence, outcome))
+          result
+        }(blockingEc)
   }
 
   private def fullSyncWorkflow(workflowId: String, settings: Settings, schema: String): Workflow = {
     val connection = JsObject(
-      "host" -> JsString(settings.host),
-      "port" -> JsNumber(settings.port),
+      "host"     -> JsString(settings.host),
+      "port"     -> JsNumber(settings.port),
       "database" -> JsString(schema),
       "username" -> JsString(settings.user),
       "password" -> JsString(settings.password)
@@ -177,12 +179,13 @@ class RealMySQLReliableFullSyncSpec extends AnyWordSpec with Matchers {
       "mysql.snapshot",
       "Real MySQL snapshot source",
       Position(0, 0),
-      JsObject(connection.fields ++ Map(
-        "table" -> JsString("source_rows"),
-        "columns" -> JsArray(JsString("id"), JsString("payload")),
-        "primaryKey" -> JsString("id"),
-        "chunkSize" -> JsNumber(2)
-      ))
+      JsObject(
+        connection.fields ++ Map(
+          "table"      -> JsString("source_rows"),
+          "columns"    -> JsArray(JsString("id"), JsString("payload")),
+          "primaryKey" -> JsString("id"),
+          "chunkSize"  -> JsNumber(2)
+        ))
     )
     val sink = Node(
       "sink-1",
@@ -190,11 +193,12 @@ class RealMySQLReliableFullSyncSpec extends AnyWordSpec with Matchers {
       "mysql.write",
       "Real MySQL idempotent sink",
       Position(1, 0),
-      JsObject(connection.fields ++ Map(
-        "table" -> JsString("sink_rows"),
-        "batchSize" -> JsNumber(2),
-        "mode" -> JsString("insert")
-      ))
+      JsObject(
+        connection.fields ++ Map(
+          "table"     -> JsString("sink_rows"),
+          "batchSize" -> JsNumber(2),
+          "mode"      -> JsString("insert")
+        ))
     )
     Workflow(
       workflowId,
@@ -241,7 +245,9 @@ class RealMySQLReliableFullSyncSpec extends AnyWordSpec with Matchers {
   private def executeLedgerSchema(connection: Connection): Unit = {
     val input = Option(getClass.getClassLoader.getResourceAsStream("db/mysql/pekko-sync-ledger-schema.sql"))
       .getOrElse(throw new IllegalStateException("missing MySQL ledger schema resource"))
-    val sql = try Source.fromInputStream(input).mkString finally input.close()
+    val sql =
+      try Source.fromInputStream(input).mkString
+      finally input.close()
     val statement = connection.createStatement()
     try sql.split(";").map(_.trim).filter(_.nonEmpty).foreach(statement.execute)
     finally statement.close()

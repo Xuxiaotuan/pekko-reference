@@ -28,14 +28,16 @@ class WorkflowPlanCompilerSpec extends STSpec {
     "remove presentation and historical metadata from the runtime description" in {
       val workflow = WorkflowFixtures.linearWorkflow
       val changed = workflow.copy(
-        author = "changed", description = "changed", tags = List("changed"),
+        author = "changed",
+        description = "changed",
+        tags = List("changed"),
         nodes = workflow.nodes.map(_.copy(position = Position(987, 654), style = Some(JsObject("color" -> JsString("red"))))),
         edges = workflow.edges.map(_.copy(animated = Some(true), style = Some(JsObject("width" -> JsString("wide"))))),
         metadata = workflow.metadata.copy(executionHistory = Some(List(ExecutionRecord("old", "then", None, "failed", None))))
       )
       val compiler = new WorkflowPlanCompiler(registry)
       val original = compiler.compile(workflow).toOption.get
-      val updated = compiler.compile(changed).toOption.get
+      val updated  = compiler.compile(changed).toOption.get
       original shouldBe a[RowStreamPlan]
       updated shouldBe original
       val connector = updated.pipeline.source.connectorNode
@@ -54,10 +56,10 @@ class WorkflowPlanCompilerSpec extends STSpec {
     }
 
     "bind the current registry instances instead of inferring capabilities from builtin names" in {
-      val source = legacySource("mysql.cdc")
-      val sink = legacySink("mysql.cdc.apply")
+      val source   = legacySource("mysql.cdc")
+      val sink     = legacySink("mysql.cdc.apply")
       val compiler = new WorkflowPlanCompiler(registry.withSource(source).withSink(sink))
-      val plan = compiler.compile(WorkflowFixtures.mysqlCdcWorkflow).toOption.get.asInstanceOf[RowStreamPlan]
+      val plan     = compiler.compile(WorkflowFixtures.mysqlCdcWorkflow).toOption.get.asInstanceOf[RowStreamPlan]
       plan.resumable shouldBe false
       plan.source should be theSameInstanceAs source
       plan.sink should be theSameInstanceAs sink
@@ -71,22 +73,23 @@ class WorkflowPlanCompilerSpec extends STSpec {
 
     "keep a row source paired with a checkpoint sink on the existing row path" in {
       val compiler = new WorkflowPlanCompiler(registry.withSource(legacySource("mysql.cdc")))
-      val plan = compiler.compile(WorkflowFixtures.mysqlCdcWorkflow).toOption.get
+      val plan     = compiler.compile(WorkflowFixtures.mysqlCdcWorkflow).toOption.get
       plan shouldBe a[RowStreamPlan]
       plan.resumable shouldBe false
     }
 
     "retain structural validation errors before resolving a runtime plan" in {
       val compiler = new WorkflowPlanCompiler(registry)
-      val errors = compiler.compile(WorkflowFixtures.branchedWorkflow).left.toOption.get.asInstanceOf[InvalidWorkflowPlan]
+      val errors   = compiler.compile(WorkflowFixtures.branchedWorkflow).left.toOption.get.asInstanceOf[InvalidWorkflowPlan]
       errors.errors.map(_.code) should contain("branch_not_supported")
     }
 
     "reject CDC transforms even when the graph is a valid linear pipeline" in {
-      val cdc = WorkflowFixtures.mysqlCdcWorkflow
+      val cdc       = WorkflowFixtures.mysqlCdcWorkflow
       val transform = WorkflowFixtures.linearWorkflow.nodes.find(_.`type` == "transform").get
-      val changed = cdc.copy(nodes = List(cdc.nodes.head, transform, cdc.nodes.last), edges = List(
-        Edge("a", cdc.nodes.head.id, transform.id), Edge("b", transform.id, cdc.nodes.last.id)))
+      val changed = cdc.copy(
+        nodes = List(cdc.nodes.head, transform, cdc.nodes.last),
+        edges = List(Edge("a", cdc.nodes.head.id, transform.id), Edge("b", transform.id, cdc.nodes.last.id)))
       val errors = new WorkflowPlanCompiler(registry).compile(changed).left.toOption.get.asInstanceOf[InvalidWorkflowPlan]
       errors.errors.map(_.code) should contain("mysql_cdc_transform_not_supported")
     }

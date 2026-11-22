@@ -19,16 +19,18 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.jdk.CollectionConverters._
 
 class SessionBoundarySpec extends STSpec {
-  private implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](Behaviors.empty, "session-boundaries",
+  implicit private val system: ActorSystem[Nothing] = ActorSystem[Nothing](
+    Behaviors.empty,
+    "session-boundaries",
     ConfigFactory.parseString("pekko.actor.provider=local").withFallback(ConfigFactory.load("application-test")))
-  private implicit val ec: ExecutionContext = system.executionContext
-  override def afterAll(): Unit = { system.terminate(); Await.result(system.whenTerminated, 10.seconds); super.afterAll() }
-  private def await[A](f: Future[A]): A = Await.result(f, 5.seconds)
+  implicit private val ec: ExecutionContext = system.executionContext
+  override def afterAll(): Unit             = { system.terminate(); Await.result(system.whenTerminated, 10.seconds); super.afterAll() }
+  private def await[A](f: Future[A]): A     = Await.result(f, 5.seconds)
 
   "instance catalogs" should {
     "keep overrides and validator decisions isolated, with stable adapter identity" in {
       val original = NodeRegistry.builtins()
-      val extra = new ProbeSource { override val nodeType = "test.private" }
+      val extra    = new ProbeSource { override val nodeType = "test.private" }
       val modified = original.withSource(extra)
       modified.findSource(extra.nodeType).get should be theSameInstanceAs extra
       original.findSource(extra.nodeType) shouldBe None
@@ -47,13 +49,15 @@ class SessionBoundarySpec extends STSpec {
       val handle = new cn.xuyinyin.magic.connectors.mysql.source.CdcBatchCommitHandle {
         def markProcessedAndFinished(): Unit = ()
       }
-      val first = Future { bridge.publish("one", Vector("1"), "1", handle) }
+      val first     = Future { bridge.publish("one", Vector("1"), "1", handle) }
       val delivered = await(bridge.takeAsync())
-      val second = Promise[Done]()
-      val publisher = new Thread(() => {
-        try { bridge.publish("two", Vector("2"), "2", handle); second.success(Done) }
-        catch { case e: Throwable => second.tryFailure(e) }
-      }, "queued-publisher")
+      val second    = Promise[Done]()
+      val publisher = new Thread(
+        () => {
+          try { bridge.publish("two", Vector("2"), "2", handle); second.success(Done) }
+          catch { case e: Throwable => second.tryFailure(e) }
+        },
+        "queued-publisher")
       publisher.setDaemon(true); publisher.start()
       val deadline = 3.seconds.fromNow
       while (deadline.hasTimeLeft() && !publisher.getStackTrace.exists(_.getMethodName == "awaitCompletion")) Thread.`yield`()
@@ -69,8 +73,8 @@ class SessionBoundarySpec extends STSpec {
     }
     "leave a single worker available with sixteen idle readers and release all waiters on close" in {
       val executor = Executors.newSingleThreadExecutor()
-      val worker = ExecutionContext.fromExecutor(executor)
-      val bridges = Vector.fill(16)(new DebeziumBatchBridge)
+      val worker   = ExecutionContext.fromExecutor(executor)
+      val bridges  = Vector.fill(16)(new DebeziumBatchBridge)
       try {
         val pending = await(Future(bridges.map(_.takeAsync()))(worker))
         await(Future(42)(worker)) shouldBe 42
@@ -83,14 +87,19 @@ class SessionBoundarySpec extends STSpec {
 
   "resource ownership" should {
     "drain a resource read before starting physical close" in {
-      val reading = Promise[Done]()
-      val read = Promise[Option[SourceBatch]]()
+      val reading      = Promise[Done]()
+      val read         = Promise[Option[SourceBatch]]()
       val closeStarted = Promise[Done]()
-      val session = BatchSourceSession.resource[Unit](() => Future.successful(()),
+      val session = BatchSourceSession.resource[Unit](
+        () => Future.successful(()),
         _ => { reading.trySuccess(Done); read.future },
-        _ => { closeStarted.trySuccess(Done); Future.successful(Done) }, managed = true, drainReads = true)
-      val (kill, done) = session.source.viaMat(org.apache.pekko.stream.KillSwitches.single)(org.apache.pekko.stream.scaladsl.Keep.right)
-        .toMat(Sink.ignore)(org.apache.pekko.stream.scaladsl.Keep.both).run()
+        _ => { closeStarted.trySuccess(Done); Future.successful(Done) },
+        managed = true,
+        drainReads = true)
+      val (kill, done) = session.source
+        .viaMat(org.apache.pekko.stream.KillSwitches.single)(org.apache.pekko.stream.scaladsl.Keep.right)
+        .toMat(Sink.ignore)(org.apache.pekko.stream.scaladsl.Keep.both)
+        .run()
       await(reading.future)
       kill.shutdown()
       await(done)
@@ -103,10 +112,10 @@ class SessionBoundarySpec extends STSpec {
       } finally read.trySuccess(None)
     }
     "wait for late acquisition, close once, and preserve a close failure" in {
-      val scope = new SourceResourceScope
-      val opened = Promise[String]()
+      val scope     = new SourceResourceScope
+      val opened    = Promise[String]()
       val closeGate = Promise[Done]()
-      val calls = new AtomicInteger
+      val calls     = new AtomicInteger
       scope.acquire(() => opened.future, (_: String) => { calls.incrementAndGet(); closeGate.future })
       val closing = scope.close()
       closing.isCompleted shouldBe false
@@ -118,16 +127,15 @@ class SessionBoundarySpec extends STSpec {
       await(closing.failed) shouldBe failure
       await(scope.close().failed) shouldBe failure
       calls.get() shouldBe 1
-      await(scope.acquire(() => Future.successful("forbidden"), (_: String) => Future.successful(Done)).failed)
-        .getMessage should include("closing")
+      await(scope.acquire(() => Future.successful("forbidden"), (_: String) => Future.successful(Done)).failed).getMessage should include("closing")
     }
   }
 
   "execution cancellation" should {
     "redact runtime secrets from asynchronous resource close failures" in {
-      val secret = "stage-c-runtime-close-secret"
-      val source = new ProbeSource
-      val engine = new WorkflowExecutionEngine(_ => Some(secret), NodeRegistry.builtins().withSource(source).withSink(new ProbeSink))
+      val secret  = "stage-c-runtime-close-secret"
+      val source  = new ProbeSource
+      val engine  = new WorkflowExecutionEngine(_ => Some(secret), NodeRegistry.builtins().withSource(source).withSink(new ProbeSink))
       val context = runContext("secret-close")
       val running = engine.execute(WorkflowFixtures.mysqlCdcWorkflow, context, _ => ())
       await(source.opened.future)
@@ -139,18 +147,21 @@ class SessionBoundarySpec extends STSpec {
     }
 
     "avoid initializing a boundary returned after cancellation" in {
-      val discovery = Promise[SnapshotBoundary]()
+      val discovery        = Promise[SnapshotBoundary]()
       val discoveryStarted = Promise[Done]()
-      val initialized = new AtomicInteger
+      val initialized      = new AtomicInteger
       val source = new ProbeSource {
-        override def discoverBoundary(n: WorkflowDSL.Node, cp: Option[BatchCheckpoint], log: String => Unit)
-          (implicit ec: ExecutionContext): Future[SnapshotBoundary] = {
+        override def discoverBoundary(
+            n: WorkflowDSL.Node,
+            cp: Option[BatchCheckpoint],
+            log: String => Unit
+          )(implicit ec: ExecutionContext): Future[SnapshotBoundary] = {
           discoveryStarted.success(Done); discovery.future
         }
       }
       val engine = new WorkflowExecutionEngine(_ => Some("test"), NodeRegistry.builtins().withSource(source).withSink(new ProbeSink))
-      val context = runContext("cancel-discovery").copy(boundary = None,
-        initializeBoundary = _ => { initialized.incrementAndGet(); Future.successful(Done) })
+      val context =
+        runContext("cancel-discovery").copy(boundary = None, initializeBoundary = _ => { initialized.incrementAndGet(); Future.successful(Done) })
       val running = engine.execute(WorkflowFixtures.mysqlCdcWorkflow, context, _ => ())
       await(discoveryStarted.future)
       await(engine.cancelWithin(context.executionId, 100.millis)) shouldBe WorkflowExecutionEngine.TimedOut
@@ -162,17 +173,23 @@ class SessionBoundarySpec extends STSpec {
     }
 
     "drain T then J then ACK before closing, and return a bounded observation while blocked" in {
-      val source = new ProbeSource
-      val commit = Promise[BatchCommitResult]()
-      val j = Promise[Done]()
+      val source   = new ProbeSource
+      val commit   = Promise[BatchCommitResult]()
+      val j        = Promise[Done]()
       val tStarted = Promise[Done]()
       val jStarted = Promise[Done]()
-      val events = new ConcurrentLinkedQueue[String]()
+      val events   = new ConcurrentLinkedQueue[String]()
       source.events = events
       source.emit = true
       val sink = new ProbeSink {
-        override def commitBatch(n: WorkflowDSL.Node, w: String, e: String, b: SourceBatch, rows: Vector[String], log: String => Unit)
-          (implicit ec: ExecutionContext): Future[BatchCommitResult] = {
+        override def commitBatch(
+            n: WorkflowDSL.Node,
+            w: String,
+            e: String,
+            b: SourceBatch,
+            rows: Vector[String],
+            log: String => Unit
+          )(implicit ec: ExecutionContext): Future[BatchCommitResult] = {
           events.add("T.begin"); tStarted.success(Done); commit.future
         }
       }
@@ -203,10 +220,10 @@ class SessionBoundarySpec extends STSpec {
     }
 
     "hold replacement materialization until physical release, including repeated cancellation" in {
-      val source = new ProbeSource
-      val engine = new WorkflowExecutionEngine(_ => Some("test"), NodeRegistry.builtins().withSource(source).withSink(new ProbeSink))
+      val source  = new ProbeSource
+      val engine  = new WorkflowExecutionEngine(_ => Some("test"), NodeRegistry.builtins().withSource(source).withSink(new ProbeSink))
       val context = runContext("replace")
-      val old = engine.execute(WorkflowFixtures.mysqlCdcWorkflow, context, _ => ())
+      val old     = engine.execute(WorkflowFixtures.mysqlCdcWorkflow, context, _ => ())
       await(source.opened.future)
       await(engine.cancelWithin("replace", 100.millis)) shouldBe WorkflowExecutionEngine.TimedOut
       val replacement = engine.execute(WorkflowFixtures.mysqlCdcWorkflow, context, _ => ())
@@ -225,8 +242,8 @@ class SessionBoundarySpec extends STSpec {
     }
 
     "keep a failed close fenced instead of reporting release or launching a replacement" in {
-      val source = new ProbeSource
-      val engine = new WorkflowExecutionEngine(_ => Some("test"), NodeRegistry.builtins().withSource(source).withSink(new ProbeSink))
+      val source  = new ProbeSource
+      val engine  = new WorkflowExecutionEngine(_ => Some("test"), NodeRegistry.builtins().withSource(source).withSink(new ProbeSink))
       val context = runContext("failed-close")
       val running = engine.execute(WorkflowFixtures.mysqlCdcWorkflow, context, _ => ())
       await(source.opened.future)
@@ -242,40 +259,66 @@ class SessionBoundarySpec extends STSpec {
     }
   }
 
-  private def runContext(id: String): ReliableRunContext = ReliableRunContext(id, 1,
-    Some(SnapshotBoundary("source-1", "p", Some("b"))), Vector.empty, _ => Future.successful(Done), _ => Future.successful(Done))
+  private def runContext(id: String): ReliableRunContext = ReliableRunContext(
+    id,
+    1,
+    Some(SnapshotBoundary("source-1", "p", Some("b"))),
+    Vector.empty,
+    _ => Future.successful(Done),
+    _ => Future.successful(Done))
 
   private class ProbeSource extends NodeSource with CheckpointedNodeSource {
-    val nodeType = "mysql.cdc"
-    var emit = false
-    var events = new ConcurrentLinkedQueue[String]()
-    val opened = Promise[Done](); val secondOpened = Promise[Done]()
-    val closeStarted = Promise[Done](); val closeGate = Promise[Done]()
-    val opens = new AtomicInteger
-    def batch(id: String): SourceBatch = SourceBatch("source-1", "p", 0, BatchId.sha256(id, "source-1", "p", 0),
-      SourceCursor("test", "0", "b"), Vector("row"))
+    val nodeType     = "mysql.cdc"
+    var emit         = false
+    var events       = new ConcurrentLinkedQueue[String]()
+    val opened       = Promise[Done](); val secondOpened = Promise[Done]()
+    val closeStarted = Promise[Done](); val closeGate    = Promise[Done]()
+    val opens        = new AtomicInteger
+    def batch(id: String): SourceBatch =
+      SourceBatch("source-1", "p", 0, BatchId.sha256(id, "source-1", "p", 0), SourceCursor("test", "0", "b"), Vector("row"))
     def createSource(n: WorkflowDSL.Node, log: String => Unit): Source[String, NotUsed] = Source.empty
-    def createBatches(n: WorkflowDSL.Node, id: String, b: SnapshotBoundary, cp: Option[BatchCheckpoint], log: String => Unit)
-      (implicit ec: ExecutionContext): Source[SourceBatch, NotUsed] = session(id, false).source
-    override def openBatches(n: WorkflowDSL.Node, id: String, b: SnapshotBoundary, cp: Option[BatchCheckpoint], log: String => Unit,
-      closeEc: ExecutionContext)(implicit ec: ExecutionContext): BatchSourceSession = session(id, true)
+    def createBatches(
+        n: WorkflowDSL.Node,
+        id: String,
+        b: SnapshotBoundary,
+        cp: Option[BatchCheckpoint],
+        log: String => Unit
+      )(implicit ec: ExecutionContext): Source[SourceBatch, NotUsed] = session(id, false).source
+    override def openBatches(
+        n: WorkflowDSL.Node,
+        id: String,
+        b: SnapshotBoundary,
+        cp: Option[BatchCheckpoint],
+        log: String => Unit,
+        closeEc: ExecutionContext
+      )(implicit ec: ExecutionContext): BatchSourceSession = session(id, true)
     private def session(id: String, managed: Boolean): BatchSourceSession = {
       var sent = false
       val idle = Promise[Option[SourceBatch]]()
       BatchSourceSession.resource[Unit](
         () => { if (opens.incrementAndGet() == 1) opened.trySuccess(Done) else secondOpened.trySuccess(Done); Future.successful(()) },
-        _ => if (emit && !sent) { sent = true; Future.successful(Some(batch(id))) } else idle.future,
-        _ => { events.add("close"); idle.trySuccess(None); closeStarted.trySuccess(Done); closeGate.future }, managed)
+        _ =>
+          if (emit && !sent) { sent = true; Future.successful(Some(batch(id))) }
+          else idle.future,
+        _ => { events.add("close"); idle.trySuccess(None); closeStarted.trySuccess(Done); closeGate.future },
+        managed)
     }
-    override def acknowledgeCommittedBatch(n: WorkflowDSL.Node, b: SourceBatch, log: String => Unit)
-      (implicit ec: ExecutionContext): Future[Done] = { events.add("ACK"); Future.successful(Done) }
+    override def acknowledgeCommittedBatch(n: WorkflowDSL.Node, b: SourceBatch, log: String => Unit)(implicit ec: ExecutionContext): Future[Done] = {
+      events.add("ACK"); Future.successful(Done)
+    }
   }
 
   private class ProbeSink extends NodeSink with CheckpointedNodeSink {
-    val nodeType = "mysql.cdc.apply"
+    val nodeType                                                                                                        = "mysql.cdc.apply"
     def createSink(n: WorkflowDSL.Node, log: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] = Sink.ignore
-    def validateReady(n: WorkflowDSL.Node, log: String => Unit)(implicit ec: ExecutionContext): Future[Done] = Future.successful(Done)
-    def commitBatch(n: WorkflowDSL.Node, w: String, e: String, b: SourceBatch, rows: Vector[String], log: String => Unit)
-      (implicit ec: ExecutionContext): Future[BatchCommitResult] = Future.failed(new AssertionError("unexpected batch"))
+    def validateReady(n: WorkflowDSL.Node, log: String => Unit)(implicit ec: ExecutionContext): Future[Done]            = Future.successful(Done)
+    def commitBatch(
+        n: WorkflowDSL.Node,
+        w: String,
+        e: String,
+        b: SourceBatch,
+        rows: Vector[String],
+        log: String => Unit
+      )(implicit ec: ExecutionContext): Future[BatchCommitResult] = Future.failed(new AssertionError("unexpected batch"))
   }
 }

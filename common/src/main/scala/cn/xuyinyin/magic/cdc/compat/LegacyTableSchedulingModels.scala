@@ -9,13 +9,29 @@ final case class TableResourceDemand(sourceInstance: String, targetInstance: Str
   def connections: Map[String, Int] = Vector(sourceInstance -> parallelism, targetInstance -> parallelism)
     .groupMapReduce(_._1)(_._2)(_ + _)
 }
-final case class ScheduledTableDefinition(workflowId: String, revision: Long, workflowJson: String, demand: TableResourceDemand) extends CborSerializable {
-  require(workflowId.nonEmpty && workflowId.length <= 255 && revision > 0 && workflowJson.getBytes(java.nio.charset.StandardCharsets.UTF_8).length <= 65536)
+final case class ScheduledTableDefinition(workflowId: String, revision: Long, workflowJson: String, demand: TableResourceDemand)
+    extends CborSerializable {
+  require(
+    workflowId.nonEmpty && workflowId.length <= 255 && revision > 0 && workflowJson.getBytes(java.nio.charset.StandardCharsets.UTF_8).length <= 65536)
 }
-final case class ScheduledTable(definition: ScheduledTableDefinition, state: String, executionId: Option[String],
-  requestKey: Option[String], queueOrder: Long, notBefore: Long, grantId: Option[String], owner: Option[String]) extends CborSerializable {
+final case class ScheduledTable(
+    definition: ScheduledTableDefinition,
+    state: String,
+    executionId: Option[String],
+    requestKey: Option[String],
+    queueOrder: Long,
+    notBefore: Long,
+    grantId: Option[String],
+    owner: Option[String])
+    extends CborSerializable {
   def workflowId: String = definition.workflowId
 }
 final case class TableGrant(task: ScheduledTable, id: String) extends CborSerializable
-final case class ScheduledTableSummary(workflowId: String, revision: Long, state: String,
-  executionId: Option[String], queueOrder: Long, demand: TableResourceDemand) extends CborSerializable
+final case class ScheduledTableSummary(
+    workflowId: String,
+    revision: Long,
+    state: String,
+    executionId: Option[String],
+    queueOrder: Long,
+    demand: TableResourceDemand)
+    extends CborSerializable

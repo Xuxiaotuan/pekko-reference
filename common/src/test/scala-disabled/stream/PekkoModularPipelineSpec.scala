@@ -31,7 +31,7 @@ class PekkoModularPipelineSpec extends ScalaTestWithActorTestKit with STPekkoSpe
     "pekko Streams working with flow sample." in {
       // 定义 Fake 数据作为 Source
       val fakeData = List(1, 2, 3, 4, 5) // 这里使用 List 作为 Fake 数据
-      val source = Source(fakeData)
+      val source   = Source(fakeData)
 
       // 定义 Flow：将数据乘以 2
       val multiplyByTwoFlow = Flow[Int].map(_ * 2)

@@ -24,11 +24,14 @@ object SchedulerCoordinatorRecoverySpec {
       try {
         val input = Option(getClass.getClassLoader.getResourceAsStream("schema/h2/h2-create-schema.sql"))
           .getOrElse(throw new IllegalStateException("Pekko Persistence JDBC H2 schema resource is unavailable"))
-        val sql = try Source.fromInputStream(input).mkString finally input.close()
+        val sql =
+          try Source.fromInputStream(input).mkString
+          finally input.close()
         sql.split(";").map(_.trim).filter(_.nonEmpty).foreach(statement.execute)
       } finally statement.close()
     } finally connection.close()
-    ConfigFactory.parseString(s"pekko-persistence-jdbc.shared-databases.slick.db.url = \"$h2Url\"")
+    ConfigFactory
+      .parseString(s"pekko-persistence-jdbc.shared-databases.slick.db.url = \"$h2Url\"")
       .withFallback(ConfigFactory.load("application-test"))
   }
 }
@@ -36,33 +39,39 @@ object SchedulerCoordinatorRecoverySpec {
 class SchedulerCoordinatorRecoverySpec extends ScalaTestWithActorTestKit(SchedulerCoordinatorRecoverySpec.config) with AnyWordSpecLike with Matchers {
   "SchedulerCoordinator recovery" should {
     "rebuild an enabled schedule timer after restart" in {
-      val region = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
-      val now = Instant.parse("2026-08-29T00:00:00Z")
+      val region  = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
+      val now     = Instant.parse("2026-08-29T00:00:00Z")
       val replies = createTestProbe[SchedulerCoordinator.ScheduleReply]()
-      val first = spawn(SchedulerCoordinator(region.ref, () => now, retryBase = 1.second, persistenceId = "scheduler-timer-recovery"), "timer-before-recovery")
+      val first =
+        spawn(SchedulerCoordinator(region.ref, () => now, retryBase = 1.second, persistenceId = "scheduler-timer-recovery"), "timer-before-recovery")
       first ! SchedulerCoordinator.Add(SchedulerCoordinator.Schedule("timer", "workflow-timer", FixedRate(1.second)), replies.ref)
       replies.expectMessageType[SchedulerCoordinator.ScheduleAdded]
       region.expectNoMessage(100.millis)
       testKit.stop(first)
 
-      val recovered = spawn(SchedulerCoordinator(region.ref, () => now, retryBase = 1.second, persistenceId = "scheduler-timer-recovery"), "timer-after-recovery")
+      val recovered =
+        spawn(SchedulerCoordinator(region.ref, () => now, retryBase = 1.second, persistenceId = "scheduler-timer-recovery"), "timer-after-recovery")
       val envelope = region.expectMessageType[ShardingEnvelope[EventSourcedWorkflowActor.Command]](3.seconds)
       envelope.message.asInstanceOf[EventSourcedWorkflowActor.ExecuteScheduled].triggerId shouldBe "timer-1787961601000"
       testKit.stop(recovered)
     }
 
     "rebuild timers and redeliver a pending trigger after restart" in {
-      val region = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
-      val now = Instant.parse("2026-08-29T00:00:00Z")
+      val region  = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
+      val now     = Instant.parse("2026-08-29T00:00:00Z")
       val replies = createTestProbe[SchedulerCoordinator.ScheduleReply]()
-      val first = spawn(SchedulerCoordinator(region.ref, () => now, retryBase = 1.second, persistenceId = "scheduler-pending-recovery"), "coordinator-before-recovery")
+      val first = spawn(
+        SchedulerCoordinator(region.ref, () => now, retryBase = 1.second, persistenceId = "scheduler-pending-recovery"),
+        "coordinator-before-recovery")
       first ! SchedulerCoordinator.Add(SchedulerCoordinator.Schedule("recovery", "workflow-3", FixedRate(1.hour)), replies.ref)
       replies.expectMessageType[SchedulerCoordinator.ScheduleAdded]
       first ! SchedulerCoordinator.Fire("recovery", 1L)
       region.expectMessageType[ShardingEnvelope[EventSourcedWorkflowActor.Command]]
       testKit.stop(first)
 
-      val recovered = spawn(SchedulerCoordinator(region.ref, () => now, retryBase = 1.second, persistenceId = "scheduler-pending-recovery"), "coordinator-after-recovery")
+      val recovered = spawn(
+        SchedulerCoordinator(region.ref, () => now, retryBase = 1.second, persistenceId = "scheduler-pending-recovery"),
+        "coordinator-after-recovery")
       val envelope = region.expectMessageType[ShardingEnvelope[EventSourcedWorkflowActor.Command]](3.seconds)
       envelope.message.asInstanceOf[EventSourcedWorkflowActor.ExecuteScheduled].triggerId shouldBe "recovery-1"
       testKit.stop(recovered)

@@ -23,34 +23,34 @@ object PekkoGuardian {
   private val logger = Logger(getClass)
 
   sealed trait Command
-  private case class GetNodeRoles(reply: ActorRef[Set[String]]) extends Command
-  case class GetHealthChecker(reply: ActorRef[ActorRef[HealthChecker.Command]]) extends Command
-  case class GetWorkflowSupervisor(reply: ActorRef[ActorRef[WorkflowSupervisor.Command]]) extends Command
+  private case class GetNodeRoles(reply: ActorRef[Set[String]])                               extends Command
+  case class GetHealthChecker(reply: ActorRef[ActorRef[HealthChecker.Command]])               extends Command
+  case class GetWorkflowSupervisor(reply: ActorRef[ActorRef[WorkflowSupervisor.Command]])     extends Command
   case class GetSchedulerCoordinator(reply: ActorRef[ActorRef[SchedulerCoordinator.Command]]) extends Command
 
   def apply(): Behavior[Command] = Behaviors.setup { implicit ctx =>
-    val cluster = Cluster(ctx.system)
+    val cluster    = Cluster(ctx.system)
     val selfMember = cluster.selfMember
     cn.xuyinyin.magic.cdc.platform.CdcPlatformExtension(ctx.system)
     logger.info(s"Pekko System Guardian Launching, roles: ${selfMember.roles.mkString(",")}")
 
     // Create an actor that handles cluster domain events
     ctx.spawn(ClusterListener(), "ClusterListener")
-    
+
     // Create cluster event listener for structured logging
     ctx.spawn(ClusterEventListener(), "ClusterEventListener")
-    
+
     // Create and start health checker
     val healthChecker = ctx.spawn(HealthChecker(), "HealthChecker")
     healthChecker ! HealthChecker.StartPeriodicCheck(30000) // 每30秒检查一次
-    
+
     // Initialize WorkflowSharding (工作流分片)
-    implicit val ec = ctx.executionContext
+    implicit val ec     = ctx.executionContext
     val executionEngine = new WorkflowExecutionEngine()(ctx.system, ec)
-    val shardRegion: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]] = 
+    val shardRegion: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]] =
       WorkflowSharding.init(ctx.system, executionEngine, WorkflowSharding.configuredNumberOfShards(ctx.system.settings.config))
     logger.info("WorkflowSharding initialized")
-    
+
     // Create workflow supervisor with ShardRegion (工作流管理器)
     val workflowSupervisor = ctx.spawn(
       WorkflowSupervisor.withSharding(shardRegion, executionEngine.tableScheduling),
@@ -64,10 +64,13 @@ object PekkoGuardian {
     )
     logger.info("SchedulerCoordinator Cluster Singleton initialized")
     executionEngine.tableScheduling.foreach { runtime =>
-      ClusterSingleton(ctx.system).init(SingletonActor(
-        cn.xuyinyin.magic.cdc.control.BoundedTableDispatcher(runtime,shardRegion,
-          ctx.system.settings.config.getDuration("pekko.workflow.table-scheduling.poll-interval").toMillis.millis),
-        "BoundedTableDispatcher").withSettings(ClusterSingletonSettings(ctx.system).withRole("coordinator")))
+      ClusterSingleton(ctx.system).init(
+        SingletonActor(
+          cn.xuyinyin.magic.cdc.control.BoundedTableDispatcher(
+            runtime,
+            shardRegion,
+            ctx.system.settings.config.getDuration("pekko.workflow.table-scheduling.poll-interval").toMillis.millis),
+          "BoundedTableDispatcher").withSettings(ClusterSingletonSettings(ctx.system).withRole("coordinator")))
     }
 
     Behaviors.receiveMessage {

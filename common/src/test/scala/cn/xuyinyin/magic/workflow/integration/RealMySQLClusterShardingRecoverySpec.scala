@@ -22,12 +22,12 @@ class RealMySQLClusterShardingRecoverySpec extends AnyWordSpec with Matchers {
       val settings = Settings.fromSystemProperties().getOrElse {
         cancel("set pekko.test.mysql.{host,port,user,password} system properties")
       }
-      val schema = s"pekko_test_sharding_${UUID.randomUUID().toString.replace("-", "").take(12)}"
-      val workflowId = s"sharded-${UUID.randomUUID()}"
-      val clusterName = s"sharding-recovery-${UUID.randomUUID()}"
-      val primaryPort = freePort()
-      val survivorPort = freePort(excluding = Set(primaryPort))
-      var primary: ChildProcess = null
+      val schema                 = s"pekko_test_sharding_${UUID.randomUUID().toString.replace("-", "").take(12)}"
+      val workflowId             = s"sharded-${UUID.randomUUID()}"
+      val clusterName            = s"sharding-recovery-${UUID.randomUUID()}"
+      val primaryPort            = freePort()
+      val survivorPort           = freePort(excluding = Set(primaryPort))
+      var primary: ChildProcess  = null
       var survivor: ChildProcess = null
 
       createSchema(settings, schema)
@@ -67,7 +67,7 @@ class RealMySQLClusterShardingRecoverySpec extends AnyWordSpec with Matchers {
 }
 
 private object RealMySQLClusterShardingRecoverySpec {
-  private final case class Settings(host: String, port: Int, user: String, password: String) {
+  final private case class Settings(host: String, port: Int, user: String, password: String) {
     val adminUrl: String =
       s"jdbc:mysql://$host:$port/?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
     def schemaUrl(schema: String): String =
@@ -76,24 +76,25 @@ private object RealMySQLClusterShardingRecoverySpec {
 
   private object Settings {
     def fromSystemProperties(): Option[Settings] = for {
-      host <- sys.props.get("pekko.test.mysql.host").filter(_.nonEmpty)
-      port <- sys.props.get("pekko.test.mysql.port").flatMap(_.toIntOption)
-      user <- sys.props.get("pekko.test.mysql.user").filter(_.nonEmpty)
+      host     <- sys.props.get("pekko.test.mysql.host").filter(_.nonEmpty)
+      port     <- sys.props.get("pekko.test.mysql.port").flatMap(_.toIntOption)
+      user     <- sys.props.get("pekko.test.mysql.user").filter(_.nonEmpty)
       password <- sys.props.get("pekko.test.mysql.password")
     } yield Settings(host, port, user, password)
   }
 
-  private final class ChildProcess(process: Process) {
+  final private class ChildProcess(process: Process) {
     private val output = new LinkedBlockingQueue[String]()
-    private val tail = new java.util.concurrent.ConcurrentLinkedDeque[String]()
-    private val input = new BufferedWriter(new OutputStreamWriter(process.getOutputStream))
+    private val tail   = new java.util.concurrent.ConcurrentLinkedDeque[String]()
+    private val input  = new BufferedWriter(new OutputStreamWriter(process.getOutputStream))
     private val drain = new Thread(() => {
       val source = IoSource.fromInputStream(process.getInputStream)
-      try source.getLines().foreach { line =>
-        output.put(line)
-        tail.addLast(line)
-        while (tail.size() > 200) tail.removeFirst()
-      }
+      try
+        source.getLines().foreach { line =>
+          output.put(line)
+          tail.addLast(line)
+          while (tail.size() > 200) tail.removeFirst()
+        }
       finally source.close()
     })
     drain.setDaemon(true)
@@ -130,19 +131,18 @@ private object RealMySQLClusterShardingRecoverySpec {
     }
 
     private def exitValue: String = if (process.isAlive) "running" else process.exitValue().toString
-    private def tailText: String = tail.toArray.mkString(" | ")
+    private def tailText: String  = tail.toArray.mkString(" | ")
   }
 
   private def startChild(
-    mode: String,
-    settings: Settings,
-    schema: String,
-    workflowId: String,
-    clusterName: String,
-    selfPort: Int,
-    seedPort: Int
-  ): ChildProcess = {
-    val java = Path.of(System.getProperty("java.home"), "bin", "java").toString
+      mode: String,
+      settings: Settings,
+      schema: String,
+      workflowId: String,
+      clusterName: String,
+      selfPort: Int,
+      seedPort: Int): ChildProcess = {
+    val java      = Path.of(System.getProperty("java.home"), "bin", "java").toString
     val classpath = runtimeClasspath
     val builder = new ProcessBuilder(
       java,
@@ -211,7 +211,9 @@ private object RealMySQLClusterShardingRecoverySpec {
     withConnection(settings.schemaUrl(schema), settings) { connection =>
       val input = Option(getClass.getClassLoader.getResourceAsStream("db/mysql/pekko-persistence-schema.sql"))
         .getOrElse(throw new IllegalStateException("missing MySQL persistence schema resource"))
-      val sql = try IoSource.fromInputStream(input).mkString finally input.close()
+      val sql =
+        try IoSource.fromInputStream(input).mkString
+        finally input.close()
       val statement = connection.createStatement()
       try sql.split(";").map(_.trim).filter(_.nonEmpty).foreach(statement.execute)
       finally statement.close()

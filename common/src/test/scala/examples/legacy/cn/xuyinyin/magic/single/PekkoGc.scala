@@ -20,7 +20,7 @@ object PekkoGc {
   def apply(): Behavior[Command] = setup { ctx =>
     ctx.log.info("PekkoGc starting as cluster singleton")
     val limitCounterKey: PNCounterKey = PNCounterKey("gc-limitation")
-    val gcCounter = ctx.spawn(PNGCounterCache.apply(limitCounterKey), "gcCounter")
+    val gcCounter                     = ctx.spawn(PNGCounterCache.apply(limitCounterKey), "gcCounter")
 
     // 初始同步GC限制
     gcCounter ! GetValue(ctx.messageAdapter(UpdateGCLimit))

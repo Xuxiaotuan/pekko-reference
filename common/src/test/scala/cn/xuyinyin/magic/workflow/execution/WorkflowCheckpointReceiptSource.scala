@@ -8,6 +8,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /** Legacy source adapter; actor-issued receipts never enter the CDC Source SPI. */
 trait WorkflowCheckpointReceiptSource {
-  def acknowledgeCommittedBatchWithReceipt(node: WorkflowDSL.Node, batch: SourceBatch,
-    receipt: Option[PersistedCheckpoint], onLog: String => Unit)(implicit ec: ExecutionContext): Future[Done]
+  def acknowledgeCommittedBatchWithReceipt(
+      node: WorkflowDSL.Node,
+      batch: SourceBatch,
+      receipt: Option[PersistedCheckpoint],
+      onLog: String => Unit
+    )(implicit ec: ExecutionContext): Future[Done]
 }

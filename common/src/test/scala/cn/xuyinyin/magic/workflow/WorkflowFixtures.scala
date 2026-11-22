@@ -14,12 +14,16 @@ object WorkflowFixtures {
 
   private def edge(source: String, target: String): Edge = Edge(s"$source-$target", source, target)
 
-  private val source = node("source-1", "source", "sequence.numbers", JsObject(
-    "start" -> JsNumber(1),
-    "end" -> JsNumber(1)
-  ))
+  private val source = node(
+    "source-1",
+    "source",
+    "sequence.numbers",
+    JsObject(
+      "start" -> JsNumber(1),
+      "end"   -> JsNumber(1)
+    ))
   private val transform = node("transform-1", "transform", "map", JsObject("expression" -> JsString("trim")))
-  private val sink = node("sink-1", "sink", "console.log")
+  private val sink      = node("sink-1", "sink", "console.log")
 
   val linearWorkflow: Workflow = workflow(
     "linear",
@@ -28,26 +32,34 @@ object WorkflowFixtures {
   )
 
   val mysqlCdcWorkflow: Workflow = {
-    val cdcSource = node("source-1", "source", "mysql.cdc", JsObject(
-      "connectorId" -> JsString("orders-cdc-v1"),
-      "host" -> JsString("mysql"),
-      "port" -> JsNumber(3306),
-      "database" -> JsString("pekko_workflow"),
-      "table" -> JsString("pekko_cdc_source_acceptance"),
-      "username" -> JsString("pekko_cdc"),
-      "passwordEnv" -> JsString("MYSQL_CDC_PASSWORD"),
-      "serverId" -> JsNumber(54001),
-      "maxBatchSize" -> JsNumber(100),
-      "pollIntervalMillis" -> JsNumber(500)
-    ))
-    val cdcSink = node("sink-1", "sink", "mysql.cdc.apply", JsObject(
-      "host" -> JsString("mysql"),
-      "port" -> JsNumber(3306),
-      "database" -> JsString("pekko_workflow"),
-      "table" -> JsString("pekko_cdc_target_acceptance"),
-      "username" -> JsString("pekko_workflow"),
-      "passwordEnv" -> JsString("DB_PASSWORD")
-    ))
+    val cdcSource = node(
+      "source-1",
+      "source",
+      "mysql.cdc",
+      JsObject(
+        "connectorId"        -> JsString("orders-cdc-v1"),
+        "host"               -> JsString("mysql"),
+        "port"               -> JsNumber(3306),
+        "database"           -> JsString("pekko_workflow"),
+        "table"              -> JsString("pekko_cdc_source_acceptance"),
+        "username"           -> JsString("pekko_cdc"),
+        "passwordEnv"        -> JsString("MYSQL_CDC_PASSWORD"),
+        "serverId"           -> JsNumber(54001),
+        "maxBatchSize"       -> JsNumber(100),
+        "pollIntervalMillis" -> JsNumber(500)
+      ))
+    val cdcSink = node(
+      "sink-1",
+      "sink",
+      "mysql.cdc.apply",
+      JsObject(
+        "host"        -> JsString("mysql"),
+        "port"        -> JsNumber(3306),
+        "database"    -> JsString("pekko_workflow"),
+        "table"       -> JsString("pekko_cdc_target_acceptance"),
+        "username"    -> JsString("pekko_workflow"),
+        "passwordEnv" -> JsString("DB_PASSWORD")
+      ))
     workflow("mysql-cdc", List(cdcSource, cdcSink), List(edge(cdcSource.id, cdcSink.id)))
   }
 

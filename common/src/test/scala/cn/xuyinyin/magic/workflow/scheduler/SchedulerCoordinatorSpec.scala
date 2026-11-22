@@ -24,11 +24,14 @@ object SchedulerCoordinatorSpec {
       try {
         val input = Option(getClass.getClassLoader.getResourceAsStream("schema/h2/h2-create-schema.sql"))
           .getOrElse(throw new IllegalStateException("Pekko Persistence JDBC H2 schema resource is unavailable"))
-        val sql = try Source.fromInputStream(input).mkString finally input.close()
+        val sql =
+          try Source.fromInputStream(input).mkString
+          finally input.close()
         sql.split(";").map(_.trim).filter(_.nonEmpty).foreach(statement.execute)
       } finally statement.close()
     } finally connection.close()
-    ConfigFactory.parseString(s"pekko-persistence-jdbc.shared-databases.slick.db.url = \"$h2Url\"")
+    ConfigFactory
+      .parseString(s"pekko-persistence-jdbc.shared-databases.slick.db.url = \"$h2Url\"")
       .withFallback(ConfigFactory.load("application-test"))
   }
 }
@@ -43,7 +46,7 @@ class SchedulerCoordinatorSpec extends ScalaTestWithActorTestKit(SchedulerCoordi
         SchedulerCoordinator(region.ref, () => now, retryBase = 1.second, persistenceId = "scheduler-reply-ttl", replyActorTTL = Some(20.millis)),
         "reply-ttl-coordinator"
       )
-      val replies = createTestProbe[SchedulerCoordinator.ScheduleReply]()
+      val replies     = createTestProbe[SchedulerCoordinator.ScheduleReply]()
       val diagnostics = createTestProbe[SchedulerCoordinator.Diagnostics]()
       coordinator ! SchedulerCoordinator.Add(SchedulerCoordinator.Schedule("reply-ttl", "workflow-reply-ttl", FixedRate(1.hour)), replies.ref)
       replies.expectMessageType[SchedulerCoordinator.ScheduleAdded]
@@ -56,21 +59,22 @@ class SchedulerCoordinatorSpec extends ScalaTestWithActorTestKit(SchedulerCoordi
     }
 
     "correlate concurrent workflow replies even when acknowledgements arrive in reverse order" in {
-      val region = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
+      val region      = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
       val coordinator = spawn(SchedulerCoordinator(region.ref, () => now, persistenceId = "scheduler-correlation"), "correlation-coordinator")
-      val replies = createTestProbe[SchedulerCoordinator.ScheduleReply]()
-      val state = createTestProbe[SchedulerCoordinator.State]()
+      val replies     = createTestProbe[SchedulerCoordinator.ScheduleReply]()
+      val state       = createTestProbe[SchedulerCoordinator.State]()
       coordinator ! SchedulerCoordinator.Add(SchedulerCoordinator.Schedule("correlation", "workflow-correlation", FixedRate(1.hour)), replies.ref)
       replies.expectMessageType[SchedulerCoordinator.ScheduleAdded]
 
       coordinator ! SchedulerCoordinator.Fire("correlation", 1L)
       coordinator ! SchedulerCoordinator.Fire("correlation", 2L)
-      val deliveries = Vector.fill(2)(region.expectMessageType[ShardingEnvelope[EventSourcedWorkflowActor.Command]])
+      val deliveries = Vector
+        .fill(2)(region.expectMessageType[ShardingEnvelope[EventSourcedWorkflowActor.Command]])
         .map(_.message.asInstanceOf[EventSourcedWorkflowActor.ExecuteScheduled])
         .map(delivery => delivery.triggerId -> delivery)
         .toMap
       val preparedDeadline = 2.seconds.fromNow
-      var prepared = Vector.empty[SchedulerCoordinator.PendingTrigger]
+      var prepared         = Vector.empty[SchedulerCoordinator.PendingTrigger]
       while (preparedDeadline.hasTimeLeft() && prepared.size != 2) {
         coordinator ! SchedulerCoordinator.GetState(state.ref)
         prepared = state.receiveMessage(200.millis).pendingTriggers
@@ -80,7 +84,7 @@ class SchedulerCoordinatorSpec extends ScalaTestWithActorTestKit(SchedulerCoordi
       deliveries("correlation-1").replyTo ! EventSourcedWorkflowActor.DuplicateExecution("correlation-1", "execution-1")
 
       val deadline = 2.seconds.fromNow
-      var pending = prepared
+      var pending  = prepared
       while (deadline.hasTimeLeft() && pending.nonEmpty) {
         coordinator ! SchedulerCoordinator.GetState(state.ref)
         pending = state.receiveMessage(200.millis).pendingTriggers
@@ -89,11 +93,11 @@ class SchedulerCoordinatorSpec extends ScalaTestWithActorTestKit(SchedulerCoordi
     }
 
     "add, update, pause, resume, list, and remove schedules" in {
-      val region = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
+      val region      = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
       val coordinator = spawn(SchedulerCoordinator(region.ref, () => now, persistenceId = "scheduler-crud"), "crud-coordinator")
-      val replies = createTestProbe[SchedulerCoordinator.ScheduleReply]()
-      val listed = createTestProbe[SchedulerCoordinator.Schedules]()
-      val initial = SchedulerCoordinator.Schedule("crud", "workflow-crud", FixedRate(1.hour))
+      val replies     = createTestProbe[SchedulerCoordinator.ScheduleReply]()
+      val listed      = createTestProbe[SchedulerCoordinator.Schedules]()
+      val initial     = SchedulerCoordinator.Schedule("crud", "workflow-crud", FixedRate(1.hour))
 
       coordinator ! SchedulerCoordinator.Add(initial, replies.ref)
       replies.expectMessage(SchedulerCoordinator.ScheduleAdded("crud"))
@@ -112,10 +116,10 @@ class SchedulerCoordinatorSpec extends ScalaTestWithActorTestKit(SchedulerCoordi
     }
 
     "pause and resume the durable schedule timer" in {
-      val region = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
+      val region      = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
       val coordinator = spawn(SchedulerCoordinator(region.ref, () => now, persistenceId = "scheduler-pause-resume"), "pause-resume-coordinator")
-      val replies = createTestProbe[SchedulerCoordinator.ScheduleReply]()
-      val schedule = SchedulerCoordinator.Schedule("pause-resume", "workflow-pause-resume", FixedRate(200.millis))
+      val replies     = createTestProbe[SchedulerCoordinator.ScheduleReply]()
+      val schedule    = SchedulerCoordinator.Schedule("pause-resume", "workflow-pause-resume", FixedRate(200.millis))
 
       coordinator ! SchedulerCoordinator.Add(schedule, replies.ref)
       replies.expectMessageType[SchedulerCoordinator.ScheduleAdded]
@@ -128,11 +132,11 @@ class SchedulerCoordinatorSpec extends ScalaTestWithActorTestKit(SchedulerCoordi
     }
 
     "persist a prepared trigger before delivering it and acknowledge accepted, duplicate, and already-running replies" in {
-      val region = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
+      val region      = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
       val coordinator = spawn(SchedulerCoordinator(region.ref, () => now, persistenceId = "scheduler-delivery"), "delivery-coordinator")
-      val replies = createTestProbe[SchedulerCoordinator.ScheduleReply]()
-      val state = createTestProbe[SchedulerCoordinator.State]()
-      val schedule = SchedulerCoordinator.Schedule("daily", "workflow-1", FixedRate(1.hour))
+      val replies     = createTestProbe[SchedulerCoordinator.ScheduleReply]()
+      val state       = createTestProbe[SchedulerCoordinator.State]()
+      val schedule    = SchedulerCoordinator.Schedule("daily", "workflow-1", FixedRate(1.hour))
 
       coordinator ! SchedulerCoordinator.Add(schedule, replies.ref)
       replies.expectMessage(SchedulerCoordinator.ScheduleAdded("daily"))
@@ -148,7 +152,7 @@ class SchedulerCoordinatorSpec extends ScalaTestWithActorTestKit(SchedulerCoordi
         delivery.triggerId shouldBe s"daily-$scheduledAt"
         delivery.replyTo ! ack
         val deadline = 2.seconds.fromNow
-        var pending = Vector(SchedulerCoordinator.PendingTrigger("not-cleared", "", "", 0L))
+        var pending  = Vector(SchedulerCoordinator.PendingTrigger("not-cleared", "", "", 0L))
         while (deadline.hasTimeLeft() && pending.nonEmpty) {
           coordinator ! SchedulerCoordinator.GetState(state.ref)
           pending = state.receiveMessage(200.millis).pendingTriggers
@@ -159,7 +163,8 @@ class SchedulerCoordinatorSpec extends ScalaTestWithActorTestKit(SchedulerCoordi
 
     "redeliver an unacknowledged trigger using a bounded retry timer" in {
       val region = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
-      val coordinator = spawn(SchedulerCoordinator(region.ref, () => now, retryBase = 20.millis, persistenceId = "scheduler-retry"), "retry-coordinator")
+      val coordinator =
+        spawn(SchedulerCoordinator(region.ref, () => now, retryBase = 20.millis, persistenceId = "scheduler-retry"), "retry-coordinator")
       val replies = createTestProbe[SchedulerCoordinator.ScheduleReply]()
       coordinator ! SchedulerCoordinator.Add(SchedulerCoordinator.Schedule("retry", "workflow-2", FixedRate(1.hour)), replies.ref)
       replies.expectMessageType[SchedulerCoordinator.ScheduleAdded]
@@ -171,9 +176,10 @@ class SchedulerCoordinatorSpec extends ScalaTestWithActorTestKit(SchedulerCoordi
 
     "remove exhausted retries from pending state and stop redelivering" in {
       val region = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
-      val coordinator = spawn(SchedulerCoordinator(region.ref, () => now, retryBase = 1.millis, persistenceId = "scheduler-exhaustion"), "exhaustion-coordinator")
+      val coordinator =
+        spawn(SchedulerCoordinator(region.ref, () => now, retryBase = 1.millis, persistenceId = "scheduler-exhaustion"), "exhaustion-coordinator")
       val replies = createTestProbe[SchedulerCoordinator.ScheduleReply]()
-      val state = createTestProbe[SchedulerCoordinator.State]()
+      val state   = createTestProbe[SchedulerCoordinator.State]()
       coordinator ! SchedulerCoordinator.Add(SchedulerCoordinator.Schedule("exhaust", "workflow-exhaust", FixedRate(1.hour)), replies.ref)
       replies.expectMessageType[SchedulerCoordinator.ScheduleAdded]
 
@@ -186,10 +192,14 @@ class SchedulerCoordinatorSpec extends ScalaTestWithActorTestKit(SchedulerCoordi
 
     "cancel every pending retry when removing its schedule" in {
       val region = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
-      val coordinator = spawn(SchedulerCoordinator(region.ref, () => now, retryBase = 200.millis, persistenceId = "scheduler-remove-pending"), "remove-pending-coordinator")
+      val coordinator = spawn(
+        SchedulerCoordinator(region.ref, () => now, retryBase = 200.millis, persistenceId = "scheduler-remove-pending"),
+        "remove-pending-coordinator")
       val replies = createTestProbe[SchedulerCoordinator.ScheduleReply]()
-      val state = createTestProbe[SchedulerCoordinator.State]()
-      coordinator ! SchedulerCoordinator.Add(SchedulerCoordinator.Schedule("remove-pending", "workflow-remove-pending", FixedRate(1.hour)), replies.ref)
+      val state   = createTestProbe[SchedulerCoordinator.State]()
+      coordinator ! SchedulerCoordinator.Add(
+        SchedulerCoordinator.Schedule("remove-pending", "workflow-remove-pending", FixedRate(1.hour)),
+        replies.ref)
       replies.expectMessageType[SchedulerCoordinator.ScheduleAdded]
       coordinator ! SchedulerCoordinator.Fire("remove-pending", 1L)
       coordinator ! SchedulerCoordinator.Fire("remove-pending", 2L)

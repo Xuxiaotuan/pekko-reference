@@ -184,11 +184,11 @@ class CalciteToPekkopec extends STSpec {
           case scan: TableScan =>
             // 从 TableScan 获取 RelOptTable，并提取底层的 ScannableTable
             val relOptTable: RelOptTable = scan.getTable
-            val table = relOptTable.unwrap(classOf[ScannableTable]) // 使用 unwrap 获取底层表
-            val enumerable = table.scan(null)
-            val fieldNames = scan.getRowType.getFieldNames
-            val scalaIterator = scala.jdk.CollectionConverters.IteratorHasAsScala(enumerable.iterator()).asScala
-            val source = Source.fromIterator(() => scalaIterator.map(row => fieldNames.zip(row.toList).toMap))
+            val table                    = relOptTable.unwrap(classOf[ScannableTable]) // 使用 unwrap 获取底层表
+            val enumerable               = table.scan(null)
+            val fieldNames               = scan.getRowType.getFieldNames
+            val scalaIterator            = scala.jdk.CollectionConverters.IteratorHasAsScala(enumerable.iterator()).asScala
+            val source                   = Source.fromIterator(() => scalaIterator.map(row => fieldNames.zip(row.toList).toMap))
             println(s"Topology: TableScan(${relOptTable.getQualifiedName.mkString(".")})")
             source.wireTap(row => println(s"TableScan(${relOptTable.getQualifiedName.mkString(".")}) Output: $row"))
           case filter: Filter =>
@@ -199,10 +199,10 @@ class CalciteToPekkopec extends STSpec {
             filtered.wireTap(row => println(s"Filter(DEPTNAME = 'Sales') Output: $row"))
 
           case join: Join =>
-            val leftStream = relNodeToStream(join.getLeft)
+            val leftStream  = relNodeToStream(join.getLeft)
             val rightStream = relNodeToStream(join.getRight)
             val rightFuture = rightStream.runWith(Sink.seq)
-            val rightRows = Await.result(rightFuture, 5.seconds)
+            val rightRows   = Await.result(rightFuture, 5.seconds)
             val rightLookup = rightRows.map(row => row("DEPTNO") -> row).toMap
             println("Topology: Join(EMPNO = DEPTNO) <- Left Input <- Right Input (materialized)")
             println(s"Join Right Lookup Table: $rightLookup")

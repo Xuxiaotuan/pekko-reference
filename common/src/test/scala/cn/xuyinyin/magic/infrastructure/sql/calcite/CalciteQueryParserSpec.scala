@@ -30,7 +30,8 @@ class CalciteQueryParserSpec extends STSpec {
 
     // 定义 EMP 表的列名和类型
     override def getRowType(typeFactory: RelDataTypeFactory): RelDataType = {
-      typeFactory.builder()
+      typeFactory
+        .builder()
         .add("EMPNO", typeFactory.createSqlType(SqlTypeName.INTEGER))
         .add("ENAME", typeFactory.createSqlType(SqlTypeName.VARCHAR))
         .add("DEPTNO", typeFactory.createSqlType(SqlTypeName.INTEGER)) // 新增 DEPTNO 字段
@@ -155,9 +156,9 @@ class CalciteQueryParserSpec extends STSpec {
    * 提取每张表及其过滤条件
    */
   private def extractTableFilters(node: RelNode): Seq[(String, String)] = node match {
-    case s: Sort => extractTableFilters(s.getInput)
-    case p: Project    => extractTableFilters(p.getInput)
-    case f: Filter     =>
+    case s: Sort    => extractTableFilters(s.getInput)
+    case p: Project => extractTableFilters(p.getInput)
+    case f: Filter =>
       val base = extractTableFilters(f.getInput)
       val cond = formatCondition(f.getCondition, f.getInput)
       base.map(tbl => tbl.copy(_2 = cond))
@@ -165,7 +166,6 @@ class CalciteQueryParserSpec extends STSpec {
     case ts: TableScan => Seq(ts.getTable.getQualifiedName.asScala.mkString(".") -> "")
     case _             => Seq.empty
   }
-
 
   /**
    * 格式化过滤表达式为 SQL 可读条件

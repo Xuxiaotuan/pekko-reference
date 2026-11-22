@@ -3,7 +3,7 @@ package cn.xuyinyin.magic.connectors.mysql.source
 import cn.xuyinyin.magic.testkit.STSpec
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicReference}
-import java.util.concurrent.{Callable, ConcurrentLinkedQueue, ExecutionException, ExecutorService, Executors, Future, TimeUnit}
+import java.util.concurrent.{Callable, ConcurrentLinkedQueue, ExecutionException, Executors, ExecutorService, Future, TimeUnit}
 import scala.jdk.CollectionConverters._
 
 class DebeziumBatchBridgeSpec extends STSpec {
@@ -25,8 +25,8 @@ class DebeziumBatchBridgeSpec extends STSpec {
   "DebeziumBatchBridge" should {
     "hold publish after take until acknowledgement and commit exactly once across repeated real-thread runs" in {
       (1 to 20).foreach { attempt =>
-        val bridge = new DebeziumBatchBridge
-        val handle = new CountingHandle
+        val bridge  = new DebeziumBatchBridge
+        val handle  = new CountingHandle
         val batchId = s"batch-$attempt"
         val publisher = startThread(s"ack-publisher-$attempt") {
           bridge.publish(batchId, Vector(s"row-$attempt"), s"cursor-$attempt", handle)
@@ -52,8 +52,8 @@ class DebeziumBatchBridgeSpec extends STSpec {
 
     "not let a second batch overtake an unacknowledged first batch across repeated real-thread runs" in {
       (1 to 20).foreach { attempt =>
-        val bridge = new DebeziumBatchBridge
-        val firstHandle = new CountingHandle
+        val bridge       = new DebeziumBatchBridge
+        val firstHandle  = new CountingHandle
         val secondHandle = new CountingHandle
         val firstPublisher = startThread(s"first-publisher-$attempt") {
           bridge.publish("first", Vector("first-row"), "first-cursor", firstHandle)
@@ -152,7 +152,7 @@ class DebeziumBatchBridgeSpec extends STSpec {
     "release a throwing acknowledgement callback and do not commit it twice" in {
       withExecutor(1) { executor =>
         val bridge = new DebeziumBatchBridge
-        val cause = new RuntimeException("commit failed")
+        val cause  = new RuntimeException("commit failed")
         val handle = new ThrowingHandle(cause)
         val publisher = submit(executor) {
           bridge.publish("throwing", Vector("row"), "cursor", handle)
@@ -250,33 +250,33 @@ class DebeziumBatchBridgeSpec extends STSpec {
 
     "reject delayed old tokens while allowing a later delivery with the same batch ID" in {
       (1 to 20).foreach { attempt =>
-      withExecutor(1) { executor =>
-        val bridge = new DebeziumBatchBridge
-        val firstHandle = new CountingHandle
-        val first = submit(executor) {
-          bridge.publish("reused", Vector("first"), "cursor-1", firstHandle)
-        }
+        withExecutor(1) { executor =>
+          val bridge      = new DebeziumBatchBridge
+          val firstHandle = new CountingHandle
+          val first = submit(executor) {
+            bridge.publish("reused", Vector("first"), "cursor-1", firstHandle)
+          }
 
-        val firstBatch = bridge.take()
-        firstBatch.batchId shouldBe "reused"
-        bridge.acknowledge(firstBatch.deliveryToken, "reused")
-        first.get(2, TimeUnit.SECONDS)
+          val firstBatch = bridge.take()
+          firstBatch.batchId shouldBe "reused"
+          bridge.acknowledge(firstBatch.deliveryToken, "reused")
+          first.get(2, TimeUnit.SECONDS)
 
-        val secondHandle = new CountingHandle
-        val second = submit(executor) {
-          bridge.publish("reused", Vector(s"second-$attempt"), "cursor-2", secondHandle)
+          val secondHandle = new CountingHandle
+          val second = submit(executor) {
+            bridge.publish("reused", Vector(s"second-$attempt"), "cursor-2", secondHandle)
+          }
+          val secondBatch = bridge.take()
+          secondBatch.batchId shouldBe "reused"
+          secondBatch.deliveryToken should not be firstBatch.deliveryToken
+          bridge.acknowledge(firstBatch.deliveryToken, "reused")
+          bridge.fail(firstBatch.deliveryToken, "reused", new RuntimeException("old token"))
+          secondHandle.calls.get() shouldBe 0
+          bridge.acknowledge(secondBatch.deliveryToken, "reused")
+          second.get(2, TimeUnit.SECONDS)
+          firstHandle.calls.get() shouldBe 1
+          secondHandle.calls.get() shouldBe 1
         }
-        val secondBatch = bridge.take()
-        secondBatch.batchId shouldBe "reused"
-        secondBatch.deliveryToken should not be firstBatch.deliveryToken
-        bridge.acknowledge(firstBatch.deliveryToken, "reused")
-        bridge.fail(firstBatch.deliveryToken, "reused", new RuntimeException("old token"))
-        secondHandle.calls.get() shouldBe 0
-        bridge.acknowledge(secondBatch.deliveryToken, "reused")
-        second.get(2, TimeUnit.SECONDS)
-        firstHandle.calls.get() shouldBe 1
-        secondHandle.calls.get() shouldBe 1
-      }
       }
     }
 
@@ -321,44 +321,44 @@ class DebeziumBatchBridgeSpec extends STSpec {
 
     "close releases established blocked consumers and both enqueue and acknowledgement publishers, then fails later operations fast" in {
       (1 to 20).foreach { attempt =>
-          val waitingConsumer = new DebeziumBatchBridge
-          val consumer = startThread(s"close-consumer-$attempt") {
-            waitingConsumer.take()
-          }
-          awaitWaiting(consumer.thread)
-          waitingConsumer.close()
-          awaitFinished(consumer)
-          consumer.failure.get() shouldBe a[IllegalStateException]
+        val waitingConsumer = new DebeziumBatchBridge
+        val consumer = startThread(s"close-consumer-$attempt") {
+          waitingConsumer.take()
+        }
+        awaitWaiting(consumer.thread)
+        waitingConsumer.close()
+        awaitFinished(consumer)
+        consumer.failure.get() shouldBe a[IllegalStateException]
 
-          val bridge = new DebeziumBatchBridge
-          val first = startThread(s"close-ack-$attempt") {
-            bridge.publish(s"ack-$attempt", Vector("first"), "cursor-1", new CountingHandle)
-          }
-          val batch = bridge.take()
-          batch.batchId shouldBe s"ack-$attempt"
-          awaitWaiting(first.thread)
-          val second = startThread(s"close-queued-$attempt") {
-            bridge.publish(s"enqueue-$attempt", Vector("second"), "cursor-2", new CountingHandle)
-          }
-          awaitWaiting(second.thread)
-          val third = startThread(s"close-enqueue-$attempt") {
-            bridge.publish(s"enqueue-later-$attempt", Vector("third"), "cursor-3", new CountingHandle)
-          }
-          awaitWaiting(third.thread)
+        val bridge = new DebeziumBatchBridge
+        val first = startThread(s"close-ack-$attempt") {
+          bridge.publish(s"ack-$attempt", Vector("first"), "cursor-1", new CountingHandle)
+        }
+        val batch = bridge.take()
+        batch.batchId shouldBe s"ack-$attempt"
+        awaitWaiting(first.thread)
+        val second = startThread(s"close-queued-$attempt") {
+          bridge.publish(s"enqueue-$attempt", Vector("second"), "cursor-2", new CountingHandle)
+        }
+        awaitWaiting(second.thread)
+        val third = startThread(s"close-enqueue-$attempt") {
+          bridge.publish(s"enqueue-later-$attempt", Vector("third"), "cursor-3", new CountingHandle)
+        }
+        awaitWaiting(third.thread)
 
-          bridge.close()
-          bridge.close()
+        bridge.close()
+        bridge.close()
 
-          awaitFinished(first)
-          awaitFinished(second)
-          awaitFinished(third)
-          first.failure.get() shouldBe a[IllegalStateException]
-          second.failure.get() shouldBe a[IllegalStateException]
-          third.failure.get() shouldBe a[IllegalStateException]
-          intercept[IllegalStateException](bridge.take())
-          intercept[IllegalStateException](bridge.publish("later", Vector.empty, "later", new CountingHandle))
-          intercept[IllegalStateException](bridge.acknowledge(batch.deliveryToken, s"ack-$attempt"))
-          intercept[IllegalStateException](bridge.fail(batch.deliveryToken, s"ack-$attempt", new RuntimeException("later")))
+        awaitFinished(first)
+        awaitFinished(second)
+        awaitFinished(third)
+        first.failure.get() shouldBe a[IllegalStateException]
+        second.failure.get() shouldBe a[IllegalStateException]
+        third.failure.get() shouldBe a[IllegalStateException]
+        intercept[IllegalStateException](bridge.take())
+        intercept[IllegalStateException](bridge.publish("later", Vector.empty, "later", new CountingHandle))
+        intercept[IllegalStateException](bridge.acknowledge(batch.deliveryToken, s"ack-$attempt"))
+        intercept[IllegalStateException](bridge.fail(batch.deliveryToken, s"ack-$attempt", new RuntimeException("later")))
       }
     }
   }
@@ -378,7 +378,7 @@ class DebeziumBatchBridgeSpec extends STSpec {
     })
 
   private def startThread(name: String)(body: => Unit): StartedThread = {
-    val failure = new AtomicReference[Throwable]()
+    val failure     = new AtomicReference[Throwable]()
     val interrupted = new AtomicBoolean(false)
     val thread = new Thread(
       () => {
@@ -415,7 +415,7 @@ class DebeziumBatchBridgeSpec extends STSpec {
       future.get(2, TimeUnit.SECONDS)
     }.getCause
 
-  private final class CountingHandle extends CdcBatchCommitHandle {
+  final private class CountingHandle extends CdcBatchCommitHandle {
     val calls = new AtomicInteger(0)
 
     override def markProcessedAndFinished(): Unit = {
@@ -424,10 +424,10 @@ class DebeziumBatchBridgeSpec extends STSpec {
     }
   }
 
-  private final class ReentrantHandle(
-    bridge: DebeziumBatchBridge,
-    closeInstead: Boolean
-  ) extends CdcBatchCommitHandle {
+  final private class ReentrantHandle(
+      bridge: DebeziumBatchBridge,
+      closeInstead: Boolean)
+      extends CdcBatchCommitHandle {
     val calls = new AtomicInteger(0)
     val batch = new AtomicReference[BridgedCdcBatch]()
 
@@ -443,7 +443,7 @@ class DebeziumBatchBridgeSpec extends STSpec {
     }
   }
 
-  private final class ThrowingHandle(cause: RuntimeException) extends CdcBatchCommitHandle {
+  final private class ThrowingHandle(cause: RuntimeException) extends CdcBatchCommitHandle {
     val calls = new AtomicInteger(0)
 
     override def markProcessedAndFinished(): Unit = {
@@ -452,8 +452,8 @@ class DebeziumBatchBridgeSpec extends STSpec {
     }
   }
 
-  private final class BlockingHandle extends CdcBatchCommitHandle {
-    val calls = new AtomicInteger(0)
+  final private class BlockingHandle extends CdcBatchCommitHandle {
+    val calls   = new AtomicInteger(0)
     val entered = new java.util.concurrent.CountDownLatch(1)
     val release = new java.util.concurrent.CountDownLatch(1)
 
@@ -465,9 +465,8 @@ class DebeziumBatchBridgeSpec extends STSpec {
     }
   }
 
-  private final class StartedThread(
-    val thread: Thread,
-    val failure: AtomicReference[Throwable],
-    val interrupted: AtomicBoolean
-  )
+  final private class StartedThread(
+      val thread: Thread,
+      val failure: AtomicReference[Throwable],
+      val interrupted: AtomicBoolean)
 }

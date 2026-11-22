@@ -23,15 +23,15 @@ class SchedulerFailoverSpec extends AnyWordSpec with Matchers with Eventually {
 
   "the coordinator-role Scheduler Singleton" should {
     "redeliver an unacknowledged trigger after host loss without accepting it twice" in {
-      val database = MultiNodeTestSupport.newDatabase("scheduler-failover-")
-      val clusterName = s"task8-scheduler-${java.util.UUID.randomUUID()}"
-      val singletonName = s"SchedulerCoordinator-${java.util.UUID.randomUUID()}"
+      val database               = MultiNodeTestSupport.newDatabase("scheduler-failover-")
+      val clusterName            = s"task8-scheduler-${java.util.UUID.randomUUID()}"
+      val singletonName          = s"SchedulerCoordinator-${java.util.UUID.randomUUID()}"
       val schedulerPersistenceId = s"scheduler-failover-${java.util.UUID.randomUUID()}"
-      val workflowId = s"scheduled-${java.util.UUID.randomUUID()}"
-      val scheduleId = s"schedule-${java.util.UUID.randomUUID()}"
-      val scheduledAt = 1787961601000L
-      var node1: ActorTestKit = null
-      var node2: ActorTestKit = null
+      val workflowId             = s"scheduled-${java.util.UUID.randomUUID()}"
+      val scheduleId             = s"schedule-${java.util.UUID.randomUUID()}"
+      val scheduledAt            = 1787961601000L
+      var node1: ActorTestKit    = null
+      var node2: ActorTestKit    = null
 
       try {
         node1 = ActorTestKit(clusterName, MultiNodeTestSupport.nodeConfig(database.url))

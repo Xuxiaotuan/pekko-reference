@@ -28,7 +28,7 @@ class MySQLPersistenceRecoverySpec extends AnyWordSpec with Matchers with Eventu
       }
       MySQLPersistenceRecoverySpec.validateIsolation(settings) match {
         case Left(reason) => cancel(s"external_blocked: $reason")
-        case Right(_) =>
+        case Right(_)     =>
       }
 
       Class.forName("com.mysql.cj.jdbc.Driver")
@@ -38,24 +38,24 @@ class MySQLPersistenceRecoverySpec extends AnyWordSpec with Matchers with Eventu
       } finally bootstrapConnection.close()
 
       val configValues = Map[String, AnyRef](
-        "pekko-persistence-jdbc.shared-databases.slick.profile" -> "slick.jdbc.MySQLProfile$",
-        "pekko-persistence-jdbc.shared-databases.slick.db.driver" -> "com.mysql.cj.jdbc.Driver",
-        "pekko-persistence-jdbc.shared-databases.slick.db.url" -> settings.jdbcUrl,
-        "pekko-persistence-jdbc.shared-databases.slick.db.user" -> settings.user,
+        "pekko-persistence-jdbc.shared-databases.slick.profile"     -> "slick.jdbc.MySQLProfile$",
+        "pekko-persistence-jdbc.shared-databases.slick.db.driver"   -> "com.mysql.cj.jdbc.Driver",
+        "pekko-persistence-jdbc.shared-databases.slick.db.url"      -> settings.jdbcUrl,
+        "pekko-persistence-jdbc.shared-databases.slick.db.user"     -> settings.user,
         "pekko-persistence-jdbc.shared-databases.slick.db.password" -> settings.password,
-        "pekko.remote.artery.canonical.hostname" -> "127.0.0.1",
-        "pekko.remote.artery.canonical.port" -> Int.box(0)
+        "pekko.remote.artery.canonical.hostname"                    -> "127.0.0.1",
+        "pekko.remote.artery.canonical.port"                        -> Int.box(0)
       )
-      val config = ConfigFactory.parseMap(configValues.asJava).withFallback(ConfigFactory.load("application-test"))
+      val config  = ConfigFactory.parseMap(configValues.asJava).withFallback(ConfigFactory.load("application-test"))
       val testKit = ActorTestKit(s"task8-mysql-${java.util.UUID.randomUUID()}", config)
 
       try {
         implicit val executionContext = testKit.system.executionContext
-        val engine = new WorkflowExecutionEngine()(testKit.system, executionContext)
-        val workflowId = s"mysql-${java.util.UUID.randomUUID()}"
-        val persistenceId = s"workflow-$workflowId"
-        val replies = testKit.createTestProbe[EventSourcedWorkflowActor.Reply]()
-        val before = testKit.spawn(EventSourcedWorkflowActor(workflowId, engine), "mysql-persistence-before")
+        val engine                    = new WorkflowExecutionEngine()(testKit.system, executionContext)
+        val workflowId                = s"mysql-${java.util.UUID.randomUUID()}"
+        val persistenceId             = s"workflow-$workflowId"
+        val replies                   = testKit.createTestProbe[EventSourcedWorkflowActor.Reply]()
+        val before                    = testKit.spawn(EventSourcedWorkflowActor(workflowId, engine), "mysql-persistence-before")
 
         (0L to 100L).foreach { expectedRevision =>
           before ! EventSourcedWorkflowActor.DefineWorkflow(WorkflowFixtures.linearWorkflow, expectedRevision, replies.ref)
@@ -71,7 +71,7 @@ class MySQLPersistenceRecoverySpec extends AnyWordSpec with Matchers with Eventu
         }
 
         testKit.stop(before)
-        val recovered = testKit.spawn(EventSourcedWorkflowActor(workflowId, engine), "mysql-persistence-after")
+        val recovered    = testKit.spawn(EventSourcedWorkflowActor(workflowId, engine), "mysql-persistence-after")
         val summaryReply = testKit.createTestProbe[EventSourcedWorkflowActor.WorkflowSummary]()
         recovered ! EventSourcedWorkflowActor.GetSummary(summaryReply.ref)
         summaryReply.receiveMessage(10.seconds).revision shouldBe 101L
@@ -85,16 +85,16 @@ private object MySQLPersistenceRecoverySpec {
   private val JdbcUrl = "^jdbc:mysql://[^/]+/([^?;]+)(?:[?;].*)?$".r
 
   def settingsFromEnvironment(): Option[Settings] = for {
-    jdbcUrl <- sys.env.get("PEKKO_TEST_MYSQL_JDBC_URL").filter(_.nonEmpty)
-    schema <- sys.env.get("PEKKO_TEST_MYSQL_SCHEMA").filter(_.nonEmpty)
-    user <- sys.env.get("PEKKO_TEST_MYSQL_USER").filter(_.nonEmpty)
+    jdbcUrl  <- sys.env.get("PEKKO_TEST_MYSQL_JDBC_URL").filter(_.nonEmpty)
+    schema   <- sys.env.get("PEKKO_TEST_MYSQL_SCHEMA").filter(_.nonEmpty)
+    user     <- sys.env.get("PEKKO_TEST_MYSQL_USER").filter(_.nonEmpty)
     password <- sys.env.get("PEKKO_TEST_MYSQL_PASSWORD")
   } yield Settings(jdbcUrl, schema, user, password)
 
   def validateIsolation(settings: Settings): Either[String, Unit] = {
     val schemaInUrl = settings.jdbcUrl match {
       case JdbcUrl(schema) => Some(schema)
-      case _ => None
+      case _               => None
     }
     if (!settings.schema.startsWith("pekko_test_"))
       Left("PEKKO_TEST_MYSQL_SCHEMA must start with pekko_test_; user or shared application databases are refused")

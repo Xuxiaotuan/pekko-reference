@@ -5,21 +5,22 @@ import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * Worker-side control plane for the two-role CDC runtime.
-  *
-  * This class owns worker and task lease state only. Table execution, T/J/D
-  * interpretation, GC, and Journal verification remain in the platform
-  * kernel until the next extraction step.
-  */
+ * Worker-side control plane for the two-role CDC runtime.
+ *
+ * This class owns worker and task lease state only. Table execution, T/J/D
+ * interpretation, GC, and Journal verification remain in the platform
+ * kernel until the next extraction step.
+ */
 final class CdcWorkerRuntime(
     leases: CdcRuntimeLeaseStore,
     defaultWorkerId: String,
     defaultIncarnation: String,
     defaultCapacityJson: String
-)(implicit ec: ExecutionContext) extends WorkerRuntimeControl {
+  )(implicit ec: ExecutionContext)
+    extends WorkerRuntimeControl {
   private val runtimeLeaseMillis = 30000L
-  private val workerLease = new AtomicReference[Option[WorkerLease]](None)
-  private val taskLeases = mutable.Map.empty[String, TaskLease]
+  private val workerLease        = new AtomicReference[Option[WorkerLease]](None)
+  private val taskLeases         = mutable.Map.empty[String, TaskLease]
 
   def currentWorker: Option[WorkerLease] = workerLease.get()
 
@@ -39,8 +40,7 @@ final class CdcWorkerRuntime(
   }
 
   def registerNow(workerId: String, incarnation: String, capacityJson: String): WorkerLease = {
-    require(workerId == defaultWorkerId && incarnation == defaultIncarnation,
-      "worker registration does not match the runtime identity")
+    require(workerId == defaultWorkerId && incarnation == defaultIncarnation, "worker registration does not match the runtime identity")
     synchronized {
       workerLease.get() match {
         case Some(existing) => existing
@@ -80,16 +80,24 @@ final class CdcWorkerRuntime(
   }
 
   def recordProgressNow(commit: TaskProgressCommit): TaskLease = synchronized {
-    requireRegistered(WorkerLease(commit.lease.workerId, commit.lease.workerIncarnation,
-      commit.lease.workerEpoch.getOrElse(commit.lease.leaseEpoch), commit.lease.workerLeaseId.orElse(currentWorker.flatMap(_.leaseId))))
+    requireRegistered(
+      WorkerLease(
+        commit.lease.workerId,
+        commit.lease.workerIncarnation,
+        commit.lease.workerEpoch.getOrElse(commit.lease.leaseEpoch),
+        commit.lease.workerLeaseId.orElse(currentWorker.flatMap(_.leaseId))))
     val updated = leases.recordProgress(commit)
     track(updated)
     updated
   }
 
   def renewNow(lease: TaskLease): TaskLease = {
-    requireRegistered(WorkerLease(lease.workerId, lease.workerIncarnation,
-      lease.workerEpoch.getOrElse(lease.leaseEpoch), lease.workerLeaseId.orElse(currentWorker.flatMap(_.leaseId))))
+    requireRegistered(
+      WorkerLease(
+        lease.workerId,
+        lease.workerIncarnation,
+        lease.workerEpoch.getOrElse(lease.leaseEpoch),
+        lease.workerLeaseId.orElse(currentWorker.flatMap(_.leaseId))))
     require(leases.renewTask(lease), "task lease is stale")
     lease
   }
@@ -122,8 +130,16 @@ final class CdcWorkerRuntime(
       releasedIds.result() -> outcomes.forall(identity)
     }
     released.foreach(untrack)
-    if(!workerOk || !tasksOk)
-      org.slf4j.LoggerFactory.getLogger(getClass).warn("CDC worker renewTracked failed workerPresent={} workerOk={} tasksOk={} trackedTasks={} activeGraphs={}",workerLease.get().nonEmpty,workerOk,tasksOk,taskLeases.synchronized(taskLeases.size),activeGraphs)
+    if (!workerOk || !tasksOk)
+      org.slf4j.LoggerFactory
+        .getLogger(getClass)
+        .warn(
+          "CDC worker renewTracked failed workerPresent={} workerOk={} tasksOk={} trackedTasks={} activeGraphs={}",
+          workerLease.get().nonEmpty,
+          workerOk,
+          tasksOk,
+          taskLeases.synchronized(taskLeases.size),
+          activeGraphs)
     workerOk && tasksOk
   }
 

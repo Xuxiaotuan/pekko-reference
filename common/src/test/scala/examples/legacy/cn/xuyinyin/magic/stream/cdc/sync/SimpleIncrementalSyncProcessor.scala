@@ -14,70 +14,71 @@ import scala.concurrent.{ExecutionContext, Future}
  * 不使用复杂的Stream处理，专注于核心逻辑
  */
 class SimpleIncrementalSyncProcessor(
-  simulator: CdcDataSimulator,
-  watermarkManager: WatermarkManager
-)(implicit ec: ExecutionContext) extends LazyLogging {
+    simulator: CdcDataSimulator,
+    watermarkManager: WatermarkManager
+  )(implicit ec: ExecutionContext)
+    extends LazyLogging {
 
   private var isRunning = false
-  
+
   /**
    * 启动增量同步
    */
   def startIncrementalSync(config: SyncConfig): Future[Unit] = {
     logger.info(s"启动增量同步: 表=${config.tableName}")
-    
+
     isRunning = true
-    
+
     Future {
       while (isRunning) {
         try {
           // 生成CDC事件
           val event = generateCdcEvent(config.tableName)
-          
+
           if (event.isDefined) {
             val cdcEvent = event.get
-            
+
             // 验证事件
             if (validateEvent(cdcEvent, config)) {
               // 处理事件
               val result = processCdcEvent(cdcEvent, config)
-              
+
               // 更新水位线
               updateWatermark(result)
-              
+
               logger.debug(s"处理CDC事件: ${cdcEvent.eventType} - 位置: ${cdcEvent.binlogPosition}")
             } else {
               logger.warn(s"事件验证失败，跳过处理: ${cdcEvent.eventId}")
             }
           }
-          
+
           // 等待下次处理
           Thread.sleep(config.syncInterval)
-          
+
         } catch {
           case e: Exception =>
             logger.error("增量同步处理异常", e)
             Thread.sleep(config.syncInterval)
         }
       }
-      
+
       logger.info(s"增量同步停止: 表=${config.tableName}")
     }
   }
-  
+
   /**
    * 根据表名生成CDC事件
    */
   private def generateCdcEvent(tableName: String): Option[CdcEvent] = {
     tableName match {
-      case "users" => Some(simulator.generateUserCdcEvent())
+      case "users"  => Some(simulator.generateUserCdcEvent())
       case "orders" => Some(simulator.generateOrderCdcEvent())
-      case _ => 
+      case _ =>
         logger.warn(s"未知的表名: $tableName")
         None
     }
   }
-  
+
   /**
    * 验证事件
    */
@@ -88,17 +89,17 @@ class SimpleIncrementalSyncProcessor(
       logger.warn(s"事件超出安全范围，跳过处理: eventId=${event.eventId}, position=${event.binlogPosition}")
       return false
     }
-    
+
     // 检查事件是否属于目标表
     val isTargetTable = event.tableName == config.tableName
     if (!isTargetTable) {
       logger.warn(s"事件不属于目标表，跳过处理: eventId=${event.eventId}, table=${event.tableName}")
       return false
     }
-    
+
     true
   }
-  
+
   /**
    * 处理单个CDC事件
    */
@@ -112,7 +113,7 @@ class SimpleIncrementalSyncProcessor(
         case DELETE =>
           processDeleteEvent(event, config)
       }
-      
+
       SyncResult(
         tableName = config.tableName,
         processedCount = 1,
@@ -134,7 +135,7 @@ class SimpleIncrementalSyncProcessor(
         )
     }
   }
-  
+
   /**
    * 处理INSERT事件
    */
@@ -151,7 +152,7 @@ class SimpleIncrementalSyncProcessor(
         logger.warn(s"INSERT事件缺少afterData: eventId=${event.eventId}")
     }
   }
-  
+
   /**
    * 处理UPDATE事件
    */
@@ -165,7 +166,7 @@ class SimpleIncrementalSyncProcessor(
         logger.warn(s"UPDATE事件数据不完整: eventId=${event.eventId}")
     }
   }
-  
+
   /**
    * 处理DELETE事件
    */
@@ -179,14 +180,14 @@ class SimpleIncrementalSyncProcessor(
         logger.warn(s"DELETE事件缺少beforeData: eventId=${event.eventId}")
     }
   }
-  
+
   /**
    * 模拟数据处理
    */
   private def simulateDataProcessing(data: Map[String, Any], operation: String): Unit = {
     // 模拟数据处理延迟
     Thread.sleep(5)
-    
+
     // 这里可以添加实际的数据处理逻辑，比如：
     // 1. 写入目标数据库
     // 2. 更新缓存
@@ -194,20 +195,20 @@ class SimpleIncrementalSyncProcessor(
     // 4. 更新搜索引擎索引
     logger.debug(s"模拟数据处理: 操作=$operation, 数据=$data")
   }
-  
+
   /**
    * 更新水位线
    */
   private def updateWatermark(result: SyncResult): Unit = {
     // 更新当前水位线
     watermarkManager.advanceCurrentWatermark(result.lastProcessedPosition)
-    
+
     // 检查是否可以推进高水位线
     if (watermarkManager.canAdvanceHighWatermark(result.lastProcessedPosition)) {
       watermarkManager.updateHighWatermark(result.lastProcessedPosition)
     }
   }
-  
+
   /**
    * 停止增量同步
    */
@@ -215,14 +216,14 @@ class SimpleIncrementalSyncProcessor(
     logger.info("停止增量同步")
     isRunning = false
   }
-  
+
   /**
    * 获取增量同步状态
    */
   def getIncrementalSyncStatus(config: SyncConfig): IncrementalSyncStatus = {
     val watermarkStatus = watermarkManager.getWatermarkStatus
-    val dataStats = simulator.getDataStats
-    
+    val dataStats       = simulator.getDataStats
+
     IncrementalSyncStatus(
       tableName = config.tableName,
       isRunning = isRunning,
@@ -237,9 +238,9 @@ class SimpleIncrementalSyncProcessor(
  * 增量同步状态
  */
 case class IncrementalSyncStatus(
-                                  tableName: String,
-                                  isRunning: Boolean,
-                                  watermarkStatus: WatermarkStatus,
-                                  dataStats: DataStats,
-                                  lastUpdateTime: Instant
-) extends CborSerializable
+    tableName: String,
+    isRunning: Boolean,
+    watermarkStatus: WatermarkStatus,
+    dataStats: DataStats,
+    lastUpdateTime: Instant)
+    extends CborSerializable

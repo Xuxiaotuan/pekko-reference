@@ -6,9 +6,8 @@ import cn.xuyinyin.magic.connectors.jdbc.JdbcPasswordResolver
 /** Legacy node adapter; the CDC runtime uses typed configuration directly. */
 private[sink] object MySQLCdcApplyNodeConfig {
   def parse(
-    node: WorkflowDSL.Node,
-    getenv: String => Option[String] = sys.env.get
-  ): MySQLCdcApplyConfig = {
+      node: WorkflowDSL.Node,
+      getenv: String => Option[String] = sys.env.get): MySQLCdcApplyConfig = {
     val fields = node.config.fields
     if (fields.contains("password")) {
       throw new IllegalArgumentException("password is not supported for MySQL CDC apply; passwordEnv is required")

@@ -15,7 +15,10 @@ import scala.concurrent.{Await, Future, Promise}
 import scala.concurrent.duration._
 
 class WorkflowQueryServiceSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Eventually {
-  private val kit = ActorTestKit("bounded-workflow-queries", ConfigFactory.parseString("""
+  private val kit = ActorTestKit(
+    "bounded-workflow-queries",
+    ConfigFactory
+      .parseString("""
     pekko.actor.provider = local
     pekko.workflow.query {
       summary-parallelism = 2
@@ -24,10 +27,11 @@ class WorkflowQueryServiceSpec extends AnyWordSpec with Matchers with BeforeAndA
       summary-timeout = 10s
     }
   """).withFallback(ConfigFactory.load("application-test")))
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(org.scalatest.time.Span(2, org.scalatest.time.Seconds), org.scalatest.time.Span(20, org.scalatest.time.Millis))
-  private implicit val ec: scala.concurrent.ExecutionContext = kit.system.executionContext
-  override def afterAll(): Unit = { kit.shutdownTestKit(); super.afterAll() }
-  private def await[A](future: Future[A]): A = Await.result(future, 3.seconds)
+  implicit override val patienceConfig: PatienceConfig =
+    PatienceConfig(org.scalatest.time.Span(2, org.scalatest.time.Seconds), org.scalatest.time.Span(20, org.scalatest.time.Millis))
+  implicit private val ec: scala.concurrent.ExecutionContext = kit.system.executionContext
+  override def afterAll(): Unit                              = { kit.shutdownTestKit(); super.afterAll() }
+  private def await[A](future: Future[A]): A                 = Await.result(future, 3.seconds)
   private def summary(id: String) = EventSourcedWorkflowActor.WorkflowSummary(id, 1L, EventSourcedWorkflowActor.Completed, None, Vector.empty)
 
   "workflow list queries" should {
@@ -47,7 +51,7 @@ class WorkflowQueryServiceSpec extends AnyWordSpec with Matchers with BeforeAndA
     }
 
     "reject excess list requests and recover admission after ID streams finish" in {
-      val probe = kit.createTestProbe[WorkflowSupervisor.Command]()
+      val probe  = kit.createTestProbe[WorkflowSupervisor.Command]()
       val opened = new java.util.concurrent.ConcurrentLinkedQueue[Promise[Option[String]]]()
       val service = new WorkflowQueryService(kit.system, probe.ref) {
         override protected[query] def persistenceIds(): Source[String, NotUsed] =
@@ -66,7 +70,7 @@ class WorkflowQueryServiceSpec extends AnyWordSpec with Matchers with BeforeAndA
     }
 
     "cancel an idle ID stream at the overall query deadline" in {
-      val probe = kit.createTestProbe[WorkflowSupervisor.Command]()
+      val probe      = kit.createTestProbe[WorkflowSupervisor.Command]()
       val terminated = Promise[org.apache.pekko.Done]()
       val service = new WorkflowQueryService(kit.system, probe.ref) {
         override protected[query] def persistenceIds(): Source[String, NotUsed] =
@@ -90,7 +94,7 @@ class WorkflowQueryServiceSpec extends AnyWordSpec with Matchers with BeforeAndA
         override protected[query] def persistenceIds(): Source[String, NotUsed] =
           Source(Vector("workflow-a", "workflow-b"))
       }
-      val first = service.list(0, 2); val second = service.list(0, 2)
+      val first   = service.list(0, 2); val second = service.list(0, 2)
       val pending = probe.receiveMessages(4).map(_.asInstanceOf[WorkflowSupervisor.GetWorkflowSummary])
       await(first.failed) shouldBe a[java.util.concurrent.TimeoutException]
       await(second.failed) shouldBe a[java.util.concurrent.TimeoutException]
@@ -99,7 +103,7 @@ class WorkflowQueryServiceSpec extends AnyWordSpec with Matchers with BeforeAndA
       probe.expectNoMessage(50.millis)
       pending.foreach(r => r.replyTo ! summary(r.workflowId))
       eventually { service.inFlightSummaries shouldBe 0 }
-      val next = service.list(0, 1)
+      val next    = service.list(0, 1)
       val request = probe.expectMessageType[WorkflowSupervisor.GetWorkflowSummary]
       request.replyTo ! summary(request.workflowId)
       await(next).items.size shouldBe 1
@@ -107,7 +111,7 @@ class WorkflowQueryServiceSpec extends AnyWordSpec with Matchers with BeforeAndA
 
     "release admission when ID source construction fails" in {
       val probe = kit.createTestProbe[WorkflowSupervisor.Command]()
-      val fail = new java.util.concurrent.atomic.AtomicBoolean(true)
+      val fail  = new java.util.concurrent.atomic.AtomicBoolean(true)
       val service = new WorkflowQueryService(kit.system, probe.ref) {
         override protected[query] def persistenceIds(): Source[String, NotUsed] =
           if (fail.get()) throw new IllegalStateException("ID dependency rejected initialization") else Source.empty
@@ -123,7 +127,7 @@ class WorkflowQueryServiceSpec extends AnyWordSpec with Matchers with BeforeAndA
         override protected[query] def persistenceIds(): Source[String, NotUsed] =
           Source(Vector("scheduler", "workflow-a", "workflow-b", "workflow-c", "workflow-d"))
       }
-      val result = service.list(1, Int.MaxValue)
+      val result   = service.list(1, Int.MaxValue)
       val requests = probe.receiveMessages(2).map(_.asInstanceOf[WorkflowSupervisor.GetWorkflowSummary])
       requests.foreach(r => r.replyTo ! summary(r.workflowId))
       val page = await(result)

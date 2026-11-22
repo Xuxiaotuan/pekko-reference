@@ -16,17 +16,16 @@ sealed trait KafkaOffsetReset
 
 object KafkaOffsetReset {
   case object Earliest extends KafkaOffsetReset
-  case object Latest extends KafkaOffsetReset
+  case object Latest   extends KafkaOffsetReset
 }
 
 final case class KafkaSourceConfig(
-  topic: String,
-  connection: KafkaConnectionMode,
-  offsetReset: KafkaOffsetReset,
-  chunkSize: Int,
-  maxRecords: Long,
-  maxDuration: FiniteDuration
-)
+    topic: String,
+    connection: KafkaConnectionMode,
+    offsetReset: KafkaOffsetReset,
+    chunkSize: Int,
+    maxRecords: Long,
+    maxDuration: FiniteDuration)
 
 object KafkaSourceConfig {
   def parse(node: WorkflowDSL.Node): KafkaSourceConfig = {
@@ -54,8 +53,8 @@ object KafkaSourceConfig {
 
     fields.get("brokers") match {
       case Some(JsString(brokers)) => DirectKafkaConnection(trimmedRequiredString(brokers, "brokers"))
-      case Some(_) => throw new IllegalArgumentException("brokers must be a string")
-      case None => gravitinoConnection(fields("gravitino"))
+      case Some(_)                 => throw new IllegalArgumentException("brokers must be a string")
+      case None                    => gravitinoConnection(fields("gravitino"))
     }
   }
 
@@ -70,16 +69,16 @@ object KafkaSourceConfig {
   }
 
   private def offsetReset(fields: Map[String, JsValue]): KafkaOffsetReset = fields.get("offsetReset") match {
-    case None => KafkaOffsetReset.Earliest
+    case None                       => KafkaOffsetReset.Earliest
     case Some(JsString("earliest")) => KafkaOffsetReset.Earliest
-    case Some(JsString("latest")) => KafkaOffsetReset.Latest
-    case _ => throw new IllegalArgumentException("offsetReset must be earliest or latest")
+    case Some(JsString("latest"))   => KafkaOffsetReset.Latest
+    case _                          => throw new IllegalArgumentException("offsetReset must be earliest or latest")
   }
 
   private def requiredString(fields: Map[String, JsValue], key: String): String = fields.get(key) match {
     case Some(JsString(value)) => trimmedRequiredString(value, key)
-    case Some(_) => throw new IllegalArgumentException(s"$key must be a string")
-    case None => throw new IllegalArgumentException(s"missing $key configuration")
+    case Some(_)               => throw new IllegalArgumentException(s"$key must be a string")
+    case None                  => throw new IllegalArgumentException(s"missing $key configuration")
   }
 
   private def trimmedRequiredString(value: String, key: String): String = {
@@ -90,15 +89,15 @@ object KafkaSourceConfig {
 
   private def requiredPositiveInt(fields: Map[String, JsValue], key: String): Int = fields.get(key) match {
     case Some(JsNumber(value)) if value.isValidInt && value.toInt > 0 => value.toInt
-    case Some(JsNumber(_)) => throw new IllegalArgumentException(s"$key must be a positive integer")
-    case Some(_) => throw new IllegalArgumentException(s"$key must be a number")
-    case None => throw new IllegalArgumentException(s"missing $key configuration")
+    case Some(JsNumber(_))                                            => throw new IllegalArgumentException(s"$key must be a positive integer")
+    case Some(_)                                                      => throw new IllegalArgumentException(s"$key must be a number")
+    case None                                                         => throw new IllegalArgumentException(s"missing $key configuration")
   }
 
   private def requiredPositiveLong(fields: Map[String, JsValue], key: String): Long = fields.get(key) match {
     case Some(JsNumber(value)) if value.isValidLong && value.toLong > 0 => value.toLong
-    case Some(JsNumber(_)) => throw new IllegalArgumentException(s"$key must be a positive long")
-    case Some(_) => throw new IllegalArgumentException(s"$key must be a number")
-    case None => throw new IllegalArgumentException(s"missing $key configuration")
+    case Some(JsNumber(_))                                              => throw new IllegalArgumentException(s"$key must be a positive long")
+    case Some(_)                                                        => throw new IllegalArgumentException(s"$key must be a number")
+    case None                                                           => throw new IllegalArgumentException(s"missing $key configuration")
   }
 }

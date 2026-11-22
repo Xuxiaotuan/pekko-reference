@@ -27,7 +27,7 @@ object CdcRuntime {
 
   private[magic] def httpAddress(config: Config): (String, Int) = {
     val prefix = "pekko.cdc-standalone.http."
-    val host = if (config.hasPath(prefix + "host")) config.getString(prefix + "host") else "127.0.0.1"
+    val host   = if (config.hasPath(prefix + "host")) config.getString(prefix + "host") else "127.0.0.1"
     require(Set("127.0.0.1", "localhost", "::1").contains(host), "CDC standalone API requires a loopback host")
     require(config.hasPath(prefix + "port"), "CDC standalone API port must be configured")
     val port = config.getInt(prefix + "port")
@@ -37,7 +37,8 @@ object CdcRuntime {
 
   private[magic] def shutdownWait(config: Config): FiniteDuration = {
     val path = "pekko.coordinated-shutdown.phases.before-actor-system-terminate.timeout"
-    val timeout = if (config.hasPath(path)) config.getDuration(path).toMillis.millis
+    val timeout =
+      if (config.hasPath(path)) config.getDuration(path).toMillis.millis
       else config.getDuration("pekko.coordinated-shutdown.default-phase-timeout").toMillis.millis
     require(timeout > 500.millis, "CDC shutdown phase timeout must exceed 500 milliseconds")
     (timeout - 250.millis).min(15.seconds)
@@ -46,62 +47,67 @@ object CdcRuntime {
   private[magic] def standaloneConfig(config: Config): Config = {
     // Only this entry gets a longer release observation window. An explicitly
     // configured phase timeout retains precedence over this fallback.
-    val phaseDefault = ConfigFactory.parseString(
-      "pekko.coordinated-shutdown.phases.before-actor-system-terminate.timeout = 20s")
+    val phaseDefault = ConfigFactory.parseString("pekko.coordinated-shutdown.phases.before-actor-system-terminate.timeout = 20s")
     ConfigFactory.parseString("pekko.actor.provider = local").withFallback(config).withFallback(phaseDefault).resolve()
   }
 
   /** Wait for the existing close operation; timeout never certifies resource release. */
-  private[magic] def awaitStopped(requestStop: () => Unit, status: () => String, timeout: FiniteDuration)
-    (implicit system: ActorSystem[_], ec: ExecutionContext): Future[Done] = {
-    val result = Promise[Done]()
+  private[magic] def awaitStopped(
+      requestStop: () => Unit,
+      status: () => String,
+      timeout: FiniteDuration
+    )(implicit system: ActorSystem[_],
+      ec: ExecutionContext): Future[Done] = {
+    val result   = Promise[Done]()
     val deadline = System.nanoTime() + timeout.toNanos
     def observe(): Unit = try {
       if (status() == "STOPPED") result.trySuccess(Done)
       else if (System.nanoTime() >= deadline) result.tryFailure(new TimeoutException("CDC shutdown remains unconfirmed"))
       else system.scheduler.scheduleOnce(100.millis, new Runnable { def run(): Unit = observe() })
     } catch { case NonFatal(error) => result.tryFailure(error) }
-    try { requestStop(); observe() } catch { case NonFatal(error) => result.tryFailure(error) }
+    try { requestStop(); observe() }
+    catch { case NonFatal(error) => result.tryFailure(error) }
     result.future
   }
 
   def start(config: Config): Future[Running] = {
-    val settings = CdcPlatformSettings.load(config).getOrElse(throw new IllegalArgumentException("CDC platform must be enabled"))
-    val managed=config.hasPath("pekko.cdc-standalone.managed-worker") && config.getBoolean("pekko.cdc-standalone.managed-worker")
-    val supervised=config.hasPath("pekko.workflow.snapshot-ha.supervisor-config")
-    val haEnabled=config.hasPath("pekko.workflow.snapshot-ha.enabled") && config.getBoolean("pekko.workflow.snapshot-ha.enabled")
-    require(if(managed) supervised && haEnabled else !supervised && !haEnabled,
-      "CDC managed startup requires an explicit supervisor launch")
-    if(settings.captures.exists(_.sourceFenceV2))
-      require(managed && supervised && haEnabled,
-        "source fence v2 requires managed supervisor and guardian control")
+    val settings   = CdcPlatformSettings.load(config).getOrElse(throw new IllegalArgumentException("CDC platform must be enabled"))
+    val managed    = config.hasPath("pekko.cdc-standalone.managed-worker") && config.getBoolean("pekko.cdc-standalone.managed-worker")
+    val supervised = config.hasPath("pekko.workflow.snapshot-ha.supervisor-config")
+    val haEnabled  = config.hasPath("pekko.workflow.snapshot-ha.enabled") && config.getBoolean("pekko.workflow.snapshot-ha.enabled")
+    require(if (managed) supervised && haEnabled else !supervised && !haEnabled, "CDC managed startup requires an explicit supervisor launch")
+    if (settings.captures.exists(_.sourceFenceV2))
+      require(managed && supervised && haEnabled, "source fence v2 requires managed supervisor and guardian control")
     // Managed standalone may use source fencing. Supervisor/guardian
     // configuration remains mandatory and startup fails closed when its
     // identity or release proof is unavailable.
     val (host, port) = httpAddress(config)
-    val grace = config.getDuration("http.shutdown-grace").toMillis.millis
-    val phase = config.getDuration("pekko.coordinated-shutdown.phases.service-requests-done.timeout").toMillis.millis
+    val grace        = config.getDuration("http.shutdown-grace").toMillis.millis
+    val phase        = config.getDuration("pekko.coordinated-shutdown.phases.service-requests-done.timeout").toMillis.millis
     require(grace.length > 0 && grace < phase, "HTTP shutdown grace must be less than the coordinated shutdown timeout")
     // A local actor provider starts no cluster, sharding, scheduler, or frontend.
     // All other settings, including journal and serialization, remain unchanged.
-    val prepared=if(managed) SnapshotOwnerBootstrap.prepare(config) else config
-    val local = standaloneConfig(prepared)
+    val prepared = if (managed) SnapshotOwnerBootstrap.prepare(config) else config
+    val local    = standaloneConfig(prepared)
     val stopWait = shutdownWait(local)
-    val system = try ActorSystem[Nothing](Behaviors.empty, config.getString("pekko.pekko-sys"), local)
-      catch {case NonFatal(error)=>if(managed)ManagedCdcJdbc.context.foreach(_.close());throw error}
+    val system =
+      try ActorSystem[Nothing](Behaviors.empty, config.getString("pekko.pekko-sys"), local)
+      catch { case NonFatal(error) => if (managed) ManagedCdcJdbc.context.foreach(_.close()); throw error }
     implicit val ec: ExecutionContext = system.executionContext
-    if(managed)system.whenTerminated.onComplete(_=>ManagedCdcJdbc.context.foreach(_.close()))(ExecutionContext.parasitic)
+    if (managed) system.whenTerminated.onComplete(_ => ManagedCdcJdbc.context.foreach(_.close()))(ExecutionContext.parasitic)
     implicit val classic: org.apache.pekko.actor.ActorSystem = system.classicSystem
     try {
       val service = CdcPlatformExtension(system).service.getOrElse(throw new IllegalStateException("CDC platform unavailable"))
       val runtime = service match {
         case value: CdcPlatformRuntime => value
-        case _ => throw new IllegalStateException("CDC platform runtime unavailable")
+        case _                         => throw new IllegalStateException("CDC platform runtime unavailable")
       }
       CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate, "wait-cdc-release") { () =>
         awaitStopped(() => { runtime.stopRuntime(); () }, () => runtime.status.ownerState, stopWait)(system, ec)
       }
-      Http().newServerAt(host, port).bind(routes(service))
+      Http()
+        .newServerAt(host, port)
+        .bind(routes(service))
         .map(binding => Running(system, service, binding.addToCoordinatedShutdown(grace)))
         .recoverWith { case NonFatal(error) => system.terminate(); Future.failed(error) }
     } catch {

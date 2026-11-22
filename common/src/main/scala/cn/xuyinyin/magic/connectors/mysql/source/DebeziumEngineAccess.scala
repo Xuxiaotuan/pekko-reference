@@ -24,10 +24,12 @@ trait DebeziumBatchConsumer {
 
 trait DebeziumEngineAccess extends AutoCloseable {
   def start(consumer: DebeziumBatchConsumer): Future[Done]
+
   /** Managed callers run this on their bounded close worker and track termination separately. */
-  def closeManaged():Unit=close()
+  def closeManaged(): Unit = close()
+
   /** Unknown by default for external adapters; completion alone is not termination. */
-  def localTerminationConfirmed:Boolean=false
+  def localTerminationConfirmed: Boolean = false
 }
 
 trait DebeziumEngineFactory {
@@ -41,10 +43,10 @@ object DebeziumEngineFactory {
   }
 }
 
-private[source] final class DebeziumRecordCommitHandle(
-  records: java.util.List[RecordChangeEvent[SourceRecord]],
-  committer: DebeziumEngine.RecordCommitter[RecordChangeEvent[SourceRecord]]
-) extends CdcBatchCommitHandle {
+final private[source] class DebeziumRecordCommitHandle(
+    records: java.util.List[RecordChangeEvent[SourceRecord]],
+    committer: DebeziumEngine.RecordCommitter[RecordChangeEvent[SourceRecord]])
+    extends CdcBatchCommitHandle {
   override def markProcessedAndFinished(): Unit = {
     records.asScala.foreach(committer.markProcessed)
     committer.markBatchFinished()
@@ -54,13 +56,13 @@ private[source] final class DebeziumRecordCommitHandle(
 private[source] object RealDebeziumEngineAccess {
   type Engine = DebeziumEngine[RecordChangeEvent[SourceRecord]]
   type EngineBuilder = (
-    DebeziumEngine.ChangeConsumer[RecordChangeEvent[SourceRecord]],
-    DebeziumEngine.CompletionCallback
+      DebeziumEngine.ChangeConsumer[RecordChangeEvent[SourceRecord]],
+      DebeziumEngine.CompletionCallback
   ) => Engine
 
-  private val ThreadSequence = new AtomicLong(0L)
+  private val ThreadSequence    = new AtomicLong(0L)
   private val CloseTimeoutNanos = TimeUnit.SECONDS.toNanos(2L)
-  private val CloseRetryMillis = 10L
+  private val CloseRetryMillis  = 10L
 
   private[source] trait LogBoundary extends AutoCloseable
 
@@ -68,22 +70,21 @@ private[source] object RealDebeziumEngineAccess {
     override def close(): Unit = ()
   }
 
-  private final class SecretDenyFilter(secrets: Vector[String]) extends TurboFilter {
+  final private class SecretDenyFilter(secrets: Vector[String]) extends TurboFilter {
     override def decide(
-      marker: Marker,
-      logger: Logger,
-      level: Level,
-      format: String,
-      params: Array[AnyRef],
-      error: Throwable
-    ): FilterReply = {
+        marker: Marker,
+        logger: Logger,
+        level: Level,
+        format: String,
+        params: Array[AnyRef],
+        error: Throwable): FilterReply = {
       val loggerName = Option(logger).map(_.getName).getOrElse("")
       if (loggerName != "io.debezium" && !loggerName.startsWith("io.debezium.")) {
         return FilterReply.NEUTRAL
       }
       val argumentContainsSecret = Option(params).exists(_.exists {
         case throwable: Throwable => throwableContainsSecret(throwable)
-        case value => containsSecret(String.valueOf(value))
+        case value                => containsSecret(String.valueOf(value))
       })
       if (containsSecret(format) || argumentContainsSecret || throwableContainsSecret(error)) {
         FilterReply.DENY
@@ -108,38 +109,42 @@ private[source] object RealDebeziumEngineAccess {
   }
 
   def installLogBoundary(properties: Properties): LogBoundary = {
-    val secrets = properties.stringPropertyNames().asScala.toVector
+    val secrets = properties
+      .stringPropertyNames()
+      .asScala
+      .toVector
       .filter(_.toLowerCase(java.util.Locale.ROOT).contains("password"))
       .flatMap(key => Option(properties.getProperty(key)))
       .filter(_.nonEmpty)
       .distinct
     if (secrets.isEmpty) NoLogBoundary
-    else LoggerFactory.getILoggerFactory match {
-      case context: LoggerContext =>
-        val filter = new SecretDenyFilter(secrets)
-        filter.setContext(context)
-        filter.start()
-        context.addTurboFilter(filter)
-        new LogBoundary {
-          private val removed = new AtomicBoolean(false)
-          override def close(): Unit = {
-            if (removed.compareAndSet(false, true)) {
-              context.getTurboFilterList.remove(filter)
-              filter.stop()
+    else
+      LoggerFactory.getILoggerFactory match {
+        case context: LoggerContext =>
+          val filter = new SecretDenyFilter(secrets)
+          filter.setContext(context)
+          filter.start()
+          context.addTurboFilter(filter)
+          new LogBoundary {
+            private val removed = new AtomicBoolean(false)
+            override def close(): Unit = {
+              if (removed.compareAndSet(false, true)) {
+                context.getTurboFilterList.remove(filter)
+                filter.stop()
+              }
             }
           }
-        }
-      case _ =>
-        throw new IllegalStateException("secure Debezium logging boundary is unavailable")
-    }
+        case _ =>
+          throw new IllegalStateException("secure Debezium logging boundary is unavailable")
+      }
   }
 
   def defaultEngineBuilder(properties: Properties, lifecycle: DebeziumEngine.ConnectorCallback = null): EngineBuilder = (consumer, completion) => {
-    val builder=DebeziumEngine
+    val builder = DebeziumEngine
       .create[SourceRecord, Connect](ChangeEventFormat.of[Connect](classOf[Connect]))
       .using(properties)
       .using(completion)
-    if(lifecycle!=null)builder.using(lifecycle)
+    if (lifecycle != null) builder.using(lifecycle)
     builder.notifying(consumer).build()
   }
 
@@ -173,25 +178,25 @@ private[source] object RealDebeziumEngineAccess {
 }
 
 final class RealDebeziumEngineAccess private[source] (
-  properties: Properties,
-  buildEngine: RealDebeziumEngineAccess.EngineBuilder
-) extends DebeziumEngineAccess {
+    properties: Properties,
+    buildEngine: RealDebeziumEngineAccess.EngineBuilder)
+    extends DebeziumEngineAccess {
   import RealDebeziumEngineAccess._
 
   def this(properties: Properties) =
     this(properties, null)
 
-  private val started = new AtomicBoolean(false)
-  private val closed = new AtomicBoolean(false)
-  private val closeRequested = new AtomicBoolean(false)
-  private val engine = new AtomicReference[Engine]()
-  private val logBoundary = new AtomicReference[LogBoundary](NoLogBoundary)
-  private val closeError = new AtomicReference[IllegalStateException]()
-  private val runnerFinished = new CountDownLatch(1)
-  private val pollingStarted = new CountDownLatch(1)
+  private val started           = new AtomicBoolean(false)
+  private val closed            = new AtomicBoolean(false)
+  private val closeRequested    = new AtomicBoolean(false)
+  private val engine            = new AtomicReference[Engine]()
+  private val logBoundary       = new AtomicReference[LogBoundary](NoLogBoundary)
+  private val closeError        = new AtomicReference[IllegalStateException]()
+  private val runnerFinished    = new CountDownLatch(1)
+  private val pollingStarted    = new CountDownLatch(1)
   private val callbacksInFlight = new AtomicInteger()
-  private val completion = Promise[Done]()
-  private val executor = Executors.newSingleThreadExecutor(threadFactory())
+  private val completion        = Promise[Done]()
+  private val executor          = Executors.newSingleThreadExecutor(threadFactory())
 
   override def start(consumer: DebeziumBatchConsumer): Future[Done] = {
     require(consumer != null, "Debezium batch consumer must not be null")
@@ -205,9 +210,8 @@ final class RealDebeziumEngineAccess private[source] (
 
     val changeConsumer = new DebeziumEngine.ChangeConsumer[RecordChangeEvent[SourceRecord]] {
       override def handleBatch(
-        delivered: java.util.List[RecordChangeEvent[SourceRecord]],
-        committer: DebeziumEngine.RecordCommitter[RecordChangeEvent[SourceRecord]]
-      ): Unit = {
+          delivered: java.util.List[RecordChangeEvent[SourceRecord]],
+          committer: DebeziumEngine.RecordCommitter[RecordChangeEvent[SourceRecord]]): Unit = {
         if (delivered == null || delivered.isEmpty) {
           throw new IllegalArgumentException("Debezium delivered an empty callback batch")
         }
@@ -232,12 +236,13 @@ final class RealDebeziumEngineAccess private[source] (
       }
     }
     val lifecycle = new DebeziumEngine.ConnectorCallback {
-      override def pollingStarted():Unit=RealDebeziumEngineAccess.this.pollingStarted.countDown()
+      override def pollingStarted(): Unit = RealDebeziumEngineAccess.this.pollingStarted.countDown()
     }
 
     try {
       logBoundary.set(installLogBoundary(properties))
-      val created = if(buildEngine==null)defaultEngineBuilder(properties,lifecycle)(changeConsumer,callback)
+      val created =
+        if (buildEngine == null) defaultEngineBuilder(properties, lifecycle)(changeConsumer, callback)
         else buildEngine(changeConsumer, callback)
       if (created == null) throw new IllegalStateException("Debezium engine builder returned null")
       engine.set(created)
@@ -266,15 +271,15 @@ final class RealDebeziumEngineAccess private[source] (
     completion.future
   }
 
-  override def close(): Unit = closeInternal(waitForStartingTasks=false)
+  override def close(): Unit = closeInternal(waitForStartingTasks = false)
 
-  override def closeManaged():Unit = closeInternal(waitForStartingTasks=true)
+  override def closeManaged(): Unit = closeInternal(waitForStartingTasks = true)
 
-  private def closeInternal(waitForStartingTasks:Boolean): Unit = {
+  private def closeInternal(waitForStartingTasks: Boolean): Unit = {
     if (closed.compareAndSet(false, true)) {
       closeRequested.set(true)
       if (!started.get()) runnerFinished.countDown()
-      val current = engine.get()
+      val current                        = engine.get()
       var failure: IllegalStateException = null
       try {
         // The completion callback can arrive before the runner actually exits.
@@ -283,12 +288,12 @@ final class RealDebeziumEngineAccess private[source] (
           // Debezium 3.6.1 close can race initialization before task startup.
           // Managed callers keep their bounded worker and report UNKNOWN while
           // the SDK has not reached polling or finished its runner.
-          if(waitForStartingTasks && buildEngine==null) {
-            while(pollingStarted.getCount!=0L && runnerFinished.getCount!=0L)
-              pollingStarted.await(CloseRetryMillis,TimeUnit.MILLISECONDS)
+          if (waitForStartingTasks && buildEngine == null) {
+            while (pollingStarted.getCount != 0L && runnerFinished.getCount != 0L)
+              pollingStarted.await(CloseRetryMillis, TimeUnit.MILLISECONDS)
           }
-          if(runnerFinished.getCount!=0L)
-          closeEngineWithRetry(current,waitForStartingTasks)
+          if (runnerFinished.getCount != 0L)
+            closeEngineWithRetry(current, waitForStartingTasks)
         }
       } catch {
         case NonFatal(error) =>
@@ -325,19 +330,20 @@ final class RealDebeziumEngineAccess private[source] (
     }
   }
 
-  override def localTerminationConfirmed:Boolean=
-    runnerFinished.getCount==0L && executor.isTerminated && callbacksInFlight.get()==0
+  override def localTerminationConfirmed: Boolean =
+    runnerFinished.getCount == 0L && executor.isTerminated && callbacksInFlight.get() == 0
 
-  private def closeEngineWithRetry(current: Engine,waitForStartingTasks:Boolean): Unit = {
+  private def closeEngineWithRetry(current: Engine, waitForStartingTasks: Boolean): Unit = {
     val deadline = System.nanoTime() + CloseTimeoutNanos
-    var retry = true
+    var retry    = true
     while (retry) {
       try {
         current.close()
         retry = false
       } catch {
-        case NonFatal(error) if isStartingTasksFailure(error) && runnerFinished.getCount!=0L &&
-          (waitForStartingTasks || System.nanoTime() < deadline) =>
+        case NonFatal(error)
+            if isStartingTasksFailure(error) && runnerFinished.getCount != 0L &&
+              (waitForStartingTasks || System.nanoTime() < deadline) =>
           try Thread.sleep(CloseRetryMillis)
           catch {
             case interrupted: InterruptedException =>

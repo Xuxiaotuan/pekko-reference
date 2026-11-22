@@ -11,9 +11,9 @@ import com.typesafe.config.ConfigFactory
 object CdcRuntimeMain {
   def main(args: Array[String]): Unit = {
     require(args.isEmpty, "configure CDC runtime through the application configuration")
-    val config=ConfigFactory.load()
-    if(config.hasPath("pekko.workflow.cdc-platform.runtime-role") &&
-      config.getString("pekko.workflow.cdc-platform.runtime-role")=="capture")
+    val config = ConfigFactory.load()
+    if (config.hasPath("pekko.workflow.cdc-platform.runtime-role") &&
+      config.getString("pekko.workflow.cdc-platform.runtime-role") == "capture")
       CdcCaptureRuntimeMain.main(args)
     else CdcRuntime.main(args)
   }

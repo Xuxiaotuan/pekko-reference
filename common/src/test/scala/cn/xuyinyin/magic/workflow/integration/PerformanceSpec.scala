@@ -25,52 +25,48 @@ import scala.concurrent.{Await, Future}
 
 /**
  * 性能测试
- * 
+ *
  * 测试3节点分片集群的工作流初始化确认性能：
  * - 预热阶段初始化确认吞吐量
  * - 集群初始化确认吞吐量
  * - 不同初始化请求负载下的持续吞吐量
  * - 分批完成1000个初始化确认
- * 
+ *
  * @author : Xuxiaotuan
  * @since : 2024-11-28
  */
 class PerformanceSpec
-  extends ScalaTestWithActorTestKit(PerformanceSpec.config)
-  with AnyWordSpecLike
-  with Matchers
-  with BeforeAndAfterAll
-  with ScalaFutures
-  with Eventually {
+    extends ScalaTestWithActorTestKit(PerformanceSpec.config) with AnyWordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures
+    with Eventually {
 
-  override implicit val patience: PatienceConfig = PatienceConfig(timeout = Span(60, Seconds))
+  implicit override val patience: PatienceConfig = PatienceConfig(timeout = Span(60, Seconds))
 
-  var node1: ActorTestKit = _
-  var node2: ActorTestKit = _
-  var node3: ActorTestKit = _
+  var node1: ActorTestKit                                                         = _
+  var node2: ActorTestKit                                                         = _
+  var node3: ActorTestKit                                                         = _
   var shardRegion1: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]] = _
   var shardRegion2: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]] = _
   var shardRegion3: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]] = _
 
-  private implicit def testExecutionContext: scala.concurrent.ExecutionContext = node1.system.executionContext
+  implicit private def testExecutionContext: scala.concurrent.ExecutionContext = node1.system.executionContext
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    
+
     // 创建3个节点
     node1 = ActorTestKit(PerformanceSpec.systemName, PerformanceSpec.nodeConfig)
     node2 = ActorTestKit(PerformanceSpec.systemName, PerformanceSpec.nodeConfig)
     node3 = ActorTestKit(PerformanceSpec.systemName, PerformanceSpec.nodeConfig)
-    
+
     // 让所有节点加入集群
     val cluster1 = Cluster(node1.system)
     val cluster2 = Cluster(node2.system)
     val cluster3 = Cluster(node3.system)
-    
+
     cluster1.manager ! Join(cluster1.selfMember.address)
     cluster2.manager ! Join(cluster1.selfMember.address)
     cluster3.manager ! Join(cluster1.selfMember.address)
-    
+
     // 等待集群形成
     eventually {
       Seq(cluster1, cluster2, cluster3).foreach { cluster =>
@@ -94,7 +90,7 @@ class PerformanceSpec
   "Performance" should {
 
     "measure initial 3-node workflow initialization acknowledgement throughput" in {
-      val initializationCount = 100
+      val initializationCount     = 100
       val initializationStartTime = System.currentTimeMillis()
 
       // 发送100个工作流初始化请求
@@ -106,8 +102,8 @@ class PerformanceSpec
       // 等待所有初始化确认
       Await.result(Future.sequence(initializationFutures), 60.seconds)
 
-      val initializationEndTime = System.currentTimeMillis()
-      val initializationDuration = (initializationEndTime - initializationStartTime) / 1000.0
+      val initializationEndTime    = System.currentTimeMillis()
+      val initializationDuration   = (initializationEndTime - initializationStartTime) / 1000.0
       val initializationThroughput = initializationCount / initializationDuration
 
       println(s"3-Node Warm-up Initialization ACK Performance:")
@@ -120,7 +116,7 @@ class PerformanceSpec
     }
 
     "measure 3-node workflow initialization acknowledgement throughput" in {
-      val initializationCount = 300
+      val initializationCount     = 300
       val initializationStartTime = System.currentTimeMillis()
 
       // 发送300个工作流初始化请求
@@ -132,8 +128,8 @@ class PerformanceSpec
       // 等待所有初始化确认
       Await.result(Future.sequence(initializationFutures), 120.seconds)
 
-      val initializationEndTime = System.currentTimeMillis()
-      val initializationDuration = (initializationEndTime - initializationStartTime) / 1000.0
+      val initializationEndTime    = System.currentTimeMillis()
+      val initializationDuration   = (initializationEndTime - initializationStartTime) / 1000.0
       val initializationThroughput = initializationCount / initializationDuration
 
       println(s"3-Node Initialization ACK Performance:")
@@ -158,8 +154,8 @@ class PerformanceSpec
 
       Await.result(Future.sequence(smallInitializationFutures), 60.seconds)
 
-      val smallRequestEnd = System.currentTimeMillis()
-      val smallRequestDuration = (smallRequestEnd - smallRequestStart) / 1000.0
+      val smallRequestEnd               = System.currentTimeMillis()
+      val smallRequestDuration          = (smallRequestEnd - smallRequestStart) / 1000.0
       val smallInitializationThroughput = smallRequestCount / smallRequestDuration
 
       val largeRequestCount = 150
@@ -172,8 +168,8 @@ class PerformanceSpec
 
       Await.result(Future.sequence(largeInitializationFutures), 120.seconds)
 
-      val largeRequestEnd = System.currentTimeMillis()
-      val largeRequestDuration = (largeRequestEnd - largeRequestStart) / 1000.0
+      val largeRequestEnd               = System.currentTimeMillis()
+      val largeRequestDuration          = (largeRequestEnd - largeRequestStart) / 1000.0
       val largeInitializationThroughput = largeRequestCount / largeRequestDuration
 
       println(s"3-Node Initialization ACK Load Test:")
@@ -187,16 +183,16 @@ class PerformanceSpec
     "handle 1000 workflow initialization acknowledgements in batches of 100" in {
       initializeThreeNodeSharding()
 
-      val initializationCount = 1000
+      val initializationCount     = 1000
       val initializationStartTime = System.currentTimeMillis()
 
       // 分批发送1000个初始化请求（每批100个）
-      val initializationBatchSize = 100
-      val submittedInitializationCount = new AtomicInteger(0)
+      val initializationBatchSize         = 100
+      val submittedInitializationCount    = new AtomicInteger(0)
       val acknowledgedInitializationCount = new AtomicInteger(0)
-      val awaitedInitializationCount = new AtomicInteger(0)
-      val inFlightInitializationCount = new AtomicInteger(0)
-      val maxObservedInFlight = new AtomicInteger(0)
+      val awaitedInitializationCount      = new AtomicInteger(0)
+      val inFlightInitializationCount     = new AtomicInteger(0)
+      val maxObservedInFlight             = new AtomicInteger(0)
 
       def updateMaxObserved(candidate: Int): Unit = {
         var observed = maxObservedInFlight.get()
@@ -207,8 +203,8 @@ class PerformanceSpec
 
       def trackedInitialize(workflowId: String, name: String): Future[EventSourcedWorkflowActor.InitializeResponse] = {
         val initializationFuture = initialize(shardRegion1, workflowId, name)
-        val submitted = submittedInitializationCount.incrementAndGet()
-        val currentInFlight = inFlightInitializationCount.incrementAndGet()
+        val submitted            = submittedInitializationCount.incrementAndGet()
+        val currentInFlight      = inFlightInitializationCount.incrementAndGet()
         updateMaxObserved(currentInFlight)
         (submitted - awaitedInitializationCount.get()) should be <= initializationBatchSize
         currentInFlight should be <= initializationBatchSize
@@ -230,8 +226,8 @@ class PerformanceSpec
         awaitedInitializationCount.addAndGet(batchAcknowledgements.size)
       }
 
-      val initializationEndTime = System.currentTimeMillis()
-      val initializationDuration = (initializationEndTime - initializationStartTime) / 1000.0
+      val initializationEndTime    = System.currentTimeMillis()
+      val initializationDuration   = (initializationEndTime - initializationStartTime) / 1000.0
       val initializationThroughput = initializationCount / initializationDuration
 
       println(s"1000 Batched Workflow Initialization ACK Test:")
@@ -247,7 +243,7 @@ class PerformanceSpec
       inFlightInitializationCount.get() shouldBe 0
       maxObservedInFlight.get() should be > 0
       maxObservedInFlight.get() should be <= initializationBatchSize
-      
+
       // 验证初始化确认吞吐量合理
       initializationThroughput should be > 1.0
     }
@@ -255,7 +251,7 @@ class PerformanceSpec
     "measure workflow initialization acknowledgement latency" in {
       initializeThreeNodeSharding()
 
-      val initializationCount = 100
+      val initializationCount     = 100
       val initializationLatencies = scala.collection.mutable.ArrayBuffer[Long]()
 
       // 测量100个工作流初始化确认的延迟
@@ -272,13 +268,13 @@ class PerformanceSpec
       }
 
       // 计算统计信息
-      val averageInitializationLatency = initializationLatencies.sum / initializationLatencies.size
-      val minimumInitializationLatency = initializationLatencies.min
-      val maximumInitializationLatency = initializationLatencies.max
+      val averageInitializationLatency  = initializationLatencies.sum / initializationLatencies.size
+      val minimumInitializationLatency  = initializationLatencies.min
+      val maximumInitializationLatency  = initializationLatencies.max
       val sortedInitializationLatencies = initializationLatencies.sorted
-      val p50InitializationLatency = sortedInitializationLatencies(sortedInitializationLatencies.size / 2)
-      val p95InitializationLatency = sortedInitializationLatencies((sortedInitializationLatencies.size * 0.95).toInt)
-      val p99InitializationLatency = sortedInitializationLatencies((sortedInitializationLatencies.size * 0.99).toInt)
+      val p50InitializationLatency      = sortedInitializationLatencies(sortedInitializationLatencies.size / 2)
+      val p95InitializationLatency      = sortedInitializationLatencies((sortedInitializationLatencies.size * 0.95).toInt)
+      val p99InitializationLatency      = sortedInitializationLatencies((sortedInitializationLatencies.size * 0.99).toInt)
 
       println(s"Workflow Initialization ACK Latency:")
       println(s"  Average: ${averageInitializationLatency}ms")
@@ -294,15 +290,15 @@ class PerformanceSpec
   }
 
   private def initialize(
-    region: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]],
-    workflowId: String,
-    name: String
-  ): Future[EventSourcedWorkflowActor.InitializeResponse] = {
+      region: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]],
+      workflowId: String,
+      name: String): Future[EventSourcedWorkflowActor.InitializeResponse] = {
     val timeout: Timeout = Timeout(10.seconds)
     region
       .ask[EventSourcedWorkflowActor.InitializeResponse](replyTo =>
-        ShardingEnvelope(workflowId, EventSourcedWorkflowActor.Initialize(PerformanceSpec.workflow(workflowId, name), replyTo))
-      )(timeout, node1.system.scheduler)
+        ShardingEnvelope(workflowId, EventSourcedWorkflowActor.Initialize(PerformanceSpec.workflow(workflowId, name), replyTo)))(
+        timeout,
+        node1.system.scheduler)
       .map { response =>
         require(response == EventSourcedWorkflowActor.InitializeResponse(workflowId, "initialized"), s"unexpected initialize response: $response")
         response
@@ -322,16 +318,16 @@ class PerformanceSpec
 }
 
 object PerformanceSpec {
-  private val runId = java.util.UUID.randomUUID().toString
+  private val runId      = java.util.UUID.randomUUID().toString
   val systemName: String = s"PerfSystem-$runId"
 
   def workflowId(prefix: String): String = s"$prefix-$runId"
 
   def workflow(id: String, name: String): Workflow =
     WorkflowFixtures.linearWorkflow.copy(id = id, name = name, description = s"Initialization benchmark workflow: $name")
-  
-  val config = ConfigFactory.parseString(
-    """
+
+  val config = ConfigFactory
+    .parseString("""
     pekko {
       actor.provider = "cluster"
       
@@ -364,13 +360,15 @@ object PerformanceSpec {
       
       loglevel = "WARNING"
     }
-    """).withFallback(ConfigFactory.load("application-test"))
+    """)
+    .withFallback(ConfigFactory.load("application-test"))
 
-  val nodeConfig = ConfigFactory.parseString(
-    """
+  val nodeConfig = ConfigFactory
+    .parseString("""
     pekko {
       remote.artery.canonical.port = 0
       cluster.roles = ["worker"]
     }
-    """).withFallback(config)
+    """)
+    .withFallback(config)
 }

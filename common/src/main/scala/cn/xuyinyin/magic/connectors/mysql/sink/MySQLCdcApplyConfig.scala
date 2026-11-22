@@ -1,16 +1,14 @@
 package cn.xuyinyin.magic.connectors.mysql.sink
 
-
 import spray.json._
 
 final case class MySQLCdcApplyConfig(
-  host: String,
-  port: Int,
-  database: String,
-  table: String,
-  username: String,
-  password: String
-) {
+    host: String,
+    port: Int,
+    database: String,
+    table: String,
+    username: String,
+    password: String) {
   override def toString: String =
     s"MySQLCdcApplyConfig($host,$port,$database,$table,$username,<redacted>)"
 }
@@ -19,10 +17,15 @@ object MySQLCdcApplyConfig {
   private val Identifier = "[A-Za-z_][A-Za-z0-9_]*".r
 
   /** CDC runtime entry uses the same validation as the legacy trusted Node adapter. */
-  private[magic] def trusted(host:String,port:Int,database:String,table:String,username:String,password:String):MySQLCdcApplyConfig = {
-    val fields=Map[String,JsValue]("host"->JsString(host),"port"->JsNumber(port),"database"->JsString(database),
-      "table"->JsString(table),"username"->JsString(username),"password"->JsString(password))
-    fromFields(fields,requiredString(fields,"password"))
+  private[magic] def trusted(host: String, port: Int, database: String, table: String, username: String, password: String): MySQLCdcApplyConfig = {
+    val fields = Map[String, JsValue](
+      "host"     -> JsString(host),
+      "port"     -> JsNumber(port),
+      "database" -> JsString(database),
+      "table"    -> JsString(table),
+      "username" -> JsString(username),
+      "password" -> JsString(password))
+    fromFields(fields, requiredString(fields, "password"))
   }
 
   private[sink] def fromFields(fields: Map[String, JsValue], password: String): MySQLCdcApplyConfig =
@@ -37,9 +40,9 @@ object MySQLCdcApplyConfig {
 
   private[sink] def requiredString(fields: Map[String, JsValue], key: String): String = fields.get(key) match {
     case Some(JsString(value)) if value.nonEmpty => value
-    case Some(JsString(_)) => throw new IllegalArgumentException(s"$key must not be empty")
-    case Some(_) => throw new IllegalArgumentException(s"$key must be a string")
-    case None => throw new IllegalArgumentException(s"missing $key configuration")
+    case Some(JsString(_))                       => throw new IllegalArgumentException(s"$key must not be empty")
+    case Some(_)                                 => throw new IllegalArgumentException(s"$key must be a string")
+    case None                                    => throw new IllegalArgumentException(s"missing $key configuration")
   }
 
   private def identifier(fields: Map[String, JsValue], key: String): String = {
@@ -51,7 +54,7 @@ object MySQLCdcApplyConfig {
   private def port(fields: Map[String, JsValue]): Int = fields.get("port") match {
     case Some(JsNumber(value)) if value.isValidInt && value.toInt >= 1 && value.toInt <= 65535 => value.toInt
     case Some(JsNumber(_)) => throw new IllegalArgumentException("port must be between 1 and 65535")
-    case Some(_) => throw new IllegalArgumentException("port must be a number")
-    case None => 3306
+    case Some(_)           => throw new IllegalArgumentException("port must be a number")
+    case None              => 3306
   }
 }

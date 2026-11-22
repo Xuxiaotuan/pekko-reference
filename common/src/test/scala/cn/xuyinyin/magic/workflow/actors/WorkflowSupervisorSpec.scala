@@ -11,12 +11,12 @@ import scala.concurrent.duration._
 class WorkflowSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with Matchers {
   "WorkflowSupervisor" should {
     "expire a legacy definition reply actor when the entity never responds" in {
-      val region=createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
-      val supervisor=spawn(WorkflowSupervisor.withSharding(region.ref,100.millis))
-      val caller=createTestProbe[WorkflowSupervisor.WorkflowCreated]()
-      supervisor ! WorkflowSupervisor.CreateWorkflow(WorkflowFixtures.linearWorkflow,caller.ref)
-      val response=region.receiveMessage().message.asInstanceOf[EventSourcedWorkflowActor.DefineWorkflow].replyTo
-      val rejected=caller.expectMessageType[WorkflowSupervisor.WorkflowDefinitionRejected]
+      val region     = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
+      val supervisor = spawn(WorkflowSupervisor.withSharding(region.ref, 100.millis))
+      val caller     = createTestProbe[WorkflowSupervisor.WorkflowCreated]()
+      supervisor ! WorkflowSupervisor.CreateWorkflow(WorkflowFixtures.linearWorkflow, caller.ref)
+      val response = region.receiveMessage().message.asInstanceOf[EventSourcedWorkflowActor.DefineWorkflow].replyTo
+      val rejected = caller.expectMessageType[WorkflowSupervisor.WorkflowDefinitionRejected]
       rejected.workflowId shouldBe WorkflowFixtures.linearWorkflow.id
       rejected.errors.mkString should include("unknown")
       caller.expectTerminated(response)
@@ -24,8 +24,8 @@ class WorkflowSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecL
 
     "route one definition envelope carrying the caller reply reference" in {
       val shardRegion = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
-      val supervisor = spawn(WorkflowSupervisor.withSharding(shardRegion.ref))
-      val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
+      val supervisor  = spawn(WorkflowSupervisor.withSharding(shardRegion.ref))
+      val reply       = createTestProbe[EventSourcedWorkflowActor.Reply]()
 
       supervisor ! WorkflowSupervisor.DefineWorkflow(WorkflowFixtures.linearWorkflow, 0L, reply.ref)
 
@@ -36,21 +36,21 @@ class WorkflowSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecL
     }
 
     "keep concurrent legacy definition replies with their original callers" in {
-      val shardRegion = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
-      val supervisor = spawn(WorkflowSupervisor.withSharding(shardRegion.ref))
-      val first = createTestProbe[WorkflowSupervisor.WorkflowCreated]()
-      val second = createTestProbe[WorkflowSupervisor.WorkflowCreated]()
-      val firstWorkflow = WorkflowFixtures.linearWorkflow.copy(id = "first")
+      val shardRegion    = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
+      val supervisor     = spawn(WorkflowSupervisor.withSharding(shardRegion.ref))
+      val first          = createTestProbe[WorkflowSupervisor.WorkflowCreated]()
+      val second         = createTestProbe[WorkflowSupervisor.WorkflowCreated]()
+      val firstWorkflow  = WorkflowFixtures.linearWorkflow.copy(id = "first")
       val secondWorkflow = WorkflowFixtures.linearWorkflow.copy(id = "second")
 
       supervisor ! WorkflowSupervisor.CreateWorkflow(firstWorkflow, first.ref)
       supervisor ! WorkflowSupervisor.CreateWorkflow(secondWorkflow, second.ref)
 
-      val firstEnvelope = shardRegion.receiveMessage()
+      val firstEnvelope  = shardRegion.receiveMessage()
       val secondEnvelope = shardRegion.receiveMessage()
       def defineReply(envelope: ShardingEnvelope[EventSourcedWorkflowActor.Command]) = envelope.message match {
         case EventSourcedWorkflowActor.DefineWorkflow(_, _, replyTo) => replyTo
-        case other => fail(s"expected DefineWorkflow, received $other")
+        case other                                                   => fail(s"expected DefineWorkflow, received $other")
       }
 
       defineReply(secondEnvelope) ! EventSourcedWorkflowActor.Defined(secondEnvelope.entityId, 1L)
@@ -63,11 +63,11 @@ class WorkflowSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecL
 
     "route every Task 2 command in exactly one envelope" in {
       val shardRegion = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
-      val supervisor = spawn(WorkflowSupervisor.withSharding(shardRegion.ref))
-      val reply = createTestProbe[EventSourcedWorkflowActor.Reply]()
-      val summary = createTestProbe[EventSourcedWorkflowActor.WorkflowSummary]()
-      val status = createTestProbe[EventSourcedWorkflowActor.StatusResponse]()
-      val history = createTestProbe[EventSourcedWorkflowActor.ExecutionHistoryResponse]()
+      val supervisor  = spawn(WorkflowSupervisor.withSharding(shardRegion.ref))
+      val reply       = createTestProbe[EventSourcedWorkflowActor.Reply]()
+      val summary     = createTestProbe[EventSourcedWorkflowActor.WorkflowSummary]()
+      val status      = createTestProbe[EventSourcedWorkflowActor.StatusResponse]()
+      val history     = createTestProbe[EventSourcedWorkflowActor.ExecutionHistoryResponse]()
       def envelope(entityId: String, command: EventSourcedWorkflowActor.Command): ShardingEnvelope[EventSourcedWorkflowActor.Command] =
         ShardingEnvelope(entityId, command)
 
@@ -102,15 +102,15 @@ class WorkflowSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecL
 
     "wait for the legacy entity reply before acknowledging a definition" in {
       val shardRegion = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
-      val supervisor = spawn(WorkflowSupervisor.withSharding(shardRegion.ref))
-      val caller = createTestProbe[WorkflowSupervisor.WorkflowCreated]()
+      val supervisor  = spawn(WorkflowSupervisor.withSharding(shardRegion.ref))
+      val caller      = createTestProbe[WorkflowSupervisor.WorkflowCreated]()
 
       supervisor ! WorkflowSupervisor.CreateWorkflow(WorkflowFixtures.linearWorkflow, caller.ref)
       caller.expectNoMessage(200.millis)
       val envelope = shardRegion.receiveMessage()
       val entityReply = envelope.message match {
         case EventSourcedWorkflowActor.DefineWorkflow(_, _, replyTo) => replyTo
-        case other => fail(s"expected DefineWorkflow, received $other")
+        case other                                                   => fail(s"expected DefineWorkflow, received $other")
       }
       entityReply ! EventSourcedWorkflowActor.Defined(WorkflowFixtures.linearWorkflow.id, 1L)
 
@@ -119,15 +119,15 @@ class WorkflowSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecL
     }
 
     "map legacy definition conflicts and rejections without sending a second envelope" in {
-      val shardRegion = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
-      val supervisor = spawn(WorkflowSupervisor.withSharding(shardRegion.ref))
-      val conflictCaller = createTestProbe[WorkflowSupervisor.WorkflowCreated]()
-      val rejectedCaller = createTestProbe[WorkflowSupervisor.WorkflowCreated]()
+      val shardRegion      = createTestProbe[ShardingEnvelope[EventSourcedWorkflowActor.Command]]()
+      val supervisor       = spawn(WorkflowSupervisor.withSharding(shardRegion.ref))
+      val conflictCaller   = createTestProbe[WorkflowSupervisor.WorkflowCreated]()
+      val rejectedCaller   = createTestProbe[WorkflowSupervisor.WorkflowCreated]()
       val conflictWorkflow = WorkflowFixtures.linearWorkflow.copy(id = "conflict")
       val rejectedWorkflow = WorkflowFixtures.linearWorkflow.copy(id = "rejected")
       def definitionReply(envelope: ShardingEnvelope[EventSourcedWorkflowActor.Command]) = envelope.message match {
         case EventSourcedWorkflowActor.DefineWorkflow(_, _, replyTo) => replyTo
-        case other => fail(s"expected DefineWorkflow, received $other")
+        case other                                                   => fail(s"expected DefineWorkflow, received $other")
       }
 
       supervisor ! WorkflowSupervisor.CreateWorkflow(conflictWorkflow, conflictCaller.ref)

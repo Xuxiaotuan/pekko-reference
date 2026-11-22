@@ -8,10 +8,10 @@ import org.apache.pekko.cluster.typed.{Cluster, Subscribe}
 
 /**
  * 集群监听器 - 监控集群成员变化和可达性事件
- * 
+ *
  * 负责监控集群状态变化，包括节点加入、离开、故障检测等，
  * 并根据节点角色进行相应的处理和日志记录。
- * 
+ *
  * @author : Xuxiaotuan
  * @since : 2024-09-21 22:18
  */
@@ -21,25 +21,24 @@ object ClusterListener {
    * 集群监听器事件类型
    */
   sealed trait Event
-  
+
   // 内部适配的集群事件
-  private final case class ReachabilityChange(reachabilityEvent: ReachabilityEvent) extends Event
-  private final case class MemberChange(event: MemberEvent) extends Event
-  private final case class LeaderChange(event: LeaderChanged) extends Event
-  
+  final private case class ReachabilityChange(reachabilityEvent: ReachabilityEvent) extends Event
+  final private case class MemberChange(event: MemberEvent)                         extends Event
+  final private case class LeaderChange(event: LeaderChanged)                       extends Event
+
   // 外部查询事件
-  final case class GetClusterStatus(replyTo: ActorRef[ClusterStatus]) extends Event
+  final case class GetClusterStatus(replyTo: ActorRef[ClusterStatus])              extends Event
   final case class GetMembersByRole(role: String, replyTo: ActorRef[List[Member]]) extends Event
 
   /**
    * 集群状态信息
    */
   final case class ClusterStatus(
-    leader: Option[Member],
-    members: List[Member],
-    unreachableMembers: List[Member],
-    seenBy: Set[Member]
-  )
+      leader: Option[Member],
+      members: List[Member],
+      unreachableMembers: List[Member],
+      seenBy: Set[Member])
 
   /**
    * 获取成员的角色
@@ -77,8 +76,7 @@ object ClusterListener {
         reachabilityEvent match {
           case UnreachableMember(member) =>
             val role = getMemberRole(member)
-            ctx.log.warn("🚨 Member detected as unreachable: {} [Role: {}] [Address: {}]",
-              member.uniqueAddress, role, member.address)
+            ctx.log.warn("🚨 Member detected as unreachable: {} [Role: {}] [Address: {}]", member.uniqueAddress, role, member.address)
 
             // 如果是关键节点不可达，需要特殊处理
             if (role == NodeRole.COORDINATOR) {
@@ -87,8 +85,7 @@ object ClusterListener {
 
           case ReachableMember(member) =>
             val role = getMemberRole(member)
-            ctx.log.info("✅ Member back to reachable: {} [Role: {}] [Address: {}]",
-              member.uniqueAddress, role, member.address)
+            ctx.log.info("✅ Member back to reachable: {} [Role: {}] [Address: {}]", member.uniqueAddress, role, member.address)
 
             if (role == NodeRole.COORDINATOR) {
               ctx.log.info("🎯 COORDINATOR node is back online - task scheduling resumed.")
@@ -101,8 +98,7 @@ object ClusterListener {
         changeEvent match {
           case MemberUp(member) =>
             val role = getMemberRole(member)
-            ctx.log.info("🚀 Member is Up: {} [Role: {}] [Address: {}]",
-              member.uniqueAddress, role, member.address)
+            ctx.log.info("🚀 Member is Up: {} [Role: {}] [Address: {}]", member.uniqueAddress, role, member.address)
 
             // 根据角色进行特定处理
             role match {
@@ -120,8 +116,12 @@ object ClusterListener {
 
           case MemberRemoved(member, previousStatus) =>
             val role = getMemberRole(member)
-            ctx.log.warn("👋 Member is Removed: {} [Role: {}] [Previous Status: {}] [Address: {}]",
-              member.uniqueAddress, role, previousStatus, member.address)
+            ctx.log.warn(
+              "👋 Member is Removed: {} [Role: {}] [Previous Status: {}] [Address: {}]",
+              member.uniqueAddress,
+              role,
+              previousStatus,
+              member.address)
 
             // 如果是关键节点离开，需要警告
             role match {
@@ -139,13 +139,11 @@ object ClusterListener {
 
           case MemberExited(member) =>
             val role = getMemberRole(member)
-            ctx.log.info("🚪 Member is Exiting: {} [Role: {}] [Address: {}]",
-              member.uniqueAddress, role, member.address)
+            ctx.log.info("🚪 Member is Exiting: {} [Role: {}] [Address: {}]", member.uniqueAddress, role, member.address)
 
           case MemberWeaklyUp(member) =>
             val role = getMemberRole(member)
-            ctx.log.info("💪 Member is WeaklyUp: {} [Role: {}] [Address: {}]",
-              member.uniqueAddress, role, member.address)
+            ctx.log.info("💪 Member is WeaklyUp: {} [Role: {}] [Address: {}]", member.uniqueAddress, role, member.address)
 
           case _: MemberEvent =>
             // 忽略其他成员事件
@@ -156,7 +154,7 @@ object ClusterListener {
       // 处理领导者变更
       case LeaderChange(event) =>
         val cluster = Cluster(ctx.system)
-        val leader = cluster.selfMember.address == cluster.state.leader.getOrElse(cluster.selfMember.address)
+        val leader  = cluster.selfMember.address == cluster.state.leader.getOrElse(cluster.selfMember.address)
         if (leader) {
           ctx.log.info("👑 This node is now the cluster leader")
         } else {
@@ -167,7 +165,7 @@ object ClusterListener {
       // 处理集群状态查询
       case GetClusterStatus(replyTo) =>
         val cluster = Cluster(ctx.system)
-        val state = cluster.state
+        val state   = cluster.state
         val status = ClusterStatus(
           leader = state.leader.flatMap(address => state.members.find(_.address == address)),
           members = state.members.toList,

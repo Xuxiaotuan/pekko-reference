@@ -35,18 +35,18 @@ class MaterializationSpec extends ScalaTestWithActorTestKit with STPekkoSpec {
 
     "Supervision demo 1" in {
       val decider: Supervision.Decider = {
-        case _: ArithmeticException => Supervision.Resume  // 忽略错误，继续运行
-        case _ => Supervision.Stop
+        case _: ArithmeticException => Supervision.Resume // 忽略错误，继续运行
+        case _                      => Supervision.Stop
       }
 
-      val flow = Flow[Int].map(n => 100 / (n - 5))  // 可能在 n=5 时抛出异常
+      val flow = Flow[Int]
+        .map(n => 100 / (n - 5)) // 可能在 n=5 时抛出异常
         .withAttributes(ActorAttributes.supervisionStrategy(decider))
 
       Source(1 to 10)
         .via(flow)
-        .runWith(Sink.foreach(println))  // 遇到 n=5 时会跳过
+        .runWith(Sink.foreach(println)) // 遇到 n=5 时会跳过
     }
-
 
   }
 

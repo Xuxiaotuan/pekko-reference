@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigFactory
 import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.actor.{ActorRef, ActorSystem}
 import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.apache.pekko.stream.scaladsl.GraphDSL.Implicits.{SourceArrow, fanOut2flow}
+import org.apache.pekko.stream.scaladsl.GraphDSL.Implicits.{fanOut2flow, SourceArrow}
 import org.apache.pekko.stream.{ClosedShape, CompletionStrategy, Materializer, OverflowStrategy, UniformFanInShape}
 import org.apache.pekko.stream.scaladsl.{Broadcast, Flow, GraphDSL, Keep, Merge, RunnableGraph, Sink, Source}
 
@@ -23,18 +23,17 @@ import scala.util.{Failure, Success}
 class PekkoStreamFlowSpec extends ScalaTestWithActorTestKit with STPekkoSpec {
   "pekko stream  flow" should {
 
-    val config = ConfigFactory.parseString(
-      """
-        |pekko {
-        |  remote.artery {
-        |    canonical {
-        |      port = 0 # 使用随机端口
-        |    }
-        |  }
-        |}
-        |""".stripMargin)
+    val config = ConfigFactory.parseString("""
+                                             |pekko {
+                                             |  remote.artery {
+                                             |    canonical {
+                                             |      port = 0 # 使用随机端口
+                                             |    }
+                                             |  }
+                                             |}
+                                             |""".stripMargin)
 
-    implicit val system: ActorSystem = ActorSystem("demo", config)
+    implicit val system: ActorSystem  = ActorSystem("demo", config)
     implicit val mat: Materializer    = Materializer(system)
     implicit val ec: ExecutionContext = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(8))
 
@@ -46,8 +45,6 @@ class PekkoStreamFlowSpec extends ScalaTestWithActorTestKit with STPekkoSpec {
       val processing2 = Flow[Int].filter(_ % 2 == 0)
 
       val graph = RunnableGraph.fromGraph(GraphDSL.create() { implicit builder =>
-
-
         val broadcast                          = builder.add(Broadcast[Int](2))
         val merge: UniformFanInShape[Int, Int] = builder.add(Merge[Int](2))
 

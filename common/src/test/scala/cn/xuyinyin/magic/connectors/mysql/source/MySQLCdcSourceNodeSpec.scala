@@ -34,18 +34,20 @@ import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.jdk.CollectionConverters._
 
 class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
-  private implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](
+  implicit private val system: ActorSystem[Nothing] = ActorSystem[Nothing](
     Behaviors.empty[Nothing],
     "mysql-cdc-source-node-spec",
-    ConfigFactory.parseString(
-      """pekko.actor.provider = local
-        |pekko.coordinated-shutdown.exit-jvm = off""".stripMargin
-    ).withFallback(ConfigFactory.load("application-test"))
+    ConfigFactory
+      .parseString(
+        """pekko.actor.provider = local
+          |pekko.coordinated-shutdown.exit-jvm = off""".stripMargin
+      )
+      .withFallback(ConfigFactory.load("application-test"))
   )
-  private implicit val ec: ExecutionContext = system.executionContext
+  implicit private val ec: ExecutionContext = system.executionContext
 
   private val sourceSecret = "source-password-must-not-leak"
-  private val stateSecret = "state-password-must-not-leak"
+  private val stateSecret  = "state-password-must-not-leak"
   private val sourceConfig = MySQLCdcSourceConfig(
     connectorId = "orders-cdc-v1",
     host = "mysql",
@@ -76,18 +78,21 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     upperBound = Some(expectedStreamIdentity)
   )
 
-  private val keySchema = SchemaBuilder.struct()
+  private val keySchema = SchemaBuilder
+    .struct()
     .name("pekko_workflow.source_orders.Key")
     .field("id", Schema.INT32_SCHEMA)
     .build()
-  private val rowSchema = SchemaBuilder.struct()
+  private val rowSchema = SchemaBuilder
+    .struct()
     .name("pekko_workflow.source_orders.Value")
     .optional()
     .field("id", Schema.INT32_SCHEMA)
     .field("status", Schema.OPTIONAL_STRING_SCHEMA)
     .field("amount", Decimal.builder(2).optional().build())
     .build()
-  private val sourceSchema = SchemaBuilder.struct()
+  private val sourceSchema = SchemaBuilder
+    .struct()
     .name("io.debezium.connector.mysql.Source")
     .field("db", Schema.STRING_SCHEMA)
     .field("table", Schema.STRING_SCHEMA)
@@ -97,7 +102,8 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     .field("row", Schema.OPTIONAL_INT32_SCHEMA)
     .field("ts_ms", Schema.OPTIONAL_INT64_SCHEMA)
     .build()
-  private val envelopeSchema = SchemaBuilder.struct()
+  private val envelopeSchema = SchemaBuilder
+    .struct()
     .name("pekko_workflow.source_orders.Envelope")
     .field("before", rowSchema)
     .field("after", rowSchema)
@@ -117,46 +123,44 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
       val actual = MySQLCdcSourceNode.connectorProperties(sourceConfig, stateConfig).asScala.toMap
 
       actual shouldBe Map(
-        "name" -> "orders-cdc-v1",
-        "connector.class" -> "io.debezium.connector.mysql.MySqlConnector",
-        "database.hostname" -> "mysql",
-        "database.port" -> "3306",
-        "database.user" -> "pekko_cdc",
-        "database.password" -> sourceSecret,
-        "driver.allowPublicKeyRetrieval" -> "true",
+        "name"                                    -> "orders-cdc-v1",
+        "connector.class"                         -> "io.debezium.connector.mysql.MySqlConnector",
+        "database.hostname"                       -> "mysql",
+        "database.port"                           -> "3306",
+        "database.user"                           -> "pekko_cdc",
+        "database.password"                       -> sourceSecret,
+        "driver.allowPublicKeyRetrieval"          -> "true",
         "driver.forceConnectionTimeZoneToSession" -> "true",
-        "database.connectionTimeZone" -> "UTC",
-        "database.server.id" -> "54001",
-        "topic.prefix" -> "orders-cdc-v1",
-        "database.include.list" -> "pekko_workflow",
-        "table.include.list" -> "pekko_workflow.source_orders",
-        "snapshot.mode" -> "initial",
-        "snapshot.locking.mode" -> "none",
-        "record.processing.order" -> "ORDERED",
-        "record.processing.threads" -> "1",
-        "offset.flush.interval.ms" -> "0",
-        "decimal.handling.mode" -> "string",
-        "include.schema.changes" -> "false",
-        "tombstones.on.delete" -> "false",
-        "max.batch.size" -> "100",
-        "poll.interval.ms" -> "500",
-        "offset.storage" -> "io.debezium.storage.jdbc.offset.JdbcOffsetBackingStore",
-        "offset.storage.jdbc.connection.url" -> "jdbc:mysql://mysql:3306/pekko_workflow",
-        "offset.storage.jdbc.connection.user" -> "pekko_workflow",
+        "database.connectionTimeZone"             -> "UTC",
+        "database.server.id"                      -> "54001",
+        "topic.prefix"                            -> "orders-cdc-v1",
+        "database.include.list"                   -> "pekko_workflow",
+        "table.include.list"                      -> "pekko_workflow.source_orders",
+        "snapshot.mode"                           -> "initial",
+        "snapshot.locking.mode"                   -> "none",
+        "record.processing.order"                 -> "ORDERED",
+        "record.processing.threads"               -> "1",
+        "offset.flush.interval.ms"                -> "0",
+        "decimal.handling.mode"                   -> "string",
+        "include.schema.changes"                  -> "false",
+        "tombstones.on.delete"                    -> "false",
+        "max.batch.size"                          -> "100",
+        "poll.interval.ms"                        -> "500",
+        "offset.storage"                          -> "io.debezium.storage.jdbc.offset.JdbcOffsetBackingStore",
+        "offset.storage.jdbc.connection.url"      -> "jdbc:mysql://mysql:3306/pekko_workflow",
+        "offset.storage.jdbc.connection.user"     -> "pekko_workflow",
         "offset.storage.jdbc.connection.password" -> stateSecret,
-        "offset.storage.jdbc.table.name" -> "debezium_offset_storage_44e22282ff7839903a506bf00220fd5f",
-        "offset.storage.jdbc.table.ddl" -> (
-          "CREATE TABLE %s (id VARCHAR(36) NOT NULL, offset_key VARCHAR(1255), offset_val VARCHAR(1255), " +
-            "record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id))"),
-        "schema.history.internal" -> "io.debezium.storage.jdbc.history.JdbcSchemaHistory",
-        "schema.history.internal.jdbc.connection.url" -> "jdbc:mysql://mysql:3306/pekko_workflow",
-        "schema.history.internal.jdbc.connection.user" -> "pekko_workflow",
+        "offset.storage.jdbc.table.name"          -> "debezium_offset_storage_44e22282ff7839903a506bf00220fd5f",
+        "offset.storage.jdbc.table.ddl" -> ("CREATE TABLE %s (id VARCHAR(36) NOT NULL, offset_key VARCHAR(1255), offset_val VARCHAR(1255), " +
+          "record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id))"),
+        "schema.history.internal"                          -> "io.debezium.storage.jdbc.history.JdbcSchemaHistory",
+        "schema.history.internal.jdbc.connection.url"      -> "jdbc:mysql://mysql:3306/pekko_workflow",
+        "schema.history.internal.jdbc.connection.user"     -> "pekko_workflow",
         "schema.history.internal.jdbc.connection.password" -> stateSecret,
-        "schema.history.internal.jdbc.table.name" -> "debezium_database_history_44e22282ff7839903a506bf00220fd5f",
-        "schema.history.internal.jdbc.table.ddl" -> (
-          "CREATE TABLE %s (id VARCHAR(36) NOT NULL, history_data LONGTEXT, history_data_seq INT, " +
-            "record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, " +
-            "PRIMARY KEY (id, history_data_seq))")
+        "schema.history.internal.jdbc.table.name"          -> "debezium_database_history_44e22282ff7839903a506bf00220fd5f",
+        "schema.history.internal.jdbc.table.ddl" -> ("CREATE TABLE %s (id VARCHAR(36) NOT NULL, history_data LONGTEXT, history_data_seq INT, " +
+          "record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, " +
+          "PRIMARY KEY (id, history_data_seq))")
       )
     }
 
@@ -174,24 +178,24 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
         second.getProperty(key) should fullyMatch regex "[A-Za-z_][A-Za-z0-9_]{0,63}"
       }
       new JdbcOffsetBackingStoreConfig(Configuration.from(first)).getTableName shouldBe
-        first.getProperty("offset.storage.jdbc.table.name")
+      first.getProperty("offset.storage.jdbc.table.name")
       new JdbcSchemaHistoryConfig(Configuration.from(first)).getTableName shouldBe
-        first.getProperty("schema.history.internal.jdbc.table.name")
+      first.getProperty("schema.history.internal.jdbc.table.name")
     }
   }
 
   "MySQLCdcSourceNode metadata JDBC URL" should {
     "support MySQL 8 public-key authentication when TLS is disabled" in {
       MySQLCdcSourceNode.metadataJdbcUrl(sourceConfig) shouldBe
-        "jdbc:mysql://mysql:3306/pekko_workflow?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+      "jdbc:mysql://mysql:3306/pekko_workflow?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
     }
   }
 
   "MySQLCdcSourceNode boundary discovery" should {
     "consume an engine-prepared runtime password through the real source parser" in {
-      val factory = new FakeEngineFactory(Vector.empty)
+      val factory  = new FakeEngineFactory(Vector.empty)
       val metadata = validMetadata
-      val source = testSource(factory, () => metadata.connection())
+      val source   = testSource(factory, () => metadata.connection())
       val runtimeNode = cdcNode().copy(config = JsObject(
         (cdcNode().config.fields - "passwordEnv") + ("password" -> JsString(sourceSecret))
       ))
@@ -245,7 +249,7 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
 
       cases.foreach { case (expectedMessage, metadata) =>
         val factory = new FakeEngineFactory(Vector.empty)
-        val source = testSource(factory, () => metadata.connection())
+        val source  = testSource(factory, () => metadata.connection())
 
         val failure = intercept[IllegalArgumentException] {
           Await.result(source.discoverBoundary(cdcNode(), None, _ => ()), 2.seconds)
@@ -260,15 +264,19 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
 
     "validate recovered node, partition, cursor kind, and stream identity before engine creation" in {
       val factory = new FakeEngineFactory(Vector.empty)
-      val source = testSource(factory, () => validMetadata.connection())
+      val source  = testSource(factory, () => validMetadata.connection())
       val mismatches = Vector(
         checkpoint(expectedBoundary.copy(sourceNodeId = "other-node"), sequence = 4L),
         checkpoint(expectedBoundary.copy(partitionId = "mysql-cdc:other"), sequence = 4L),
         checkpoint(expectedBoundary, sequence = 4L).copy(cursor = SourceCursor(
-          "other-kind", "{}", expectedStreamIdentity
+          "other-kind",
+          "{}",
+          expectedStreamIdentity
         )),
         checkpoint(expectedBoundary, sequence = 4L).copy(cursor = SourceCursor(
-          "mysql.binlog.v1", "{}", expectedStreamIdentity.replace("source_orders", "other_table")
+          "mysql.binlog.v1",
+          "{}",
+          expectedStreamIdentity.replace("source_orders", "other_table")
         ))
       )
 
@@ -284,12 +292,12 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
   "managed MySQL CDC sessions" should {
     "keep the JDBC worker available with sixteen idle materialized CDC readers" in {
       val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
-      val worker = ExecutionContext.fromExecutor(executor)
-      val factory = new FakeEngineFactory(Vector.fill(16)(EnginePlan(Vector.empty)))
-      val source = testSource(factory, () => validMetadata.connection())
+      val worker   = ExecutionContext.fromExecutor(executor)
+      val factory  = new FakeEngineFactory(Vector.fill(16)(EnginePlan(Vector.empty)))
+      val source   = testSource(factory, () => validMetadata.connection())
       val sessions = Vector.tabulate(16)(i => source.openBatches(cdcNode(), s"idle-$i", expectedBoundary, None, _ => (), ec)(worker))
-      val queues = sessions.map(_.source.runWith(Sink.queue()))
-      val reads = queues.map(_.pull())
+      val queues   = sessions.map(_.source.runWith(Sink.queue()))
+      val reads    = queues.map(_.pull())
       try {
         eventually(factory.createCalls.get == 16)
         Await.result(Future(42)(worker), 2.seconds) shouldBe 42
@@ -307,46 +315,61 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
         import cn.xuyinyin.magic.workflow.execution.{ReliableRunContext, WorkflowExecutionEngine}
         import cn.xuyinyin.magic.workflow.execution.registry.NodeRegistry
         import cn.xuyinyin.magic.workflow.spi.{CheckpointedNodeSink, NodeSink}
-        val d = record("d", Some(row(42, "old")), None, snapshot = false, position = 200)
-        val base = record("c", None, Some(row(43, "old")), snapshot = false, position = 200)
+        val d      = record("d", Some(row(42, "old")), None, snapshot = false, position = 200)
+        val base   = record("c", None, Some(row(43, "old")), snapshot = false, position = 200)
         val newKey = new Struct(keySchema).put("id", 43)
-        val c = new SourceRecord(base.sourcePartition(), base.sourceOffset(), base.topic(), keySchema,
-          newKey, base.valueSchema(), base.value())
+        val c      = new SourceRecord(base.sourcePartition(), base.sourceOffset(), base.topic(), keySchema, newKey, base.valueSchema(), base.value())
         d.headers().add("__debezium.newkey", newKey, keySchema)
         c.headers().add("__debezium.oldkey", d.key(), keySchema)
-        val ackEntered = Promise[Done]()
-        val releaseAck = new CountDownLatch(1)
+        val ackEntered   = Promise[Done]()
+        val releaseAck   = new CountDownLatch(1)
         val halfRetained = Promise[Done]()
-        val factory = new FakeEngineFactory(Vector(EnginePlan(
-          if (halfOnly) Vector(Vector(d)) else Vector(Vector(d), Vector(c)),
-          onAck = () => { ackEntered.trySuccess(Done); releaseAck.await() })))
+        val factory = new FakeEngineFactory(
+          Vector(
+            EnginePlan(
+              if (halfOnly) Vector(Vector(d)) else Vector(Vector(d), Vector(c)),
+              onAck = () => { ackEntered.trySuccess(Done); releaseAck.await() })))
         val source = testSource(factory, () => validMetadata.connection())
-        val protocol = JsObject("replicationId" -> JsString("orders"), "generation" -> JsString("g1"),
-          "sourceLineage" -> JsString("fixed-server-uuid"), "initializedTarget" -> JsBoolean(true))
+        val protocol = JsObject(
+          "replicationId"     -> JsString("orders"),
+          "generation"        -> JsString("g1"),
+          "sourceLineage"     -> JsString("fixed-server-uuid"),
+          "initializedTarget" -> JsBoolean(true))
         val node = cdcNode().copy(config = JsObject(cdcNode().config.fields + ("groupProtocol" -> protocol)))
-        val boundary = expectedBoundary.copy(upperBound = Some(canonical(JsObject(
-          expectedStreamIdentity.parseJson.asJsObject.fields ++ Map("version" -> JsNumber(2),
-            "groupProtocol" -> JsObject((protocol.fields - "initializedTarget") + ("version" -> JsNumber(1))))))))
+        val boundary = expectedBoundary.copy(upperBound = Some(
+          canonical(
+            JsObject(expectedStreamIdentity.parseJson.asJsObject.fields ++ Map(
+              "version"       -> JsNumber(2),
+              "groupProtocol" -> JsObject((protocol.fields - "initializedTarget") + ("version" -> JsNumber(1))))))))
         val commits = new AtomicInteger
         val sink = new NodeSink with CheckpointedNodeSink {
-          val nodeType = "mysql.cdc.apply"
+          val nodeType                                                                                                        = "mysql.cdc.apply"
           def createSink(n: WorkflowDSL.Node, log: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] = Sink.ignore
           def validateReady(n: WorkflowDSL.Node, log: String => Unit)(implicit ec: ExecutionContext): Future[Done] = Future.successful(Done)
-          def commitBatch(n: WorkflowDSL.Node, w: String, e: String, b: SourceBatch, rows: Vector[String], log: String => Unit)
-            (implicit ec: ExecutionContext): Future[BatchCommitResult] = {
+          def commitBatch(
+              n: WorkflowDSL.Node,
+              w: String,
+              e: String,
+              b: SourceBatch,
+              rows: Vector[String],
+              log: String => Unit
+            )(implicit ec: ExecutionContext): Future[BatchCommitResult] = {
             commits.incrementAndGet()
             Future.successful(Committed(BatchCheckpoint(b.sourceNodeId, b.partitionId, b.batchSequence, b.batchId, b.cursor, 2, 2)))
           }
         }
         val engine = new WorkflowExecutionEngine(_ => Some(sourceSecret), NodeRegistry.builtins().withSource(source).withSink(sink))
-        val workflow = cn.xuyinyin.magic.workflow.WorkflowFixtures.mysqlCdcWorkflow.copy(nodes = List(node,
-          cn.xuyinyin.magic.workflow.WorkflowFixtures.mysqlCdcWorkflow.nodes.last))
-        val context = ReliableRunContext(s"managed-$halfOnly", 1, Some(boundary), Vector.empty,
-          _ => Future.successful(Done), _ => Future.successful(Done))
-        val running = engine.execute(workflow, context, message => {
-          if (message.startsWith("CDC primary-key half retained")) halfRetained.trySuccess(Done)
-          ()
-        })
+        val workflow = cn.xuyinyin.magic.workflow.WorkflowFixtures.mysqlCdcWorkflow.copy(nodes =
+          List(node, cn.xuyinyin.magic.workflow.WorkflowFixtures.mysqlCdcWorkflow.nodes.last))
+        val context =
+          ReliableRunContext(s"managed-$halfOnly", 1, Some(boundary), Vector.empty, _ => Future.successful(Done), _ => Future.successful(Done))
+        val running = engine.execute(
+          workflow,
+          context,
+          message => {
+            if (message.startsWith("CDC primary-key half retained")) halfRetained.trySuccess(Done)
+            ()
+          })
         try {
           if (halfOnly) Await.result(halfRetained.future, 3.seconds) else Await.result(ackEntered.future, 3.seconds)
           if (!halfOnly) {
@@ -368,10 +391,10 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
       val factory = new DebeziumEngineFactory {
         def create(p: Properties): DebeziumEngineAccess = new DebeziumEngineAccess {
           def start(c: DebeziumBatchConsumer): Future[Done] = throw new IllegalStateException("startup failed")
-          def close(): Unit = throw new IllegalStateException("cleanup failed")
+          def close(): Unit                                 = throw new IllegalStateException("cleanup failed")
         }
       }
-      val source = testSource(factory, () => validMetadata.connection())
+      val source  = testSource(factory, () => validMetadata.connection())
       val session = source.openBatches(cdcNode(), "startup-failure", expectedBoundary, None, _ => (), ec)
       intercept[IllegalStateException] { Await.result(session.source.runWith(Sink.ignore), 3.seconds) }
       Await.result(session.close().failed, 3.seconds) shouldBe a[cn.xuyinyin.magic.workflow.spi.SourceAcquisitionCleanupFailed]
@@ -380,21 +403,25 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
 
   "MySQLCdcSourceNode streaming" should {
     "assemble a PK group across callbacks before delivery and release only the covered raw prefix" in {
-      val d = record("d", Some(row(42, "old")), None, snapshot = false, position = 200)
-      val base = record("c", None, Some(row(43, "old")), snapshot = false, position = 200)
+      val d      = record("d", Some(row(42, "old")), None, snapshot = false, position = 200)
+      val base   = record("c", None, Some(row(43, "old")), snapshot = false, position = 200)
       val newKey = new Struct(keySchema).put("id", 43)
-      val c = new SourceRecord(base.sourcePartition(), base.sourceOffset(), base.topic(), keySchema,
-        newKey, base.valueSchema(), base.value())
+      val c      = new SourceRecord(base.sourcePartition(), base.sourceOffset(), base.topic(), keySchema, newKey, base.valueSchema(), base.value())
       d.headers().add("__debezium.newkey", newKey, keySchema)
       c.headers().add("__debezium.oldkey", d.key(), keySchema)
       val factory = new FakeEngineFactory(Vector(EnginePlan(Vector(Vector(d), Vector(c)))))
-      val source = testSource(factory, () => validMetadata.connection())
-      val protocol = JsObject("replicationId" -> JsString("orders"), "generation" -> JsString("g1"),
-        "sourceLineage" -> JsString("fixed-server-uuid"), "initializedTarget" -> JsBoolean(true))
+      val source  = testSource(factory, () => validMetadata.connection())
+      val protocol = JsObject(
+        "replicationId"     -> JsString("orders"),
+        "generation"        -> JsString("g1"),
+        "sourceLineage"     -> JsString("fixed-server-uuid"),
+        "initializedTarget" -> JsBoolean(true))
       val node = cdcNode().copy(config = JsObject(cdcNode().config.fields + ("groupProtocol" -> protocol)))
-      val boundary = expectedBoundary.copy(upperBound = Some(canonical(JsObject(
-        expectedStreamIdentity.parseJson.asJsObject.fields ++ Map("version" -> JsNumber(2),
-          "groupProtocol" -> JsObject((protocol.fields - "initializedTarget") + ("version" -> JsNumber(1))))))))
+      val boundary = expectedBoundary.copy(upperBound = Some(
+        canonical(
+          JsObject(expectedStreamIdentity.parseJson.asJsObject.fields ++ Map(
+            "version"       -> JsNumber(2),
+            "groupProtocol" -> JsObject((protocol.fields - "initializedTarget") + ("version" -> JsNumber(1))))))))
       val queue = source.createBatches(node, "execution-1", boundary, None, _ => ()).runWith(Sink.queue())
       try {
         val batch = pull(queue)
@@ -409,15 +436,20 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     "reject a closed group session ACK without consuming a new session at the same delivery sequence" in {
       val records = Vector(record("u", Some(row(42, "old")), Some(row(42, "new")), snapshot = false, position = 200))
       val factory = new FakeEngineFactory(Vector(EnginePlan(Vector(records)), EnginePlan(Vector(records))))
-      val source = testSource(factory, () => validMetadata.connection())
-      val protocol = JsObject("replicationId" -> JsString("orders"), "generation" -> JsString("g1"),
-        "sourceLineage" -> JsString("fixed-server-uuid"), "initializedTarget" -> JsBoolean(true))
+      val source  = testSource(factory, () => validMetadata.connection())
+      val protocol = JsObject(
+        "replicationId"     -> JsString("orders"),
+        "generation"        -> JsString("g1"),
+        "sourceLineage"     -> JsString("fixed-server-uuid"),
+        "initializedTarget" -> JsBoolean(true))
       val node = cdcNode().copy(config = JsObject(cdcNode().config.fields + ("groupProtocol" -> protocol)))
-      val boundary = expectedBoundary.copy(upperBound = Some(canonical(JsObject(
-        expectedStreamIdentity.parseJson.asJsObject.fields ++ Map("version" -> JsNumber(2),
-          "groupProtocol" -> JsObject((protocol.fields - "initializedTarget") + ("version" -> JsNumber(1))))))))
+      val boundary = expectedBoundary.copy(upperBound = Some(
+        canonical(
+          JsObject(expectedStreamIdentity.parseJson.asJsObject.fields ++ Map(
+            "version"       -> JsNumber(2),
+            "groupProtocol" -> JsObject((protocol.fields - "initializedTarget") + ("version" -> JsNumber(1))))))))
       val firstQueue = source.createBatches(node, "same-execution", boundary, None, _ => ()).runWith(Sink.queue())
-      val old = pull(firstQueue)
+      val old        = pull(firstQueue)
       firstQueue.cancel()
       eventually(factory.engines.head.closed.get())
       val newQueue = source.createBatches(node, "same-execution", boundary, None, _ => ()).runWith(Sink.queue())
@@ -426,8 +458,8 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
         current.batchId shouldBe old.batchId
         current.cursor shouldBe old.cursor // Session identity belongs to delivery, not the durable source cursor.
         current.acknowledgementId should not be old.acknowledgementId
-        intercept[IllegalStateException](Await.result(source.acknowledgeCommittedBatch(node,
-          current.copy(batchId = "wrong-delivery"), _ => ()), 2.seconds))
+        intercept[IllegalStateException](
+          Await.result(source.acknowledgeCommittedBatch(node, current.copy(batchId = "wrong-delivery"), _ => ()), 2.seconds))
         intercept[IllegalStateException](Await.result(source.acknowledgeCommittedBatch(node, old, _ => ()), 2.seconds))
         factory.engines(1).handles.asScala.head.calls.get() shouldBe 0
         Await.result(source.acknowledgeCommittedBatch(node, current, _ => ()), 2.seconds)
@@ -442,8 +474,9 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
         record("d", Some(row(42, "paid")), None, snapshot = false, position = 220L)
       )
       val factory = new FakeEngineFactory(Vector(EnginePlan(Vector(firstRecords, secondRecords))))
-      val source = testSource(factory, () => validMetadata.connection())
-      val queue = source.createBatches(cdcNode(), "execution-1", expectedBoundary, None, _ => ())
+      val source  = testSource(factory, () => validMetadata.connection())
+      val queue = source
+        .createBatches(cdcNode(), "execution-1", expectedBoundary, None, _ => ())
         .runWith(Sink.queue())
 
       val first = pull(queue)
@@ -455,7 +488,13 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
         expectedStreamIdentity
       )
       first.productElementNames.toVector shouldBe Vector(
-        "sourceNodeId", "partitionId", "batchSequence", "batchId", "cursor", "rows", "acknowledgementId"
+        "sourceNodeId",
+        "partitionId",
+        "batchSequence",
+        "batchId",
+        "cursor",
+        "rows",
+        "acknowledgementId"
       )
       first.productElementNames.toVector should not contain "deliveryToken"
       val firstEnvelope = parse(first.rows.head)
@@ -485,18 +524,25 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
 
     "resume at the checkpoint sequence plus one with the same BatchId rules" in {
-      val factory = new FakeEngineFactory(Vector(EnginePlan(Vector(Vector(
-        record("c", None, Some(row(43, "created")), snapshot = false, position = 300L)
-      )))))
+      val factory = new FakeEngineFactory(
+        Vector(
+          EnginePlan(
+            Vector(Vector(
+              record("c", None, Some(row(43, "created")), snapshot = false, position = 300L)
+            )))))
       val source = testSource(factory, () => validMetadata.connection())
       val resume = checkpoint(expectedBoundary, sequence = 4L)
-      val queue = source.createBatches(cdcNode(), "execution-resume", expectedBoundary, Some(resume), _ => ())
+      val queue = source
+        .createBatches(cdcNode(), "execution-resume", expectedBoundary, Some(resume), _ => ())
         .runWith(Sink.queue())
 
       val batch = pull(queue)
       batch.batchSequence shouldBe 5L
       batch.batchId shouldBe BatchId.sha256(
-        "execution-resume", "source-1", "mysql-cdc:orders-cdc-v1", 5L
+        "execution-resume",
+        "source-1",
+        "mysql-cdc:orders-cdc-v1",
+        5L
       )
       Await.result(source.acknowledgeCommittedBatch(cdcNode(), batch, _ => ()), 2.seconds)
       queue.cancel()
@@ -505,15 +551,18 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
 
     "fail closed instead of overwriting an acknowledgement entry for the same batch ID" in {
       val duplicate = Vector(record("r", None, Some(row(42, "new")), snapshot = true, position = 100L))
-      val factory = new FakeEngineFactory(Vector(
-        EnginePlan(Vector(duplicate)),
-        EnginePlan(Vector(duplicate))
-      ))
+      val factory = new FakeEngineFactory(
+        Vector(
+          EnginePlan(Vector(duplicate)),
+          EnginePlan(Vector(duplicate))
+        ))
       val source = testSource(factory, () => validMetadata.connection())
-      val firstQueue = source.createBatches(cdcNode(), "execution-duplicate", expectedBoundary, None, _ => ())
+      val firstQueue = source
+        .createBatches(cdcNode(), "execution-duplicate", expectedBoundary, None, _ => ())
         .runWith(Sink.queue())
       val first = pull(firstQueue)
-      val secondQueue = source.createBatches(cdcNode(), "execution-duplicate", expectedBoundary, None, _ => ())
+      val secondQueue = source
+        .createBatches(cdcNode(), "execution-duplicate", expectedBoundary, None, _ => ())
         .runWith(Sink.queue())
       val collision = intercept[IllegalStateException] {
         Await.result(secondQueue.pull(), 2.seconds)
@@ -532,17 +581,20 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
 
     "allow two distinct materializations to retain and acknowledge one pending batch each" in {
       val records = Vector(record("r", None, Some(row(42, "new")), snapshot = true, position = 100L))
-      val factory = new FakeEngineFactory(Vector(
-        EnginePlan(Vector(records)),
-        EnginePlan(Vector(records))
-      ))
+      val factory = new FakeEngineFactory(
+        Vector(
+          EnginePlan(Vector(records)),
+          EnginePlan(Vector(records))
+        ))
       val source = testSource(factory, () => validMetadata.connection())
-      val firstQueue = source.createBatches(cdcNode(), "execution-distinct-1", expectedBoundary, None, _ => ())
+      val firstQueue = source
+        .createBatches(cdcNode(), "execution-distinct-1", expectedBoundary, None, _ => ())
         .runWith(Sink.queue())
-      val secondQueue = source.createBatches(cdcNode(), "execution-distinct-2", expectedBoundary, None, _ => ())
+      val secondQueue = source
+        .createBatches(cdcNode(), "execution-distinct-2", expectedBoundary, None, _ => ())
         .runWith(Sink.queue())
 
-      val first = pull(firstQueue)
+      val first  = pull(firstQueue)
       val second = pull(secondQueue)
       first.batchId should not be second.batchId
       factory.engines.foreach(_.handles.asScala.head.calls.get() shouldBe 0)
@@ -557,10 +609,10 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
 
     "fail the bridge without retaining an acknowledgement when close wins registration" in {
-      val registry = new CdcAcknowledgementRegistry
-      val scope = registry.openScope()
-      val bridge = new DebeziumBatchBridge
-      val handle = new FakeCommitHandle
+      val registry         = new CdcAcknowledgementRegistry
+      val scope            = registry.openScope()
+      val bridge           = new DebeziumBatchBridge
+      val handle           = new FakeCommitHandle
       val publisherFailure = new AtomicReference[Throwable]()
       val publisher = new Thread(() => {
         try bridge.publish("race-batch", Vector("{}"), "{}", handle)
@@ -585,11 +637,15 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
 
     "close the fake engine and bridge when downstream cancels an unacknowledged batch" in {
-      val factory = new FakeEngineFactory(Vector(EnginePlan(Vector(Vector(
-        record("r", None, Some(row(42, "new")), snapshot = true, position = 100L)
-      )))))
+      val factory = new FakeEngineFactory(
+        Vector(
+          EnginePlan(
+            Vector(Vector(
+              record("r", None, Some(row(42, "new")), snapshot = true, position = 100L)
+            )))))
       val source = testSource(factory, () => validMetadata.connection())
-      val queue = source.createBatches(cdcNode(), "execution-cancel", expectedBoundary, None, _ => ())
+      val queue = source
+        .createBatches(cdcNode(), "execution-cancel", expectedBoundary, None, _ => ())
         .runWith(Sink.queue())
 
       pull(queue)
@@ -604,8 +660,9 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     "fail the Pekko stream when the engine terminates exceptionally" in {
       val failure = new RuntimeException("engine-boom")
       val factory = new FakeEngineFactory(Vector(EnginePlan(Vector.empty, Some(failure))))
-      val source = testSource(factory, () => validMetadata.connection())
-      val queue = source.createBatches(cdcNode(), "execution-failure", expectedBoundary, None, _ => ())
+      val source  = testSource(factory, () => validMetadata.connection())
+      val queue = source
+        .createBatches(cdcNode(), "execution-failure", expectedBoundary, None, _ => ())
         .runWith(Sink.queue())
 
       val observed = intercept[RuntimeException] {
@@ -616,12 +673,15 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
 
     "fail the Pekko stream when the engine completes normally without a requested close" in {
-      val factory = new FakeEngineFactory(Vector(EnginePlan(
-        batches = Vector.empty,
-        completesWithoutClose = true
-      )))
+      val factory = new FakeEngineFactory(
+        Vector(
+          EnginePlan(
+            batches = Vector.empty,
+            completesWithoutClose = true
+          )))
       val source = testSource(factory, () => validMetadata.connection())
-      val queue = source.createBatches(cdcNode(), "execution-unexpected-stop", expectedBoundary, None, _ => ())
+      val queue = source
+        .createBatches(cdcNode(), "execution-unexpected-stop", expectedBoundary, None, _ => ())
         .runWith(Sink.queue())
 
       val failure = intercept[IllegalStateException] {
@@ -633,17 +693,27 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
 
     "re-query current metadata and reject schema drift before creating the engine" in {
-      val factory = new FakeEngineFactory(Vector(EnginePlan(Vector(Vector(
-        record("r", None, Some(row(42, "new")), snapshot = true, position = 100L)
-      )))))
+      val factory = new FakeEngineFactory(
+        Vector(
+          EnginePlan(
+            Vector(Vector(
+              record("r", None, Some(row(42, "new")), snapshot = true, position = 100L)
+            )))))
       val drifted = MetadataFixture(
         primaryKeys = Vector(primaryKey("id", 1)),
         columns = validColumns :+ column(
-          "new_column", Types.VARCHAR, "VARCHAR", DatabaseMetaData.columnNullable, 4, 64, 0
+          "new_column",
+          Types.VARCHAR,
+          "VARCHAR",
+          DatabaseMetaData.columnNullable,
+          4,
+          64,
+          0
         )
       )
       val source = testSource(factory, () => drifted.connection())
-      val queue = source.createBatches(cdcNode(), "execution-schema-drift", expectedBoundary, None, _ => ())
+      val queue = source
+        .createBatches(cdcNode(), "execution-schema-drift", expectedBoundary, None, _ => ())
         .runWith(Sink.queue())
 
       val failure = intercept[IllegalArgumentException] {
@@ -657,11 +727,11 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
 
     "validate the supplied boundary and recovery identity before materializing an engine" in {
       val factory = new FakeEngineFactory(Vector.empty)
-      val source = testSource(factory, () => validMetadata.connection())
-      val resume = checkpoint(expectedBoundary, sequence = 1L)
+      val source  = testSource(factory, () => validMetadata.connection())
+      val resume  = checkpoint(expectedBoundary, sequence = 1L)
       val invalid = Vector(
-        expectedBoundary.copy(sourceNodeId = "other-node") -> None,
-        expectedBoundary.copy(partitionId = "mysql-cdc:other") -> None,
+        expectedBoundary.copy(sourceNodeId = "other-node")                                                       -> None,
+        expectedBoundary.copy(partitionId = "mysql-cdc:other")                                                   -> None,
         expectedBoundary.copy(upperBound = Some(expectedStreamIdentity.replace("source_orders", "other_table"))) -> None,
         expectedBoundary -> Some(resume.copy(sourceNodeId = "other-node")),
         expectedBoundary -> Some(resume.copy(cursor = resume.cursor.copy(upperBound = "other-identity")))
@@ -676,15 +746,19 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
 
     "log only safe connector identity and never a Properties rendering or either password" in {
-      val factory = new FakeEngineFactory(Vector(EnginePlan(Vector(Vector(
-        record("r", None, Some(row(42, "new")), snapshot = true, position = 100L)
-      )))))
-      val source = testSource(factory, () => validMetadata.connection())
-      val logs = mutable.Buffer.empty[String]
+      val factory = new FakeEngineFactory(
+        Vector(
+          EnginePlan(
+            Vector(Vector(
+              record("r", None, Some(row(42, "new")), snapshot = true, position = 100L)
+            )))))
+      val source   = testSource(factory, () => validMetadata.connection())
+      val logs     = mutable.Buffer.empty[String]
       val boundary = Await.result(source.discoverBoundary(cdcNode(), None, logs += _), 2.seconds)
-      val queue = source.createBatches(cdcNode(), "execution-log", boundary, None, logs += _)
+      val queue = source
+        .createBatches(cdcNode(), "execution-log", boundary, None, logs += _)
         .runWith(Sink.queue())
-      val batch = pull(queue)
+      val batch             = pull(queue)
       val propertyRendering = MySQLCdcSourceNode.connectorProperties(sourceConfig, stateConfig).toString
 
       logs.mkString("\n") should include("orders-cdc-v1")
@@ -715,7 +789,7 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
         record("u", Some(row(42, "new")), Some(row(42, "paid")), snapshot = false, position = 200L),
         record("d", Some(row(42, "paid")), None, snapshot = false, position = 220L)
       )
-      val events = sourceRecords.map(changeEvent)
+      val events    = sourceRecords.map(changeEvent)
       val committer = new RecordingCommitter
 
       new DebeziumRecordCommitHandle(events.asJava, committer).markProcessedAndFinished()
@@ -725,7 +799,7 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
 
     "run on one named daemon executor and terminate that thread on bounded close" in {
-      val engine = new BlockingDebeziumEngine
+      val engine     = new BlockingDebeziumEngine
       val properties = new Properties()
       properties.setProperty("name", "orders-cdc-v1")
       val access = new RealDebeziumEngineAccess(properties, (_, _) => engine)
@@ -746,7 +820,7 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
 
     "redact source and state passwords from real Debezium JDBC-store startup failure logs" in {
       val actualSourceSecret = "real-source-secret-internal-log-boundary"
-      val actualStateSecret = "real-state-secret-internal-log-boundary"
+      val actualStateSecret  = "real-state-secret-internal-log-boundary"
       val properties = MySQLCdcSourceNode.connectorProperties(
         sourceConfig.copy(password = actualSourceSecret),
         stateConfig.copy(
@@ -760,15 +834,17 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
       )
       properties.setProperty("topic", "task-6-redaction")
       properties.remove("offset.storage.jdbc.connection.url")
-      val logger = LoggerFactory.getLogger("io.debezium.embedded.async.AsyncEmbeddedEngine")
+      val logger = LoggerFactory
+        .getLogger("io.debezium.embedded.async.AsyncEmbeddedEngine")
         .asInstanceOf[LogbackLogger]
-      val jdbcLogger = LoggerFactory.getLogger("io.debezium.storage.jdbc")
+      val jdbcLogger = LoggerFactory
+        .getLogger("io.debezium.storage.jdbc")
         .asInstanceOf[LogbackLogger]
-      val previousAdditive = logger.isAdditive
+      val previousAdditive     = logger.isAdditive
       val previousJdbcAdditive = jdbcLogger.isAdditive
-      val initialTurboFilters = logger.getLoggerContext.getTurboFilterList.size()
-      val appender = new ListAppender[ILoggingEvent]()
-      val jdbcAppender = new ListAppender[ILoggingEvent]()
+      val initialTurboFilters  = logger.getLoggerContext.getTurboFilterList.size()
+      val appender             = new ListAppender[ILoggingEvent]()
+      val jdbcAppender         = new ListAppender[ILoggingEvent]()
       appender.setContext(logger.getLoggerContext)
       jdbcAppender.setContext(jdbcLogger.getLoggerContext)
       appender.start()
@@ -783,11 +859,13 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
         intercept[IllegalStateException] {
           Await.result(access.start((_, _) => ()), 10.seconds)
         }
-        val rendered = (appender.list.asScala ++ jdbcAppender.list.asScala).map { event =>
-          event.getFormattedMessage + Option(event.getThrowableProxy)
-            .map(proxy => "\n" + ThrowableProxyUtil.asString(proxy))
-            .getOrElse("")
-        }.mkString("\n")
+        val rendered = (appender.list.asScala ++ jdbcAppender.list.asScala)
+          .map { event =>
+            event.getFormattedMessage + Option(event.getThrowableProxy)
+              .map(proxy => "\n" + ThrowableProxyUtil.asString(proxy))
+              .getOrElse("")
+          }
+          .mkString("\n")
 
         rendered should include("jdbc.connection.url")
         rendered should not include actualSourceSecret
@@ -807,17 +885,21 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
 
     "scope secret filtering to Debezium namespaces while ordinary application logs remain visible" in {
-      val applicationLogger = LoggerFactory.getLogger(
-        "cn.xuyinyin.magic.workflow.nodes.sources.SecretBoundaryApplication"
-      ).asInstanceOf[LogbackLogger]
-      val debeziumLogger = LoggerFactory.getLogger(
-        "io.debezium.storage.jdbc.JdbcCommonConfig"
-      ).asInstanceOf[LogbackLogger]
-      val applicationAppender = new ListAppender[ILoggingEvent]()
-      val debeziumAppender = new ListAppender[ILoggingEvent]()
+      val applicationLogger = LoggerFactory
+        .getLogger(
+          "cn.xuyinyin.magic.workflow.nodes.sources.SecretBoundaryApplication"
+        )
+        .asInstanceOf[LogbackLogger]
+      val debeziumLogger = LoggerFactory
+        .getLogger(
+          "io.debezium.storage.jdbc.JdbcCommonConfig"
+        )
+        .asInstanceOf[LogbackLogger]
+      val applicationAppender         = new ListAppender[ILoggingEvent]()
+      val debeziumAppender            = new ListAppender[ILoggingEvent]()
       val previousApplicationAdditive = applicationLogger.isAdditive
-      val previousDebeziumAdditive = debeziumLogger.isAdditive
-      val initialTurboFilters = applicationLogger.getLoggerContext.getTurboFilterList.size()
+      val previousDebeziumAdditive    = debeziumLogger.isAdditive
+      val initialTurboFilters         = applicationLogger.getLoggerContext.getTurboFilterList.size()
       Vector(applicationAppender, debeziumAppender).foreach { appender =>
         appender.setContext(applicationLogger.getLoggerContext)
         appender.start()
@@ -855,18 +937,22 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
 
     "keep concurrent secret filters independent without suppressing ordinary logs" in {
-      val applicationLogger = LoggerFactory.getLogger(
-        "cn.xuyinyin.magic.workflow.nodes.sources.ConcurrentSecretBoundaryApplication"
-      ).asInstanceOf[LogbackLogger]
-      val debeziumLogger = LoggerFactory.getLogger(
-        "io.debezium.embedded.async.AsyncEmbeddedEngine"
-      ).asInstanceOf[LogbackLogger]
-      val applicationAppender = new ListAppender[ILoggingEvent]()
-      val debeziumAppender = new ListAppender[ILoggingEvent]()
+      val applicationLogger = LoggerFactory
+        .getLogger(
+          "cn.xuyinyin.magic.workflow.nodes.sources.ConcurrentSecretBoundaryApplication"
+        )
+        .asInstanceOf[LogbackLogger]
+      val debeziumLogger = LoggerFactory
+        .getLogger(
+          "io.debezium.embedded.async.AsyncEmbeddedEngine"
+        )
+        .asInstanceOf[LogbackLogger]
+      val applicationAppender         = new ListAppender[ILoggingEvent]()
+      val debeziumAppender            = new ListAppender[ILoggingEvent]()
       val previousApplicationAdditive = applicationLogger.isAdditive
-      val previousDebeziumAdditive = debeziumLogger.isAdditive
-      val context = applicationLogger.getLoggerContext
-      val initialTurboFilters = context.getTurboFilterList.size()
+      val previousDebeziumAdditive    = debeziumLogger.isAdditive
+      val context                     = applicationLogger.getLoggerContext
+      val initialTurboFilters         = context.getTurboFilterList.size()
       Vector(applicationAppender, debeziumAppender).foreach { appender =>
         appender.setContext(context)
         appender.start()
@@ -879,9 +965,9 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
       firstProperties.setProperty("database.password", "x")
       val secondProperties = new Properties()
       secondProperties.setProperty("database.password", "q")
-      val firstEngine = new BlockingDebeziumEngine
+      val firstEngine  = new BlockingDebeziumEngine
       val secondEngine = new BlockingDebeziumEngine
-      val firstAccess = new RealDebeziumEngineAccess(firstProperties, (_, _) => firstEngine)
+      val firstAccess  = new RealDebeziumEngineAccess(firstProperties, (_, _) => firstEngine)
       val secondAccess = new RealDebeziumEngineAccess(secondProperties, (_, _) => secondEngine)
 
       try {
@@ -931,7 +1017,7 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     "retry close after the runner leaves the Debezium task-starting state" in {
       val engine = new StartingDebeziumEngine
       val access = new RealDebeziumEngineAccess(new Properties(), (_, _) => engine)
-      val done = access.start((_, _) => ())
+      val done   = access.start((_, _) => ())
       engine.started.await(2, TimeUnit.SECONDS) shouldBe true
 
       access.close()
@@ -944,7 +1030,7 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     "preserve and report a terminal engine close failure" in {
       val engine = new UncloseableDebeziumEngine
       val access = new RealDebeziumEngineAccess(new Properties(), (_, _) => engine)
-      val done = access.start((_, _) => ())
+      val done   = access.start((_, _) => ())
       engine.started.await(2, TimeUnit.SECONDS) shouldBe true
 
       val failure = intercept[IllegalStateException](access.close())
@@ -969,9 +1055,9 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
   }
 
   private def canonical(value: JsValue): String = value match {
-    case JsObject(f) => f.toVector.sortBy(_._1).map { case (k,v) => JsString(k).compactPrint + ":" + canonical(v) }.mkString("{", ",", "}")
-    case JsArray(v) => v.map(canonical).mkString("[", ",", "]")
-    case v => v.compactPrint
+    case JsObject(f) => f.toVector.sortBy(_._1).map { case (k, v) => JsString(k).compactPrint + ":" + canonical(v) }.mkString("{", ",", "}")
+    case JsArray(v)  => v.map(canonical).mkString("[", ",", "]")
+    case v           => v.compactPrint
   }
 
   private def cdcNode(): WorkflowDSL.Node = WorkflowDSL.Node(
@@ -981,23 +1067,22 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     label = "MySQL CDC",
     position = WorkflowDSL.Position(0, 0),
     config = JsObject(
-      "connectorId" -> JsString("orders-cdc-v1"),
-      "host" -> JsString("mysql"),
-      "port" -> JsNumber(3306),
-      "database" -> JsString("pekko_workflow"),
-      "table" -> JsString("source_orders"),
-      "username" -> JsString("pekko_cdc"),
-      "passwordEnv" -> JsString("MYSQL_CDC_PASSWORD"),
-      "serverId" -> JsNumber(54001),
-      "maxBatchSize" -> JsNumber(100),
+      "connectorId"        -> JsString("orders-cdc-v1"),
+      "host"               -> JsString("mysql"),
+      "port"               -> JsNumber(3306),
+      "database"           -> JsString("pekko_workflow"),
+      "table"              -> JsString("source_orders"),
+      "username"           -> JsString("pekko_cdc"),
+      "passwordEnv"        -> JsString("MYSQL_CDC_PASSWORD"),
+      "serverId"           -> JsNumber(54001),
+      "maxBatchSize"       -> JsNumber(100),
       "pollIntervalMillis" -> JsNumber(500)
     )
   )
 
   private def testSource(
-    factory: DebeziumEngineFactory,
-    connection: () => Connection
-  ): MySQLCdcSourceNode = new MySQLCdcSourceNode(factory, () => stateConfig) {
+      factory: DebeziumEngineFactory,
+      connection: () => Connection): MySQLCdcSourceNode = new MySQLCdcSourceNode(factory, () => stateConfig) {
     override protected[source] def getenv(name: String): Option[String] =
       Option.when(name == "MYSQL_CDC_PASSWORD")(sourceSecret)
 
@@ -1030,32 +1115,31 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
   )
 
   private def primaryKey(name: String, sequence: Int): Map[String, Any] = Map(
-    "TABLE_CAT" -> "pekko_workflow",
+    "TABLE_CAT"   -> "pekko_workflow",
     "TABLE_SCHEM" -> null,
-    "TABLE_NAME" -> "source_orders",
+    "TABLE_NAME"  -> "source_orders",
     "COLUMN_NAME" -> name,
-    "KEY_SEQ" -> sequence
+    "KEY_SEQ"     -> sequence
   )
 
   private def column(
-    name: String,
-    jdbcType: Int,
-    typeName: String,
-    nullable: Int,
-    ordinal: Int,
-    size: Int,
-    scale: Int
-  ): Map[String, Any] = Map(
-    "TABLE_CAT" -> "pekko_workflow",
-    "TABLE_SCHEM" -> null,
-    "TABLE_NAME" -> "source_orders",
-    "COLUMN_NAME" -> name,
-    "DATA_TYPE" -> jdbcType,
-    "TYPE_NAME" -> typeName,
-    "NULLABLE" -> nullable,
+      name: String,
+      jdbcType: Int,
+      typeName: String,
+      nullable: Int,
+      ordinal: Int,
+      size: Int,
+      scale: Int): Map[String, Any] = Map(
+    "TABLE_CAT"        -> "pekko_workflow",
+    "TABLE_SCHEM"      -> null,
+    "TABLE_NAME"       -> "source_orders",
+    "COLUMN_NAME"      -> name,
+    "DATA_TYPE"        -> jdbcType,
+    "TYPE_NAME"        -> typeName,
+    "NULLABLE"         -> nullable,
     "ORDINAL_POSITION" -> ordinal,
-    "COLUMN_SIZE" -> size,
-    "DECIMAL_DIGITS" -> scale
+    "COLUMN_SIZE"      -> size,
+    "DECIMAL_DIGITS"   -> scale
   )
 
   private def row(id: Int, status: String): Struct = new Struct(rowSchema)
@@ -1064,12 +1148,11 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     .put("amount", new JBigDecimal("12.30"))
 
   private def record(
-    operation: String,
-    before: Option[Struct],
-    after: Option[Struct],
-    snapshot: Boolean,
-    position: Long
-  ): SourceRecord = {
+      operation: String,
+      before: Option[Struct],
+      after: Option[Struct],
+      snapshot: Boolean,
+      position: Long): SourceRecord = {
     val key = new Struct(keySchema).put("id", 42)
     val source = new Struct(sourceSchema)
       .put("db", "pekko_workflow")
@@ -1087,9 +1170,9 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
       .put("ts_ms", 1788100000000L + position)
     val offset = Map[String, AnyRef](
       "snapshot" -> Boolean.box(snapshot),
-      "file" -> "binlog.000001",
-      "pos" -> Long.box(position),
-      "row" -> Int.box(0)
+      "file"     -> "binlog.000001",
+      "pos"      -> Long.box(position),
+      "row"      -> Int.box(0)
     ).asJava
 
     new SourceRecord(
@@ -1105,7 +1188,7 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
 
   private def parse(json: String): MySQLCdcEnvelope = MySQLCdcEnvelope.parse(json) match {
     case Right(value) => value
-    case Left(error) => fail(s"expected canonical CDC envelope, got ${error.message}")
+    case Left(error)  => fail(s"expected canonical CDC envelope, got ${error.message}")
   }
 
   private def pull(queue: org.apache.pekko.stream.scaladsl.SinkQueueWithCancel[SourceBatch]): SourceBatch =
@@ -1122,26 +1205,24 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
       override def record(): SourceRecord = sourceRecord
     }
 
-  private final class RecordingCommitter
-    extends DebeziumEngine.RecordCommitter[RecordChangeEvent[SourceRecord]] {
+  final private class RecordingCommitter extends DebeziumEngine.RecordCommitter[RecordChangeEvent[SourceRecord]] {
     private val marked = mutable.Buffer.empty[RecordChangeEvent[SourceRecord]]
-    val finished = new AtomicInteger(0)
+    val finished       = new AtomicInteger(0)
 
     def processed: Vector[RecordChangeEvent[SourceRecord]] = marked.toVector
 
     override def markProcessed(record: RecordChangeEvent[SourceRecord]): Unit = marked += record
-    override def markBatchFinished(): Unit = finished.incrementAndGet()
+    override def markBatchFinished(): Unit                                    = finished.incrementAndGet()
     override def markProcessed(
-      record: RecordChangeEvent[SourceRecord],
-      offsets: DebeziumEngine.Offsets
-    ): Unit = marked += record
+        record: RecordChangeEvent[SourceRecord],
+        offsets: DebeziumEngine.Offsets): Unit = marked += record
     override def buildOffsets(): DebeziumEngine.Offsets = null
   }
 
-  private final class BlockingDebeziumEngine extends DebeziumEngine[RecordChangeEvent[SourceRecord]] {
-    val started = new CountDownLatch(1)
-    val thread = new AtomicReference[Thread]()
-    val closeCalls = new AtomicInteger(0)
+  final private class BlockingDebeziumEngine extends DebeziumEngine[RecordChangeEvent[SourceRecord]] {
+    val started         = new CountDownLatch(1)
+    val thread          = new AtomicReference[Thread]()
+    val closeCalls      = new AtomicInteger(0)
     private val release = new CountDownLatch(1)
 
     override def run(): Unit = {
@@ -1157,13 +1238,13 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
   }
 
-  private final class StartingDebeziumEngine extends DebeziumEngine[RecordChangeEvent[SourceRecord]] {
-    val started = new CountDownLatch(1)
-    val thread = new AtomicReference[Thread]()
-    val closeCalls = new AtomicInteger(0)
+  final private class StartingDebeziumEngine extends DebeziumEngine[RecordChangeEvent[SourceRecord]] {
+    val started                   = new CountDownLatch(1)
+    val thread                    = new AtomicReference[Thread]()
+    val closeCalls                = new AtomicInteger(0)
     private val firstCloseAttempt = new CountDownLatch(1)
-    private val stopped = new CountDownLatch(1)
-    private val starting = new AtomicBoolean(true)
+    private val stopped           = new CountDownLatch(1)
+    private val starting          = new AtomicBoolean(true)
 
     override def run(): Unit = {
       thread.set(Thread.currentThread())
@@ -1186,9 +1267,9 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
   }
 
-  private final class UncloseableDebeziumEngine extends DebeziumEngine[RecordChangeEvent[SourceRecord]] {
-    val started = new CountDownLatch(1)
-    val thread = new AtomicReference[Thread]()
+  final private class UncloseableDebeziumEngine extends DebeziumEngine[RecordChangeEvent[SourceRecord]] {
+    val started    = new CountDownLatch(1)
+    val thread     = new AtomicReference[Thread]()
     val closeCalls = new AtomicInteger(0)
 
     override def run(): Unit = {
@@ -1203,32 +1284,30 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
   }
 
-  private final class ReturningDebeziumEngine extends DebeziumEngine[RecordChangeEvent[SourceRecord]] {
-    override def run(): Unit = ()
+  final private class ReturningDebeziumEngine extends DebeziumEngine[RecordChangeEvent[SourceRecord]] {
+    override def run(): Unit   = ()
     override def close(): Unit = ()
   }
 
-  private final class EnginePlan(
-    val batches: Vector[Vector[SourceRecord]],
-    val terminalFailure: Option[Throwable],
-    val completesWithoutClose: Boolean,
-    val onAck: () => Unit
-  )
+  final private class EnginePlan(
+      val batches: Vector[Vector[SourceRecord]],
+      val terminalFailure: Option[Throwable],
+      val completesWithoutClose: Boolean,
+      val onAck: () => Unit)
 
   private object EnginePlan {
     def apply(
-      batches: Vector[Vector[SourceRecord]],
-      terminalFailure: Option[Throwable] = None,
-      completesWithoutClose: Boolean = false,
-      onAck: () => Unit = () => ()
-    ): EnginePlan = new EnginePlan(batches, terminalFailure, completesWithoutClose, onAck)
+        batches: Vector[Vector[SourceRecord]],
+        terminalFailure: Option[Throwable] = None,
+        completesWithoutClose: Boolean = false,
+        onAck: () => Unit = () => ()): EnginePlan = new EnginePlan(batches, terminalFailure, completesWithoutClose, onAck)
   }
 
-  private final class FakeEngineFactory(plans: Vector[EnginePlan]) extends DebeziumEngineFactory {
+  final private class FakeEngineFactory(plans: Vector[EnginePlan]) extends DebeziumEngineFactory {
     private val remaining = mutable.Queue.from(plans)
-    val createCalls = new AtomicInteger(0)
-    val engines = mutable.Buffer.empty[FakeEngine]
-    val properties = mutable.Buffer.empty[Properties]
+    val createCalls       = new AtomicInteger(0)
+    val engines           = mutable.Buffer.empty[FakeEngine]
+    val properties        = mutable.Buffer.empty[Properties]
 
     override def create(actual: Properties): DebeziumEngineAccess = synchronized {
       createCalls.incrementAndGet()
@@ -1242,12 +1321,12 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
   }
 
-  private final class FakeEngine(plan: EnginePlan) extends DebeziumEngineAccess {
-    val handles = new ConcurrentLinkedQueue[FakeCommitHandle]()
-    val closed = new AtomicBoolean(false)
-    val thread = new AtomicReference[Thread]()
+  final private class FakeEngine(plan: EnginePlan) extends DebeziumEngineAccess {
+    val handles             = new ConcurrentLinkedQueue[FakeCommitHandle]()
+    val closed              = new AtomicBoolean(false)
+    val thread              = new AtomicReference[Thread]()
     private val closeSignal = new CountDownLatch(1)
-    private val completion = Promise[Done]()
+    private val completion  = Promise[Done]()
 
     override def start(consumer: DebeziumBatchConsumer): Future[Done] = {
       val worker = new Thread(
@@ -1256,7 +1335,7 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
             thread.set(Thread.currentThread())
             plan.terminalFailure match {
               case Some(error) if plan.batches.isEmpty => throw error
-              case _ => ()
+              case _                                   => ()
             }
             plan.batches.foreach { records =>
               val handle = new FakeCommitHandle(plan.onAck)
@@ -1293,7 +1372,7 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
   }
 
-  private final class FakeCommitHandle(onAck: () => Unit = () => ()) extends CdcBatchCommitHandle {
+  final private class FakeCommitHandle(onAck: () => Unit = () => ()) extends CdcBatchCommitHandle {
     val calls = new AtomicInteger(0)
     override def markProcessedAndFinished(): Unit = {
       calls.incrementAndGet()
@@ -1301,35 +1380,33 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
     }
   }
 
-  private final class MetadataFixture(
-    primaryKeys: Vector[Map[String, Any]],
-    columns: Vector[Map[String, Any]]
-  ) {
+  final private class MetadataFixture(
+      primaryKeys: Vector[Map[String, Any]],
+      columns: Vector[Map[String, Any]]) {
     val closedConnections = new AtomicInteger(0)
 
     def connection(): Connection = {
       val metadata = jdbcProxy[DatabaseMetaData] {
         case ("storesUpperCaseIdentifiers", _) => Boolean.box(false)
         case ("storesLowerCaseIdentifiers", _) => Boolean.box(false)
-        case ("getSearchStringEscape", _) => "\\"
-        case ("getPrimaryKeys", _) => resultSet(primaryKeys)
-        case ("getColumns", _) => resultSet(columns)
+        case ("getSearchStringEscape", _)      => "\\"
+        case ("getPrimaryKeys", _)             => resultSet(primaryKeys)
+        case ("getColumns", _)                 => resultSet(columns)
       }
       jdbcProxy[Connection] {
         case ("getMetaData", _) => metadata
-        case ("getCatalog", _) => "pekko_workflow"
-        case ("getSchema", _) => null
-        case ("close", _) => closedConnections.incrementAndGet(); null
-        case ("isClosed", _) => Boolean.box(closedConnections.get() > 0)
+        case ("getCatalog", _)  => "pekko_workflow"
+        case ("getSchema", _)   => null
+        case ("close", _)       => closedConnections.incrementAndGet(); null
+        case ("isClosed", _)    => Boolean.box(closedConnections.get() > 0)
       }
     }
   }
 
   private object MetadataFixture {
     def apply(
-      primaryKeys: Vector[Map[String, Any]],
-      columns: Vector[Map[String, Any]]
-    ): MetadataFixture = new MetadataFixture(primaryKeys, columns)
+        primaryKeys: Vector[Map[String, Any]],
+        columns: Vector[Map[String, Any]]): MetadataFixture = new MetadataFixture(primaryKeys, columns)
   }
 
   private def resultSet(rows: Vector[Map[String, Any]]): ResultSet = {
@@ -1339,14 +1416,13 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
         index += 1
         Boolean.box(index < rows.size)
       case ("getString", arguments) => Option(rows(index)(arguments.head.toString)).map(_.toString).orNull
-      case ("getInt", arguments) => Int.box(rows(index)(arguments.head.toString).asInstanceOf[Int])
-      case ("close", _) => null
-      case ("wasNull", _) => Boolean.box(false)
+      case ("getInt", arguments)    => Int.box(rows(index)(arguments.head.toString).asInstanceOf[Int])
+      case ("close", _)             => null
+      case ("wasNull", _)           => Boolean.box(false)
     }
   }
 
-  private def jdbcProxy[A](handler: PartialFunction[(String, Vector[AnyRef]), AnyRef])
-    (implicit tag: reflect.ClassTag[A]): A = {
+  private def jdbcProxy[A](handler: PartialFunction[(String, Vector[AnyRef]), AnyRef])(implicit tag: reflect.ClassTag[A]): A = {
     val invocationHandler = new InvocationHandler {
       override def invoke(proxy: Any, method: Method, arguments: Array[AnyRef]): AnyRef = {
         val args = Option(arguments).map(_.toVector).getOrElse(Vector.empty)
@@ -1355,11 +1431,13 @@ class MySQLCdcSourceNodeSpec extends STSpec with OptionValues {
         else defaultValue(method.getReturnType)
       }
     }
-    Proxy.newProxyInstance(
-      tag.runtimeClass.getClassLoader,
-      Array(tag.runtimeClass),
-      invocationHandler
-    ).asInstanceOf[A]
+    Proxy
+      .newProxyInstance(
+        tag.runtimeClass.getClassLoader,
+        Array(tag.runtimeClass),
+        invocationHandler
+      )
+      .asInstanceOf[A]
   }
 
   private def defaultValue(returnType: Class[_]): AnyRef = {

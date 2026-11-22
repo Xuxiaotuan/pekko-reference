@@ -23,14 +23,14 @@ import scala.concurrent.{Await, ExecutionContext}
 class MySQLCdcApplySinkNodeSpec extends STSpec {
   import MySQLCdcApplySinkNodeSpec.SourceColumn
 
-  private implicit val ec: ExecutionContext = ExecutionContext.global
+  implicit private val ec: ExecutionContext = ExecutionContext.global
 
   "MySQLCdcApplyConfig" should {
     "force the MySQL session to the same UTC zone used for instant conversion" in {
       val config = MySQLCdcApplyConfig("mysql", 3306, "target_db", "target_rows", "writer", "secret")
 
       MySQLCdcApplySinkNode.jdbcUrl(config) shouldBe
-        "jdbc:mysql://mysql:3306/target_db?useSSL=false&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&connectTimeout=5000&socketTimeout=30000"
+      "jdbc:mysql://mysql:3306/target_db?useSSL=false&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&connectTimeout=5000&socketTimeout=30000"
     }
 
     "resolve only an environment-backed password" in {
@@ -85,27 +85,27 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
 
   "MySQLCdcApplySinkNode" should {
     "apply and deduplicate a capture-log cursor without changing legacy cursor meaning" in withFixture() { f =>
-      val original=f.groupBatch(Vector(f.event(CdcOperation.Create,1,afterStatus=Some("captured"))),0)
-      val batch=original.copy(cursor=original.cursor.copy(kind="mysql.capture.groups.v1",value="{\"version\":1,\"sequence\":42}"))
-      Await.result(f.node.commitBatch(f.sinkNode,"w","e",batch,batch.rows,_=>()),5.seconds) shouldBe a[Committed]
-      Await.result(f.node.commitBatch(f.sinkNode,"w","e",batch,batch.rows,_=>()),5.seconds) shouldBe a[AlreadyCommitted]
+      val original = f.groupBatch(Vector(f.event(CdcOperation.Create, 1, afterStatus = Some("captured"))), 0)
+      val batch    = original.copy(cursor = original.cursor.copy(kind = "mysql.capture.groups.v1", value = "{\"version\":1,\"sequence\":42}"))
+      Await.result(f.node.commitBatch(f.sinkNode, "w", "e", batch, batch.rows, _ => ()), 5.seconds) shouldBe a[Committed]
+      Await.result(f.node.commitBatch(f.sinkNode, "w", "e", batch, batch.rows, _ => ()), 5.seconds) shouldBe a[AlreadyCommitted]
       f.selectStatus(1) shouldBe Some("captured")
     }
     "classify a lost commit response while preserving the actual committed group" in withFixture() { f =>
-      val batch=f.groupBatch(Vector(f.event(CdcOperation.Create,1,afterStatus=Some("committed"))),0)
-      f.loseCommitReply=true
-      val failure=intercept[cn.xuyinyin.magic.cdc.recovery.CdcExecutionException] {
-        Await.result(f.node.commitBatch(f.sinkNode,"w","e",batch,batch.rows,_=>()),5.seconds)
+      val batch = f.groupBatch(Vector(f.event(CdcOperation.Create, 1, afterStatus = Some("committed"))), 0)
+      f.loseCommitReply = true
+      val failure = intercept[cn.xuyinyin.magic.cdc.recovery.CdcExecutionException] {
+        Await.result(f.node.commitBatch(f.sinkNode, "w", "e", batch, batch.rows, _ => ()), 5.seconds)
       }
       failure.failure.code shouldBe cn.xuyinyin.magic.cdc.recovery.ExecutionFailure.CommitUnknown
       f.selectStatus(1) shouldBe Some("committed")
-      Await.result(f.node.commitBatch(f.sinkNode,"w","e",batch,batch.rows,_=>()),5.seconds) shouldBe a[AlreadyCommitted]
+      Await.result(f.node.commitBatch(f.sinkNode, "w", "e", batch, batch.rows, _ => ()), 5.seconds) shouldBe a[AlreadyCommitted]
     }
     "reject a group ledger without its unique primary key before applying data" in withFixture() { f =>
       f.dropGroupPrimaryKey()
-      val batch=f.groupBatch(Vector(f.event(CdcOperation.Create,1,afterStatus=Some("blocked"))),0)
+      val batch = f.groupBatch(Vector(f.event(CdcOperation.Create, 1, afterStatus = Some("blocked"))), 0)
       intercept[IllegalStateException] {
-        Await.result(f.node.commitBatch(f.sinkNode,"w","e",batch,batch.rows,_=>()),5.seconds)
+        Await.result(f.node.commitBatch(f.sinkNode, "w", "e", batch, batch.rows, _ => ()), 5.seconds)
       }.getMessage should include("group_id")
       f.selectStatus(1) shouldBe None
     }
@@ -117,26 +117,30 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       val batch = f.groupBatch(events, 0)
       Await.result(f.node.commitBatch(f.sinkNode, "workflow-cdc", "execution-cdc", batch, batch.rows, _ => ()), 5.seconds) shouldBe a[Committed]
       val prepared = f.preparedStatements.iterator().asScala.toVector
-      val data = prepared.filter { case (sql, _) => sql.startsWith("INSERT INTO \"target_rows\"") }
+      val data     = prepared.filter { case (sql, _) => sql.startsWith("INSERT INTO \"target_rows\"") }
       data.size shouldBe 1
-      info(s"CDC_STATEMENT_REUSE_OBSERVED events=${events.size} targetPrepares=${data.size} groupSelectPrepares=${prepared.count(_._1.startsWith("SELECT evidence"))} groupInsertPrepares=${prepared.count(_._1.startsWith("INSERT INTO pekko_sync_cdc_group_ledger("))}")
+      info(s"CDC_STATEMENT_REUSE_OBSERVED events=${events.size} targetPrepares=${data.size} groupSelectPrepares=${prepared.count(
+          _._1.startsWith("SELECT evidence"))} groupInsertPrepares=${prepared.count(_._1.startsWith("INSERT INTO pekko_sync_cdc_group_ledger("))}")
       prepared.count(_._1 == "SELECT evidence FROM pekko_sync_cdc_group_ledger WHERE group_id = ? FOR UPDATE") shouldBe 1
       prepared.count(_._1.startsWith("INSERT INTO pekko_sync_cdc_group_ledger(")) shouldBe 1
       prepared.foreach { case (_, statement) => statement.isClosed shouldBe true }
       events.indices.foreach(i => f.selectStatus(i + 1L) shouldBe Some(s"row-${i + 1L}"))
       f.preparedStatements.clear()
-      Await.result(f.node.commitBatch(f.sinkNode, "workflow-cdc", "execution-cdc", batch, batch.rows, _ => ()), 5.seconds) shouldBe a[AlreadyCommitted]
+      Await
+        .result(f.node.commitBatch(f.sinkNode, "workflow-cdc", "execution-cdc", batch, batch.rows, _ => ()), 5.seconds) shouldBe a[AlreadyCommitted]
       f.preparedStatements.iterator().asScala.toVector.count(_._1.startsWith("INSERT INTO")) shouldBe 0
     }
 
     "deduplicate complete groups after splitting and merging deliveries using current checkpoint metadata" in withFixture() { f =>
       val first = f.event(CdcOperation.Create, 1, afterStatus = Some("old"))
-      val b = f.event(CdcOperation.Update, 1, beforeStatus = Some("old"), afterStatus = Some("new"))
+      val b = f
+        .event(CdcOperation.Update, 1, beforeStatus = Some("old"), afterStatus = Some("new"))
         .copy(source = first.source.copy(position = Some(200)))
-      val c = f.event(CdcOperation.Create, 2, afterStatus = Some("tail"))
+      val c = f
+        .event(CdcOperation.Create, 2, afterStatus = Some("tail"))
         .copy(source = first.source.copy(position = Some(300)))
-      def commit(batch: SourceBatch) = Await.result(f.node.commitBatch(f.sinkNode, "workflow-cdc", "execution-cdc",
-        batch, batch.rows, _ => ()), 5.seconds)
+      def commit(batch: SourceBatch) =
+        Await.result(f.node.commitBatch(f.sinkNode, "workflow-cdc", "execution-cdc", batch, batch.rows, _ => ()), 5.seconds)
       commit(f.groupBatch(Vector(first, b), 0)) shouldBe a[Committed]
       val replay = f.groupBatch(Vector(first), 1)
       commit(replay).asInstanceOf[AlreadyCommitted].checkpoint.batchSequence shouldBe 1
@@ -146,7 +150,8 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       f.selectStatus(1) shouldBe Some("new")
       f.selectStatus(2) shouldBe Some("tail")
       val conflict = first.copy(after = Some(f.image(1, "corrupt")))
-      val fresh = f.event(CdcOperation.Create, 3, afterStatus = Some("rollback-me"))
+      val fresh = f
+        .event(CdcOperation.Create, 3, afterStatus = Some("rollback-me"))
         .copy(source = first.source.copy(position = Some(400)))
       intercept[IllegalStateException](commit(f.groupBatch(Vector(fresh, conflict), 3))).getMessage should include("conflict")
       f.selectStatus(3) shouldBe None
@@ -161,13 +166,12 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       val d = f.event(CdcOperation.Delete, 1, beforeStatus = Some("old"))
       def pair(status: String): SourceBatch = {
         val batch = f.groupBatch(Vector(d), 0)
-        val id = batch.rows.head.parseJson.asJsObject.fields("groupId").asInstanceOf[JsString].value
-        val c = f.event(CdcOperation.Create, 2, afterStatus = Some(status))
-        batch.copy(rows = Vector(cn.xuyinyin.magic.cdc.MySQLCdcGroup(id,
-          Vector("pk.d" -> d, "pk.c" -> c)).canonicalJson))
+        val id    = batch.rows.head.parseJson.asJsObject.fields("groupId").asInstanceOf[JsString].value
+        val c     = f.event(CdcOperation.Create, 2, afterStatus = Some(status))
+        batch.copy(rows = Vector(cn.xuyinyin.magic.cdc.MySQLCdcGroup(id, Vector("pk.d" -> d, "pk.c" -> c)).canonicalJson))
       }
-      def commit(batch: SourceBatch) = Await.result(f.node.commitBatch(f.sinkNode, "workflow-cdc", "execution-cdc",
-        batch, batch.rows, _ => ()), 5.seconds)
+      def commit(batch: SourceBatch) =
+        Await.result(f.node.commitBatch(f.sinkNode, "workflow-cdc", "execution-cdc", batch, batch.rows, _ => ()), 5.seconds)
       intercept[IllegalStateException](commit(pair("invalid")))
       f.preparedStatements.iterator().asScala.foreach { case (_, statement) => statement.isClosed shouldBe true }
       f.selectStatus(1) shouldBe Some("old")
@@ -249,22 +253,26 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
 
     "reject a source primary key name mismatch before batches are requested" in withFixture() { fixture =>
       val failure = intercept[IllegalStateException] {
-        Await.result(fixture.node.validateSourceBoundary(
-          fixture.sinkNode,
-          fixture.boundary(primaryKey = "source_id"),
-          _ => ()
-        ), 5.seconds)
+        Await.result(
+          fixture.node.validateSourceBoundary(
+            fixture.sinkNode,
+            fixture.boundary(primaryKey = "source_id"),
+            _ => ()
+          ),
+          5.seconds)
       }
       failure.getMessage should include("primary key")
     }
 
     "reject a source column missing from the target before batches are requested" in withFixture() { fixture =>
       val failure = intercept[IllegalStateException] {
-        Await.result(fixture.node.validateSourceBoundary(
-          fixture.sinkNode,
-          fixture.boundary(columns = sourceColumns :+ SourceColumn("missing_column", Types.VARCHAR, "VARCHAR", 1, 7, 255, 0)),
-          _ => ()
-        ), 5.seconds)
+        Await.result(
+          fixture.node.validateSourceBoundary(
+            fixture.sinkNode,
+            fixture.boundary(columns = sourceColumns :+ SourceColumn("missing_column", Types.VARCHAR, "VARCHAR", 1, 7, 255, 0)),
+            _ => ()
+          ),
+          5.seconds)
       }
       failure.getMessage should include("missing_column")
     }
@@ -289,19 +297,20 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       val original = fixture.boundary()
       Await.result(fixture.node.validateSourceBoundary(fixture.sinkNode, original, _ => ()), 5.seconds) shouldBe Done
 
-      val changed = original.copy(upperBound = original.upperBound.map(value => canonicalJson(JsObject(
-        value.parseJson.asJsObject.fields.updated("schemaFingerprint", JsString("f" * 64))
-      ))))
+      val changed = original.copy(upperBound = original.upperBound.map(value =>
+        canonicalJson(
+          JsObject(
+            value.parseJson.asJsObject.fields.updated("schemaFingerprint", JsString("f" * 64))
+          ))))
       Await.result(fixture.node.validateSourceBoundary(fixture.sinkNode, changed, _ => ()), 5.seconds) shouldBe Done
     }
 
     "reject lossy and unsupported source-to-target type mappings during boundary validation" in {
       val cases = Vector(
-        compatibleTarget.replace("run_id VARCHAR(40)", "run_id BIGINT") -> sourceColumns -> "run_id",
+        compatibleTarget.replace("run_id VARCHAR(40)", "run_id BIGINT")   -> sourceColumns -> "run_id",
         compatibleTarget.replace("amount DECIMAL(18,2)", "amount DOUBLE") -> sourceColumns -> "amount",
-        compatibleTarget -> sourceColumns.map(column =>
-          if (column.name == "note") column.copy(jdbcType = Types.BLOB, typeName = "BLOB") else column
-        ) -> "unsupported source"
+        compatibleTarget                                                                                -> sourceColumns.map(column =>
+          if (column.name == "note") column.copy(jdbcType = Types.BLOB, typeName = "BLOB") else column) -> "unsupported source"
       )
       cases.foreach { case ((ddl, columns), clue) =>
         withFixture(targetDdl = ddl) { fixture =>
@@ -316,9 +325,7 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
     "accept a Debezium TEXT source against MySQL TEXT target metadata" in withFixture(
       targetDdl = compatibleTarget.replace("note VARCHAR(255) NULL", "note TEXT NULL")
     ) { fixture =>
-      val columns = sourceColumns.map(column =>
-        if (column.name == "note") column.copy(jdbcType = Types.VARCHAR, typeName = "TEXT") else column
-      )
+      val columns = sourceColumns.map(column => if (column.name == "note") column.copy(jdbcType = Types.VARCHAR, typeName = "TEXT") else column)
       Await.result(
         fixture.node.validateSourceBoundary(fixture.sinkNode, fixture.boundary(columns = columns), _ => ()),
         5.seconds
@@ -327,14 +334,12 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
 
     "reject every unsigned integral source type during boundary validation" in withFixture() { fixture =>
       Vector(
-        Types.TINYINT -> "TINYINT UNSIGNED",
+        Types.TINYINT  -> "TINYINT UNSIGNED",
         Types.SMALLINT -> "SMALLINT UNSIGNED",
-        Types.INTEGER -> "INT UNSIGNED",
-        Types.BIGINT -> "BIGINT UNSIGNED"
+        Types.INTEGER  -> "INT UNSIGNED",
+        Types.BIGINT   -> "BIGINT UNSIGNED"
       ).foreach { case (jdbcType, typeName) =>
-        val columns = sourceColumns.map(column =>
-          if (column.name == "id") column.copy(jdbcType = jdbcType, typeName = typeName) else column
-        )
+        val columns = sourceColumns.map(column => if (column.name == "id") column.copy(jdbcType = jdbcType, typeName = typeName) else column)
         val failure = intercept[IllegalStateException] {
           Await.result(fixture.node.validateSourceBoundary(fixture.sinkNode, fixture.boundary(columns = columns), _ => ()), 5.seconds)
         }
@@ -349,9 +354,8 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       ).foreach { case (targetTypeName, ddlType, sourceJdbcType, sourceTypeName) =>
         val ddl = compatibleTarget.replace("id BIGINT PRIMARY KEY", s"id $ddlType PRIMARY KEY")
         withFixture(targetDdl = ddl, targetTypeOverrides = Map("id" -> targetTypeName)) { fixture =>
-          val columns = sourceColumns.map(column =>
-            if (column.name == "id") column.copy(jdbcType = sourceJdbcType, typeName = sourceTypeName) else column
-          )
+          val columns =
+            sourceColumns.map(column => if (column.name == "id") column.copy(jdbcType = sourceJdbcType, typeName = sourceTypeName) else column)
           val failure = intercept[IllegalStateException] {
             Await.result(
               fixture.node.validateSourceBoundary(fixture.sinkNode, fixture.boundary(columns = columns), _ => ()),
@@ -364,9 +368,7 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
     }
 
     "allow a signed integral source to widen without loss" in withFixture() { fixture =>
-      val columns = sourceColumns.map(column =>
-        if (column.name == "id") column.copy(jdbcType = Types.INTEGER, typeName = "INT") else column
-      )
+      val columns = sourceColumns.map(column => if (column.name == "id") column.copy(jdbcType = Types.INTEGER, typeName = "INT") else column)
       Await.result(
         fixture.node.validateSourceBoundary(fixture.sinkNode, fixture.boundary(columns = columns), _ => ()),
         5.seconds
@@ -375,11 +377,13 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
 
     "reject a boundary partition that names a different connector" in withFixture() { fixture =>
       val failure = intercept[IllegalStateException] {
-        Await.result(fixture.node.validateSourceBoundary(
-          fixture.sinkNode,
-          fixture.boundary().copy(partitionId = "mysql-cdc:other-connector"),
-          _ => ()
-        ), 5.seconds)
+        Await.result(
+          fixture.node.validateSourceBoundary(
+            fixture.sinkNode,
+            fixture.boundary().copy(partitionId = "mysql-cdc:other-connector"),
+            _ => ()
+          ),
+          5.seconds)
       }
       failure.getMessage should include("connector")
     }
@@ -409,7 +413,7 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
 
     "return AlreadyCommitted for an exact replay without reapplying target mutations" in withFixture() { fixture =>
       val events = Vector(fixture.event(CdcOperation.Create, 1L, afterStatus = Some("new")))
-      val batch = fixture.batch(events)
+      val batch  = fixture.batch(events)
       val first = Await.result(
         fixture.node.commitBatch(fixture.sinkNode, "workflow-cdc", "execution-cdc", batch, events.map(_.canonicalJson), _ => ()),
         5.seconds
@@ -428,7 +432,7 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
 
     "reject a conflicting ledger identity" in withFixture() { fixture =>
       val events = Vector(fixture.event(CdcOperation.Create, 1L, afterStatus = Some("new")))
-      val batch = fixture.batch(events)
+      val batch  = fixture.batch(events)
       fixture.insertConflictingLedger(batch.batchId)
 
       intercept[IllegalStateException] {
@@ -442,7 +446,7 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
 
     "treat deleting an absent row as a successful ordered event" in withFixture() { fixture =>
       val events = Vector(fixture.event(CdcOperation.Delete, 999L, beforeStatus = Some("gone")))
-      val batch = fixture.batch(events)
+      val batch  = fixture.batch(events)
 
       Await.result(
         fixture.node.commitBatch(fixture.sinkNode, "workflow-cdc", "execution-cdc", batch, events.map(_.canonicalJson), _ => ()),
@@ -484,8 +488,8 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
     }
 
     "parse and validate every transformed envelope before claiming the ledger" in withFixture() { fixture =>
-      val event = fixture.event(CdcOperation.Create, 1L, afterStatus = Some("new"))
-      val batch = fixture.batch(Vector(event))
+      val event     = fixture.event(CdcOperation.Create, 1L, afterStatus = Some("new"))
+      val batch     = fixture.batch(Vector(event))
       val malformed = Vector("{not-json")
 
       intercept[IllegalStateException] {
@@ -545,9 +549,9 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
 
     "reject a single update that changes its primary key before claiming the ledger" in withFixture() { fixture =>
       val before = fixture.image(1L, "old")
-      val after = fixture.image(2L, "new")
-      val event = fixture.envelope(CdcOperation.Update, 2L, Some(before), Some(after))
-      val batch = fixture.batch(Vector(event))
+      val after  = fixture.image(2L, "new")
+      val event  = fixture.envelope(CdcOperation.Update, 2L, Some(before), Some(after))
+      val batch  = fixture.batch(Vector(event))
 
       intercept[IllegalStateException] {
         Await.result(
@@ -580,9 +584,9 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       targetDdl = compatibleTarget.dropRight(1) + ", event_time TIME(6) NOT NULL)"
     ) { fixture =>
       val columns = sourceColumns :+ SourceColumn("event_time", Types.TIME, "TIME", 0, 7, 15, 6)
-      val after = JsObject(fixture.image(1L, "new").fields.updated("event_time", JsString("12:34:56.123456")))
-      val event = fixture.envelope(CdcOperation.Create, 1L, None, Some(after))
-      val batch = fixture.batch(Vector(event), columns = columns)
+      val after   = JsObject(fixture.image(1L, "new").fields.updated("event_time", JsString("12:34:56.123456")))
+      val event   = fixture.envelope(CdcOperation.Create, 1L, None, Some(after))
+      val batch   = fixture.batch(Vector(event), columns = columns)
 
       Await.result(
         fixture.node.commitBatch(fixture.sinkNode, "workflow-cdc", "execution-cdc", batch, Vector(event.canonicalJson), _ => ()),
@@ -595,9 +599,9 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       targetDdl = compatibleTarget.dropRight(1) + ", event_time TIME(6) NOT NULL)"
     ) { fixture =>
       val columns = sourceColumns :+ SourceColumn("event_time", Types.TIME, "TIME", 0, 7, 15, 6)
-      val after = JsObject(fixture.image(1L, "new").fields.updated("event_time", JsString("12:34:56.1234567")))
-      val event = fixture.envelope(CdcOperation.Create, 1L, None, Some(after))
-      val batch = fixture.batch(Vector(event), columns = columns)
+      val after   = JsObject(fixture.image(1L, "new").fields.updated("event_time", JsString("12:34:56.1234567")))
+      val event   = fixture.envelope(CdcOperation.Create, 1L, None, Some(after))
+      val batch   = fixture.batch(Vector(event), columns = columns)
 
       intercept[IllegalStateException] {
         Await.result(
@@ -617,9 +621,9 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       cases.foreach { case (name, ddlType, jdbcType, value) =>
         withFixture(targetDdl = compatibleTarget.dropRight(1) + s", $name $ddlType NOT NULL)") { fixture =>
           val columns = sourceColumns :+ SourceColumn(name, jdbcType, ddlType, 0, 7, 32, 0)
-          val after = JsObject(fixture.image(1L, "new").fields.updated(name, value))
-          val event = fixture.envelope(CdcOperation.Create, 1L, None, Some(after))
-          val batch = fixture.batch(Vector(event), columns = columns)
+          val after   = JsObject(fixture.image(1L, "new").fields.updated(name, value))
+          val event   = fixture.envelope(CdcOperation.Create, 1L, None, Some(after))
+          val batch   = fixture.batch(Vector(event), columns = columns)
 
           val failure = intercept[IllegalStateException] {
             Await.result(
@@ -636,19 +640,20 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
     "resolve two simultaneous claims as one commit and one exact replay" in {
       val barrier = new CyclicBarrier(2)
       withFixture(claimHook = _ => barrier.await(5, TimeUnit.SECONDS)) { fixture =>
-        val event = fixture.event(CdcOperation.Create, 1L, afterStatus = Some("new"))
-        val batch = fixture.batch(Vector(event))
-        val pool = Executors.newFixedThreadPool(2)
+        val event                                   = fixture.event(CdcOperation.Create, 1L, afterStatus = Some("new"))
+        val batch                                   = fixture.batch(Vector(event))
+        val pool                                    = Executors.newFixedThreadPool(2)
         implicit val concurrentEc: ExecutionContext = ExecutionContext.fromExecutorService(pool)
         try {
-          val commits = Vector.fill(2)(fixture.node.commitBatch(
-            fixture.sinkNode,
-            "workflow-cdc",
-            "execution-cdc",
-            batch,
-            Vector(event.canonicalJson),
-            _ => ()
-          )(concurrentEc))
+          val commits = Vector.fill(2)(
+            fixture.node.commitBatch(
+              fixture.sinkNode,
+              "workflow-cdc",
+              "execution-cdc",
+              batch,
+              Vector(event.canonicalJson),
+              _ => ()
+            )(concurrentEc))
           val results = commits.map(commit => Await.result(commit, 10.seconds))
 
           results.count(_.isInstanceOf[Committed]) shouldBe 1
@@ -689,35 +694,36 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
   }.getMessage
 
   private def withFixture(
-    targetDdl: String = compatibleTarget,
-    claimHook: String => Unit = _ => (),
-    targetTypeOverrides: Map[String, String] = Map.empty
-  )(test: Fixture => Unit): Unit = {
+      targetDdl: String = compatibleTarget,
+      claimHook: String => Unit = _ => (),
+      targetTypeOverrides: Map[String, String] = Map.empty
+    )(test: Fixture => Unit): Unit = {
     val fixture = new Fixture(targetDdl, claimHook, targetTypeOverrides)
-    try test(fixture) finally fixture.close()
+    try test(fixture)
+    finally fixture.close()
   }
 
   private def sinkNode(
-    host: String = "localhost",
-    port: Int = 3306,
-    database: String = "target_db",
-    table: String = "target_rows",
-    username: String = "target_user",
-    passwordEnv: Option[String] = Some("TARGET_PASSWORD"),
-    extra: Map[String, JsValue] = Map.empty
-  ): WorkflowDSL.Node = WorkflowDSL.Node(
+      host: String = "localhost",
+      port: Int = 3306,
+      database: String = "target_db",
+      table: String = "target_rows",
+      username: String = "target_user",
+      passwordEnv: Option[String] = Some("TARGET_PASSWORD"),
+      extra: Map[String, JsValue] = Map.empty): WorkflowDSL.Node = WorkflowDSL.Node(
     id = "sink-cdc",
     `type` = "sink",
     nodeType = "mysql.cdc.apply",
     label = "CDC apply",
     position = WorkflowDSL.Position(0, 0),
-    config = JsObject(Map(
-      "host" -> JsString(host),
-      "port" -> JsNumber(port),
-      "database" -> JsString(database),
-      "table" -> JsString(table),
-      "username" -> JsString(username)
-    ) ++ passwordEnv.map(value => "passwordEnv" -> JsString(value)) ++ extra)
+    config = JsObject(
+      Map(
+        "host"     -> JsString(host),
+        "port"     -> JsNumber(port),
+        "database" -> JsString(database),
+        "table"    -> JsString(table),
+        "username" -> JsString(username)
+      ) ++ passwordEnv.map(value => "passwordEnv" -> JsString(value)) ++ extra)
   )
 
   private val compatibleTarget =
@@ -739,13 +745,12 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
     SourceColumn("updated_at", Types.TIMESTAMP, "TIMESTAMP", 0, 6, 26, 6)
   )
 
-  private final class Fixture(
-    targetDdl: String,
-    claimHook: String => Unit,
-    targetTypeOverrides: Map[String, String]
-  ) {
+  final private class Fixture(
+      targetDdl: String,
+      claimHook: String => Unit,
+      targetTypeOverrides: Map[String, String]) {
     private val databaseName = s"target_${UUID.randomUUID().toString.replace('-', '_')}"
-    private val url = s"jdbc:h2:mem:$databaseName;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
+    private val url          = s"jdbc:h2:mem:$databaseName;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
     Class.forName("org.h2.Driver")
     private val keeper = DriverManager.getConnection(url, "sa", "")
 
@@ -753,10 +758,12 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       database = databaseName,
       username = "sa"
     )
-    val preparedStatements = new ConcurrentLinkedQueue[(String, PreparedStatement)]()
+    val preparedStatements        = new ConcurrentLinkedQueue[(String, PreparedStatement)]()
     @volatile var loseCommitReply = false
     def dropGroupPrimaryKey(): Unit = {
-      val s=keeper.createStatement();try s.execute("ALTER TABLE pekko_sync_cdc_group_ledger DROP PRIMARY KEY") finally s.close()
+      val s = keeper.createStatement();
+      try s.execute("ALTER TABLE pekko_sync_cdc_group_ledger DROP PRIMARY KEY")
+      finally s.close()
     }
     val node: MySQLCdcApplySinkNode = new MySQLCdcApplySinkNode {
       override protected[sink] def getenv(name: String): Option[String] =
@@ -764,18 +771,24 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
 
       override protected[sink] def openConnection(config: MySQLCdcApplyConfig): Connection = {
         val actual = DriverManager.getConnection(url, "sa", "")
-        Proxy.newProxyInstance(getClass.getClassLoader, Array(classOf[Connection]), new InvocationHandler {
-          override def invoke(proxy: Any, method: Method, args: Array[AnyRef]): AnyRef = {
-            val result = try method.invoke(actual, Option(args).getOrElse(Array.empty[AnyRef]): _*)
-            catch { case e: InvocationTargetException => throw e.getCause }
-            if (method.getName == "commit" && loseCommitReply) {
-              loseCommitReply=false
-              throw new java.sql.SQLRecoverableException("lost commit response","08S01")
-            }
-            if (method.getName == "prepareStatement") preparedStatements.add(args(0).toString -> result.asInstanceOf[PreparedStatement])
-            result
-          }
-        }).asInstanceOf[Connection]
+        Proxy
+          .newProxyInstance(
+            getClass.getClassLoader,
+            Array(classOf[Connection]),
+            new InvocationHandler {
+              override def invoke(proxy: Any, method: Method, args: Array[AnyRef]): AnyRef = {
+                val result =
+                  try method.invoke(actual, Option(args).getOrElse(Array.empty[AnyRef]): _*)
+                  catch { case e: InvocationTargetException => throw e.getCause }
+                if (method.getName == "commit" && loseCommitReply) {
+                  loseCommitReply = false
+                  throw new java.sql.SQLRecoverableException("lost commit response", "08S01")
+                }
+                if (method.getName == "prepareStatement") preparedStatements.add(args(0).toString -> result.asInstanceOf[PreparedStatement])
+                result
+              }
+            })
+          .asInstanceOf[Connection]
       }
 
       override protected[sink] def beforeLedgerClaim(batchId: String): Unit = claimHook(batchId)
@@ -787,20 +800,18 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
     initialize(targetDdl)
 
     def boundary(
-      primaryKey: String = "id",
-      columns: Vector[SourceColumn] = sourceColumns
-    ): SnapshotBoundary = SnapshotBoundary(
+        primaryKey: String = "id",
+        columns: Vector[SourceColumn] = sourceColumns): SnapshotBoundary = SnapshotBoundary(
       sourceNodeId = "source-cdc",
       partitionId = "mysql-cdc:orders-cdc-v1",
       upperBound = Some(streamIdentity(primaryKey, columns))
     )
 
     def event(
-      op: CdcOperation,
-      id: Long,
-      beforeStatus: Option[String] = None,
-      afterStatus: Option[String] = None
-    ): MySQLCdcEnvelope = envelope(
+        op: CdcOperation,
+        id: Long,
+        beforeStatus: Option[String] = None,
+        afterStatus: Option[String] = None): MySQLCdcEnvelope = envelope(
       op,
       id,
       beforeStatus.map(image(id, _)),
@@ -808,11 +819,10 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
     )
 
     def envelope(
-      op: CdcOperation,
-      keyId: Long,
-      before: Option[JsObject],
-      after: Option[JsObject]
-    ): MySQLCdcEnvelope = MySQLCdcEnvelope(
+        op: CdcOperation,
+        keyId: Long,
+        before: Option[JsObject],
+        after: Option[JsObject]): MySQLCdcEnvelope = MySQLCdcEnvelope(
       version = 1,
       op = op,
       key = JsObject("id" -> JsNumber(keyId)),
@@ -831,19 +841,18 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
     )
 
     def image(id: Long, status: String): JsObject = JsObject(
-      "id" -> JsNumber(id),
-      "run_id" -> JsString("run-1"),
-      "status" -> JsString(status),
-      "amount" -> JsString("12.30"),
-      "note" -> JsNull,
+      "id"         -> JsNumber(id),
+      "run_id"     -> JsString("run-1"),
+      "status"     -> JsString(status),
+      "amount"     -> JsString("12.30"),
+      "note"       -> JsNull,
       "updated_at" -> JsString("2026-08-30T00:00:00Z")
     )
 
     def batch(
-      events: Vector[MySQLCdcEnvelope],
-      primaryKey: String = "id",
-      columns: Vector[SourceColumn] = sourceColumns
-    ): SourceBatch = {
+        events: Vector[MySQLCdcEnvelope],
+        primaryKey: String = "id",
+        columns: Vector[SourceColumn] = sourceColumns): SourceBatch = {
       val sequence = 0L
       SourceBatch(
         sourceNodeId = "source-cdc",
@@ -856,24 +865,33 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
     }
 
     def groupBatch(events: Vector[MySQLCdcEnvelope], sequence: Long): SourceBatch = {
-      val protocol = JsObject("version" -> JsNumber(1), "replicationId" -> JsString("orders"),
-        "generation" -> JsString("g1"), "sourceLineage" -> JsString("fixed-server-uuid"))
-      val identity = canonicalJson(JsObject(boundary().upperBound.get.parseJson.asJsObject.fields ++ Map(
-        "version" -> JsNumber(2), "groupProtocol" -> protocol)))
+      val protocol = JsObject(
+        "version"       -> JsNumber(1),
+        "replicationId" -> JsString("orders"),
+        "generation"    -> JsString("g1"),
+        "sourceLineage" -> JsString("fixed-server-uuid"))
+      val identity = canonicalJson(
+        JsObject(boundary().upperBound.get.parseJson.asJsObject.fields ++ Map("version" -> JsNumber(2), "groupProtocol" -> protocol)))
       val rows = events.map { e =>
-        val physical = JsArray(Vector(protocol, JsString(e.source.database), JsString(e.source.table),
-          JsString(e.source.file.get), JsNumber(e.source.position.get), JsNumber(e.source.row.get)))
-        val id = sha256(canonicalJson(physical))
-        val role = "single." + e.op.code
+        val physical = JsArray(
+          Vector(
+            protocol,
+            JsString(e.source.database),
+            JsString(e.source.table),
+            JsString(e.source.file.get),
+            JsNumber(e.source.position.get),
+            JsNumber(e.source.row.get)))
+        val id      = sha256(canonicalJson(physical))
+        val role    = "single." + e.op.code
         val eventId = sha256(canonicalJson(JsArray(Vector(JsString(id), JsString(role)))))
-        val member = JsObject("eventId" -> JsString(eventId),
-          "role" -> JsString(role), "envelope" -> e.canonicalJson.parseJson)
-        canonicalJson(JsObject("version" -> JsNumber(1), "groupId" -> JsString(id),
-          "members" -> JsArray(Vector(member))))
+        val member  = JsObject("eventId" -> JsString(eventId), "role" -> JsString(role), "envelope" -> e.canonicalJson.parseJson)
+        canonicalJson(JsObject("version" -> JsNumber(1), "groupId" -> JsString(id), "members" -> JsArray(Vector(member))))
       }
-      batch(Vector.empty).copy(batchSequence = sequence,
+      batch(Vector.empty).copy(
+        batchSequence = sequence,
         batchId = BatchId.sha256("execution-cdc", "source-cdc", "mysql-cdc:orders-cdc-v1", sequence),
-        cursor = SourceCursor("mysql.binlog.groups.v1", "{\"version\":1}", identity), rows = rows)
+        cursor = SourceCursor("mysql.binlog.groups.v1", "{\"version\":1}", identity),
+        rows = rows)
     }
 
     def targetCount: Int = count("target_rows")
@@ -888,7 +906,8 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       try {
         statement.setLong(1, id)
         val result = statement.executeQuery()
-        try Option.when(result.next())(result.getString(1)) finally result.close()
+        try Option.when(result.next())(result.getString(1))
+        finally result.close()
       } finally statement.close()
     }
 
@@ -942,15 +961,17 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
     def close(): Unit = {
       keeper.close()
       val cleanup = DriverManager.getConnection(url, "sa", "")
-      try cleanup.createStatement().execute("DROP ALL OBJECTS") finally cleanup.close()
+      try cleanup.createStatement().execute("DROP ALL OBJECTS")
+      finally cleanup.close()
     }
 
     private def initialize(targetDdl: String): Unit = {
       val statement = keeper.createStatement()
       try {
         statement.execute(targetDdl)
-        statement.execute("CREATE TABLE pekko_sync_cdc_group_ledger (group_id VARCHAR(64) PRIMARY KEY, " +
-          "evidence CHARACTER LARGE OBJECT NOT NULL, committed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+        statement.execute(
+          "CREATE TABLE pekko_sync_cdc_group_ledger (group_id VARCHAR(64) PRIMARY KEY, " +
+            "evidence CHARACTER LARGE OBJECT NOT NULL, committed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
         statement.execute(
           """CREATE TABLE pekko_sync_batch_ledger (
             | batch_id VARCHAR(64) PRIMARY KEY,
@@ -974,37 +995,43 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
 
     private def streamIdentity(primaryKey: String, columns: Vector[SourceColumn]): String = {
       val schema = JsObject(
-        "version" -> JsNumber(1),
+        "version"    -> JsNumber(1),
         "primaryKey" -> JsString(primaryKey),
-        "columns" -> JsArray(columns.map(column => JsObject(
-          "name" -> JsString(column.name),
-          "jdbcType" -> JsNumber(column.jdbcType),
-          "typeName" -> JsString(column.typeName),
-          "nullable" -> JsNumber(column.nullable),
-          "ordinal" -> JsNumber(column.ordinal),
-          "size" -> JsNumber(column.size),
-          "scale" -> JsNumber(column.scale)
-        )))
+        "columns" -> JsArray(
+          columns.map(column =>
+            JsObject(
+              "name"     -> JsString(column.name),
+              "jdbcType" -> JsNumber(column.jdbcType),
+              "typeName" -> JsString(column.typeName),
+              "nullable" -> JsNumber(column.nullable),
+              "ordinal"  -> JsNumber(column.ordinal),
+              "size"     -> JsNumber(column.size),
+              "scale"    -> JsNumber(column.scale)
+            )))
       )
       val fingerprint = sha256(canonicalJson(schema))
-      canonicalJson(JsObject(
-        "version" -> JsNumber(1),
-        "connectorId" -> JsString("orders-cdc-v1"),
-        "database" -> JsString("source_db"),
-        "table" -> JsString("source_orders"),
-        "primaryKey" -> JsString(primaryKey),
-        "columns" -> JsArray(columns.map(column => JsObject(
-          "name" -> JsString(column.name),
-          "jdbcType" -> JsNumber(column.jdbcType),
-          "typeName" -> JsString(column.typeName)
-        ))),
-        "schemaFingerprint" -> JsString(fingerprint)
-      ))
+      canonicalJson(
+        JsObject(
+          "version"     -> JsNumber(1),
+          "connectorId" -> JsString("orders-cdc-v1"),
+          "database"    -> JsString("source_db"),
+          "table"       -> JsString("source_orders"),
+          "primaryKey"  -> JsString(primaryKey),
+          "columns" -> JsArray(
+            columns.map(column =>
+              JsObject(
+                "name"     -> JsString(column.name),
+                "jdbcType" -> JsNumber(column.jdbcType),
+                "typeName" -> JsString(column.typeName)
+              ))),
+          "schemaFingerprint" -> JsString(fingerprint)
+        ))
     }
 
     private def count(table: String): Int = {
       val result = keeper.createStatement().executeQuery(s"SELECT COUNT(*) FROM $table")
-      try { result.next(); result.getInt(1) } finally { val statement = result.getStatement; result.close(); statement.close() }
+      try { result.next(); result.getInt(1) }
+      finally { val statement = result.getStatement; result.close(); statement.close() }
     }
 
     private def scalarInt(sql: String, bind: java.sql.PreparedStatement => Unit): Int = {
@@ -1012,32 +1039,38 @@ class MySQLCdcApplySinkNodeSpec extends STSpec {
       try {
         bind(statement)
         val result = statement.executeQuery()
-        try { result.next(); result.getInt(1) } finally result.close()
+        try { result.next(); result.getInt(1) }
+        finally result.close()
       } finally statement.close()
     }
   }
 
   private def canonicalJson(value: JsValue): String = value match {
-    case JsObject(fields) => fields.toVector.sortBy(_._1).map { case (key, field) =>
-      s"${JsString(key).compactPrint}:${canonicalJson(field)}"
-    }.mkString("{", ",", "}")
+    case JsObject(fields) =>
+      fields.toVector
+        .sortBy(_._1)
+        .map { case (key, field) =>
+          s"${JsString(key).compactPrint}:${canonicalJson(field)}"
+        }
+        .mkString("{", ",", "}")
     case JsArray(elements) => elements.map(canonicalJson).mkString("[", ",", "]")
-    case other => other.compactPrint
+    case other             => other.compactPrint
   }
 
-  private def sha256(value: String): String = MessageDigest.getInstance("SHA-256")
+  private def sha256(value: String): String = MessageDigest
+    .getInstance("SHA-256")
     .digest(value.getBytes(StandardCharsets.UTF_8))
-    .map(byte => f"${byte & 0xff}%02x").mkString
+    .map(byte => f"${byte & 0xFF}%02x")
+    .mkString
 }
 
 private object MySQLCdcApplySinkNodeSpec {
   final case class SourceColumn(
-    name: String,
-    jdbcType: Int,
-    typeName: String,
-    nullable: Int,
-    ordinal: Int,
-    size: Int,
-    scale: Int
-  )
+      name: String,
+      jdbcType: Int,
+      typeName: String,
+      nullable: Int,
+      ordinal: Int,
+      size: Int,
+      scale: Int)
 }

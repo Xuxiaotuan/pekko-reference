@@ -16,17 +16,19 @@ import scala.concurrent.{ExecutionContext, Future}
  * 文件输出Sink节点
  */
 class FileTextSink extends NodeSink {
-  
+
   override def nodeType: String = "file.text"
-  
-  override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)
-                        (implicit ec: ExecutionContext): Sink[String, Future[Done]] = {
-    val path = node.config.fields.get("path").map(_.convertTo[String])
+
+  override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] = {
+    val path = node.config.fields
+      .get("path")
+      .map(_.convertTo[String])
       .getOrElse(throw new IllegalArgumentException("File sink缺少path配置"))
-    
+
     onLog(s"输出到文件: $path")
-    
-    FileIO.toPath(Paths.get(path))
+
+    FileIO
+      .toPath(Paths.get(path))
       .contramap[String](line => ByteString(line + "\n"))
       .mapMaterializedValue(_.map(_ => Done))
   }

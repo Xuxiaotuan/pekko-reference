@@ -4,9 +4,9 @@ import cn.xuyinyin.magic.cdc.control.{SnapshotGuardianMain => CdcSnapshotGuardia
 
 /** Keep operator commands compatible while the implementations live in CDC control. */
 object SnapshotGuardianMain {
-  def main(args:Array[String]):Unit=CdcSnapshotGuardianMain.main(args)
+  def main(args: Array[String]): Unit = CdcSnapshotGuardianMain.main(args)
 }
 
 object SnapshotSupervisorMain {
-  def main(args:Array[String]):Unit=CdcSnapshotSupervisorMain.main(args)
+  def main(args: Array[String]): Unit = CdcSnapshotSupervisorMain.main(args)
 }

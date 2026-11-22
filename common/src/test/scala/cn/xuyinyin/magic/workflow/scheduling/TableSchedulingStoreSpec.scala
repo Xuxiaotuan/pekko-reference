@@ -1,7 +1,6 @@
 package cn.xuyinyin.magic.cdc.control
 
-import cn.xuyinyin.magic.workflow.scheduling.{TableResourceDemand, ScheduledTableDefinition}
-
+import cn.xuyinyin.magic.workflow.scheduling.{ScheduledTableDefinition, TableResourceDemand}
 
 import cn.xuyinyin.magic.cdc.control.SchedulingLimits
 
@@ -13,44 +12,57 @@ class TableSchedulingStoreSpec extends AnyWordSpec with Matchers {
   private def fixture(test: TableSchedulingStore => Unit, limits: SchedulingLimits = SchedulingLimits(2, 1, 4, 4, 1048576, 8)): Unit = {
     val c = new HikariConfig(); c.setJdbcUrl("jdbc:h2:mem:" + java.util.UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1")
     c.setUsername("sa"); c.setMaximumPoolSize(2); c.setMinimumIdle(0)
-    val ds = new HikariDataSource(c)
+    val ds         = new HikariDataSource(c)
     val connection = ds.getConnection
     try {
       val in = getClass.getClassLoader.getResourceAsStream("db/h2/pekko-table-scheduling-schema.sql")
-      val sql = try scala.io.Source.fromInputStream(in).mkString finally in.close()
-      sql.split(";").map(_.trim).filter(_.nonEmpty).foreach(s => { val st = connection.createStatement(); try st.execute(s) finally st.close() })
+      val sql =
+        try scala.io.Source.fromInputStream(in).mkString
+        finally in.close()
+      sql
+        .split(";")
+        .map(_.trim)
+        .filter(_.nonEmpty)
+        .foreach(s => {
+          val st = connection.createStatement();
+          try st.execute(s)
+          finally st.close()
+        })
     } finally connection.close()
-    try test(new TableSchedulingStore(ds, limits)) finally ds.close()
+    try test(new TableSchedulingStore(ds, limits))
+    finally ds.close()
   }
   private def definition(id: String, source: String = "source", target: String = "target", parallelism: Int = 2) =
     ScheduledTableDefinition(id, 1L, "{}", TableResourceDemand(source, target, parallelism, 1024))
   "durable table admission" should {
-    "bound outstanding activations across polling rounds" in fixture({ store =>
-      (1 to 3).foreach(i => store.enqueue(definition(s"w$i"),s"e$i",s"r$i"))
-      val first=store.claim(1).head
-      store.claim(1) shouldBe empty
-      store.bind(first,"node-a") shouldBe true
-      store.claim(1).size shouldBe 1
-    }, SchedulingLimits(2,1,8,1,1048576,8))
+    "bound outstanding activations across polling rounds" in fixture(
+      { store =>
+        (1 to 3).foreach(i => store.enqueue(definition(s"w$i"), s"e$i", s"r$i"))
+        val first = store.claim(1).head
+        store.claim(1) shouldBe empty
+        store.bind(first, "node-a") shouldBe true
+        store.claim(1).size shouldBe 1
+      },
+      SchedulingLimits(2, 1, 8, 1, 1048576, 8))
     "reject an old request after a newer run has completed" in fixture { store =>
-      store.enqueue(definition("a"),"e1","r1")
-      store.release(store.claim(1).head,"completed",true)
-      store.enqueue(definition("a"),"e2","r2")
-      store.release(store.claim(1).head,"completed",true)
-      intercept[IllegalStateException](store.enqueue(definition("a"),"e1","r1"))
+      store.enqueue(definition("a"), "e1", "r1")
+      store.release(store.claim(1).head, "completed", true)
+      store.enqueue(definition("a"), "e2", "r2")
+      store.release(store.claim(1).head, "completed", true)
+      intercept[IllegalStateException](store.enqueue(definition("a"), "e1", "r1"))
       store.get("a").get.executionId shouldBe Some("e2")
     }
 
     "reject changing a completed definition under its original execution request" in fixture { store =>
-      val original=definition("revision-request")
-      store.enqueue(original,"execution-one","request-one")
-      store.release(store.claim(1).head,"completed",true) shouldBe true
-      val before=store.get(original.workflowId).get
-      val revised=original.copy(revision=2L,workflowJson="{\"revision\":2}")
-      intercept[IllegalStateException](store.enqueue(revised,"execution-one","request-one"))
+      val original = definition("revision-request")
+      store.enqueue(original, "execution-one", "request-one")
+      store.release(store.claim(1).head, "completed", true) shouldBe true
+      val before  = store.get(original.workflowId).get
+      val revised = original.copy(revision = 2L, workflowJson = "{\"revision\":2}")
+      intercept[IllegalStateException](store.enqueue(revised, "execution-one", "request-one"))
       store.get(original.workflowId).get shouldBe before
-      store.enqueue(original,"execution-one","request-one").state shouldBe "completed"
-      store.enqueue(revised,"execution-two","request-two").state shouldBe "ready"
+      store.enqueue(original, "execution-one", "request-one").state shouldBe "completed"
+      store.enqueue(revised, "execution-two", "request-two").state shouldBe "ready"
     }
 
     "reserve both connection vectors atomically and retain unknown releases" in fixture { store =>

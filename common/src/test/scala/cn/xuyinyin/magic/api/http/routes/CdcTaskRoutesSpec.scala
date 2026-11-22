@@ -14,23 +14,45 @@ class CdcTaskRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRout
     pekko.remote.artery.canonical.port = 0
     pekko.cluster.seed-nodes = []
   """
-  private val definition = CdcTaskRequest("request-a", "capture-a", "orders", "g1", "target_orders")
-  private val view = CdcTaskView("task-a", definition.requestId, definition.captureId, definition.table,
-    definition.generation, definition.targetTable, "fingerprint", "RUNNING", 1L, "QUEUED", 0L, None,
-    "STARTING", None, "UNKNOWN", "NOT_ALLOCATED", None, 1000L, None, true)
+  private val definition                = CdcTaskRequest("request-a", "capture-a", "orders", "g1", "target_orders")
+  private val view = CdcTaskView(
+    "task-a",
+    definition.requestId,
+    definition.captureId,
+    definition.table,
+    definition.generation,
+    definition.targetTable,
+    "fingerprint",
+    "RUNNING",
+    1L,
+    "QUEUED",
+    0L,
+    None,
+    "STARTING",
+    None,
+    "UNKNOWN",
+    "NOT_ALLOCATED",
+    None,
+    1000L,
+    None,
+    true)
   private def json(value: JsValue) = HttpEntity(ContentTypes.`application/json`, value.compactPrint)
-  private val request = JsObject("requestId" -> JsString(definition.requestId), "captureId" -> JsString(definition.captureId),
-    "table" -> JsString(definition.table), "generation" -> JsString(definition.generation), "targetTable" -> JsString(definition.targetTable))
+  private val request = JsObject(
+    "requestId"   -> JsString(definition.requestId),
+    "captureId"   -> JsString(definition.captureId),
+    "table"       -> JsString(definition.table),
+    "generation"  -> JsString(definition.generation),
+    "targetTable" -> JsString(definition.targetTable))
 
   private class Service extends CdcTaskService {
-    var submissions = Vector.empty[CdcTaskRequest]
-    var pages = Vector.empty[(Option[String], Int)]
-    var cancelFailure: Option[Throwable] = None
-    var cancelIds = Vector.empty[String]
-    def status = CdcPlatformStatus(true, "ACTIVE", None, 0, 2)
-    def captures() = Future.successful(Vector(CdcCaptureView("capture-a", "shop", "STARTING", "UNKNOWN", None)))
-    def submit(value: CdcTaskRequest) = { submissions :+= value; Future.successful(CdcTaskAcceptance(view, submissions.size == 1)) }
-    def get(id: String) = Future.successful(if (id == view.taskId) Some(view) else None)
+    var submissions                                  = Vector.empty[CdcTaskRequest]
+    var pages                                        = Vector.empty[(Option[String], Int)]
+    var cancelFailure: Option[Throwable]             = None
+    var cancelIds                                    = Vector.empty[String]
+    def status                                       = CdcPlatformStatus(true, "ACTIVE", None, 0, 2)
+    def captures()                                   = Future.successful(Vector(CdcCaptureView("capture-a", "shop", "STARTING", "UNKNOWN", None)))
+    def submit(value: CdcTaskRequest)                = { submissions :+= value; Future.successful(CdcTaskAcceptance(view, submissions.size == 1)) }
+    def get(id: String)                              = Future.successful(if (id == view.taskId) Some(view) else None)
     def listAfter(after: Option[String], limit: Int) = { pages :+= after -> limit; Future.successful(CdcTaskPage(Vector(view), Some(view.taskId))) }
     def cancel(id: String) = {
       cancelIds :+= id
@@ -60,9 +82,11 @@ class CdcTaskRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRout
     }
     "reject incomplete definitions, extra credential fields and invalid pages before calling the service" in {
       val service = new Service
-      val route = new CdcTaskRoutes(Some(service))(system.dispatcher).routes
-      for (body <- Vector(JsObject(request.fields - "generation"), JsObject(request.fields + ("password" -> JsString("must-not-be-accepted"))),
-        JsObject(request.fields + ("table" -> JsNumber(3))))) {
+      val route   = new CdcTaskRoutes(Some(service))(system.dispatcher).routes
+      for (body <- Vector(
+          JsObject(request.fields - "generation"),
+          JsObject(request.fields + ("password" -> JsString("must-not-be-accepted"))),
+          JsObject(request.fields + ("table"    -> JsNumber(3))))) {
         Post("/api/v1/cdc-tasks", json(body)) ~> route ~> check { status shouldBe StatusCodes.BadRequest }
       }
       Get("/api/v1/cdc-tasks?pageSize=0") ~> route ~> check { status shouldBe StatusCodes.BadRequest }
@@ -72,7 +96,7 @@ class CdcTaskRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRout
     }
     "preserve keyset pagination and actual detail without exposing connection configuration" in {
       val service = new Service
-      val route = new CdcTaskRoutes(Some(service))(system.dispatcher).routes
+      val route   = new CdcTaskRoutes(Some(service))(system.dispatcher).routes
       Get("/api/v1/cdc-tasks?after=before&pageSize=2") ~> route ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[String].parseJson.asJsObject.fields
@@ -85,7 +109,7 @@ class CdcTaskRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRout
     }
     "distinguish accepted cancellation from completion and reject unsupported paused operations" in {
       val service = new Service
-      val route = new CdcTaskRoutes(Some(service))(system.dispatcher).routes
+      val route   = new CdcTaskRoutes(Some(service))(system.dispatcher).routes
       Post("/api/v1/cdc-tasks/task-a/cancel") ~> route ~> check {
         status shouldBe StatusCodes.Accepted
         responseAs[String].parseJson.asJsObject.fields("phase") shouldBe JsString("CANCELING")

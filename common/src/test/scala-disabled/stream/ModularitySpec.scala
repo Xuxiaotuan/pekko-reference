@@ -7,7 +7,7 @@ import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.apache.pekko.stream.{ClosedShape, FlowShape, Inlet, Materializer, Outlet, SourceShape, UniformFanInShape, UniformFanOutShape}
 import org.apache.pekko.stream.connectors.slick.scaladsl.{Slick, SlickSession}
-import org.apache.pekko.stream.scaladsl.GraphDSL.Implicits.{FanInOps, SourceArrow, fanOut2flow, port2flow}
+import org.apache.pekko.stream.scaladsl.GraphDSL.Implicits.{fanOut2flow, port2flow, FanInOps, SourceArrow}
 import org.apache.pekko.stream.scaladsl.{Balance, Broadcast, Flow, GraphDSL, Merge, RunnableGraph, Sink, Source}
 import slick.jdbc.GetResult
 
@@ -65,10 +65,10 @@ class ModularitySpec extends ScalaTestWithActorTestKit with STPekkoSpec {
         val F: UniformFanInShape[Int, Int]  = builder.add(Merge[Int](2))
         val G: Inlet[Any]                   = builder.add(Sink.foreach(println)).in
 
-                      C     <~      F
-        A  ~>  B  ~>  C     ~>      F
-               B  ~>  D  ~>  E  ~>  F
-                             E  ~>  G
+        C <~ F
+        A ~> B ~> C ~> F
+        B ~> D ~> E ~> F
+        E ~> G
 
         ClosedShape
       })
@@ -76,29 +76,32 @@ class ModularitySpec extends ScalaTestWithActorTestKit with STPekkoSpec {
     }
 
     "Composing complex systems 2" in {
-      val source: Source[Int, NotUsed] = Source.fromGraph(GraphDSL.create() { implicit builder =>
-        val A: Source[Int, NotUsed] = Source.single(0)
-        val B: Source[Int, NotUsed] = Source(List(2, 3, 4))
-        val C: UniformFanInShape[Int, Int] = builder.add(Merge[Int](2))
+      val source: Source[Int, NotUsed] = Source
+        .fromGraph(GraphDSL.create() { implicit builder =>
+          val A: Source[Int, NotUsed]        = Source.single(0)
+          val B: Source[Int, NotUsed]        = Source(List(2, 3, 4))
+          val C: UniformFanInShape[Int, Int] = builder.add(Merge[Int](2))
 
-        A ~> C
-        B ~> C
+          A ~> C
+          B ~> C
 
-        SourceShape(C.out)
-      }).named("sourceShape")
+          SourceShape(C.out)
+        })
+        .named("sourceShape")
 
-      val flow: Flow[Int, Int, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit builder =>
-        val B = builder.add(Broadcast[Int](2))
-        val C = builder.add(Merge[Int](2))
-        val E = builder.add(Balance[Int](2))
-        val F = builder.add(Merge[Int](2))
+      val flow: Flow[Int, Int, NotUsed] = Flow
+        .fromGraph(GraphDSL.create() { implicit builder =>
+          val B = builder.add(Broadcast[Int](2))
+          val C = builder.add(Merge[Int](2))
+          val E = builder.add(Balance[Int](2))
+          val F = builder.add(Merge[Int](2))
 
-        C  <~  F
-        B  ~>                            C  ~>  F
-        B  ~>  Flow[Int].map(_ + 1)  ~>  E  ~>  F
-        FlowShape(B.in, E.out(1))
-      }).named("flowShape")
-
+          C <~ F
+          B ~> C ~> F
+          B ~> Flow[Int].map(_ + 1) ~> E ~> F
+          FlowShape(B.in, E.out(1))
+        })
+        .named("flowShape")
 
       val sink: Sink[Int, NotUsed] = {
         val A = Flow[Int].map(_ * 2).drop(10).named("nestedFlow")
@@ -109,7 +112,6 @@ class ModularitySpec extends ScalaTestWithActorTestKit with STPekkoSpec {
 
       graphDSL.run()
     }
-
 
     "embed one closed graph in another" in {
       val closed1 = Source.single(0).to(Sink.foreach(println))

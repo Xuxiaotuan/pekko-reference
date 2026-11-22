@@ -7,17 +7,30 @@ import org.apache.pekko.serialization.jackson.JacksonMigration
 /** Read historical Workflow Journal manifests using the CDC compatibility model. */
 final class LegacyWorkflowEventMigration extends JacksonMigration {
   override def currentVersion: Int = 3
-  private val oldPrefix = "cn.xuyinyin.magic.workflow.events.WorkflowEvents$"
-  private val newPrefix = "cn.xuyinyin.magic.cdc.compat.WorkflowEvents$"
-  private val types = Set("ExecutionTrigger", "PersistedNodeExecutionResult", "PersistedExecutionResult",
-    "WorkflowDefined", "ExecutionStarted", "ResumableExecutionStarted", "ExecutionSnapshotInitialized",
-    "ExecutionCheckpointAdvanced", "ExecutionRecoveryState", "ExecutionRecoveryScheduled",
-    "ExecutionRecoveryAttemptStarted", "ExecutionRecoveryBlocked", "ExecutionCompleted", "ExecutionFailed",
-    "SnapshotSplitsUpdated", "SnapshotExecutionPaused", "SnapshotSchedulingChanged", "ExecutionSkipped")
+  private val oldPrefix            = "cn.xuyinyin.magic.workflow.events.WorkflowEvents$"
+  private val newPrefix            = "cn.xuyinyin.magic.cdc.compat.WorkflowEvents$"
+  private val types = Set(
+    "ExecutionTrigger",
+    "PersistedNodeExecutionResult",
+    "PersistedExecutionResult",
+    "WorkflowDefined",
+    "ExecutionStarted",
+    "ResumableExecutionStarted",
+    "ExecutionSnapshotInitialized",
+    "ExecutionCheckpointAdvanced",
+    "ExecutionRecoveryState",
+    "ExecutionRecoveryScheduled",
+    "ExecutionRecoveryAttemptStarted",
+    "ExecutionRecoveryBlocked",
+    "ExecutionCompleted",
+    "ExecutionFailed",
+    "SnapshotSplitsUpdated",
+    "SnapshotExecutionPaused",
+    "SnapshotSchedulingChanged",
+    "ExecutionSkipped")
 
   override def transformClassName(fromVersion: Int, className: String): String = {
-    require(className.startsWith(oldPrefix) && types.contains(className.substring(oldPrefix.length)),
-      "unsupported legacy Workflow event manifest")
+    require(className.startsWith(oldPrefix) && types.contains(className.substring(oldPrefix.length)), "unsupported legacy Workflow event manifest")
     newPrefix + className.substring(oldPrefix.length)
   }
 

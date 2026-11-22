@@ -13,7 +13,7 @@ object BootstrapSchemaCompatibility {
   def compatible(expectedJdbcType: Int, expectedTypeName: String, actualJdbcType: Int): Boolean =
     actualJdbcType == expectedJdbcType ||
       textTypeNames.contains(expectedTypeName.toUpperCase(java.util.Locale.ROOT)) &&
-        actualJdbcType == Types.LONGVARCHAR
+      actualJdbcType == Types.LONGVARCHAR
 
   def columnsCompatible(expected: Seq[(String, Int, String)], actual: Seq[(String, Int)]): Boolean =
     expected.size == actual.size && expected.zip(actual).forall { case ((expectedName, expectedType, expectedTypeName), (actualName, actualType)) =>

@@ -8,10 +8,12 @@ import spray.json.JsObject
 class WorkflowValidatorSpec extends STSpec {
   "WorkflowValidator" should {
     "return the only connected Source to Sink path" in {
-      val result = WorkflowValidator.validate(WorkflowFixtures.linearWorkflow).fold(
-        errors => fail(errors.map(_.message).mkString(", ")),
-        identity
-      )
+      val result = WorkflowValidator
+        .validate(WorkflowFixtures.linearWorkflow)
+        .fold(
+          errors => fail(errors.map(_.message).mkString(", ")),
+          identity
+        )
 
       result.transforms.map(_.id) shouldBe Vector("transform-1")
     }
@@ -40,9 +42,9 @@ class WorkflowValidatorSpec extends STSpec {
     }
 
     "accept only a direct unscheduled MySQL CDC source-to-apply-sink workflow" in {
-      val cdc = WorkflowFixtures.mysqlCdcWorkflow
-      val source = cdc.nodes.head
-      val sink = cdc.nodes.last
+      val cdc       = WorkflowFixtures.mysqlCdcWorkflow
+      val source    = cdc.nodes.head
+      val sink      = cdc.nodes.last
       val transform = WorkflowFixtures.linearWorkflow.nodes(1)
       val cdcWithTransform = cdc.copy(
         nodes = List(source, transform, sink),
@@ -51,7 +53,7 @@ class WorkflowValidatorSpec extends STSpec {
           Edge("transform-sink", transform.id, sink.id)
         )
       )
-      val cdcWithLegacySink = cdc.copy(nodes = cdc.nodes.updated(1, sink.copy(nodeType = "console.log")))
+      val cdcWithLegacySink       = cdc.copy(nodes = cdc.nodes.updated(1, sink.copy(nodeType = "console.log")))
       val legacySourceWithCdcSink = cdc.copy(nodes = cdc.nodes.updated(0, source.copy(nodeType = "sequence.numbers")))
       val scheduledCdc = cdc.copy(metadata = cdc.metadata.copy(
         schedule = Some(ScheduleConfig(enabled = true, "fixed_rate", interval = Some("1h")))

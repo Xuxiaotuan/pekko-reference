@@ -15,31 +15,31 @@ import scala.jdk.CollectionConverters._
  * Invoke `write-crash` and `recover` in two distinct `sbt Test/runMain` processes.
  */
 object RealMySQLActorRecoveryProcess {
-  private final case class Settings(jdbcUrl: String, user: String, password: String, workflowId: String) {
+  final private case class Settings(jdbcUrl: String, user: String, password: String, workflowId: String) {
     val persistenceId: String = s"workflow-$workflowId"
   }
 
   def main(args: Array[String]): Unit = {
     require(args.length == 1 && Set("write-crash", "recover").contains(args.head), "expected mode: write-crash or recover")
     val settings = settingsFromSystemProperties()
-    val mode = args.head
+    val mode     = args.head
     val configValues = Map[String, AnyRef](
-      "pekko-persistence-jdbc.shared-databases.slick.profile" -> "slick.jdbc.MySQLProfile$",
-      "pekko-persistence-jdbc.shared-databases.slick.db.driver" -> "com.mysql.cj.jdbc.Driver",
-      "pekko-persistence-jdbc.shared-databases.slick.db.url" -> settings.jdbcUrl,
-      "pekko-persistence-jdbc.shared-databases.slick.db.user" -> settings.user,
+      "pekko-persistence-jdbc.shared-databases.slick.profile"     -> "slick.jdbc.MySQLProfile$",
+      "pekko-persistence-jdbc.shared-databases.slick.db.driver"   -> "com.mysql.cj.jdbc.Driver",
+      "pekko-persistence-jdbc.shared-databases.slick.db.url"      -> settings.jdbcUrl,
+      "pekko-persistence-jdbc.shared-databases.slick.db.user"     -> settings.user,
       "pekko-persistence-jdbc.shared-databases.slick.db.password" -> settings.password,
-      "pekko.remote.artery.canonical.hostname" -> "127.0.0.1",
-      "pekko.remote.artery.canonical.port" -> Int.box(0)
+      "pekko.remote.artery.canonical.hostname"                    -> "127.0.0.1",
+      "pekko.remote.artery.canonical.port"                        -> Int.box(0)
     )
-    val config = ConfigFactory.parseMap(configValues.asJava).withFallback(ConfigFactory.load("application-test"))
+    val config    = ConfigFactory.parseMap(configValues.asJava).withFallback(ConfigFactory.load("application-test"))
     val processId = ProcessHandle.current().pid()
-    val testKit = ActorTestKit(s"real-mysql-actor-$mode-$processId", config)
+    val testKit   = ActorTestKit(s"real-mysql-actor-$mode-$processId", config)
 
     try {
       implicit val executionContext = testKit.system.executionContext
-      val engine = new WorkflowExecutionEngine()(testKit.system, executionContext)
-      val actor = testKit.spawn(EventSourcedWorkflowActor(settings.workflowId, engine), s"workflow-$mode")
+      val engine                    = new WorkflowExecutionEngine()(testKit.system, executionContext)
+      val actor                     = testKit.spawn(EventSourcedWorkflowActor(settings.workflowId, engine), s"workflow-$mode")
 
       mode match {
         case "write-crash" =>
@@ -52,11 +52,10 @@ object RealMySQLActorRecoveryProcess {
   }
 
   private def writeAndSnapshot(
-    testKit: ActorTestKit,
-    actor: org.apache.pekko.actor.typed.ActorRef[EventSourcedWorkflowActor.Command],
-    settings: Settings,
-    processId: Long
-  ): Unit = {
+      testKit: ActorTestKit,
+      actor: org.apache.pekko.actor.typed.ActorRef[EventSourcedWorkflowActor.Command],
+      settings: Settings,
+      processId: Long): Unit = {
     val replies = testKit.createTestProbe[EventSourcedWorkflowActor.Reply]()
     (0L until 101L).foreach { expectedRevision =>
       actor ! EventSourcedWorkflowActor.DefineWorkflow(WorkflowFixtures.linearWorkflow, expectedRevision, replies.ref)
@@ -65,7 +64,7 @@ object RealMySQLActorRecoveryProcess {
 
     awaitDatabase(settings) { connection =>
       journalMaxSequence(connection, settings.persistenceId) >= 101L &&
-        snapshotMaxSequence(connection, settings.persistenceId) >= 100L
+      snapshotMaxSequence(connection, settings.persistenceId) >= 100L
     }
     val counts = databaseState(settings)
     require(counts._1 >= 101L, s"journal sequence did not reach 101: ${counts._1}")
@@ -74,11 +73,10 @@ object RealMySQLActorRecoveryProcess {
   }
 
   private def recoverAndAdvance(
-    testKit: ActorTestKit,
-    actor: org.apache.pekko.actor.typed.ActorRef[EventSourcedWorkflowActor.Command],
-    settings: Settings,
-    processId: Long
-  ): Unit = {
+      testKit: ActorTestKit,
+      actor: org.apache.pekko.actor.typed.ActorRef[EventSourcedWorkflowActor.Command],
+      settings: Settings,
+      processId: Long): Unit = {
     val summaryReply = testKit.createTestProbe[EventSourcedWorkflowActor.WorkflowSummary]()
     actor ! EventSourcedWorkflowActor.GetSummary(summaryReply.ref)
     val recovered = summaryReply.receiveMessage(20.seconds)
@@ -102,14 +100,15 @@ object RealMySQLActorRecoveryProcess {
     Settings(
       jdbcUrl = required("pekko.test.mysql.jdbc-url"),
       user = required("pekko.test.mysql.user"),
-      password = sys.props.getOrElse("pekko.test.mysql.password", throw new IllegalArgumentException("missing system property: pekko.test.mysql.password")),
+      password =
+        sys.props.getOrElse("pekko.test.mysql.password", throw new IllegalArgumentException("missing system property: pekko.test.mysql.password")),
       workflowId = required("pekko.test.mysql.workflow-id")
     )
   }
 
   private def awaitDatabase(settings: Settings)(condition: Connection => Boolean): Unit = {
-    val deadline = 20.seconds.fromNow
-    var satisfied = false
+    val deadline               = 20.seconds.fromNow
+    var satisfied              = false
     var lastFailure: Throwable = null
     while (!satisfied && deadline.hasTimeLeft()) {
       try satisfied = withConnection(settings)(condition)

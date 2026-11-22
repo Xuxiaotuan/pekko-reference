@@ -20,18 +20,17 @@ import scala.language.postfixOps
 class PekkoStreamSpec extends ScalaTestWithActorTestKit with STPekkoSpec {
   "pekko" should {
 
-    val config = ConfigFactory.parseString(
-      """
-        |pekko {
-        |  remote.artery {
-        |    canonical {
-        |      port = 0 # 使用随机端口
-        |    }
-        |  }
-        |}
-        |""".stripMargin)
+    val config = ConfigFactory.parseString("""
+                                             |pekko {
+                                             |  remote.artery {
+                                             |    canonical {
+                                             |      port = 0 # 使用随机端口
+                                             |    }
+                                             |  }
+                                             |}
+                                             |""".stripMargin)
 
-    implicit val system: ActorSystem = ActorSystem("demo", config)
+    implicit val system: ActorSystem  = ActorSystem("demo", config)
     implicit val mat: Materializer    = Materializer(system)
     implicit val ec: ExecutionContext = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(8))
 

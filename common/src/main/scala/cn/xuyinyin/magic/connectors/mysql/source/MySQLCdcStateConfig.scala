@@ -3,24 +3,23 @@ package cn.xuyinyin.magic.connectors.mysql.source
 import com.typesafe.config.Config
 
 final case class MySQLCdcStateConfig(
-  jdbcUrl: String,
-  username: String,
-  password: String,
-  offsetTable: String,
-  historyTable: String,
-  offsetFlushIntervalMillis: Int
-)
+    jdbcUrl: String,
+    username: String,
+    password: String,
+    offsetTable: String,
+    historyTable: String,
+    offsetFlushIntervalMillis: Int)
 
 object MySQLCdcStateConfig {
   private val StateJdbcPath = "pekko.workflow.mysql-cdc.state-jdbc"
-  private val Identifier = "[A-Za-z_][A-Za-z0-9_]*".r
+  private val Identifier    = "[A-Za-z_][A-Za-z0-9_]*".r
 
   def load(config: Config): MySQLCdcStateConfig = {
     if (!config.hasPath(StateJdbcPath)) {
       throw new IllegalArgumentException(s"Missing required config: $StateJdbcPath")
     }
 
-    val state = config.getConfig(StateJdbcPath)
+    val state   = config.getConfig(StateJdbcPath)
     val jdbcUrl = requiredString(state, "url")
     if (!jdbcUrl.startsWith("jdbc:")) {
       throw new IllegalArgumentException("pekko.workflow.mysql-cdc.state-jdbc.url must start with jdbc:")

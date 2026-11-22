@@ -25,7 +25,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = Span(2, Seconds), interval = Span(25, Millis))
-  private implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](
+  implicit private val system: ActorSystem[Nothing] = ActorSystem[Nothing](
     Behaviors.empty[Nothing],
     "mysql-snapshot-source-node-spec",
     ConfigFactory.parseString(
@@ -34,8 +34,8 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
         |pekko.coordinated-shutdown.exit-jvm = off""".stripMargin
     )
   )
-  private implicit val ec: ExecutionContext = system.executionContext
-  private implicit val materializer: Materializer = Materializer(system)
+  implicit private val ec: ExecutionContext       = system.executionContext
+  implicit private val materializer: Materializer = Materializer(system)
 
   override protected def afterAll(): Unit = {
     system.terminate()
@@ -48,7 +48,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
       withFixture(Vector(1 -> "a")) { fixture =>
         val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 3.seconds)
         fixture.failClose = true
-        val node = fixture.snapshotNode("table" -> JsString("missing_table"))
+        val node    = fixture.snapshotNode("table" -> JsString("missing_table"))
         val session = fixture.node.openBatches(node, "partial-acquire", boundary, None, _ => (), ec)
         intercept[Exception] { Await.result(session.source.runWith(Sink.ignore), 3.seconds) }
         Await.result(session.close().failed, 3.seconds) shouldBe a[cn.xuyinyin.magic.workflow.spi.SourceAcquisitionCleanupFailed]
@@ -90,10 +90,11 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
       }.getMessage should include("columns")
 
       intercept[IllegalArgumentException] {
-        MySQLSnapshotSourceConfig.parse(snapshotNode(
-          "table" -> JsString("source_rows"),
-          "columns" -> JsArray(JsString("id"))
-        ))
+        MySQLSnapshotSourceConfig.parse(
+          snapshotNode(
+            "table"   -> JsString("source_rows"),
+            "columns" -> JsArray(JsString("id"))
+          ))
       }.getMessage should include("primaryKey")
     }
 
@@ -148,7 +149,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
       val failure = intercept[IllegalArgumentException] {
         JdbcPasswordResolver.resolve(
           Map(
-            "password" -> JsString("inline-secret"),
+            "password"    -> JsString("inline-secret"),
             "passwordEnv" -> JsString("WORKFLOW_DB_PASSWORD")
           ),
           _ => Some("resolved-secret")
@@ -189,7 +190,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
       withFixture() { f =>
         f.failClose = true
         val base = f.snapshotNode()
-        val n = base.copy(config = JsObject(base.config.fields + ("splitRows" -> JsNumber(4))))
+        val n    = base.copy(config = JsObject(base.config.fields + ("splitRows" -> JsNumber(4))))
         val error = intercept[cn.xuyinyin.magic.cdc.recovery.CdcExecutionException] {
           Await.result(f.node.discoverBoundary(n, None, _ => ()), 5.seconds)
         }
@@ -200,22 +201,22 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
     "discover real-key splits and resume pages independently inside their fixed ranges" in {
       import cn.xuyinyin.magic.cdc.snapshot._
       withFixture() { f =>
-        val node = f.snapshotNode()
-        val plan = SnapshotSplitPlanState("p", node.id, "fixed", Some("12"), 2, 3, 2, 4096)
+        val node  = f.snapshotNode()
+        val plan  = SnapshotSplitPlanState("p", node.id, "fixed", Some("12"), 2, 3, 2, 4096)
         val first = Await.result(f.node.discoverSplit(node, plan, None, 0L), 5.seconds).get
         first.upper shouldBe "5"
         val second = Await.result(f.node.discoverSplit(node, plan, Some(first.upper), 1L), 5.seconds).get
         second.upper shouldBe "12"
         val session = f.node.openSplit(node, "e", plan, first, None, _ => (), ec)
-        val pages = Await.result(session.source.runWith(Sink.seq), 5.seconds)
+        val pages   = Await.result(session.source.runWith(Sink.seq), 5.seconds)
         Await.result(session.close(), 5.seconds)
         pages.map(_.rows.size) shouldBe Seq(2, 1)
         f.observedQueryTimeouts should contain(30)
         pages.map(_.partitionId).distinct shouldBe Seq(first.id)
-        val c = pages.head
+        val c          = pages.head
         val checkpoint = BatchCheckpoint(c.sourceNodeId, c.partitionId, c.batchSequence, c.batchId, c.cursor, 2, 2)
-        val resumed = f.node.openSplit(node, "e", plan, first, Some(checkpoint), _ => (), ec)
-        val remaining = Await.result(resumed.source.runWith(Sink.seq), 5.seconds)
+        val resumed    = f.node.openSplit(node, "e", plan, first, Some(checkpoint), _ => (), ec)
+        val remaining  = Await.result(resumed.source.runWith(Sink.seq), 5.seconds)
         Await.result(resumed.close(), 5.seconds)
         remaining.map(_.batchId) shouldBe pages.tail.map(_.batchId)
         remaining.map(_.cursor.value) shouldBe Seq("5")
@@ -223,20 +224,19 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
     }
 
     "pass an environment-backed password to JDBC setup without exposing it in workflow data, logs, or errors" in {
-      val node = environmentPasswordSnapshotNode()
+      val node              = environmentPasswordSnapshotNode()
       val capturedPasswords = ArrayBuffer.empty[String]
-      val logs = ArrayBuffer.empty[String]
+      val logs              = ArrayBuffer.empty[String]
       val source = new MySQLSnapshotSourceNode {
         override protected[source] def getenv(name: String): Option[String] =
           Option.when(name == "WORKFLOW_DB_PASSWORD")("runtime-secret")
 
         override protected[source] def createDataSource(
-          host: String,
-          port: Int,
-          database: String,
-          username: String,
-          password: String
-        ): HikariDataSource = {
+            host: String,
+            port: Int,
+            database: String,
+            username: String,
+            password: String): HikariDataSource = {
           capturedPasswords += password
           throw new IllegalStateException("jdbc setup failed")
         }
@@ -275,13 +275,15 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
         )
 
         val resumed = Await.result(
-          fixture.node.createBatches(
-            fixture.snapshotNode(),
-            "execution-1",
-            boundary,
-            Some(checkpoint(sequence = 2, cursor = "9", upperBound = "12")),
-            _ => ()
-          ).runWith(Sink.seq),
+          fixture.node
+            .createBatches(
+              fixture.snapshotNode(),
+              "execution-1",
+              boundary,
+              Some(checkpoint(sequence = 2, cursor = "9", upperBound = "12")),
+              _ => ()
+            )
+            .runWith(Sink.seq),
           5.seconds
         )
 
@@ -307,16 +309,18 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
         boundary shouldBe SnapshotBoundary("source-1", "pk-range-0", Some("12"))
         fixture.insert(13, "row-13")
 
-        val rows = Await.result(
-          fixture.node.createBatches(fixture.snapshotNode(), "execution-1", boundary, None, _ => ()).runWith(Sink.seq),
-          5.seconds
-        ).flatMap(_.rows)
+        val rows = Await
+          .result(
+            fixture.node.createBatches(fixture.snapshotNode(), "execution-1", boundary, None, _ => ()).runWith(Sink.seq),
+            5.seconds
+          )
+          .flatMap(_.rows)
         rows.map(idValue) should not contain JsString("13")
       }
 
       withFixture(initialRows = Vector.empty) { fixture =>
         Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 5.seconds) shouldBe
-          SnapshotBoundary("source-1", "pk-range-0", None)
+        SnapshotBoundary("source-1", "pk-range-0", None)
       }
     }
 
@@ -339,7 +343,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
 
     "close its datasource when cancelled or a batch query fails" in {
       withFixture() { fixture =>
-        val boundary = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 5.seconds)
+        val boundary        = Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 5.seconds)
         val batchDataSource = fixture.nextDataSourceCreated()
         val (killSwitch, completed) = fixture.node
           .createBatches(fixture.snapshotNode(), "execution-1", boundary, None, _ => ())
@@ -360,7 +364,14 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
       withFixture() { fixture =>
         val failure = intercept[Exception] {
           Await.result(
-            fixture.node.createBatches(fixture.snapshotNode("table" -> JsString("missing_rows")), "execution-1", SnapshotBoundary("source-1", "pk-range-0", Some("12")), None, _ => ()).runWith(Sink.seq),
+            fixture.node
+              .createBatches(
+                fixture.snapshotNode("table" -> JsString("missing_rows")),
+                "execution-1",
+                SnapshotBoundary("source-1", "pk-range-0", Some("12")),
+                None,
+                _ => ())
+              .runWith(Sink.seq),
             5.seconds
           )
         }
@@ -419,7 +430,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
         fixture.createLookalikeTable()
 
         Await.result(fixture.node.discoverBoundary(fixture.snapshotNode(), None, _ => ()), 5.seconds) shouldBe
-          SnapshotBoundary("source-1", "pk-range-0", Some("12"))
+        SnapshotBoundary("source-1", "pk-range-0", Some("12"))
       }
     }
 
@@ -431,28 +442,29 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
           thread
         }
         val blockingEc: ExecutionContext = ExecutionContext.fromExecutorService(executor)
-        val createThread = new AtomicReference[String]()
+        val createThread                 = new AtomicReference[String]()
         val source = new MySQLSnapshotSourceNode {
           override protected[source] def createDataSource(
-            host: String,
-            port: Int,
-            database: String,
-            username: String,
-            password: String
-          ): HikariDataSource = {
+              host: String,
+              port: Int,
+              database: String,
+              username: String,
+              password: String): HikariDataSource = {
             createThread.set(Thread.currentThread.getName)
             fixture.newDataSource()
           }
         }
         try {
           Await.result(
-            source.createBatches(
-              fixture.snapshotNode(),
-              "execution-1",
-              SnapshotBoundary("source-1", "pk-range-0", Some("12")),
-              None,
-              _ => ()
-            )(blockingEc).runWith(Sink.seq),
+            source
+              .createBatches(
+                fixture.snapshotNode(),
+                "execution-1",
+                SnapshotBoundary("source-1", "pk-range-0", Some("12")),
+                None,
+                _ => ()
+              )(blockingEc)
+              .runWith(Sink.seq),
             5.seconds
           )
           createThread.get() should include("snapshot-blocking-dispatcher")
@@ -463,15 +475,14 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
     "keep its datasource open while a controlled read is in flight and close it after cancellation" in {
       withFixture() { fixture =>
         val queryStarted = new CountDownLatch(1)
-        val allowQuery = new CountDownLatch(1)
+        val allowQuery   = new CountDownLatch(1)
         val source = new MySQLSnapshotSourceNode {
           override protected[source] def createDataSource(
-            host: String,
-            port: Int,
-            database: String,
-            username: String,
-            password: String
-          ): HikariDataSource = fixture.newDataSourceBlockingQuery(queryStarted, allowQuery)
+              host: String,
+              port: Int,
+              database: String,
+              username: String,
+              password: String): HikariDataSource = fixture.newDataSourceBlockingQuery(queryStarted, allowQuery)
         }
         val (killSwitch, completed) = source
           .createBatches(
@@ -500,29 +511,30 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
   }
 
   private def validSnapshotNode(overrides: (String, JsValue)*): WorkflowDSL.Node =
-    snapshotNode((Vector(
-      "host" -> JsString("localhost"),
-      "port" -> JsNumber(3306),
-      "database" -> JsString("source_db"),
-      "username" -> JsString("reader"),
-      "password" -> JsString("secret"),
-      "table" -> JsString("source_rows"),
-      "columns" -> JsArray(JsString("id"), JsString("payload")),
-      "primaryKey" -> JsString("id"),
-      "chunkSize" -> JsNumber(2)
-    ) ++ overrides): _*)
+    snapshotNode(
+      (Vector(
+        "host"       -> JsString("localhost"),
+        "port"       -> JsNumber(3306),
+        "database"   -> JsString("source_db"),
+        "username"   -> JsString("reader"),
+        "password"   -> JsString("secret"),
+        "table"      -> JsString("source_rows"),
+        "columns"    -> JsArray(JsString("id"), JsString("payload")),
+        "primaryKey" -> JsString("id"),
+        "chunkSize"  -> JsNumber(2)
+      ) ++ overrides): _*)
 
   private def environmentPasswordSnapshotNode(): WorkflowDSL.Node =
     snapshotNode(
-      "host" -> JsString("localhost"),
-      "port" -> JsNumber(3306),
-      "database" -> JsString("source_db"),
-      "username" -> JsString("reader"),
+      "host"        -> JsString("localhost"),
+      "port"        -> JsNumber(3306),
+      "database"    -> JsString("source_db"),
+      "username"    -> JsString("reader"),
       "passwordEnv" -> JsString("WORKFLOW_DB_PASSWORD"),
-      "table" -> JsString("source_rows"),
-      "columns" -> JsArray(JsString("id"), JsString("payload")),
-      "primaryKey" -> JsString("id"),
-      "chunkSize" -> JsNumber(2)
+      "table"       -> JsString("source_rows"),
+      "columns"     -> JsArray(JsString("id"), JsString("payload")),
+      "primaryKey"  -> JsString("id"),
+      "chunkSize"   -> JsNumber(2)
     )
 
   private def snapshotNode(fields: (String, JsValue)*): WorkflowDSL.Node =
@@ -550,34 +562,38 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
     row.parseJson.asJsObject.fields.collectFirst { case (name, value) if name.equalsIgnoreCase("id") => value }.get
 
   private def withFixture(
-    initialRows: Vector[(Int, String)] = Vector(1 -> "row-1", 2 -> "row-2", 5 -> "row-5", 9 -> "row-9", 12 -> "row-12"),
-    tableSql: String = "CREATE TABLE source_rows (id INT PRIMARY KEY, payload VARCHAR(255) NOT NULL)",
-    h2Options: String = ""
-  )(test: H2Fixture => Any): Unit = {
+      initialRows: Vector[(Int, String)] = Vector(1 -> "row-1", 2 -> "row-2", 5 -> "row-5", 9 -> "row-9", 12 -> "row-12"),
+      tableSql: String = "CREATE TABLE source_rows (id INT PRIMARY KEY, payload VARCHAR(255) NOT NULL)",
+      h2Options: String = ""
+    )(test: H2Fixture => Any): Unit = {
     val fixture = new H2Fixture(initialRows, tableSql, h2Options)
     try test(fixture)
     finally fixture.close()
   }
 
-  private final class H2Fixture(initialRows: Vector[(Int, String)], tableSql: String, h2Options: String) {
+  final private class H2Fixture(initialRows: Vector[(Int, String)], tableSql: String, h2Options: String) {
     private val jdbcUrl = s"jdbc:h2:mem:mysql_snapshot_${UUID.randomUUID().toString.replace('-', '_')};MODE=MySQL;DB_CLOSE_DELAY=0$h2Options"
     Class.forName("org.h2.Driver")
-    private val inspectionConnection: Connection = DriverManager.getConnection(jdbcUrl, "sa", "")
-    var failClose = false
-    var observedQueryTimeouts = Vector.empty[Int]
-    private var dataSources = Vector.empty[HikariDataSource]
+    private val inspectionConnection: Connection                = DriverManager.getConnection(jdbcUrl, "sa", "")
+    var failClose                                               = false
+    var observedQueryTimeouts                                   = Vector.empty[Int]
+    private var dataSources                                     = Vector.empty[HikariDataSource]
     private var nextCreation: Option[Promise[HikariDataSource]] = None
 
     val node = new MySQLSnapshotSourceNode {
-      override protected[source] def createSplitDataSource(host: String, port: Int, database: String, username: String, password: String): HikariDataSource = newDataSource()
+      override protected[source] def createSplitDataSource(
+          host: String,
+          port: Int,
+          database: String,
+          username: String,
+          password: String): HikariDataSource = newDataSource()
 
       override protected[source] def createDataSource(
-        host: String,
-        port: Int,
-        database: String,
-        username: String,
-        password: String
-      ): HikariDataSource = {
+          host: String,
+          port: Int,
+          database: String,
+          username: String,
+          password: String): HikariDataSource = {
         newDataSource()
       }
     }
@@ -593,7 +609,7 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
       created.future
     }
     def lastDataSource: HikariDataSource = dataSources.last
-    def activeConnections: Int = lastDataSource.getHikariPoolMXBean.getActiveConnections
+    def activeConnections: Int           = lastDataSource.getHikariPoolMXBean.getActiveConnections
 
     def newDataSource(): HikariDataSource = {
       val config = new HikariConfig()
@@ -606,19 +622,27 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
       val dataSource = new HikariDataSource(config) {
         override def getConnection: Connection = {
           val connection = super.getConnection
-          Proxy.newProxyInstance(getClass.getClassLoader, Array(classOf[Connection]), (_, method, args) => {
-            try {
-              val result = method.invoke(connection, Option(args).getOrElse(Array.empty[AnyRef]): _*)
-              if (method.getName == "prepareStatement") {
-                val statement = result.asInstanceOf[PreparedStatement]
-                Proxy.newProxyInstance(getClass.getClassLoader, Array(classOf[PreparedStatement]), (_, m, a) => {
-                  if (m.getName == "executeQuery") observedQueryTimeouts :+= statement.getQueryTimeout
-                  try m.invoke(statement, Option(a).getOrElse(Array.empty[AnyRef]): _*)
-                  catch { case e: InvocationTargetException => throw e.getCause }
-                })
-              } else result
-            } catch { case e: InvocationTargetException => throw e.getCause }
-          }).asInstanceOf[Connection]
+          Proxy
+            .newProxyInstance(
+              getClass.getClassLoader,
+              Array(classOf[Connection]),
+              (_, method, args) => {
+                try {
+                  val result = method.invoke(connection, Option(args).getOrElse(Array.empty[AnyRef]): _*)
+                  if (method.getName == "prepareStatement") {
+                    val statement = result.asInstanceOf[PreparedStatement]
+                    Proxy.newProxyInstance(
+                      getClass.getClassLoader,
+                      Array(classOf[PreparedStatement]),
+                      (_, m, a) => {
+                        if (m.getName == "executeQuery") observedQueryTimeouts :+= statement.getQueryTimeout
+                        try m.invoke(statement, Option(a).getOrElse(Array.empty[AnyRef]): _*)
+                        catch { case e: InvocationTargetException => throw e.getCause }
+                      })
+                  } else result
+                } catch { case e: InvocationTargetException => throw e.getCause }
+              })
+            .asInstanceOf[Connection]
         }
         override def close(): Unit = {
           super.close()
@@ -692,29 +716,33 @@ class MySQLSnapshotSourceNodeSpec extends STSpec with Eventually {
     }
 
     private def proxyConnection(connection: Connection, queryStarted: CountDownLatch, allowQuery: CountDownLatch): Connection =
-      Proxy.newProxyInstance(
-        getClass.getClassLoader,
-        Array(classOf[Connection]),
-        (_, method, arguments) => {
-          if (method.getName == "prepareStatement") {
-            val statement = invoke(connection, method, arguments).asInstanceOf[PreparedStatement]
-            proxyStatement(statement, queryStarted, allowQuery)
-          } else invoke(connection, method, arguments)
-        }
-      ).asInstanceOf[Connection]
+      Proxy
+        .newProxyInstance(
+          getClass.getClassLoader,
+          Array(classOf[Connection]),
+          (_, method, arguments) => {
+            if (method.getName == "prepareStatement") {
+              val statement = invoke(connection, method, arguments).asInstanceOf[PreparedStatement]
+              proxyStatement(statement, queryStarted, allowQuery)
+            } else invoke(connection, method, arguments)
+          }
+        )
+        .asInstanceOf[Connection]
 
     private def proxyStatement(statement: PreparedStatement, queryStarted: CountDownLatch, allowQuery: CountDownLatch): PreparedStatement =
-      Proxy.newProxyInstance(
-        getClass.getClassLoader,
-        Array(classOf[PreparedStatement]),
-        (_, method, arguments) => {
-          if (method.getName == "executeQuery") {
-            queryStarted.countDown()
-            allowQuery.await(5, TimeUnit.SECONDS)
+      Proxy
+        .newProxyInstance(
+          getClass.getClassLoader,
+          Array(classOf[PreparedStatement]),
+          (_, method, arguments) => {
+            if (method.getName == "executeQuery") {
+              queryStarted.countDown()
+              allowQuery.await(5, TimeUnit.SECONDS)
+            }
+            invoke(statement, method, arguments)
           }
-          invoke(statement, method, arguments)
-        }
-      ).asInstanceOf[PreparedStatement]
+        )
+        .asInstanceOf[PreparedStatement]
 
     private def invoke(target: AnyRef, method: java.lang.reflect.Method, arguments: Array[AnyRef]): AnyRef =
       try method.invoke(target, Option(arguments).getOrElse(Array.empty[AnyRef]): _*)

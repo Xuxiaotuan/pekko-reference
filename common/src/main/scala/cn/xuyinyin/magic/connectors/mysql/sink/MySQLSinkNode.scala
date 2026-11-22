@@ -16,10 +16,10 @@ import scala.util.{Failure, Success}
 
 /**
  * MySQL Sink实现
- * 
+ *
  * 实现pekko-server定义的NodeSink接口
  * 支持批量写入、INSERT/UPSERT模式
- * 
+ *
  * @author : Xuxiaotuan
  * @since : 2024-11-15
  */
@@ -27,48 +27,48 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
 
   private val LedgerTable = "pekko_sync_batch_ledger"
 
-  private final case class LedgerRecord(
-    batchId: String,
-    workflowId: String,
-    executionId: String,
-    checkpoint: BatchCheckpoint
-  )
-  
+  final private case class LedgerRecord(
+      batchId: String,
+      workflowId: String,
+      executionId: String,
+      checkpoint: BatchCheckpoint)
+
   override def nodeType: String = "mysql.write"
 
   protected[sink] def getenv(name: String): Option[String] = sys.env.get(name)
-  
-  override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)
-                        (implicit ec: ExecutionContext): Sink[String, Future[Done]] = {
+
+  override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] = {
     val config = MySQLSinkConfig.parse(node, getenv)
 
     onLog(s"[MySQL Sink] 连接MySQL: ${config.host}:${config.port}/${config.database}")
     onLog(s"[MySQL Sink] 写入表: ${config.table} (模式: ${config.mode}, 批量: ${config.batchSize})")
-    
-    Sink.lazyFutureSink[String, Future[Done]] { () =>
-      var dataSource: HikariDataSource = null
-      try {
-        dataSource = createDataSource(config.host, config.port, config.database, config.username, config.password)
-        Future.successful(createInnerSink(dataSource, config.table, config.batchSize, config.mode, onLog))
-      } catch {
-        case NonFatal(exception) =>
-          if (dataSource != null) closeDataSource(dataSource)
-          Future.failed(exception)
+
+    Sink
+      .lazyFutureSink[String, Future[Done]] { () =>
+        var dataSource: HikariDataSource = null
+        try {
+          dataSource = createDataSource(config.host, config.port, config.database, config.username, config.password)
+          Future.successful(createInnerSink(dataSource, config.table, config.batchSize, config.mode, onLog))
+        } catch {
+          case NonFatal(exception) =>
+            if (dataSource != null) closeDataSource(dataSource)
+            Future.failed(exception)
+        }
       }
-    }.mapMaterializedValue(_.recover {
-      case _: NeverMaterializedException => Future.successful(Done)
-    }.flatten)
+      .mapMaterializedValue(_.recover { case _: NeverMaterializedException =>
+        Future.successful(Done)
+      }.flatten)
   }
 
   override def validateReady(
-    node: WorkflowDSL.Node,
-    onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Future[Done] = Future {
-    val config = MySQLSinkConfig.parse(node, getenv)
-    val dataSource = createDataSource(config.host, config.port, config.database, config.username, config.password)
-    var connection: Connection = null
+      node: WorkflowDSL.Node,
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Future[Done] = Future {
+    val config                       = MySQLSinkConfig.parse(node, getenv)
+    val dataSource                   = createDataSource(config.host, config.port, config.database, config.username, config.password)
+    var connection: Connection       = null
     var statement: PreparedStatement = null
-    var resultSet: ResultSet = null
+    var resultSet: ResultSet         = null
     try {
       connection = dataSource.getConnection
       statement = connection.prepareStatement(
@@ -91,15 +91,19 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
   }
 
   override def validateSnapshotReady(node: WorkflowDSL.Node)(implicit ec: ExecutionContext): Future[Done] = Future {
-    val config = MySQLSinkConfig.parse(node, getenv)
-    val ds = createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
+    val config                 = MySQLSinkConfig.parse(node, getenv)
+    val ds                     = createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
     var connection: Connection = null
     try {
       connection = ds.getConnection
-      if(cn.xuyinyin.magic.cdc.control.SnapshotOwnerJdbc.context.nonEmpty) {
-        Vector(config.table,"pekko_sync_batch_ledger","pekko_snapshot_batch_evidence").foreach { table=>
-          val statement=connection.prepareStatement("SELECT ENGINE FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=?")
-          try {statement.setString(1,table);val rows=statement.executeQuery();try require(rows.next() && rows.getString(1)=="InnoDB","managed snapshot target and ledgers must be InnoDB")finally rows.close()}finally statement.close()
+      if (cn.xuyinyin.magic.cdc.control.SnapshotOwnerJdbc.context.nonEmpty) {
+        Vector(config.table, "pekko_sync_batch_ledger", "pekko_snapshot_batch_evidence").foreach { table =>
+          val statement = connection.prepareStatement("SELECT ENGINE FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=?")
+          try {
+            statement.setString(1, table); val rows = statement.executeQuery();
+            try require(rows.next() && rows.getString(1) == "InnoDB", "managed snapshot target and ledgers must be InnoDB")
+            finally rows.close()
+          } finally statement.close()
         }
       }
       Vector(
@@ -107,36 +111,40 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
         "SELECT batch_id, source_sha256, target_sha256 FROM pekko_snapshot_batch_evidence WHERE 1=0"
       ).foreach { sql =>
         val statement = connection.prepareStatement(sql)
-        try { val rows = statement.executeQuery(); rows.close() } finally statement.close()
+        try { val rows = statement.executeQuery(); rows.close() }
+        finally statement.close()
       }
       Done
     } finally {
-      try closeSplitResource(connection, "snapshot-validation") finally closeSplitResource(ds, "snapshot-validation")
+      try closeSplitResource(connection, "snapshot-validation")
+      finally closeSplitResource(ds, "snapshot-validation")
     }
   }(ec)
 
   /** Split workers have no per-table idle connections; one physical target connection per active commit. */
   protected[sink] def createSplitDataSource(host: String, port: Int, database: String, username: String, password: String): HikariDataSource = {
     val config = new HikariConfig()
-    config.setJdbcUrl(s"jdbc:mysql://$host:$port/$database?rewriteBatchedStatements=true&useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&socketTimeout=10000&connectTimeout=5000")
+    config.setJdbcUrl(
+      s"jdbc:mysql://$host:$port/$database?rewriteBatchedStatements=true&useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&socketTimeout=10000&connectTimeout=5000")
     config.setUsername(username); config.setPassword(password); config.setDriverClassName("com.mysql.cj.jdbc.Driver")
     config.setMaximumPoolSize(1); config.setMinimumIdle(0); config.setConnectionTimeout(10000)
-    cn.xuyinyin.magic.cdc.control.SnapshotOwnerJdbc.configure(config,"target")
+    cn.xuyinyin.magic.cdc.control.SnapshotOwnerJdbc.configure(config, "target")
     new HikariDataSource(config)
   }
 
   override def commitBatch(
-    node: WorkflowDSL.Node,
-    workflowId: String,
-    executionId: String,
-    batch: SourceBatch,
-    transformedRows: Vector[String],
-    onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = Future {
+      node: WorkflowDSL.Node,
+      workflowId: String,
+      executionId: String,
+      batch: SourceBatch,
+      transformedRows: Vector[String],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = Future {
     val config = MySQLSinkConfig.parse(node, getenv)
-    val dataSource = if (batch.cursor.kind == cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind)
-      createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
-    else createDataSource(config.host, config.port, config.database, config.username, config.password)
+    val dataSource =
+      if (batch.cursor.kind == cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind)
+        createSplitDataSource(config.host, config.port, config.database, config.username, config.password)
+      else createDataSource(config.host, config.port, config.database, config.username, config.password)
     try {
       val result = commitCheckpointedBatch(dataSource, config, workflowId, executionId, batch, transformedRows)
       try onLog(s"[MySQL Sink] 批次 ${batch.batchId} 已确认，目标行数: ${resultCheckpoint(result).targetRowsWritten}")
@@ -151,40 +159,42 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
   protected[sink] def beforeLedgerClaim(batchId: String): Unit = ()
 
   protected[sink] def createInnerSink(
-    dataSource: HikariDataSource,
-    table: String,
-    batchSize: Int,
-    mode: String,
-    onLog: String => Unit
-  )(implicit ec: ExecutionContext): Sink[String, Future[Done]] =
-    Flow[String].grouped(batchSize).toMat(Sink.foldAsync[Int, Seq[String]](0) { (count, rows) =>
-      Future {
-        val written = writeBatch(dataSource, table, rows, mode)
-        val totalCount = count + written
-        onLog(s"[MySQL Sink] 已写入 $totalCount 行到 $table")
-        totalCount
+      dataSource: HikariDataSource,
+      table: String,
+      batchSize: Int,
+      mode: String,
+      onLog: String => Unit
+    )(implicit ec: ExecutionContext): Sink[String, Future[Done]] =
+    Flow[String]
+      .grouped(batchSize)
+      .toMat(Sink.foldAsync[Int, Seq[String]](0) { (count, rows) =>
+        Future {
+          val written    = writeBatch(dataSource, table, rows, mode)
+          val totalCount = count + written
+          onLog(s"[MySQL Sink] 已写入 $totalCount 行到 $table")
+          totalCount
+        }
+      })(Keep.right)
+      .mapMaterializedValue { future =>
+        future.transform {
+          case Success(totalCount) =>
+            try {
+              onLog(s"[MySQL Sink] 写入完成，总计: $totalCount 行")
+              Success(Done)
+            } finally closeDataSource(dataSource)
+          case Failure(exception) =>
+            closeDataSource(dataSource)
+            Failure(exception)
+        }
       }
-    })(Keep.right).mapMaterializedValue { future =>
-      future.transform {
-        case Success(totalCount) =>
-          try {
-            onLog(s"[MySQL Sink] 写入完成，总计: $totalCount 行")
-            Success(Done)
-          } finally closeDataSource(dataSource)
-        case Failure(exception) =>
-          closeDataSource(dataSource)
-          Failure(exception)
-      }
-    }
 
   private def commitCheckpointedBatch(
-    dataSource: HikariDataSource,
-    config: MySQLSinkConfig,
-    workflowId: String,
-    executionId: String,
-    batch: SourceBatch,
-    transformedRows: Vector[String]
-  ): BatchCommitResult = {
+      dataSource: HikariDataSource,
+      config: MySQLSinkConfig,
+      workflowId: String,
+      executionId: String,
+      batch: SourceBatch,
+      transformedRows: Vector[String]): BatchCommitResult = {
     val checkpoint = BatchCheckpoint(
       batch.sourceNodeId,
       batch.partitionId,
@@ -194,15 +204,16 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
       batch.rows.size.toLong,
       transformedRows.size.toLong
     )
-    val expected = LedgerRecord(batch.batchId, workflowId, executionId, checkpoint)
-    val split = batch.cursor.kind == cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind
-    var commitStarted = false
+    val expected               = LedgerRecord(batch.batchId, workflowId, executionId, checkpoint)
+    val split                  = batch.cursor.kind == cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind
+    var commitStarted          = false
     var connection: Connection = null
     def evidence(c: Connection, insert: Boolean): Unit = if (split) {
       val sourceHash = cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.rowsDigest(batch.rows)
       val targetHash = cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.rowsDigest(transformedRows)
-      val statement = c.prepareStatement(if (insert)
-        "INSERT INTO pekko_snapshot_batch_evidence (batch_id,source_sha256,target_sha256) VALUES (?,?,?)"
+      val statement = c.prepareStatement(
+        if (insert)
+          "INSERT INTO pekko_snapshot_batch_evidence (batch_id,source_sha256,target_sha256) VALUES (?,?,?)"
         else "SELECT source_sha256,target_sha256 FROM pekko_snapshot_batch_evidence WHERE batch_id=?")
       try {
         statement.setString(1, batch.batchId)
@@ -247,8 +258,8 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
               connection.rollback()
               findLedger(connection, batch.batchId) match {
                 case Some(existing) if existing == expected => evidence(connection, insert = false); AlreadyCommitted(existing.checkpoint)
-                case Some(_) => throw conflictingLedger(batch.batchId)
-                case None => throw new IllegalStateException("batch write failed", sql)
+                case Some(_)                                => throw conflictingLedger(batch.batchId)
+                case None                                   => throw new IllegalStateException("batch write failed", sql)
               }
           }
       }
@@ -256,7 +267,8 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
       case exception: Exception if split && commitStarted =>
         rollback(connection)
         throw new cn.xuyinyin.magic.cdc.recovery.CdcExecutionException(
-          cn.xuyinyin.magic.cdc.recovery.ExecutionFailure("commit_outcome_unknown", "snapshot-commit", Some(batch.batchId)), exception)
+          cn.xuyinyin.magic.cdc.recovery.ExecutionFailure("commit_outcome_unknown", "snapshot-commit", Some(batch.batchId)),
+          exception)
       case exception: IllegalStateException =>
         rollback(connection)
         throw exception
@@ -268,8 +280,13 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
 
   private def closeSplitResource(resource: AutoCloseable, batchId: String): Unit = if (resource != null) {
     try resource.close()
-    catch { case NonFatal(error) => throw new cn.xuyinyin.magic.cdc.recovery.CdcExecutionException(
-      cn.xuyinyin.magic.cdc.recovery.ExecutionFailure("local_release_unconfirmed", "snapshot-target-close", Some(batchId), releaseConfirmed = false), error) }
+    catch {
+      case NonFatal(error) =>
+        throw new cn.xuyinyin.magic.cdc.recovery.CdcExecutionException(
+          cn.xuyinyin.magic.cdc.recovery
+            .ExecutionFailure("local_release_unconfirmed", "snapshot-target-close", Some(batchId), releaseConfirmed = false),
+          error)
+    }
   }
 
   private def findLedger(connection: Connection, batchId: String): Option[LedgerRecord] = {
@@ -344,11 +361,10 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
   }
 
   private def writeRows(
-    connection: Connection,
-    table: String,
-    records: Vector[(Vector[String], Vector[JsValue])],
-    mode: String
-  ): Unit =
+      connection: Connection,
+      table: String,
+      records: Vector[(Vector[String], Vector[JsValue])],
+      mode: String): Unit =
     records.headOption.foreach { case (columns, _) =>
       val statement = connection.prepareStatement(generateSQL(table, columns.toList, mode))
       try {
@@ -361,7 +377,7 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
     }
 
   private def resultCheckpoint(result: BatchCommitResult): BatchCheckpoint = result match {
-    case Committed(checkpoint) => checkpoint
+    case Committed(checkpoint)        => checkpoint
     case AlreadyCommitted(checkpoint) => checkpoint
   }
 
@@ -371,42 +387,40 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
   private def isDuplicateKey(exception: SQLException): Boolean =
     exception.getSQLState == "23505" ||
       (exception.getSQLState == "23000" && exception.getErrorCode == 1062)
-  
+
   /**
    * 创建HikariCP连接池
    */
   protected[sink] def createDataSource(
-    host: String, 
-    port: Int, 
-    database: String, 
-    username: String, 
-    password: String
-  ): HikariDataSource = {
+      host: String,
+      port: Int,
+      database: String,
+      username: String,
+      password: String): HikariDataSource = {
     val config = new HikariConfig()
-    
+
     config.setJdbcUrl(
       s"jdbc:mysql://$host:$port/$database?rewriteBatchedStatements=true&useSSL=false"
     )
     config.setUsername(username)
     config.setPassword(password)
     config.setDriverClassName("com.mysql.cj.jdbc.Driver")
-    
+
     // 连接池配置
     config.setMaximumPoolSize(10)
     config.setMinimumIdle(2)
     config.setConnectionTimeout(30000)
-    
-    cn.xuyinyin.magic.cdc.control.SnapshotOwnerJdbc.configure(config,"target")
+
+    cn.xuyinyin.magic.cdc.control.SnapshotOwnerJdbc.configure(config, "target")
     new HikariDataSource(config)
   }
-  
+
   private def writeBatch(
-    dataSource: HikariDataSource,
-    table: String,
-    rows: Seq[String],
-    mode: String
-  ): Int = {
-    var connection: Connection = null
+      dataSource: HikariDataSource,
+      table: String,
+      rows: Seq[String],
+      mode: String): Int = {
+    var connection: Connection       = null
     var statement: PreparedStatement = null
     try {
       val records = rows.map(parseRecord)
@@ -442,11 +456,11 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
   }
 
   private def jdbcValue(value: JsValue): String = value match {
-    case JsString(stringValue) => stringValue
-    case JsNumber(numberValue) => numberValue.toString
+    case JsString(stringValue)   => stringValue
+    case JsNumber(numberValue)   => numberValue.toString
     case JsBoolean(booleanValue) => booleanValue.toString
-    case JsNull => null
-    case other => other.compactPrint
+    case JsNull                  => null
+    case other                   => other.compactPrint
   }
 
   private def rollback(connection: Connection): Unit =
@@ -481,21 +495,21 @@ class MySQLSinkNode extends NodeSink with CheckpointedNodeSink with cn.xuyinyin.
    * 生成SQL语句
    */
   private def generateSQL(table: String, columns: List[String], mode: String): String = {
-    val columnsPart = columns.mkString(", ")
+    val columnsPart  = columns.mkString(", ")
     val placeholders = columns.map(_ => "?").mkString(", ")
-    
+
     mode match {
       case "insert" =>
         s"INSERT INTO $table ($columnsPart) VALUES ($placeholders)"
-      
+
       case "upsert" =>
         // INSERT ON DUPLICATE KEY UPDATE
         val updatePart = columns.map(col => s"$col = VALUES($col)").mkString(", ")
         s"INSERT INTO $table ($columnsPart) VALUES ($placeholders) ON DUPLICATE KEY UPDATE $updatePart"
-      
+
       case "replace" =>
         s"REPLACE INTO $table ($columnsPart) VALUES ($placeholders)"
-      
+
       case _ =>
         s"INSERT INTO $table ($columnsPart) VALUES ($placeholders)"
     }

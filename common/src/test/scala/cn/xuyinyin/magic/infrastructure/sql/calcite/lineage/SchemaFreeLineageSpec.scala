@@ -26,7 +26,7 @@ import scala.jdk.CollectionConverters._
 class SchemaFreeLineageSpec extends STSpec {
 
   private class DynamicSchema extends AbstractSchema {
-    private val tableMap = new util.HashMap[String, Table]()
+    private val tableMap                              = new util.HashMap[String, Table]()
     override def getTableMap: util.Map[String, Table] = tableMap
     def addFakeTable(tableName: String, fields: Set[String]): Unit = {
       println(s"注册虚表: $tableName -> 字段: $fields")
@@ -47,7 +47,7 @@ class SchemaFreeLineageSpec extends STSpec {
   private val aliasToFields = mutable.Map[String, mutable.Set[String]]()
 
   private def extractTablesAndAliases(parsedSql: SqlNode): Map[String, String] = {
-    val aliasToRealTable = mutable.Map[String, String]()
+    val aliasToRealTable             = mutable.Map[String, String]()
     var inFromOrJoinContext: Boolean = false
 
     parsedSql.accept(new SqlBasicVisitor[Unit]() {
@@ -55,7 +55,7 @@ class SchemaFreeLineageSpec extends STSpec {
         call.getKind.toString match {
           case "AS" =>
             if (inFromOrJoinContext) {
-              val leftNode: SqlNode = call.operand(0)
+              val leftNode: SqlNode  = call.operand(0)
               val rightNode: SqlNode = call.operand(1)
 
               if (leftNode != null && rightNode != null &&
@@ -63,7 +63,7 @@ class SchemaFreeLineageSpec extends STSpec {
                 rightNode.isInstanceOf[SqlIdentifier]) {
 
                 val realTableId = leftNode.asInstanceOf[SqlIdentifier]
-                val aliasId = rightNode.asInstanceOf[SqlIdentifier]
+                val aliasId     = rightNode.asInstanceOf[SqlIdentifier]
                 if (realTableId.names.size() == 2) {
                   aliasToRealTable.put(aliasId.getSimple, realTableId.names.mkString("."))
                 }
@@ -72,7 +72,7 @@ class SchemaFreeLineageSpec extends STSpec {
               } else {
                 call.getOperandList.asScala.foreach {
                   case sub if sub != null => sub.accept(this)
-                  case _ =>
+                  case _                  =>
                 }
               }
             }
@@ -111,14 +111,14 @@ class SchemaFreeLineageSpec extends STSpec {
             inFromOrJoinContext = true
             call.getOperandList.asScala.foreach {
               case sub if sub != null => sub.accept(this)
-              case _ =>
+              case _                  =>
             }
             inFromOrJoinContext = prev
 
           case _ =>
             call.getOperandList.asScala.foreach {
               case sub if sub != null => sub.accept(this)
-              case _ =>
+              case _                  =>
             }
         }
       }
@@ -141,7 +141,7 @@ class SchemaFreeLineageSpec extends STSpec {
   }
 
   private def parseAndOptimize(sql: String): RelNode = {
-    val rootSchema1 = CalciteSchema.createRootSchema(true)
+    val rootSchema1    = CalciteSchema.createRootSchema(true)
     val dynamicSchema1 = new DynamicSchema()
     rootSchema1.add("MYSCHEMA", dynamicSchema1)
 
@@ -151,14 +151,14 @@ class SchemaFreeLineageSpec extends STSpec {
       .parserConfig(SqlParser.config().withLex(Lex.MYSQL).withCaseSensitive(false))
       .build()
 
-    val planner1 = Frameworks.getPlanner(config1)
+    val planner1  = Frameworks.getPlanner(config1)
     val parsedSql = planner1.parse(sql)
     planner1.close()
 
     val aliasToRealTable = extractTablesAndAliases(parsedSql)
     println(s"\n>>> 提取到表和别名: $aliasToRealTable")
 
-    val rootSchema2 = CalciteSchema.createRootSchema(true)
+    val rootSchema2    = CalciteSchema.createRootSchema(true)
     val dynamicSchema2 = new DynamicSchema()
     rootSchema2.add("MYSCHEMA", dynamicSchema2)
 
@@ -181,14 +181,15 @@ class SchemaFreeLineageSpec extends STSpec {
       .build()
 
     val planner2 = Frameworks.getPlanner(config2)
-    val parsed = planner2.parse(sql)
-    val validated = try {
-      planner2.validate(parsed)
-    } catch {
-      case e: Exception =>
-        println(s">>> 校验失败: ${e.getMessage}")
-        throw e
-    }
+    val parsed   = planner2.parse(sql)
+    val validated =
+      try {
+        planner2.validate(parsed)
+      } catch {
+        case e: Exception =>
+          println(s">>> 校验失败: ${e.getMessage}")
+          throw e
+      }
     val originalRel = planner2.rel(validated).project
 
     val hepProgram = new HepProgramBuilder()
@@ -206,7 +207,7 @@ class SchemaFreeLineageSpec extends STSpec {
   type LineageMap = mutable.Map[String, Set[ColumnOrigin]]
 
   class LineageVisitor extends RelVisitor {
-    val lineageMap: LineageMap = mutable.Map.empty
+    val lineageMap: LineageMap               = mutable.Map.empty
     private var currentContext: List[String] = Nil
 
     override def visit(node: RelNode, ordinal: Int, parent: RelNode): Unit = {
@@ -240,11 +241,10 @@ class SchemaFreeLineageSpec extends STSpec {
           case call: RexCall =>
             println(s"字段 $targetField 是函数调用: ${call.getOperator.getName}(${call.getOperands.asScala.mkString(", ")})")
             // 处理函数调用中的字段
-            call.getOperands.asScala.foreach {
-              case rex: RexInputRef =>
-                val fieldName = rex.getName
-                val alias = "e"  // 这里根据实际需要绑定别名
-                aliasToFields.getOrElseUpdate(alias, mutable.Set.empty) += fieldName
+            call.getOperands.asScala.foreach { case rex: RexInputRef =>
+              val fieldName = rex.getName
+              val alias     = "e" // 这里根据实际需要绑定别名
+              aliasToFields.getOrElseUpdate(alias, mutable.Set.empty) += fieldName
             }
           case _ => // 非函数表达式也可以处理
         }
@@ -329,7 +329,6 @@ class SchemaFreeLineageSpec extends STSpec {
     }
   }
 
-
   "Schema-Free Parser" should {
     "parse SQL dynamically" in {
       val sql =
@@ -339,7 +338,7 @@ class SchemaFreeLineageSpec extends STSpec {
           |FROM MYSCHEMA.EMP e
           |JOIN MYSCHEMA.DEPT d ON e.DEPTNO = d.DEPTNO
           |""".stripMargin
-      val rel = parseAndOptimize(sql)
+      val rel     = parseAndOptimize(sql)
       val visitor = new LineageVisitor()
       visitor.go(rel)
       val lineage = visitor.lineageMap

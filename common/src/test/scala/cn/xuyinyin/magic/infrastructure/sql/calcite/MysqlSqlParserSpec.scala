@@ -31,8 +31,9 @@ class MysqlSqlParserSpec extends STSpec {
 
     "case 1" in {
       val source = Source.fromResource("calcite/test.sql")
-      val sql = try source.mkString
-      finally source.close()
+      val sql =
+        try source.mkString
+        finally source.close()
 
       // Step 1: Parse SQL to SqlNode
       val parser: SqlParser = parseSql(sql)
@@ -100,7 +101,7 @@ class MysqlSqlParserSpec extends STSpec {
       val relToSqlConverter = new RelToSqlConverter(dialect)
 
       // 正确调用 visitRoot 处理根节点
-      val result  = relToSqlConverter.visitRoot(relNode)
+      val result           = relToSqlConverter.visitRoot(relNode)
       val sqlNode: SqlNode = result.asStatement()
 
       // 将 SQL 节点转换为 SQL 字符串
@@ -115,9 +116,11 @@ class MysqlSqlParserSpec extends STSpec {
       val rootSchema: SchemaPlus = Frameworks.createRootSchema(true)
       rootSchema.add("my_schema", new MySchema()) // 假设 MySchema 已实现
 
-      val config: FrameworkConfig = Frameworks.newConfigBuilder()
+      val config: FrameworkConfig = Frameworks
+        .newConfigBuilder()
         .parserConfig(
-          SqlParser.configBuilder()
+          SqlParser
+            .configBuilder()
             .setLex(Lex.MYSQL) // 根据需求设置 SQL 方言
             .build()
         )
@@ -139,12 +142,12 @@ class MysqlSqlParserSpec extends STSpec {
         .build()
 
       // 创建转换器
-      val dialect = PostgresqlSqlDialect.DEFAULT
+      val dialect   = PostgresqlSqlDialect.DEFAULT
       val converter = new RelToSqlConverter(dialect) // 正确构造方法
 
       // 执行转换
       val result = converter.visitRoot(relNode).asStatement()
-      val sql = result.toSqlString(dialect).getSql
+      val sql    = result.toSqlString(dialect).getSql
 
       // 验证结果
       val expected =
@@ -160,9 +163,11 @@ class MysqlSqlParserSpec extends STSpec {
       val rootSchema: SchemaPlus = Frameworks.createRootSchema(true)
       rootSchema.add("my_schema", new MySchema()) // 假设 MySchema 已实现
 
-      val config: FrameworkConfig = Frameworks.newConfigBuilder()
+      val config: FrameworkConfig = Frameworks
+        .newConfigBuilder()
         .parserConfig(
-          SqlParser.config()
+          SqlParser
+            .config()
             .withLex(Lex.MYSQL) // 根据需求设置 SQL 方言
         )
         .defaultSchema(rootSchema.getSubSchema("my_schema"))

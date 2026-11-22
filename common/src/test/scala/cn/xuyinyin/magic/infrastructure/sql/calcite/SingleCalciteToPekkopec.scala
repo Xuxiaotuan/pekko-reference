@@ -165,7 +165,7 @@ class SingleCalciteToPekkopec extends STSpec {
 
       def scanTable(scan: TableScan): Iterator[Row] = {
         // 解析出来是什么数据库，然后读库
-        val table: RelOptTable = scan.getTable
+        val table: RelOptTable                     = scan.getTable
         val fieldList: util.List[RelDataTypeField] = table.getRowType.getFieldList
         println(s"scan: $scan \n table: ${table.getQualifiedName} fieldList: $fieldList")
         Iterator.empty

@@ -16,20 +16,22 @@ class LegacySerializationCompatibilitySpec extends AnyWordSpec with Matchers {
       val kit = ActorTestKit("legacy-layout-reader", ConfigFactory.parseString("pekko.actor.provider=local").withFallback(ConfigFactory.load()))
       try {
         val source = scala.io.Source.fromResource("compatibility/bf249b1-cbor.json")
-        val fixture = try source.mkString.parseJson.asJsObject finally source.close()
+        val fixture =
+          try source.mkString.parseJson.asJsObject
+          finally source.close()
         val serialization = SerializationExtension(kit.system.classicSystem)
-        val samples = fixture.fields("samples").asInstanceOf[JsArray].elements
+        val samples       = fixture.fields("samples").asInstanceOf[JsArray].elements
         samples.size shouldBe 18
         samples.foreach { row =>
-          val fields = row.asJsObject.fields
+          val fields             = row.asJsObject.fields
           def text(name: String) = fields(name).convertTo[String]
-          val bytes = Base64.getDecoder.decode(text("payloadBase64"))
-          val value = serialization.deserialize(bytes, fields("serializerId").convertTo[Int], text("manifest")).get
-          val expected=text("className").replace("cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor$",
-            "cn.xuyinyin.magic.cdc.compat.LegacyWorkflowState$")
-            .replace("cn.xuyinyin.magic.workflow.checkpoint.","cn.xuyinyin.magic.cdc.checkpoint.")
-            .replace("cn.xuyinyin.magic.workflow.engine.ExecutionFailure","cn.xuyinyin.magic.cdc.recovery.ExecutionFailure")
-            .replace("cn.xuyinyin.magic.workflow.events.WorkflowEvents$","cn.xuyinyin.magic.cdc.compat.WorkflowEvents$")
+          val bytes              = Base64.getDecoder.decode(text("payloadBase64"))
+          val value              = serialization.deserialize(bytes, fields("serializerId").convertTo[Int], text("manifest")).get
+          val expected = text("className")
+            .replace("cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor$", "cn.xuyinyin.magic.cdc.compat.LegacyWorkflowState$")
+            .replace("cn.xuyinyin.magic.workflow.checkpoint.", "cn.xuyinyin.magic.cdc.checkpoint.")
+            .replace("cn.xuyinyin.magic.workflow.engine.ExecutionFailure", "cn.xuyinyin.magic.cdc.recovery.ExecutionFailure")
+            .replace("cn.xuyinyin.magic.workflow.events.WorkflowEvents$", "cn.xuyinyin.magic.cdc.compat.WorkflowEvents$")
           value.getClass.getName shouldBe expected
           serialization.serialize(value).get.toVector shouldBe bytes.toVector
         }

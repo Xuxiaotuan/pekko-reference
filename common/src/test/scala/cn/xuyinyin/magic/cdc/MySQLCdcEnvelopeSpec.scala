@@ -3,7 +3,17 @@ package cn.xuyinyin.magic.cdc
 import cn.xuyinyin.magic.testkit.STSpec
 import io.debezium.data.{Json => DebeziumJson}
 import io.debezium.data.geometry.Geometry
-import io.debezium.time.{Date => DebeziumDate, MicroTime, MicroTimestamp, NanoTime, NanoTimestamp, Time => DebeziumTime, Timestamp => DebeziumTimestamp, ZonedTime, ZonedTimestamp}
+import io.debezium.time.{
+  Date => DebeziumDate,
+  MicroTime,
+  MicroTimestamp,
+  NanoTime,
+  NanoTimestamp,
+  Time => DebeziumTime,
+  Timestamp => DebeziumTimestamp,
+  ZonedTime,
+  ZonedTimestamp
+}
 import org.apache.kafka.connect.data.{Decimal, Schema, SchemaBuilder, Struct}
 import org.apache.kafka.connect.source.SourceRecord
 import org.scalatest.OptionValues
@@ -15,12 +25,14 @@ import java.util.{Collections, Date, TimeZone}
 class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
   private val connectorId = "orders-cdc-v1"
 
-  private val keySchema = SchemaBuilder.struct()
+  private val keySchema = SchemaBuilder
+    .struct()
     .name("pekko_workflow.orders.Key")
     .field("id", Schema.INT32_SCHEMA)
     .build()
 
-  private val rowSchema = SchemaBuilder.struct()
+  private val rowSchema = SchemaBuilder
+    .struct()
     .name("pekko_workflow.orders.Value")
     .optional()
     .field("status", Schema.OPTIONAL_STRING_SCHEMA)
@@ -29,7 +41,8 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
     .field("note", Schema.OPTIONAL_STRING_SCHEMA)
     .build()
 
-  private val sourceSchema = SchemaBuilder.struct()
+  private val sourceSchema = SchemaBuilder
+    .struct()
     .name("io.debezium.connector.mysql.Source")
     .field("db", Schema.STRING_SCHEMA)
     .field("table", Schema.STRING_SCHEMA)
@@ -40,7 +53,8 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
     .field("ts_ms", Schema.OPTIONAL_INT64_SCHEMA)
     .build()
 
-  private val envelopeSchema = SchemaBuilder.struct()
+  private val envelopeSchema = SchemaBuilder
+    .struct()
     .name("pekko_workflow.orders.Envelope")
     .field("before", rowSchema)
     .field("after", rowSchema)
@@ -107,7 +121,10 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
     }
 
     "convert every supported primitive without stringifying integral or floating values" in {
-      val schema = SchemaBuilder.struct().name("supported.primitives").optional()
+      val schema = SchemaBuilder
+        .struct()
+        .name("supported.primitives")
+        .optional()
         .field("bool", Schema.BOOLEAN_SCHEMA)
         .field("int8", Schema.INT8_SCHEMA)
         .field("int16", Schema.INT16_SCHEMA)
@@ -130,20 +147,23 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
         .put("json", "{\"nested\":true}")
 
       success(recordWithImageSchema("c", schema, None, Some(value))).after.value shouldBe JsObject(
-        "bool" -> JsBoolean(true),
-        "int8" -> JsNumber(7),
-        "int16" -> JsNumber(300),
-        "int32" -> JsNumber(70000),
-        "int64" -> JsNumber(9007199254740993L),
+        "bool"    -> JsBoolean(true),
+        "int8"    -> JsNumber(7),
+        "int16"   -> JsNumber(300),
+        "int32"   -> JsNumber(70000),
+        "int64"   -> JsNumber(9007199254740993L),
         "float32" -> JsNumber(BigDecimal("1.5")),
         "float64" -> JsNumber(BigDecimal("2.25")),
-        "text" -> JsString("hello"),
-        "json" -> JsString("{\"nested\":true}")
+        "text"    -> JsString("hello"),
+        "json"    -> JsString("{\"nested\":true}")
       )
     }
 
     "format actual Debezium logical date time and timestamp schemas deterministically" in {
-      val schema = SchemaBuilder.struct().name("supported.temporal").optional()
+      val schema = SchemaBuilder
+        .struct()
+        .name("supported.temporal")
+        .optional()
         .field("date", DebeziumDate.builder().build())
         .field("time", DebeziumTime.builder().build())
         .field("microTime", MicroTime.builder().build())
@@ -166,20 +186,23 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
         .put("zonedTimestamp", "2024-01-02T03:04:05.123456Z")
 
       success(recordWithImageSchema("c", schema, None, Some(value))).after.value shouldBe JsObject(
-        "date" -> JsString("2024-01-02"),
-        "time" -> JsString("01:02:03.456"),
-        "microTime" -> JsString("01:02:03.456789"),
-        "nanoTime" -> JsString("01:02:03.456789123"),
-        "timestamp" -> JsString("2024-01-02T03:04:05.123"),
+        "date"           -> JsString("2024-01-02"),
+        "time"           -> JsString("01:02:03.456"),
+        "microTime"      -> JsString("01:02:03.456789"),
+        "nanoTime"       -> JsString("01:02:03.456789123"),
+        "timestamp"      -> JsString("2024-01-02T03:04:05.123"),
         "microTimestamp" -> JsString("2024-01-02T03:04:05.123456"),
-        "nanoTimestamp" -> JsString("2024-01-02T03:04:05.123456789"),
-        "zonedTime" -> JsString("01:02:03.456789+02:00"),
+        "nanoTimestamp"  -> JsString("2024-01-02T03:04:05.123456789"),
+        "zonedTime"      -> JsString("01:02:03.456789+02:00"),
         "zonedTimestamp" -> JsString("2024-01-02T03:04:05.123456Z")
       )
     }
 
     "format Kafka Connect logical temporals identically under different JVM default time zones" in {
-      val schema = SchemaBuilder.struct().name("supported.connect.temporal").optional()
+      val schema = SchemaBuilder
+        .struct()
+        .name("supported.connect.temporal")
+        .optional()
         .field("date", org.apache.kafka.connect.data.Date.builder().build())
         .field("time", org.apache.kafka.connect.data.Time.builder().build())
         .field("timestamp", org.apache.kafka.connect.data.Timestamp.builder().build())
@@ -197,48 +220,68 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
 
         first shouldBe second
         first shouldBe JsObject(
-          "date" -> JsString("1970-01-01"),
-          "time" -> JsString("01:02:03.456"),
+          "date"      -> JsString("1970-01-01"),
+          "time"      -> JsString("01:02:03.456"),
           "timestamp" -> JsString("2024-01-02T03:04:05.123Z")
         )
       } finally TimeZone.setDefault(original)
     }
 
     "reject a Kafka Connect Date that is not UTC midnight instead of truncating its time" in {
-      val schema = SchemaBuilder.struct().name("invalid.connect.date").optional()
-        .field("date", org.apache.kafka.connect.data.Date.builder().build()).build()
+      val schema = SchemaBuilder
+        .struct()
+        .name("invalid.connect.date")
+        .optional()
+        .field("date", org.apache.kafka.connect.data.Date.builder().build())
+        .build()
       val value = new Struct(schema).put("date", new Date(1L))
 
       failure(recordWithImageSchema("c", schema, None, Some(value))).message should include("midnight")
     }
 
     "reject a negative Kafka Connect Time instead of wrapping it into the previous day" in {
-      val schema = SchemaBuilder.struct().name("invalid.connect.time.negative").optional()
-        .field("time", org.apache.kafka.connect.data.Time.builder().build()).build()
+      val schema = SchemaBuilder
+        .struct()
+        .name("invalid.connect.time.negative")
+        .optional()
+        .field("time", org.apache.kafka.connect.data.Time.builder().build())
+        .build()
       val value = new Struct(schema).put("time", new Date(-1L))
 
       failure(recordWithImageSchema("c", schema, None, Some(value))).message should include("24-hour day")
     }
 
     "reject a Kafka Connect Time at the next-day boundary instead of wrapping it to midnight" in {
-      val schema = SchemaBuilder.struct().name("invalid.connect.time.next.day").optional()
-        .field("time", org.apache.kafka.connect.data.Time.builder().build()).build()
+      val schema = SchemaBuilder
+        .struct()
+        .name("invalid.connect.time.next.day")
+        .optional()
+        .field("time", org.apache.kafka.connect.data.Time.builder().build())
+        .build()
       val value = new Struct(schema).put("time", new Date(86400000L))
 
       failure(recordWithImageSchema("c", schema, None, Some(value))).message should include("24-hour day")
     }
 
     "reject an invalid Debezium ZonedTime string instead of passing it through" in {
-      val schema = SchemaBuilder.struct().name("invalid.zoned.time").optional()
-        .field("time", ZonedTime.builder().build()).build()
+      val schema = SchemaBuilder
+        .struct()
+        .name("invalid.zoned.time")
+        .optional()
+        .field("time", ZonedTime.builder().build())
+        .build()
       val value = new Struct(schema).put("time", "25:00:00+02:00")
 
       failure(recordWithImageSchema("c", schema, None, Some(value))).message should include("ZonedTime")
     }
 
     "reject an invalid Debezium ZonedTimestamp string instead of passing it through" in {
-      val schema = SchemaBuilder.struct().name("invalid.zoned.timestamp").optional()
-        .field("timestamp", ZonedTimestamp.builder().build()).build()
+      val schema = SchemaBuilder
+        .struct()
+        .name("invalid.zoned.timestamp")
+        .optional()
+        .field("timestamp", ZonedTimestamp.builder().build())
+        .build()
       val value = new Struct(schema).put("timestamp", "2024-02-30T03:04:05Z")
 
       failure(recordWithImageSchema("c", schema, None, Some(value))).message should include("ZonedTimestamp")
@@ -248,7 +291,7 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
       val decoded = success(record("u", Some(row(42, "new")), Some(row(42, "paid"))))
 
       decoded.canonicalJson shouldBe
-        "{\"after\":{\"amount\":\"12.30\",\"id\":42,\"note\":null,\"status\":\"paid\"},\"before\":{\"amount\":\"12.30\",\"id\":42,\"note\":null,\"status\":\"new\"},\"key\":{\"id\":42},\"op\":\"u\",\"source\":{\"connectorId\":\"orders-cdc-v1\",\"database\":\"pekko_workflow\",\"eventTimestampMillis\":1788100000000,\"file\":\"binlog.000012\",\"position\":2805470,\"row\":0,\"snapshot\":false,\"table\":\"orders\"},\"version\":1}"
+      "{\"after\":{\"amount\":\"12.30\",\"id\":42,\"note\":null,\"status\":\"paid\"},\"before\":{\"amount\":\"12.30\",\"id\":42,\"note\":null,\"status\":\"new\"},\"key\":{\"id\":42},\"op\":\"u\",\"source\":{\"connectorId\":\"orders-cdc-v1\",\"database\":\"pekko_workflow\",\"eventTimestampMillis\":1788100000000,\"file\":\"binlog.000012\",\"position\":2805470,\"row\":0,\"snapshot\":false,\"table\":\"orders\"},\"version\":1}"
     }
 
     "filter a tombstone instead of leaking it into the mutation stream" in {
@@ -256,18 +299,26 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
     }
 
     "filter a heartbeat instead of treating its Struct as a malformed data event" in {
-      val schema = SchemaBuilder.struct().name("io.debezium.connector.common.Heartbeat")
+      val schema = SchemaBuilder
+        .struct()
+        .name("io.debezium.connector.common.Heartbeat")
         .version(1)
-        .field("ts_ms", Schema.INT64_SCHEMA).build()
+        .field("ts_ms", Schema.INT64_SCHEMA)
+        .build()
       val heartbeat = sourceRecord("server.heartbeat", keySchema, key(42), schema, new Struct(schema).put("ts_ms", 1L))
 
       MySQLCdcEnvelope.decode(heartbeat, connectorId) shouldBe Right(None)
     }
 
     "filter a schema-change record instead of treating it as a row mutation" in {
-      val tableChangeSchema = SchemaBuilder.struct().name("io.debezium.connector.schema.Change")
-        .field("type", Schema.STRING_SCHEMA).build()
-      val schema = SchemaBuilder.struct().name("io.debezium.connector.mysql.SchemaChangeValue")
+      val tableChangeSchema = SchemaBuilder
+        .struct()
+        .name("io.debezium.connector.schema.Change")
+        .field("type", Schema.STRING_SCHEMA)
+        .build()
+      val schema = SchemaBuilder
+        .struct()
+        .name("io.debezium.connector.mysql.SchemaChangeValue")
         .version(1)
         .field("source", sourceSchema)
         .field("ts_ms", Schema.INT64_SCHEMA)
@@ -276,13 +327,18 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
         .field("ddl", Schema.OPTIONAL_STRING_SCHEMA)
         .field("tableChanges", SchemaBuilder.array(tableChangeSchema).build())
         .build()
-      val schemaChange = sourceRecord("server.schema-changes", keySchema, key(42), schema, new Struct(schema)
-        .put("source", source)
-        .put("ts_ms", 1788100000000L)
-        .put("databaseName", "pekko_workflow")
-        .put("schemaName", null)
-        .put("ddl", "alter table orders")
-        .put("tableChanges", Collections.emptyList[Struct]()))
+      val schemaChange = sourceRecord(
+        "server.schema-changes",
+        keySchema,
+        key(42),
+        schema,
+        new Struct(schema)
+          .put("source", source)
+          .put("ts_ms", 1788100000000L)
+          .put("databaseName", "pekko_workflow")
+          .put("schemaName", null)
+          .put("ddl", "alter table orders")
+          .put("tableChanges", Collections.emptyList[Struct]()))
 
       MySQLCdcEnvelope.decode(schemaChange, connectorId) shouldBe Right(None)
     }
@@ -328,8 +384,12 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
     }
 
     "reject raw bytes instead of using an unknown toString fallback" in {
-      val schema = SchemaBuilder.struct().name("unsupported.bytes").optional()
-        .field("payload", Schema.BYTES_SCHEMA).build()
+      val schema = SchemaBuilder
+        .struct()
+        .name("unsupported.bytes")
+        .optional()
+        .field("payload", Schema.BYTES_SCHEMA)
+        .build()
       val value = new Struct(schema).put("payload", Array[Byte](1, 2, 3))
 
       failure(recordWithImageSchema("c", schema, None, Some(value))).message should include("unsupported")
@@ -337,8 +397,12 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
 
     "reject a Debezium spatial schema instead of flattening its Struct" in {
       val geometrySchema = Geometry.schema()
-      val schema = SchemaBuilder.struct().name("unsupported.geometry").optional()
-        .field("location", geometrySchema).build()
+      val schema = SchemaBuilder
+        .struct()
+        .name("unsupported.geometry")
+        .optional()
+        .field("location", geometrySchema)
+        .build()
       val value = new Struct(schema).put("location", Geometry.createValue(geometrySchema, Array[Byte](1, 2), 4326))
 
       failure(recordWithImageSchema("c", schema, None, Some(value))).message should include("unsupported")
@@ -352,15 +416,21 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
 
     "reject a SourceRecord value schema that differs from its runtime Struct schema" in {
       val actual = record("c", None, Some(row(42, "new")))
-      val declared = SchemaBuilder.struct().name("different.declared.Envelope")
-        .field("ignored", Schema.STRING_SCHEMA).build()
-      val mismatched = sourceRecord(actual.topic(), actual.keySchema(), actual.key().asInstanceOf[AnyRef], declared, actual.value().asInstanceOf[AnyRef])
+      val declared = SchemaBuilder
+        .struct()
+        .name("different.declared.Envelope")
+        .field("ignored", Schema.STRING_SCHEMA)
+        .build()
+      val mismatched =
+        sourceRecord(actual.topic(), actual.keySchema(), actual.key().asInstanceOf[AnyRef], declared, actual.value().asInstanceOf[AnyRef])
 
       failure(mismatched).message should include("value Struct schema")
     }
 
     "reject a nested source Struct whose schema differs from the envelope source field schema" in {
-      val otherSourceSchema = SchemaBuilder.struct().name("different.mysql.Source")
+      val otherSourceSchema = SchemaBuilder
+        .struct()
+        .name("different.mysql.Source")
         .field("db", Schema.STRING_SCHEMA)
         .field("table", Schema.STRING_SCHEMA)
         .field("snapshot", Schema.OPTIONAL_STRING_SCHEMA)
@@ -397,7 +467,7 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
     }
 
     "reject a null required primary-key value instead of accepting a non-actionable key" in {
-      val actual = record("c", None, Some(row(42, "new")))
+      val actual  = record("c", None, Some(row(42, "new")))
       val nullKey = new Struct(keySchema).put("id", 42)
       putUnchecked(nullKey, "id", null)
       val invalid = sourceRecord(actual.topic(), keySchema, nullKey, actual.valueSchema(), actual.value().asInstanceOf[AnyRef])
@@ -411,23 +481,24 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
       val literal =
         "{\"version\":1,\"op\":\"c\",\"key\":{\"id\":42},\"before\":null,\"after\":{\"amount\":\"12.30\",\"id\":42,\"status\":\"new\"},\"source\":{\"connectorId\":\"orders-cdc-v1\",\"database\":\"pekko_workflow\",\"table\":\"orders\",\"snapshot\":false,\"file\":\"binlog.000012\",\"position\":2805470,\"row\":0,\"eventTimestampMillis\":1788100000000}}"
 
-      MySQLCdcEnvelope.parse(literal) shouldBe Right(MySQLCdcEnvelope(
-        version = 1,
-        op = CdcOperation.Create,
-        key = JsObject("id" -> JsNumber(42)),
-        before = None,
-        after = Some(JsObject("amount" -> JsString("12.30"), "id" -> JsNumber(42), "status" -> JsString("new"))),
-        source = MySQLCdcSourcePosition(
-          connectorId = "orders-cdc-v1",
-          database = "pekko_workflow",
-          table = "orders",
-          snapshot = false,
-          file = Some("binlog.000012"),
-          position = Some(2805470L),
-          row = Some(0),
-          eventTimestampMillis = Some(1788100000000L)
-        )
-      ))
+      MySQLCdcEnvelope.parse(literal) shouldBe Right(
+        MySQLCdcEnvelope(
+          version = 1,
+          op = CdcOperation.Create,
+          key = JsObject("id" -> JsNumber(42)),
+          before = None,
+          after = Some(JsObject("amount" -> JsString("12.30"), "id" -> JsNumber(42), "status" -> JsString("new"))),
+          source = MySQLCdcSourcePosition(
+            connectorId = "orders-cdc-v1",
+            database = "pekko_workflow",
+            table = "orders",
+            snapshot = false,
+            file = Some("binlog.000012"),
+            position = Some(2805470L),
+            row = Some(0),
+            eventTimestampMillis = Some(1788100000000L)
+          )
+        ))
     }
 
     "reject a null key value because parsed JSON has no Connect schema to prove it optional" in {
@@ -435,7 +506,7 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
         "{\"version\":1,\"op\":\"c\",\"key\":{\"id\":null},\"before\":null,\"after\":{\"id\":42},\"source\":{\"connectorId\":\"orders-cdc-v1\",\"database\":\"pekko_workflow\",\"table\":\"orders\",\"snapshot\":false,\"file\":null,\"position\":null,\"row\":null,\"eventTimestampMillis\":null}}"
 
       MySQLCdcEnvelope.parse(literal) match {
-        case Left(error) => error.message should include("envelope.key.id")
+        case Left(error)  => error.message should include("envelope.key.id")
         case Right(value) => fail(s"null key unexpectedly parsed: $value")
       }
     }
@@ -445,7 +516,7 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
 
       MySQLCdcEnvelope.parse(decoded.canonicalJson) shouldBe Right(decoded)
       MySQLCdcEnvelope.parse(decoded.canonicalJson.replace("\"version\":1", "\"version\":2")) match {
-        case Left(error) => error.message should include("version")
+        case Left(error)  => error.message should include("version")
         case Right(value) => fail(s"unsupported version unexpectedly parsed: $value")
       }
     }
@@ -480,7 +551,9 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
   }
 
   private def recordWithImageSchema(op: String, imageSchema: Schema, before: Option[Struct], after: Option[Struct]): SourceRecord = {
-    val schema = SchemaBuilder.struct().name(s"fixture.$op.Envelope")
+    val schema = SchemaBuilder
+      .struct()
+      .name(s"fixture.$op.Envelope")
       .field("before", imageSchema)
       .field("after", imageSchema)
       .field("source", sourceSchema)
@@ -521,12 +594,12 @@ class MySQLCdcEnvelopeSpec extends STSpec with OptionValues {
   private def success(record: SourceRecord): MySQLCdcEnvelope =
     MySQLCdcEnvelope.decode(record, connectorId) match {
       case Right(Some(value)) => value
-      case other => fail(s"expected decoded envelope, got $other")
+      case other              => fail(s"expected decoded envelope, got $other")
     }
 
   private def failure(record: SourceRecord): CdcDecodeFailure =
     MySQLCdcEnvelope.decode(record, connectorId) match {
       case Left(error) => error
-      case other => fail(s"expected decode failure, got $other")
+      case other       => fail(s"expected decode failure, got $other")
     }
 }

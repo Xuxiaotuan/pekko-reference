@@ -2,7 +2,7 @@ package cn.xuyinyin.magic.workflow.integration
 
 import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, SnapshotBoundary, SourceCursor}
 import cn.xuyinyin.magic.workflow.TestNodeRegistry
-import cn.xuyinyin.magic.workflow.engine.{ExecutionResult}
+import cn.xuyinyin.magic.workflow.engine.ExecutionResult
 import cn.xuyinyin.magic.workflow.execution.{ReliableRunContext, WorkflowExecutionEngine}
 import cn.xuyinyin.magic.cdc.compat.nodes.WorkflowDSL.{Edge, Node, Position, Workflow, WorkflowMetadata}
 import cn.xuyinyin.magic.connectors.mysql.source.{MySQLCdcSourceNode, MySQLCdcStateConfig}
@@ -15,7 +15,7 @@ import spray.json._
 import java.sql.{Connection, DriverManager}
 import java.util.concurrent.Executors
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future, Promise, blocking}
+import scala.concurrent.{blocking, Await, ExecutionContext, Future, Promise}
 import scala.io.StdIn
 import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
@@ -26,69 +26,72 @@ object RealMySQLCdcProcess {
 
   private val SourceNodeId = "source-1"
 
-  private final case class Arguments(
-    mode: String,
-    connectorId: String,
-    executionId: String,
-    idStart: Long,
-    idEnd: Long
-  )
+  final private case class Arguments(
+      mode: String,
+      connectorId: String,
+      executionId: String,
+      idStart: Long,
+      idEnd: Long)
 
-  private final case class Settings(
-    host: String,
-    port: Int,
-    database: String,
-    writerUser: String,
-    writerPassword: String,
-    readerUser: String,
-    readerPassword: String,
-    serverId: Long,
-    offsetFlushIntervalMillis: Int
-  ) {
+  final private case class Settings(
+      host: String,
+      port: Int,
+      database: String,
+      writerUser: String,
+      writerPassword: String,
+      readerUser: String,
+      readerPassword: String,
+      serverId: Long,
+      offsetFlushIntervalMillis: Int) {
     val jdbcUrl: String =
       s"jdbc:mysql://$host:$port/$database?useSSL=false&allowPublicKeyRetrieval=true" +
         "&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true"
   }
 
   def main(rawArguments: Array[String]): Unit = {
-    var system: ActorSystem[Nothing] = null
+    var system: ActorSystem[Nothing]    = null
     var engine: WorkflowExecutionEngine = null
-    var executionId: String = "unavailable"
-    var connectorId: String = "unavailable"
-    var exitCode = 0
+    var executionId: String             = "unavailable"
+    var connectorId: String             = "unavailable"
+    var exitCode                        = 0
     try {
       val arguments = parseArguments(rawArguments)
       executionId = arguments.executionId
       connectorId = arguments.connectorId
       val settings = settingsFromEnvironment()
-      val config = ConfigFactory.parseMap(Map[String, AnyRef](
-        "pekko.loglevel" -> "WARN",
-        "pekko.stdout-loglevel" -> "WARN"
-      ).asJava).withFallback(ConfigFactory.load("application-test"))
+      val config = ConfigFactory
+        .parseMap(
+          Map[String, AnyRef](
+            "pekko.loglevel"        -> "WARN",
+            "pekko.stdout-loglevel" -> "WARN"
+          ).asJava)
+        .withFallback(ConfigFactory.load("application-test"))
       system = ActorSystem[Nothing](Behaviors.empty, s"mysql-cdc-${arguments.connectorId}", config)
       implicit val executionContext: ExecutionContext = system.executionContext
 
       val source = new MySQLCdcSourceNode(
-        loadStateConfig = () => MySQLCdcStateConfig(
-          settings.jdbcUrl,
-          settings.writerUser,
-          settings.writerPassword,
-          "debezium_offset_storage",
-          "debezium_database_history",
-          settings.offsetFlushIntervalMillis
-        )
+        loadStateConfig = () =>
+          MySQLCdcStateConfig(
+            settings.jdbcUrl,
+            settings.writerUser,
+            settings.writerPassword,
+            "debezium_offset_storage",
+            "debezium_database_history",
+            settings.offsetFlushIntervalMillis
+          )
       )
       testRegistry.registerSource(source)
       engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)(system, executionContext)
       val checkpoint = arguments.mode match {
         case "snapshot-and-stream" => None
-        case _ => Some(loadCheckpoint(settings, arguments))
+        case _                     => Some(loadCheckpoint(settings, arguments))
       }
-      val boundary = checkpoint.map(value => SnapshotBoundary(
-        value.sourceNodeId,
-        value.partitionId,
-        Some(value.cursor.upperBound)
-      ))
+      val boundary = checkpoint.map(value =>
+        SnapshotBoundary(
+          value.sourceNodeId,
+          value.partitionId,
+          Some(value.cursor.upperBound)
+        ))
       val context = ReliableRunContext(
         executionId = arguments.executionId,
         workflowRevision = 1L,
@@ -107,10 +110,13 @@ object RealMySQLCdcProcess {
       )
 
       printStatus(arguments, -1L, 0L, SourceCursor("mysql.binlog.v1", "", ""))
-      val running = engine.execute(workflow(arguments, settings), context, message => {
-        println(s"CDC_LOG ${singleLine(message)}")
-        System.out.flush()
-      })
+      val running = engine.execute(
+        workflow(arguments, settings),
+        context,
+        message => {
+          println(s"CDC_LOG ${singleLine(message)}")
+          System.out.flush()
+        })
       val stop = Promise[Done]()
       val commandExecutor = Executors.newSingleThreadExecutor { runnable =>
         val thread = new Thread(runnable, s"mysql-cdc-command-${arguments.connectorId}")
@@ -120,7 +126,7 @@ object RealMySQLCdcProcess {
       val commandEc: ExecutionContext = ExecutionContext.fromExecutor(commandExecutor)
       Future(blocking(StdIn.readLine()))(commandEc).foreach {
         case "STOP" | null => stop.trySuccess(Done)
-        case _ => stop.tryFailure(new IllegalArgumentException("unsupported child command"))
+        case _             => stop.tryFailure(new IllegalArgumentException("unsupported child command"))
       }(ExecutionContext.parasitic)
 
       try {
@@ -157,8 +163,7 @@ object RealMySQLCdcProcess {
         try {
           system.terminate()
           Await.result(system.whenTerminated, 30.seconds)
-        }
-        catch { case NonFatal(_) => exitCode = 1 }
+        } catch { case NonFatal(_) => exitCode = 1 }
       }
     }
     if (exitCode != 0) System.exit(exitCode)
@@ -181,7 +186,7 @@ object RealMySQLCdcProcess {
       throw new IllegalArgumentException("invalid executionId")
     }
     val idStart = values(3).toLong
-    val idEnd = values(4).toLong
+    val idEnd   = values(4).toLong
     if (idStart < 0L || idEnd < idStart || idEnd - idStart > 1000L) {
       throw new IllegalArgumentException("invalid acceptance ID range")
     }
@@ -189,7 +194,9 @@ object RealMySQLCdcProcess {
   }
 
   private def settingsFromEnvironment(): Settings = {
-    def required(name: String): String = sys.env.get(name).filter(_.nonEmpty)
+    def required(name: String): String = sys.env
+      .get(name)
+      .filter(_.nonEmpty)
       .getOrElse(throw new IllegalArgumentException(s"missing environment variable: $name"))
     def long(name: String, minimum: Long, maximum: Long): Long = {
       val parsed = required(name).toLong
@@ -221,15 +228,15 @@ object RealMySQLCdcProcess {
       "real MySQL CDC source",
       Position(0, 0),
       JsObject(
-        "connectorId" -> JsString(arguments.connectorId),
-        "host" -> JsString(settings.host),
-        "port" -> JsNumber(settings.port),
-        "database" -> JsString(settings.database),
-        "table" -> JsString("pekko_cdc_source_acceptance"),
-        "username" -> JsString(settings.readerUser),
-        "passwordEnv" -> JsString("MYSQL_CDC_TEST_READER_PASSWORD"),
-        "serverId" -> JsNumber(settings.serverId),
-        "maxBatchSize" -> JsNumber(100),
+        "connectorId"        -> JsString(arguments.connectorId),
+        "host"               -> JsString(settings.host),
+        "port"               -> JsNumber(settings.port),
+        "database"           -> JsString(settings.database),
+        "table"              -> JsString("pekko_cdc_source_acceptance"),
+        "username"           -> JsString(settings.readerUser),
+        "passwordEnv"        -> JsString("MYSQL_CDC_TEST_READER_PASSWORD"),
+        "serverId"           -> JsNumber(settings.serverId),
+        "maxBatchSize"       -> JsNumber(100),
         "pollIntervalMillis" -> JsNumber(100)
       )
     )
@@ -240,11 +247,11 @@ object RealMySQLCdcProcess {
       "real MySQL CDC apply sink",
       Position(1, 0),
       JsObject(
-        "host" -> JsString(settings.host),
-        "port" -> JsNumber(settings.port),
-        "database" -> JsString(settings.database),
-        "table" -> JsString("pekko_cdc_target_acceptance"),
-        "username" -> JsString(settings.writerUser),
+        "host"        -> JsString(settings.host),
+        "port"        -> JsNumber(settings.port),
+        "database"    -> JsString(settings.database),
+        "table"       -> JsString("pekko_cdc_target_acceptance"),
+        "username"    -> JsString(settings.writerUser),
         "passwordEnv" -> JsString("MYSQL_CDC_TEST_WRITER_PASSWORD")
       )
     )
@@ -304,14 +311,21 @@ object RealMySQLCdcProcess {
     Option(value).getOrElse("").replaceAll("[\\r\\n]+", " ").take(2000)
 
   private def cursorPosition(value: String): (String, Long) = {
-    val parsed = try value.parseJson.asJsObject.fields.get("offset").collect { case objectValue: JsObject => objectValue }
-    catch { case NonFatal(_) => None }
-    val file = parsed.flatMap(_.fields.get("file")).collect {
-      case JsString(candidate) if candidate.matches("[A-Za-z0-9._-]+") => candidate
-    }.getOrElse("unavailable")
-    val position = parsed.flatMap(_.fields.get("pos")).collect {
-      case JsNumber(candidate) if candidate.isValidLong => candidate.toLong
-    }.getOrElse(-1L)
+    val parsed =
+      try value.parseJson.asJsObject.fields.get("offset").collect { case objectValue: JsObject => objectValue }
+      catch { case NonFatal(_) => None }
+    val file = parsed
+      .flatMap(_.fields.get("file"))
+      .collect {
+        case JsString(candidate) if candidate.matches("[A-Za-z0-9._-]+") => candidate
+      }
+      .getOrElse("unavailable")
+    val position = parsed
+      .flatMap(_.fields.get("pos"))
+      .collect {
+        case JsNumber(candidate) if candidate.isValidLong => candidate.toLong
+      }
+      .getOrElse(-1L)
     file -> position
   }
 

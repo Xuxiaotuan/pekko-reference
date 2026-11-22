@@ -24,50 +24,46 @@ import scala.concurrent.duration._
 
 /**
  * 集群集成测试
- * 
+ *
  * 测试3节点集群的以下功能：
  * - 集群启动和节点加入
  * - 分片实体路由和工作流初始化
  * - 工作流执行
  * - 状态查询
- * 
+ *
  * @author : Xuxiaotuan
  * @since : 2024-11-28
  */
 class ClusterIntegrationSpec
-  extends ScalaTestWithActorTestKit(ClusterIntegrationSpec.config)
-  with AnyWordSpecLike
-  with Matchers
-  with BeforeAndAfterAll
-  with ScalaFutures
-  with Eventually {
+    extends ScalaTestWithActorTestKit(ClusterIntegrationSpec.config) with AnyWordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures
+    with Eventually {
 
-  override implicit val patience: PatienceConfig = PatienceConfig(timeout = Span(10, Seconds))
+  implicit override val patience: PatienceConfig = PatienceConfig(timeout = Span(10, Seconds))
 
-  var node1: ActorTestKit = _
-  var node2: ActorTestKit = _
-  var node3: ActorTestKit = _
+  var node1: ActorTestKit                                                         = _
+  var node2: ActorTestKit                                                         = _
+  var node3: ActorTestKit                                                         = _
   var shardRegion1: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]] = _
   var shardRegion2: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]] = _
   var shardRegion3: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]] = _
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    
+
     // 创建3个节点
     node1 = ActorTestKit(ClusterIntegrationSpec.systemName, ClusterIntegrationSpec.nodeConfig)
     node2 = ActorTestKit(ClusterIntegrationSpec.systemName, ClusterIntegrationSpec.nodeConfig)
     node3 = ActorTestKit(ClusterIntegrationSpec.systemName, ClusterIntegrationSpec.nodeConfig)
-    
+
     // 让所有节点加入集群
     val cluster1 = Cluster(node1.system)
     val cluster2 = Cluster(node2.system)
     val cluster3 = Cluster(node3.system)
-    
+
     cluster1.manager ! Join(cluster1.selfMember.address)
     cluster2.manager ! Join(cluster1.selfMember.address)
     cluster3.manager ! Join(cluster1.selfMember.address)
-    
+
     // 等待集群形成
     eventually {
       Seq(cluster1, cluster2, cluster3).foreach { cluster =>
@@ -113,7 +109,7 @@ class ClusterIntegrationSpec
       // 创建多个工作流
       val workflows = (1 to 10).map { i =>
         val workflowId = ClusterIntegrationSpec.workflowId(s"workflow-$i")
-        val workflow = ClusterIntegrationSpec.workflow(workflowId, s"Test Workflow $i")
+        val workflow   = ClusterIntegrationSpec.workflow(workflowId, s"Test Workflow $i")
 
         // 发送Initialize命令
         val probe = node1.createTestProbe[EventSourcedWorkflowActor.Response]()
@@ -124,7 +120,7 @@ class ClusterIntegrationSpec
 
         // 等待响应
         probe.expectMessage(EventSourcedWorkflowActor.InitializeResponse(workflowId, "initialized"))
-        
+
         workflowId
       }
 
@@ -134,7 +130,7 @@ class ClusterIntegrationSpec
     "execute workflows successfully" in {
       // 创建一个工作流
       val workflowId = ClusterIntegrationSpec.workflowId("exec-workflow")
-      val workflow = ClusterIntegrationSpec.workflow(workflowId, "Execution Test Workflow")
+      val workflow   = ClusterIntegrationSpec.workflow(workflowId, "Execution Test Workflow")
 
       // 初始化工作流
       val initProbe = node1.createTestProbe[EventSourcedWorkflowActor.Response]()
@@ -162,7 +158,8 @@ class ClusterIntegrationSpec
         status.workflowId shouldBe workflowId
         status.state shouldBe "completed"
         status.currentExecution shouldBe None
-        val completed = status.allExecutions.find(_.executionId == response.executionId)
+        val completed = status.allExecutions
+          .find(_.executionId == response.executionId)
           .getOrElse(fail(s"completed execution ${response.executionId} was absent from public status history: $status"))
         completed.status shouldBe "completed"
         completed.endTime should not be empty
@@ -172,7 +169,7 @@ class ClusterIntegrationSpec
     "query workflow status successfully" in {
       // 创建一个工作流
       val workflowId = ClusterIntegrationSpec.workflowId("status-workflow")
-      val workflow = ClusterIntegrationSpec.workflow(workflowId, "Status Test Workflow")
+      val workflow   = ClusterIntegrationSpec.workflow(workflowId, "Status Test Workflow")
 
       // 初始化工作流
       val initProbe = node1.createTestProbe[EventSourcedWorkflowActor.Response]()
@@ -197,7 +194,7 @@ class ClusterIntegrationSpec
     "handle workflow queries from different nodes" in {
       // 在node1上创建工作流
       val workflowId = ClusterIntegrationSpec.workflowId("multi-node-workflow")
-      val workflow = ClusterIntegrationSpec.workflow(workflowId, "Multi-Node Test Workflow")
+      val workflow   = ClusterIntegrationSpec.workflow(workflowId, "Multi-Node Test Workflow")
 
       val initProbe = node1.createTestProbe[EventSourcedWorkflowActor.Response]()
       shardRegion1 ! ShardingEnvelope(
@@ -227,27 +224,26 @@ class ClusterIntegrationSpec
   }
 
   private def workflowStatus(
-    region: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]],
-    workflowId: String
-  ): scala.concurrent.Future[EventSourcedWorkflowActor.StatusResponse] = {
+      region: ActorRef[ShardingEnvelope[EventSourcedWorkflowActor.Command]],
+      workflowId: String): scala.concurrent.Future[EventSourcedWorkflowActor.StatusResponse] = {
     val timeout: Timeout = Timeout(2.seconds)
-    region.ask[EventSourcedWorkflowActor.StatusResponse](replyTo =>
-      ShardingEnvelope(workflowId, EventSourcedWorkflowActor.GetStatus(replyTo))
-    )(timeout, node1.system.scheduler)
+    region.ask[EventSourcedWorkflowActor.StatusResponse](replyTo => ShardingEnvelope(workflowId, EventSourcedWorkflowActor.GetStatus(replyTo)))(
+      timeout,
+      node1.system.scheduler)
   }
 }
 
 object ClusterIntegrationSpec {
-  private val runId = java.util.UUID.randomUUID().toString
+  private val runId      = java.util.UUID.randomUUID().toString
   val systemName: String = s"ClusterSystem-$runId"
 
   def workflowId(prefix: String): String = s"$prefix-$runId"
 
   def workflow(id: String, name: String): Workflow =
     WorkflowFixtures.linearWorkflow.copy(id = id, name = name)
-  
-  val config = ConfigFactory.parseString(
-    """
+
+  val config = ConfigFactory
+    .parseString("""
     pekko {
       actor.provider = "cluster"
       
@@ -276,13 +272,15 @@ object ClusterIntegrationSpec {
       
       loglevel = "INFO"
     }
-    """).withFallback(ConfigFactory.load("application-test"))
+    """)
+    .withFallback(ConfigFactory.load("application-test"))
 
-  val nodeConfig = ConfigFactory.parseString(
-    """
+  val nodeConfig = ConfigFactory
+    .parseString("""
     pekko {
       remote.artery.canonical.port = 0
       cluster.roles = ["worker"]
     }
-    """).withFallback(config)
+    """)
+    .withFallback(config)
 }

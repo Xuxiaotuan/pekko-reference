@@ -16,12 +16,14 @@ import scala.concurrent.duration._
 class CdcStandaloneShutdownSpec extends AnyWordSpec with Matchers {
   "standalone CDC shutdown" should {
     "wait for a later confirmed STOPPED without starting another close operation" in {
-      implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](Behaviors.empty, "standalone-close-wait",
+      implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](
+        Behaviors.empty,
+        "standalone-close-wait",
         ConfigFactory.parseString("pekko.actor.provider = local").withFallback(ConfigFactory.load()))
       implicit val ec: ExecutionContext = system.executionContext
       try {
-        val state = new AtomicReference("UNKNOWN")
-        val calls = new AtomicInteger()
+        val state  = new AtomicReference("UNKNOWN")
+        val calls  = new AtomicInteger()
         val result = CdcRuntime.awaitStopped(() => { calls.incrementAndGet(); () }, () => state.get(), 2.seconds)
         result.isCompleted shouldBe false
         system.scheduler.scheduleOnce(200.millis, new Runnable { def run(): Unit = state.set("STOPPED") })
@@ -31,11 +33,13 @@ class CdcStandaloneShutdownSpec extends AnyWordSpec with Matchers {
     }
 
     "time out instead of treating UNKNOWN as released" in {
-      implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](Behaviors.empty, "standalone-close-unknown",
+      implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](
+        Behaviors.empty,
+        "standalone-close-unknown",
         ConfigFactory.parseString("pekko.actor.provider = local").withFallback(ConfigFactory.load()))
       implicit val ec: ExecutionContext = system.executionContext
       try {
-        val calls = new AtomicInteger()
+        val calls  = new AtomicInteger()
         val result = CdcRuntime.awaitStopped(() => { calls.incrementAndGet(); () }, () => "UNKNOWN", 250.millis)
         intercept[TimeoutException](Await.result(result, 3.seconds))
         calls.get() shouldBe 1
@@ -45,26 +49,27 @@ class CdcStandaloneShutdownSpec extends AnyWordSpec with Matchers {
     "keep its wait inside the configured coordinated shutdown phase" in {
       val default = ConfigFactory.parseString("pekko.coordinated-shutdown.default-phase-timeout = 5s")
       CdcRuntime.shutdownWait(default) shouldBe 4750.millis
-      val overrideConfig = ConfigFactory.parseString(
-        "pekko.coordinated-shutdown.phases.before-actor-system-terminate.timeout = 2s").withFallback(default)
+      val overrideConfig =
+        ConfigFactory.parseString("pekko.coordinated-shutdown.phases.before-actor-system-terminate.timeout = 2s").withFallback(default)
       CdcRuntime.shutdownWait(overrideConfig) shouldBe 1750.millis
     }
 
     "use a standalone phase budget while respecting an explicit phase override" in {
       val default = ConfigFactory.parseString("pekko.coordinated-shutdown.default-phase-timeout = 5s")
       CdcRuntime.shutdownWait(CdcRuntime.standaloneConfig(default)) shouldBe 15.seconds
-      val configured = ConfigFactory.parseString(
-        "pekko.coordinated-shutdown.phases.before-actor-system-terminate.timeout = 2s").withFallback(default)
+      val configured = ConfigFactory.parseString("pekko.coordinated-shutdown.phases.before-actor-system-terminate.timeout = 2s").withFallback(default)
       CdcRuntime.shutdownWait(CdcRuntime.standaloneConfig(configured)) shouldBe 1750.millis
       CdcRuntime.standaloneConfig(configured).getString("pekko.actor.provider") shouldBe "local"
     }
 
     "wait for the confirmed status when invoked by coordinated shutdown" in {
-      implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](Behaviors.empty, "standalone-close-hook",
+      implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](
+        Behaviors.empty,
+        "standalone-close-hook",
         ConfigFactory.parseString("pekko.actor.provider = local").withFallback(ConfigFactory.load()))
       implicit val ec: ExecutionContext = system.executionContext
-      val state = new AtomicReference("UNKNOWN")
-      val calls = new AtomicInteger()
+      val state                         = new AtomicReference("UNKNOWN")
+      val calls                         = new AtomicInteger()
       CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate, "test-cdc-release") { () =>
         CdcRuntime.awaitStopped(() => { calls.incrementAndGet(); () }, () => state.get(), 2.seconds)
       }

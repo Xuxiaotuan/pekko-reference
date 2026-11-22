@@ -27,15 +27,17 @@ class WorkflowExecutionEngineSpec extends STSpec {
   private val testRegistry = new TestNodeRegistry
 
   private var registeredSource: Option[NodeSource] = None
-  private implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](
+  implicit private val system: ActorSystem[Nothing] = ActorSystem[Nothing](
     Behaviors.empty[Nothing],
     "workflow-execution-engine-spec",
-    ConfigFactory.parseString(
-      """pekko.actor.provider = local
-        |pekko.coordinated-shutdown.exit-jvm = off""".stripMargin
-    ).withFallback(ConfigFactory.load("application-test"))
+    ConfigFactory
+      .parseString(
+        """pekko.actor.provider = local
+          |pekko.coordinated-shutdown.exit-jvm = off""".stripMargin
+      )
+      .withFallback(ConfigFactory.load("application-test"))
   )
-  private implicit val ec: ExecutionContext = system.executionContext
+  implicit private val ec: ExecutionContext = system.executionContext
 
   override protected def afterAll(): Unit = {
     system.terminate()
@@ -57,37 +59,47 @@ class WorkflowExecutionEngineSpec extends STSpec {
   }
 
   "WorkflowExecutionEngine" should {
-    for ((kind, stage) <- Vector("typed-journal" -> "journal", "timeout-journal" -> "journal",
-      "untyped-journal" -> "journal", "typed-ack" -> "ack")) {
+    for ((kind, stage) <- Vector(
+        "typed-journal"   -> "journal",
+        "timeout-journal" -> "journal",
+        "untyped-journal" -> "journal",
+        "typed-ack"       -> "ack")) {
       s"preserve explicit progress rejection but keep uncertain outcomes retryable for $kind" in {
         register(ReliableSource)
         testRegistry.registerSink(ReliableSink)
-        val id=s"progress-$kind"
-        val b=batch(id,0L,"9",Vector("one"))
-        ReliableSource.batches=Vector(b)
-        val descriptor=ExecutionFailure(ExecutionFailure.ProtocolConflict,stage,Some(b.batchId))
-        val error:Throwable=kind match {
+        val id = s"progress-$kind"
+        val b  = batch(id, 0L, "9", Vector("one"))
+        ReliableSource.batches = Vector(b)
+        val descriptor = ExecutionFailure(ExecutionFailure.ProtocolConflict, stage, Some(b.batchId))
+        val error: Throwable = kind match {
           case "timeout-journal" => new java.util.concurrent.TimeoutException("checkpoint rejected: reply was not received")
           case "untyped-journal" => new IllegalStateException("checkpoint rejected")
-          case _ => new CdcExecutionException(descriptor,new IllegalStateException("explicit refusal"))
+          case _                 => new CdcExecutionException(descriptor, new IllegalStateException("explicit refusal"))
         }
-        val acknowledged=new AtomicBoolean(false)
-        ReliableSource.onAcknowledge=_ => {
+        val acknowledged = new AtomicBoolean(false)
+        ReliableSource.onAcknowledge = _ => {
           acknowledged.set(true)
-          if(stage=="ack")Future.failed(error) else Future.successful(Done)
+          if (stage == "ack") Future.failed(error) else Future.successful(Done)
         }
-        val context=ReliableRunContext(id,1L,Some(SnapshotBoundary("source-1","pk-range-0",Some("9"))),Vector.empty,
-          _=>Future.successful(Done),_=>if(stage=="journal")Future.failed(error) else Future.successful(Done))
-        val result=Await.result(new WorkflowExecutionEngine(nodeRegistry=testRegistry.snapshot).execute(reliableWorkflow(),context,_=>()),5.seconds)
+        val context = ReliableRunContext(
+          id,
+          1L,
+          Some(SnapshotBoundary("source-1", "pk-range-0", Some("9"))),
+          Vector.empty,
+          _ => Future.successful(Done),
+          _ => if (stage == "journal") Future.failed(error) else Future.successful(Done))
+        val result =
+          Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
         result.success shouldBe false
         ReliableSink.commits.size shouldBe 1
-        acknowledged.get() shouldBe (stage=="ack")
-        result.failure.get shouldBe (if(kind.startsWith("typed"))descriptor else ExecutionFailure(ExecutionFailure.ProgressUnknown,stage,Some(b.batchId)))
+        acknowledged.get() shouldBe (stage == "ack")
+        result.failure.get shouldBe (if (kind.startsWith("typed")) descriptor
+                                     else ExecutionFailure(ExecutionFailure.ProgressUnknown, stage, Some(b.batchId)))
       }
     }
     "strip presentation fields at actual row connector invocation while preserving configuration and results" in {
       val received = ListBuffer.empty[WorkflowDSL.Node]
-      val output = ListBuffer.empty[String]
+      val output   = ListBuffer.empty[String]
       val source = new NodeSource {
         override val nodeType: String = "sequence.numbers"
         override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] = {
@@ -97,8 +109,7 @@ class WorkflowExecutionEngineSpec extends STSpec {
       }
       val sink = new NodeSink {
         override val nodeType: String = "console.log"
-        override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)
-          (implicit ec: ExecutionContext): Sink[String, Future[Done]] = {
+        override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] = {
           received += node
           Sink.foreach[String](row => { output += row; () })
         }
@@ -106,7 +117,7 @@ class WorkflowExecutionEngineSpec extends STSpec {
       val workflow = WorkflowFixtures.linearWorkflow.copy(nodes = WorkflowFixtures.linearWorkflow.nodes.map(
         _.copy(position = WorkflowDSL.Position(1234, 5678), style = Some(JsObject("color" -> JsString("red"))))))
       val registry = testRegistry.snapshot.withSource(source).withSink(sink)
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = registry).execute(workflow, "layout-isolation", _ => ()), 5.seconds)
+      val result   = Await.result(new WorkflowExecutionEngine(nodeRegistry = registry).execute(workflow, "layout-isolation", _ => ()), 5.seconds)
 
       result.success shouldBe true
       result.nodeResults.map(_.nodeId) shouldBe Vector("source-1", "transform-1", "sink-1")
@@ -125,11 +136,11 @@ class WorkflowExecutionEngineSpec extends STSpec {
     }
 
     "inject MySQL CDC passwords only into runtime nodes without exposing them" in {
-      val secret = "cdc-runtime-secret"
+      val secret             = "cdc-runtime-secret"
       val environmentLookups = ListBuffer.empty[String]
-      val logs = ListBuffer.empty[String]
-      val source = new ObservingCdcSource
-      val sink = new ObservingCdcSink
+      val logs               = ListBuffer.empty[String]
+      val source             = new ObservingCdcSource
+      val sink               = new ObservingCdcSink
       val workflow = WorkflowFixtures.mysqlCdcWorkflow.copy(nodes = WorkflowFixtures.mysqlCdcWorkflow.nodes.map(
         _.copy(position = WorkflowDSL.Position(1234, 5678), style = Some(JsObject("color" -> JsString("red"))))))
       val context = ReliableRunContext(
@@ -140,18 +151,25 @@ class WorkflowExecutionEngineSpec extends STSpec {
         _ => Future.successful(Done),
         _ => Future.successful(Done)
       )
-      lazy val engine = new WorkflowExecutionEngine(name => {
-        environmentLookups += name
-        Some(secret)
-      }, nodeRegistry = testRegistry.snapshot)
+      lazy val engine = new WorkflowExecutionEngine(
+        name => {
+          environmentLookups += name
+          Some(secret)
+        },
+        nodeRegistry = testRegistry.snapshot)
 
       testRegistry.registerSource(source)
       testRegistry.registerSink(sink)
       try {
-        val result = Await.result(engine.execute(workflow, context, message => {
-          logs += message
-          ()
-        }), 5.seconds)
+        val result = Await.result(
+          engine.execute(
+            workflow,
+            context,
+            message => {
+              logs += message
+              ()
+            }),
+          5.seconds)
 
         result.success shouldBe true
         environmentLookups shouldBe ListBuffer("MYSQL_CDC_PASSWORD", "DB_PASSWORD")
@@ -173,10 +191,10 @@ class WorkflowExecutionEngineSpec extends STSpec {
     }
 
     "redact MySQL CDC runtime passwords from connector logs and failure state" in {
-      val secret = "cdc-runtime-failure-secret"
-      val logs = ListBuffer.empty[String]
-      val source = new RuntimeSecretFailingCdcSource
-      val sink = new ObservingCdcSink
+      val secret   = "cdc-runtime-failure-secret"
+      val logs     = ListBuffer.empty[String]
+      val source   = new RuntimeSecretFailingCdcSource
+      val sink     = new ObservingCdcSink
       val workflow = WorkflowFixtures.mysqlCdcWorkflow
       val context = ReliableRunContext(
         "exec-mysql-cdc-secret-failure",
@@ -191,10 +209,15 @@ class WorkflowExecutionEngineSpec extends STSpec {
       testRegistry.registerSource(source)
       testRegistry.registerSink(sink)
       try {
-        val result = Await.result(engine.execute(workflow, context, message => {
-          logs += message
-          ()
-        }), 5.seconds)
+        val result = Await.result(
+          engine.execute(
+            workflow,
+            context,
+            message => {
+              logs += message
+              ()
+            }),
+          5.seconds)
 
         result.success shouldBe false
         result.nodeResults.find(_.nodeId == "source-1").map(_.status) shouldBe Some("failed")
@@ -208,12 +231,12 @@ class WorkflowExecutionEngineSpec extends STSpec {
     }
 
     "prepare MySQL environment passwords once per reliable execution without exposing them" in {
-      var environmentValue = "runtime-secret"
+      var environmentValue   = "runtime-secret"
       val environmentLookups = ListBuffer.empty[String]
-      val logs = ListBuffer.empty[String]
-      val source = new ObservingMySQLSource(() => environmentValue = "changed-secret")
-      val sink = new ObservingMySQLSink
-      val workflow = mysqlEnvironmentWorkflow()
+      val logs               = ListBuffer.empty[String]
+      val source             = new ObservingMySQLSource(() => environmentValue = "changed-secret")
+      val sink               = new ObservingMySQLSink
+      val workflow           = mysqlEnvironmentWorkflow()
       val context = ReliableRunContext(
         "exec-mysql-environment",
         1L,
@@ -222,18 +245,25 @@ class WorkflowExecutionEngineSpec extends STSpec {
         _ => Future.successful(Done),
         _ => Future.successful(Done)
       )
-      lazy val engine = new WorkflowExecutionEngine(name => {
-        environmentLookups += name
-        Some(environmentValue)
-      }, nodeRegistry = testRegistry.snapshot)
+      lazy val engine = new WorkflowExecutionEngine(
+        name => {
+          environmentLookups += name
+          Some(environmentValue)
+        },
+        nodeRegistry = testRegistry.snapshot)
 
       testRegistry.registerSource(source)
       testRegistry.registerSink(sink)
       try {
-        val result = Await.result(engine.execute(workflow, context, message => {
-          logs += message
-          ()
-        }), 5.seconds)
+        val result = Await.result(
+          engine.execute(
+            workflow,
+            context,
+            message => {
+              logs += message
+              ()
+            }),
+          5.seconds)
 
         result.success shouldBe true
         environmentLookups shouldBe ListBuffer("WORKFLOW_DB_PASSWORD", "WORKFLOW_DB_PASSWORD")
@@ -270,11 +300,13 @@ class WorkflowExecutionEngineSpec extends STSpec {
       lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
       FailingSource.reset()
 
-      val result = Await.result(engine.execute(
-        WorkflowFixtures.failingSourceWorkflow,
-        "exec-2",
-        _ => ()
-      ), 5.seconds)
+      val result = Await.result(
+        engine.execute(
+          WorkflowFixtures.failingSourceWorkflow,
+          "exec-2",
+          _ => ()
+        ),
+        5.seconds)
 
       result.success shouldBe false
       FailingSource.emittedFirstValue shouldBe true
@@ -325,7 +357,7 @@ class WorkflowExecutionEngineSpec extends STSpec {
     "run supplied-boundary batches sequentially from the latest checkpoint" in {
       register(ReliableSource)
       testRegistry.registerSink(ReliableSink)
-      val boundary = SnapshotBoundary("source-1", "pk-range-0", Some("9"))
+      val boundary    = SnapshotBoundary("source-1", "pk-range-0", Some("9"))
       val checkpoint0 = checkpoint("exec-reliable", 0L, "2", sourceRows = 2L, targetRows = 2L)
       ReliableSource.batches = Vector(
         batch("exec-reliable", 1L, "5", Vector("three", "four")),
@@ -343,7 +375,8 @@ class WorkflowExecutionEngineSpec extends STSpec {
         }
       )
 
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+      val result =
+        Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
 
       result.success shouldBe true
       result.rowsProcessed shouldBe None
@@ -378,34 +411,52 @@ class WorkflowExecutionEngineSpec extends STSpec {
         }
       )
 
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+      val result =
+        Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
 
       result.success shouldBe true
       order.synchronized(order.toVector) shouldBe Vector("sink", "actor", "source")
     }
 
     "dispatch a legacy receipt-aware source only after checkpoint persistence" in {
-      val order=ListBuffer.empty[String]
-      val legacy=new NodeSource with CheckpointedNodeSource with WorkflowCheckpointReceiptSource {
-        override val nodeType: String=ReliableSource.nodeType
-        override def createSource(node:WorkflowDSL.Node,log:String=>Unit):Source[String,NotUsed]=ReliableSource.createSource(node,log)
-        override def createBatches(node:WorkflowDSL.Node,execution:String,boundary:SnapshotBoundary,
-          resume:Option[BatchCheckpoint],log:String=>Unit)(implicit ec:ExecutionContext):Source[SourceBatch,NotUsed]=
-          ReliableSource.createBatches(node,execution,boundary,resume,log)
-        override def acknowledgeCommittedBatch(node:WorkflowDSL.Node,batch:SourceBatch,log:String=>Unit)
-          (implicit ec:ExecutionContext):Future[Done]=Future.failed(new AssertionError("receipt-aware source took ordinary ACK path"))
-        override def acknowledgeCommittedBatchWithReceipt(node:WorkflowDSL.Node,batch:SourceBatch,
-          receipt:Option[cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor.PersistedCheckpoint],log:String=>Unit)
-          (implicit ec:ExecutionContext):Future[Done]={order.synchronized(order += "receipt-ack");Future.successful(Done)}
+      val order = ListBuffer.empty[String]
+      val legacy = new NodeSource with CheckpointedNodeSource with WorkflowCheckpointReceiptSource {
+        override val nodeType: String                                                                   = ReliableSource.nodeType
+        override def createSource(node: WorkflowDSL.Node, log: String => Unit): Source[String, NotUsed] = ReliableSource.createSource(node, log)
+        override def createBatches(
+            node: WorkflowDSL.Node,
+            execution: String,
+            boundary: SnapshotBoundary,
+            resume: Option[BatchCheckpoint],
+            log: String => Unit
+          )(implicit ec: ExecutionContext): Source[SourceBatch, NotUsed] =
+          ReliableSource.createBatches(node, execution, boundary, resume, log)
+        override def acknowledgeCommittedBatch(
+            node: WorkflowDSL.Node,
+            batch: SourceBatch,
+            log: String => Unit
+          )(implicit ec: ExecutionContext): Future[Done] = Future.failed(new AssertionError("receipt-aware source took ordinary ACK path"))
+        override def acknowledgeCommittedBatchWithReceipt(
+            node: WorkflowDSL.Node,
+            batch: SourceBatch,
+            receipt: Option[cn.xuyinyin.magic.workflow.actors.EventSourcedWorkflowActor.PersistedCheckpoint],
+            log: String => Unit
+          )(implicit ec: ExecutionContext): Future[Done] = { order.synchronized(order += "receipt-ack"); Future.successful(Done) }
       }
-      register(legacy);testRegistry.registerSink(ReliableSink)
-      ReliableSource.batches=Vector(batch("exec-receipt-order",0L,"9",Vector("one")))
-      ReliableSink.onCommit=_=>order.synchronized(order += "sink")
-      val context=ReliableRunContext("exec-receipt-order",1L,Some(SnapshotBoundary("source-1","pk-range-0",Some("9"))),
-        Vector.empty,_=>Future.successful(Done),_=>{order.synchronized(order += "actor");Future.successful(Done)})
-      val result=Await.result(new WorkflowExecutionEngine(nodeRegistry=testRegistry.snapshot).execute(reliableWorkflow(),context,_=>()),5.seconds)
+      register(legacy); testRegistry.registerSink(ReliableSink)
+      ReliableSource.batches = Vector(batch("exec-receipt-order", 0L, "9", Vector("one")))
+      ReliableSink.onCommit = _ => order.synchronized(order += "sink")
+      val context = ReliableRunContext(
+        "exec-receipt-order",
+        1L,
+        Some(SnapshotBoundary("source-1", "pk-range-0", Some("9"))),
+        Vector.empty,
+        _ => Future.successful(Done),
+        _ => { order.synchronized(order += "actor"); Future.successful(Done) })
+      val result =
+        Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
       result.success shouldBe true
-      order.synchronized(order.toVector) shouldBe Vector("sink","actor","receipt-ack")
+      order.synchronized(order.toVector) shouldBe Vector("sink", "actor", "receipt-ack")
     }
 
     "not acknowledge the source when actor checkpoint persistence fails" in {
@@ -426,7 +477,8 @@ class WorkflowExecutionEngineSpec extends STSpec {
         _ => Future.failed(new IllegalStateException("actor checkpoint unavailable"))
       )
 
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+      val result =
+        Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
 
       result.success shouldBe false
       acknowledged.get shouldBe false
@@ -451,7 +503,8 @@ class WorkflowExecutionEngineSpec extends STSpec {
         }
       )
 
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+      val result =
+        Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
 
       result.success shouldBe false
       result.nodeResults.find(_.nodeId == "source-1").map(_.status) shouldBe Some("failed")
@@ -487,7 +540,8 @@ class WorkflowExecutionEngineSpec extends STSpec {
         }
       )
 
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+      val result =
+        Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
 
       result.success shouldBe true
       order.synchronized(order.toVector) shouldBe Vector(
@@ -514,7 +568,8 @@ class WorkflowExecutionEngineSpec extends STSpec {
         _ => Future.successful(Done)
       )
 
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+      val result =
+        Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
 
       result.success shouldBe false
       result.nodeResults.find(_.nodeId == "sink-1").map(_.status) shouldBe Some("failed")
@@ -525,8 +580,8 @@ class WorkflowExecutionEngineSpec extends STSpec {
     "pass the latest source checkpoint to boundary discovery" in {
       register(ReliableSource)
       testRegistry.registerSink(ReliableSink)
-      val older = checkpoint("exec-previous", 1L, "2", sourceRows = 2L, targetRows = 2L)
-      val latest = checkpoint("exec-previous", 3L, "9", sourceRows = 4L, targetRows = 4L)
+      val older     = checkpoint("exec-previous", 1L, "2", sourceRows = 2L, targetRows = 2L)
+      val latest    = checkpoint("exec-previous", 3L, "9", sourceRows = 4L, targetRows = 4L)
       val unrelated = latest.copy(sourceNodeId = "other-source", batchSequence = 99L)
       val context = ReliableRunContext(
         "exec-next",
@@ -537,7 +592,8 @@ class WorkflowExecutionEngineSpec extends STSpec {
         _ => Future.successful(Done)
       )
 
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+      val result =
+        Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
 
       result.success shouldBe true
       ReliableSource.discoveryResumeFrom shouldBe Some(latest)
@@ -551,12 +607,12 @@ class WorkflowExecutionEngineSpec extends STSpec {
           Source.empty
 
         override def createBatches(
-          node: WorkflowDSL.Node,
-          executionId: String,
-          boundary: SnapshotBoundary,
-          resumeFrom: Option[BatchCheckpoint],
-          onLog: String => Unit
-        )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = Source.empty
+            node: WorkflowDSL.Node,
+            executionId: String,
+            boundary: SnapshotBoundary,
+            resumeFrom: Option[BatchCheckpoint],
+            onLog: String => Unit
+          )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = Source.empty
       }
 
       val failure = intercept[UnsupportedOperationException] {
@@ -585,7 +641,8 @@ class WorkflowExecutionEngineSpec extends STSpec {
         _ => Future.successful(Done)
       )
 
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+      val result =
+        Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
 
       result.success shouldBe true
       result.rowsProcessed shouldBe Some(3)
@@ -612,7 +669,8 @@ class WorkflowExecutionEngineSpec extends STSpec {
         }
       )
 
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+      val result =
+        Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
 
       result.status shouldBe "completed"
       result.success shouldBe true
@@ -640,7 +698,10 @@ class WorkflowExecutionEngineSpec extends STSpec {
         }
       )
 
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow("filter", "condition", "value > 10"), context, _ => ()), 5.seconds)
+      val result = Await.result(
+        new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
+          .execute(reliableWorkflow("filter", "condition", "value > 10"), context, _ => ()),
+        5.seconds)
 
       result.success shouldBe true
       result.rowsProcessed shouldBe Some(0)
@@ -664,7 +725,8 @@ class WorkflowExecutionEngineSpec extends STSpec {
       ReliableSink.readinessFailure = Some(new IllegalStateException("ledger unavailable"))
       val context = ReliableRunContext("exec-not-ready", 1L, None, Vector.empty, _ => Future.successful(Done), _ => Future.successful(Done))
 
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
+      val result =
+        Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(), context, _ => ()), 5.seconds)
 
       result.success shouldBe false
       result.nodeResults.find(_.nodeId == "sink-1").map(_.status) shouldBe Some("failed")
@@ -677,13 +739,16 @@ class WorkflowExecutionEngineSpec extends STSpec {
       register(ReliableSource)
       testRegistry.registerSink(ReliableSink)
       val boundary = SnapshotBoundary("source-1", "pk-range-0", Some("9"))
-      val context = ReliableRunContext("exec-transform-failure", 1L, Some(boundary), Vector.empty, _ => Future.successful(Done), _ => Future.successful(Done))
+      val context =
+        ReliableRunContext("exec-transform-failure", 1L, Some(boundary), Vector.empty, _ => Future.successful(Done), _ => Future.successful(Done))
 
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(
-        reliableWorkflow(transformConfigKey = "missing-expression"),
-        context,
-        _ => ()
-      ), 5.seconds)
+      val result = Await.result(
+        new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(
+          reliableWorkflow(transformConfigKey = "missing-expression"),
+          context,
+          _ => ()
+        ),
+        5.seconds)
 
       result.success shouldBe false
       result.nodeResults.map(_.status) shouldBe Vector("unknown", "failed", "unknown")
@@ -694,7 +759,9 @@ class WorkflowExecutionEngineSpec extends STSpec {
       testRegistry.registerSink(LegacySink)
       val context = ReliableRunContext("exec-mismatch", 1L, None, Vector.empty, _ => Future.successful(Done), _ => Future.successful(Done))
 
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(sinkType = LegacySink.nodeType), context, _ => ()), 5.seconds)
+      val result = Await.result(
+        new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(reliableWorkflow(sinkType = LegacySink.nodeType), context, _ => ()),
+        5.seconds)
 
       result.success shouldBe false
       result.message should include("ReliableRunContext capability loss")
@@ -709,7 +776,9 @@ class WorkflowExecutionEngineSpec extends STSpec {
       register(LegacySource)
       testRegistry.registerSink(CapableLegacySink)
 
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(legacyCapableSinkWorkflow, "exec-legacy", _ => ()), 5.seconds)
+      val result = Await.result(
+        new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(legacyCapableSinkWorkflow, "exec-legacy", _ => ()),
+        5.seconds)
 
       result.success shouldBe true
       LegacySource.legacyCreates shouldBe 1
@@ -730,7 +799,9 @@ class WorkflowExecutionEngineSpec extends STSpec {
         _ => Future.successful(Done)
       )
 
-      val result = Await.result(new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(legacyCapableSinkWorkflow, context, _ => ()), 5.seconds)
+      val result = Await.result(
+        new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot).execute(legacyCapableSinkWorkflow, context, _ => ()),
+        5.seconds)
 
       result.success shouldBe false
       result.message should include("ReliableRunContext")
@@ -744,7 +815,7 @@ class WorkflowExecutionEngineSpec extends STSpec {
 
     "register mysql.snapshot separately from mysql.query" in {
       val snapshot = testRegistry.findSource("mysql.snapshot").get
-      val query = testRegistry.findSource("mysql.query").get
+      val query    = testRegistry.findSource("mysql.query").get
 
       snapshot.nodeType shouldBe "mysql.snapshot"
       query.nodeType shouldBe "mysql.query"
@@ -760,11 +831,11 @@ class WorkflowExecutionEngineSpec extends STSpec {
     }
 
     "cancel a reliable execution before stream materialization without creating its source" in {
-      val source = new CancellationSource("test.cancel-before-source")
-      val readiness = Promise[Done]()
-      val sink = new CancellationSink("test.cancel-before-sink", readiness.future)
+      val source      = new CancellationSource("test.cancel-before-source")
+      val readiness   = Promise[Done]()
+      val sink        = new CancellationSink("test.cancel-before-sink", readiness.future)
       lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
-      val context = reliableContext("cancel-before-materialization")
+      val context     = reliableContext("cancel-before-materialization")
       testRegistry.registerSource(source)
       testRegistry.registerSink(sink)
       try {
@@ -786,17 +857,17 @@ class WorkflowExecutionEngineSpec extends STSpec {
     }
 
     "cancel a materialized reliable source exactly once and remove its active control" in {
-      val source = new CancellationSource("test.cancel-materialized-source")
-      val sink = new CancellationSink("test.cancel-materialized-sink", Future.successful(Done))
+      val source      = new CancellationSource("test.cancel-materialized-source")
+      val sink        = new CancellationSink("test.cancel-materialized-sink", Future.successful(Done))
       lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
-      val context = reliableContext("cancel-materialized")
+      val context     = reliableContext("cancel-materialized")
       testRegistry.registerSource(source)
       testRegistry.registerSink(sink)
       try {
         val execution = engine.execute(cancellationWorkflow(source.nodeType, sink.nodeType), context, _ => ())
         Await.result(source.firstMaterialized.future, 2.seconds)
 
-        val first = engine.cancel(context.executionId)
+        val first  = engine.cancel(context.executionId)
         val second = engine.cancel(context.executionId)
 
         Await.result(first, 2.seconds) shouldBe Done
@@ -811,11 +882,11 @@ class WorkflowExecutionEngineSpec extends STSpec {
     }
 
     "release an old execution before restarting the same durable execution ID" in {
-      val source = new CancellationSource("test.cancel-recovery-source")
-      val sink = new CancellationSink("test.cancel-recovery-sink", Future.successful(Done))
+      val source      = new CancellationSource("test.cancel-recovery-source")
+      val sink        = new CancellationSink("test.cancel-recovery-sink", Future.successful(Done))
       lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
-      val context = reliableContext("same-recovered-execution")
-      val workflow = cancellationWorkflow(source.nodeType, sink.nodeType)
+      val context     = reliableContext("same-recovered-execution")
+      val workflow    = cancellationWorkflow(source.nodeType, sink.nodeType)
       testRegistry.registerSource(source)
       testRegistry.registerSink(sink)
       try {
@@ -839,29 +910,32 @@ class WorkflowExecutionEngineSpec extends STSpec {
     }
 
     "cancel every queued generation while the old execution is still releasing" in {
-      val source = new CancellationSource("test.cancel-queued-source", finite = true)
-      val sink = new CancellationSink("test.cancel-queued-sink", Future.successful(Done))
-      lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
-      val context = reliableContext("cancel-queued-generations")
-      val workflow = cancellationWorkflow(source.nodeType, sink.nodeType)
+      val source            = new CancellationSource("test.cancel-queued-source", finite = true)
+      val sink              = new CancellationSink("test.cancel-queued-sink", Future.successful(Done))
+      lazy val engine       = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
+      val context           = reliableContext("cancel-queued-generations")
+      val workflow          = cancellationWorkflow(source.nodeType, sink.nodeType)
       val oldReleaseStarted = Promise[Unit]()
-      val releaseOld = Promise[Done]()
+      val releaseOld        = Promise[Done]()
       testRegistry.registerSource(source)
       testRegistry.registerSink(sink)
       try {
-        val firstExecution = engine.execute(workflow, context, message => {
-          if (message.startsWith("工作流执行成功完成")) {
-            oldReleaseStarted.trySuccess(())
-            Await.result(releaseOld.future, 5.seconds)
-          }
-          ()
-        })
+        val firstExecution = engine.execute(
+          workflow,
+          context,
+          message => {
+            if (message.startsWith("工作流执行成功完成")) {
+              oldReleaseStarted.trySuccess(())
+              Await.result(releaseOld.future, 5.seconds)
+            }
+            ()
+          })
         Await.result(oldReleaseStarted.future, 2.seconds)
         awaitCondition("old source close before holding its control release") {
           source.eventsSnapshot.contains("close-1")
         }
 
-        val firstQueued = engine.execute(workflow, context, _ => ())
+        val firstQueued  = engine.execute(workflow, context, _ => ())
         val secondQueued = engine.execute(workflow, context, _ => ())
         engine.activeReliableExecutionCount shouldBe 3
 
@@ -885,10 +959,10 @@ class WorkflowExecutionEngineSpec extends STSpec {
     }
 
     "remove the active execution control after normal completion" in {
-      val source = new CancellationSource("test.normal-completion-source", finite = true)
-      val sink = new CancellationSink("test.normal-completion-sink", Future.successful(Done))
+      val source      = new CancellationSource("test.normal-completion-source", finite = true)
+      val sink        = new CancellationSink("test.normal-completion-sink", Future.successful(Done))
       lazy val engine = new WorkflowExecutionEngine(nodeRegistry = testRegistry.snapshot)
-      val context = reliableContext("normal-control-cleanup")
+      val context     = reliableContext("normal-control-cleanup")
       testRegistry.registerSource(source)
       testRegistry.registerSink(sink)
       try {
@@ -910,44 +984,46 @@ class WorkflowExecutionEngineSpec extends STSpec {
   }
 
   private def reliableWorkflow(
-    transformType: String = "map",
-    transformConfigKey: String = "expression",
-    transformConfigValue: String = "toUpperCase",
-    sinkType: String = ReliableSink.nodeType
-  ): WorkflowDSL.Workflow = WorkflowFixtures.linearWorkflow.copy(nodes =
+      transformType: String = "map",
+      transformConfigKey: String = "expression",
+      transformConfigValue: String = "toUpperCase",
+      sinkType: String = ReliableSink.nodeType): WorkflowDSL.Workflow = WorkflowFixtures.linearWorkflow.copy(nodes =
     WorkflowFixtures.linearWorkflow.nodes
       .updated(0, WorkflowFixtures.linearWorkflow.nodes.head.copy(nodeType = ReliableSource.nodeType))
-      .updated(1, WorkflowFixtures.linearWorkflow.nodes(1).copy(
-        nodeType = transformType,
-        config = JsObject(transformConfigKey -> JsString(transformConfigValue))
-      ))
-      .updated(2, WorkflowFixtures.linearWorkflow.nodes(2).copy(nodeType = sinkType))
-  )
+      .updated(
+        1,
+        WorkflowFixtures.linearWorkflow
+          .nodes(1)
+          .copy(
+            nodeType = transformType,
+            config = JsObject(transformConfigKey -> JsString(transformConfigValue))
+          ))
+      .updated(2, WorkflowFixtures.linearWorkflow.nodes(2).copy(nodeType = sinkType)))
 
-  private def mysqlEnvironmentWorkflow(): WorkflowDSL.Workflow = WorkflowFixtures.linearWorkflow.copy(nodes =
-    WorkflowFixtures.linearWorkflow.nodes
-      .updated(0, WorkflowFixtures.linearWorkflow.nodes.head.copy(
+  private def mysqlEnvironmentWorkflow(): WorkflowDSL.Workflow = WorkflowFixtures.linearWorkflow.copy(nodes = WorkflowFixtures.linearWorkflow.nodes
+    .updated(
+      0,
+      WorkflowFixtures.linearWorkflow.nodes.head.copy(
         nodeType = "mysql.snapshot",
         config = JsObject("passwordEnv" -> JsString("WORKFLOW_DB_PASSWORD"))
       ))
-      .updated(2, WorkflowFixtures.linearWorkflow.nodes(2).copy(
-        nodeType = "mysql.write",
-        config = JsObject("passwordEnv" -> JsString("WORKFLOW_DB_PASSWORD"))
-      ))
-  )
+    .updated(
+      2,
+      WorkflowFixtures.linearWorkflow
+        .nodes(2)
+        .copy(
+          nodeType = "mysql.write",
+          config = JsObject("passwordEnv" -> JsString("WORKFLOW_DB_PASSWORD"))
+        )))
 
-  private val legacyCapableSinkWorkflow: WorkflowDSL.Workflow = WorkflowFixtures.linearWorkflow.copy(nodes =
-    WorkflowFixtures.linearWorkflow.nodes
-      .updated(0, WorkflowFixtures.linearWorkflow.nodes.head.copy(nodeType = LegacySource.nodeType))
-      .updated(2, WorkflowFixtures.linearWorkflow.nodes(2).copy(nodeType = CapableLegacySink.nodeType))
-  )
+  private val legacyCapableSinkWorkflow: WorkflowDSL.Workflow = WorkflowFixtures.linearWorkflow.copy(nodes = WorkflowFixtures.linearWorkflow.nodes
+    .updated(0, WorkflowFixtures.linearWorkflow.nodes.head.copy(nodeType = LegacySource.nodeType))
+    .updated(2, WorkflowFixtures.linearWorkflow.nodes(2).copy(nodeType = CapableLegacySink.nodeType)))
 
   private def cancellationWorkflow(sourceType: String, sinkType: String): WorkflowDSL.Workflow =
-    WorkflowFixtures.linearWorkflow.copy(nodes =
-      WorkflowFixtures.linearWorkflow.nodes
-        .updated(0, WorkflowFixtures.linearWorkflow.nodes.head.copy(nodeType = sourceType))
-        .updated(2, WorkflowFixtures.linearWorkflow.nodes(2).copy(nodeType = sinkType))
-    )
+    WorkflowFixtures.linearWorkflow.copy(nodes = WorkflowFixtures.linearWorkflow.nodes
+      .updated(0, WorkflowFixtures.linearWorkflow.nodes.head.copy(nodeType = sourceType))
+      .updated(2, WorkflowFixtures.linearWorkflow.nodes(2).copy(nodeType = sinkType)))
 
   private def reliableContext(executionId: String): ReliableRunContext = ReliableRunContext(
     executionId,
@@ -973,149 +1049,151 @@ class WorkflowExecutionEngineSpec extends STSpec {
     rows
   )
 
-  private def checkpoint(executionId: String, sequence: Long, cursorValue: String, sourceRows: Long, targetRows: Long): BatchCheckpoint = BatchCheckpoint(
-    "source-1",
-    "pk-range-0",
-    sequence,
-    BatchId.sha256(executionId, "source-1", "pk-range-0", sequence),
-    SourceCursor("mysql.numeric-pk", cursorValue, "9"),
-    sourceRows,
-    targetRows
-  )
+  private def checkpoint(executionId: String, sequence: Long, cursorValue: String, sourceRows: Long, targetRows: Long): BatchCheckpoint =
+    BatchCheckpoint(
+      "source-1",
+      "pk-range-0",
+      sequence,
+      BatchId.sha256(executionId, "source-1", "pk-range-0", sequence),
+      SourceCursor("mysql.numeric-pk", cursorValue, "9"),
+      sourceRows,
+      targetRows
+    )
 
   private object ReliableEvents {
-    private val values = ListBuffer.empty[String]
+    private val values           = ListBuffer.empty[String]
     def add(value: String): Unit = synchronized(values += value)
-    def clear(): Unit = synchronized(values.clear())
+    def clear(): Unit            = synchronized(values.clear())
     def snapshot: Vector[String] = synchronized(values.toVector)
   }
 
-  private final class ObservingMySQLSource(onDiscover: () => Unit) extends NodeSource with CheckpointedNodeSource {
+  final private class ObservingMySQLSource(onDiscover: () => Unit) extends NodeSource with CheckpointedNodeSource {
     override val nodeType: String = "mysql.snapshot"
-    var receivedNodes = Vector.empty[WorkflowDSL.Node]
+    var receivedNodes             = Vector.empty[WorkflowDSL.Node]
 
     override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] =
       throw new AssertionError("reliable source used the legacy row stream")
 
     override def discoverBoundary(
-      node: WorkflowDSL.Node,
-      resumeFrom: Option[BatchCheckpoint],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] = {
+        node: WorkflowDSL.Node,
+        resumeFrom: Option[BatchCheckpoint],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] = {
       receivedNodes :+= node
       onDiscover()
       Future.successful(SnapshotBoundary(node.id, "pk-range-0", Some("2")))
     }
 
     override def createBatches(
-      node: WorkflowDSL.Node,
-      executionId: String,
-      boundary: SnapshotBoundary,
-      resume: Option[BatchCheckpoint],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
+        node: WorkflowDSL.Node,
+        executionId: String,
+        boundary: SnapshotBoundary,
+        resume: Option[BatchCheckpoint],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
       receivedNodes :+= node
-      Source(Vector(
-        batch(executionId, 0L, "1", Vector("one")),
-        batch(executionId, 1L, "2", Vector("two"))
-      ))
+      Source(
+        Vector(
+          batch(executionId, 0L, "1", Vector("one")),
+          batch(executionId, 1L, "2", Vector("two"))
+        ))
     }
   }
 
-  private final class ObservingCdcSource extends NodeSource with CheckpointedNodeSource {
+  final private class ObservingCdcSource extends NodeSource with CheckpointedNodeSource {
     override val nodeType: String = "mysql.cdc"
-    var receivedNodes = Vector.empty[WorkflowDSL.Node]
+    var receivedNodes             = Vector.empty[WorkflowDSL.Node]
 
     override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] =
       throw new AssertionError("CDC source used the legacy row stream")
 
     override def discoverBoundary(
-      node: WorkflowDSL.Node,
-      resumeFrom: Option[BatchCheckpoint],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] = {
+        node: WorkflowDSL.Node,
+        resumeFrom: Option[BatchCheckpoint],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] = {
       receivedNodes :+= node
       Future.successful(SnapshotBoundary(node.id, "mysql-cdc:orders-cdc-v1", Some("stream-v1")))
     }
 
     override def createBatches(
-      node: WorkflowDSL.Node,
-      executionId: String,
-      boundary: SnapshotBoundary,
-      resume: Option[BatchCheckpoint],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
+        node: WorkflowDSL.Node,
+        executionId: String,
+        boundary: SnapshotBoundary,
+        resume: Option[BatchCheckpoint],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
       receivedNodes :+= node
       Source.empty
     }
   }
 
-  private final class RuntimeSecretFailingCdcSource extends NodeSource with CheckpointedNodeSource {
+  final private class RuntimeSecretFailingCdcSource extends NodeSource with CheckpointedNodeSource {
     override val nodeType: String = "mysql.cdc"
 
     override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] =
       throw new AssertionError("CDC source used the legacy row stream")
 
     override def discoverBoundary(
-      node: WorkflowDSL.Node,
-      resumeFrom: Option[BatchCheckpoint],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] = {
+        node: WorkflowDSL.Node,
+        resumeFrom: Option[BatchCheckpoint],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] = {
       val secret = node.config.fields("password") match {
         case JsString(value) => value
-        case other => throw new AssertionError(s"expected runtime password, got $other")
+        case other           => throw new AssertionError(s"expected runtime password, got $other")
       }
       onLog(s"connector diagnostic includes $secret")
       Future.failed(new IllegalStateException(s"connector failed with $secret"))
     }
 
     override def createBatches(
-      node: WorkflowDSL.Node,
-      executionId: String,
-      boundary: SnapshotBoundary,
-      resume: Option[BatchCheckpoint],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = Source.empty
+        node: WorkflowDSL.Node,
+        executionId: String,
+        boundary: SnapshotBoundary,
+        resume: Option[BatchCheckpoint],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = Source.empty
   }
 
-  private final class ObservingCdcSink extends NodeSink with CheckpointedNodeSink {
+  final private class ObservingCdcSink extends NodeSink with CheckpointedNodeSink {
     override val nodeType: String = "mysql.cdc.apply"
-    var receivedNodes = Vector.empty[WorkflowDSL.Node]
+    var receivedNodes             = Vector.empty[WorkflowDSL.Node]
 
     override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] =
       throw new AssertionError("CDC sink used the legacy row stream")
 
     override def validateReady(
-      node: WorkflowDSL.Node,
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[Done] = {
+        node: WorkflowDSL.Node,
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[Done] = {
       receivedNodes :+= node
       Future.successful(Done)
     }
 
     override def validateSourceBoundary(
-      node: WorkflowDSL.Node,
-      boundary: SnapshotBoundary,
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[Done] = {
+        node: WorkflowDSL.Node,
+        boundary: SnapshotBoundary,
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[Done] = {
       receivedNodes :+= node
       Future.successful(Done)
     }
 
     override def commitBatch(
-      node: WorkflowDSL.Node,
-      workflowId: String,
-      executionId: String,
-      batch: SourceBatch,
-      transformedRows: Vector[String],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] =
+        node: WorkflowDSL.Node,
+        workflowId: String,
+        executionId: String,
+        batch: SourceBatch,
+        transformedRows: Vector[String],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] =
       Future.failed(new AssertionError("empty CDC source committed a batch"))
   }
 
-  private final class ObservingMySQLSink extends NodeSink with CheckpointedNodeSink {
+  final private class ObservingMySQLSink extends NodeSink with CheckpointedNodeSink {
     override val nodeType: String = "mysql.write"
-    var receivedNodes = Vector.empty[WorkflowDSL.Node]
+    var receivedNodes             = Vector.empty[WorkflowDSL.Node]
 
     override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] =
       throw new AssertionError("reliable sink used the legacy row stream")
@@ -1126,34 +1204,36 @@ class WorkflowExecutionEngineSpec extends STSpec {
     }
 
     override def commitBatch(
-      node: WorkflowDSL.Node,
-      workflowId: String,
-      executionId: String,
-      value: SourceBatch,
-      transformedRows: Vector[String],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = {
+        node: WorkflowDSL.Node,
+        workflowId: String,
+        executionId: String,
+        value: SourceBatch,
+        transformedRows: Vector[String],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = {
       receivedNodes :+= node
-      Future.successful(Committed(BatchCheckpoint(
-        value.sourceNodeId,
-        value.partitionId,
-        value.batchSequence,
-        value.batchId,
-        value.cursor,
-        value.rows.size.toLong,
-        transformedRows.size.toLong
-      )))
+      Future.successful(
+        Committed(
+          BatchCheckpoint(
+            value.sourceNodeId,
+            value.partitionId,
+            value.batchSequence,
+            value.batchId,
+            value.cursor,
+            value.rows.size.toLong,
+            transformedRows.size.toLong
+          )))
     }
   }
 
-  private final class CancellationSource(
-    override val nodeType: String,
-    finite: Boolean = false
-  ) extends NodeSource with CheckpointedNodeSource {
-    val createCalls = new AtomicInteger(0)
-    val closed = new AtomicInteger(0)
+  final private class CancellationSource(
+      override val nodeType: String,
+      finite: Boolean = false)
+      extends NodeSource with CheckpointedNodeSource {
+    val createCalls       = new AtomicInteger(0)
+    val closed            = new AtomicInteger(0)
     val firstMaterialized = Promise[Unit]()
-    private val events = ListBuffer.empty[String]
+    private val events    = ListBuffer.empty[String]
 
     def eventsSnapshot: Vector[String] = events.synchronized(events.toVector)
 
@@ -1161,21 +1241,21 @@ class WorkflowExecutionEngineSpec extends STSpec {
       throw new AssertionError("cancellation source used the legacy row stream")
 
     override def discoverBoundary(
-      node: WorkflowDSL.Node,
-      resumeFrom: Option[BatchCheckpoint],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] =
+        node: WorkflowDSL.Node,
+        resumeFrom: Option[BatchCheckpoint],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] =
       Future.successful(SnapshotBoundary(node.id, "cancel-partition", Some("cancel-boundary")))
 
     override def createBatches(
-      node: WorkflowDSL.Node,
-      executionId: String,
-      boundary: SnapshotBoundary,
-      resume: Option[BatchCheckpoint],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
+        node: WorkflowDSL.Node,
+        executionId: String,
+        boundary: SnapshotBoundary,
+        resume: Option[BatchCheckpoint],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
       val generation = createCalls.incrementAndGet()
-      val batches = if (finite) Source.empty[SourceBatch] else Source.maybe[SourceBatch]
+      val batches    = if (finite) Source.empty[SourceBatch] else Source.maybe[SourceBatch]
       batches.watchTermination() { (_, termination) =>
         events.synchronized(events += s"open-$generation")
         firstMaterialized.trySuccess(())
@@ -1188,43 +1268,43 @@ class WorkflowExecutionEngineSpec extends STSpec {
     }
   }
 
-  private final class CancellationSink(
-    override val nodeType: String,
-    readiness: Future[Done]
-  ) extends NodeSink with CheckpointedNodeSink {
+  final private class CancellationSink(
+      override val nodeType: String,
+      readiness: Future[Done])
+      extends NodeSink with CheckpointedNodeSink {
     val readyCalled = Promise[Unit]()
 
     override def createSink(node: WorkflowDSL.Node, onLog: String => Unit)(implicit ec: ExecutionContext): Sink[String, Future[Done]] =
       throw new AssertionError("cancellation sink used the legacy row stream")
 
     override def validateReady(
-      node: WorkflowDSL.Node,
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[Done] = {
+        node: WorkflowDSL.Node,
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[Done] = {
       readyCalled.trySuccess(())
       readiness
     }
 
     override def commitBatch(
-      node: WorkflowDSL.Node,
-      workflowId: String,
-      executionId: String,
-      batch: SourceBatch,
-      transformedRows: Vector[String],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] =
+        node: WorkflowDSL.Node,
+        workflowId: String,
+        executionId: String,
+        batch: SourceBatch,
+        transformedRows: Vector[String],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] =
       Future.failed(new AssertionError("cancellation source unexpectedly emitted a batch"))
   }
 
   private object ReliableSource extends NodeSource with CheckpointedNodeSource {
-    override val nodeType: String = "test.checkpoint-source"
-    @volatile var batches: Vector[SourceBatch] = Vector.empty
-    @volatile var resumeFrom: Option[BatchCheckpoint] = None
-    @volatile var discoveryResumeFrom: Option[BatchCheckpoint] = None
-    @volatile var discoveries: Int = 0
-    @volatile var createCalls: Int = 0
+    override val nodeType: String                                = "test.checkpoint-source"
+    @volatile var batches: Vector[SourceBatch]                   = Vector.empty
+    @volatile var resumeFrom: Option[BatchCheckpoint]            = None
+    @volatile var discoveryResumeFrom: Option[BatchCheckpoint]   = None
+    @volatile var discoveries: Int                               = 0
+    @volatile var createCalls: Int                               = 0
     @volatile var onBoundaryDiscovered: SnapshotBoundary => Unit = _ => ()
-    @volatile var onAcknowledge: SourceBatch => Future[Done] = _ => Future.successful(Done)
+    @volatile var onAcknowledge: SourceBatch => Future[Done]     = _ => Future.successful(Done)
 
     def reset(): Unit = {
       batches = Vector.empty
@@ -1241,10 +1321,10 @@ class WorkflowExecutionEngineSpec extends STSpec {
       throw new AssertionError("reliable source used the legacy row stream")
 
     override def discoverBoundary(
-      node: WorkflowDSL.Node,
-      resumeFrom: Option[BatchCheckpoint],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] = {
+        node: WorkflowDSL.Node,
+        resumeFrom: Option[BatchCheckpoint],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] = {
       discoveries += 1
       discoveryResumeFrom = resumeFrom
       ReliableEvents.add("discover-boundary")
@@ -1254,36 +1334,37 @@ class WorkflowExecutionEngineSpec extends STSpec {
     }
 
     override def createBatches(
-      node: WorkflowDSL.Node,
-      executionId: String,
-      boundary: SnapshotBoundary,
-      resume: Option[BatchCheckpoint],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
+        node: WorkflowDSL.Node,
+        executionId: String,
+        boundary: SnapshotBoundary,
+        resume: Option[BatchCheckpoint],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] = {
       createCalls += 1
       resumeFrom = resume
       ReliableEvents.add("create-batches")
-      Source.fromIterator(() => batches.iterator.map { value =>
-        ReliableEvents.add(s"pull-${value.batchSequence}")
-        value
-      })
+      Source.fromIterator(() =>
+        batches.iterator.map { value =>
+          ReliableEvents.add(s"pull-${value.batchSequence}")
+          value
+        })
     }
 
     override def acknowledgeCommittedBatch(
-      node: WorkflowDSL.Node,
-      value: SourceBatch,
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[Done] = onAcknowledge(value)
+        node: WorkflowDSL.Node,
+        value: SourceBatch,
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[Done] = onAcknowledge(value)
   }
 
   private object ReliableSink extends NodeSink with CheckpointedNodeSink {
-    override val nodeType: String = "test.checkpoint-sink"
-    @volatile var readinessFailure: Option[Throwable] = None
-    @volatile var commits: Vector[(SourceBatch, Vector[String])] = Vector.empty
-    @volatile var targetRowsBySequence: Map[Long, Long] = Map.empty
-    @volatile var onReady: () => Unit = () => ()
+    override val nodeType: String                                      = "test.checkpoint-sink"
+    @volatile var readinessFailure: Option[Throwable]                  = None
+    @volatile var commits: Vector[(SourceBatch, Vector[String])]       = Vector.empty
+    @volatile var targetRowsBySequence: Map[Long, Long]                = Map.empty
+    @volatile var onReady: () => Unit                                  = () => ()
     @volatile var onValidateBoundary: SnapshotBoundary => Future[Done] = _ => Future.successful(Done)
-    @volatile var onCommit: SourceBatch => Unit = _ => ()
+    @volatile var onCommit: SourceBatch => Unit                        = _ => ()
 
     def reset(): Unit = {
       readinessFailure = None
@@ -1304,31 +1385,33 @@ class WorkflowExecutionEngineSpec extends STSpec {
     }
 
     override def validateSourceBoundary(
-      node: WorkflowDSL.Node,
-      boundary: SnapshotBoundary,
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[Done] = onValidateBoundary(boundary)
+        node: WorkflowDSL.Node,
+        boundary: SnapshotBoundary,
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[Done] = onValidateBoundary(boundary)
 
     override def commitBatch(
-      node: WorkflowDSL.Node,
-      workflowId: String,
-      executionId: String,
-      value: SourceBatch,
-      transformedRows: Vector[String],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = {
+        node: WorkflowDSL.Node,
+        workflowId: String,
+        executionId: String,
+        value: SourceBatch,
+        transformedRows: Vector[String],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = {
       commits = commits :+ (value -> transformedRows)
       ReliableEvents.add(s"commit-${value.batchSequence}")
       onCommit(value)
-      Future.successful(Committed(BatchCheckpoint(
-        value.sourceNodeId,
-        value.partitionId,
-        value.batchSequence,
-        value.batchId,
-        value.cursor,
-        value.rows.size.toLong,
-        targetRowsBySequence.getOrElse(value.batchSequence, transformedRows.size.toLong)
-      )))
+      Future.successful(
+        Committed(
+          BatchCheckpoint(
+            value.sourceNodeId,
+            value.partitionId,
+            value.batchSequence,
+            value.batchId,
+            value.cursor,
+            value.rows.size.toLong,
+            targetRowsBySequence.getOrElse(value.batchSequence, transformedRows.size.toLong)
+          )))
     }
   }
 
@@ -1342,7 +1425,7 @@ class WorkflowExecutionEngineSpec extends STSpec {
 
     override def equals(other: Any): Boolean = other match {
       case sink: NodeSink => sink.nodeType == nodeType
-      case _ => false
+      case _              => false
     }
 
     override def hashCode(): Int = nodeType.hashCode
@@ -1351,9 +1434,9 @@ class WorkflowExecutionEngineSpec extends STSpec {
   }
 
   private object LegacySource extends NodeSource {
-    override val nodeType: String = "test.legacy-source"
+    override val nodeType: String    = "test.legacy-source"
     @volatile var legacyCreates: Int = 0
-    def reset(): Unit = legacyCreates = 0
+    def reset(): Unit                = legacyCreates = 0
     override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] = {
       legacyCreates += 1
       Source.single(" legacy ")
@@ -1361,10 +1444,10 @@ class WorkflowExecutionEngineSpec extends STSpec {
   }
 
   private object CapableLegacySink extends NodeSink with CheckpointedNodeSink {
-    override val nodeType: String = "test.capable-legacy-sink"
+    override val nodeType: String    = "test.capable-legacy-sink"
     @volatile var legacyCreates: Int = 0
-    @volatile var readyCalls: Int = 0
-    @volatile var batchCommits: Int = 0
+    @volatile var readyCalls: Int    = 0
+    @volatile var batchCommits: Int  = 0
 
     def reset(): Unit = {
       legacyCreates = 0
@@ -1383,13 +1466,13 @@ class WorkflowExecutionEngineSpec extends STSpec {
     }
 
     override def commitBatch(
-      node: WorkflowDSL.Node,
-      workflowId: String,
-      executionId: String,
-      value: SourceBatch,
-      transformedRows: Vector[String],
-      onLog: String => Unit
-    )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = {
+        node: WorkflowDSL.Node,
+        workflowId: String,
+        executionId: String,
+        value: SourceBatch,
+        transformedRows: Vector[String],
+        onLog: String => Unit
+      )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult] = {
       batchCommits += 1
       Future.failed(new AssertionError("legacy source entered reliable mode"))
     }
@@ -1397,10 +1480,10 @@ class WorkflowExecutionEngineSpec extends STSpec {
 
   private object FailingSource extends NodeSource {
     override val nodeType: String = "test.failing-source"
-    private val emittedFirst = new AtomicBoolean(false)
+    private val emittedFirst      = new AtomicBoolean(false)
 
     def emittedFirstValue: Boolean = emittedFirst.get
-    def reset(): Unit = emittedFirst.set(false)
+    def reset(): Unit              = emittedFirst.set(false)
 
     override def createSource(node: WorkflowDSL.Node, onLog: String => Unit): Source[String, NotUsed] =
       Source(List("first"))
@@ -1423,7 +1506,7 @@ class WorkflowExecutionEngineSpec extends STSpec {
 
     override def equals(other: Any): Boolean = other match {
       case source: NodeSource => source.nodeType == nodeType
-      case _ => false
+      case _                  => false
     }
 
     override def hashCode(): Int = nodeType.hashCode

@@ -42,7 +42,7 @@ private[integration] object MultiNodeTestSupport {
 
   def cleanupDatabase(database: Database): Unit = {
     val directory = database.directory.toAbsolutePath.normalize()
-    val tempRoot = Path.of(System.getProperty("java.io.tmpdir")).toAbsolutePath.normalize()
+    val tempRoot  = Path.of(System.getProperty("java.io.tmpdir")).toAbsolutePath.normalize()
     require(directory.getParent == tempRoot, s"refusing to delete directory outside java.io.tmpdir: $directory")
     require(
       directory.getFileName.toString.startsWith("two-node-workflow-") ||
@@ -93,7 +93,9 @@ private[integration] object MultiNodeTestSupport {
       try {
         val input = Option(getClass.getClassLoader.getResourceAsStream("schema/h2/h2-create-schema.sql"))
           .getOrElse(throw new IllegalStateException("Pekko Persistence JDBC H2 schema resource is unavailable"))
-        val sql = try Source.fromInputStream(input).mkString finally input.close()
+        val sql =
+          try Source.fromInputStream(input).mkString
+          finally input.close()
         sql.split(";").map(_.trim).filter(_.nonEmpty).foreach(statement.execute)
       } finally statement.close()
     } finally connection.close()
@@ -106,14 +108,14 @@ class TwoNodeWorkflowRecoverySpec extends AnyWordSpec with Matchers with Eventua
   "application-prod scalar environment substitutions" should {
     "override the built-in network defaults when the resolved config is loaded" in synchronized {
       val overrides = Map(
-        "PEKKO_HOSTNAME" -> "node-from-environment",
-        "PEKKO_PORT" -> "2651",
-        "HTTP_HOST" -> "127.0.0.2",
-        "HTTP_PORT" -> "8181",
-        "PEKKO_SHARDING_SHARDS" -> "37",
+        "PEKKO_HOSTNAME"                -> "node-from-environment",
+        "PEKKO_PORT"                    -> "2651",
+        "HTTP_HOST"                     -> "127.0.0.2",
+        "HTTP_PORT"                     -> "8181",
+        "PEKKO_SHARDING_SHARDS"         -> "37",
         "PEKKO_WORKFLOW_SNAPSHOT_EVERY" -> "23",
         "PEKKO_WORKFLOW_KEEP_SNAPSHOTS" -> "4",
-        "PEKKO_LOG_LEVEL" -> "DEBUG"
+        "PEKKO_LOG_LEVEL"               -> "DEBUG"
       )
       val previous = overrides.keys.map(key => key -> Option(System.getProperty(key))).toMap
       try {
@@ -131,7 +133,7 @@ class TwoNodeWorkflowRecoverySpec extends AnyWordSpec with Matchers with Eventua
       } finally {
         previous.foreach {
           case (key, Some(value)) => System.setProperty(key, value)
-          case (key, None) => System.clearProperty(key)
+          case (key, None)        => System.clearProperty(key)
         }
         ConfigFactory.invalidateCaches()
       }
@@ -149,8 +151,8 @@ class TwoNodeWorkflowRecoverySpec extends AnyWordSpec with Matchers with Eventua
 
   "workflow sharding with shared JDBC persistence" should {
     "recover the definition and terminal state after its hosting ActorSystem terminates" in {
-      val database = MultiNodeTestSupport.newDatabase("two-node-workflow-")
-      val clusterName = s"task8-workflow-${java.util.UUID.randomUUID()}"
+      val database            = MultiNodeTestSupport.newDatabase("two-node-workflow-")
+      val clusterName         = s"task8-workflow-${java.util.UUID.randomUUID()}"
       var node1: ActorTestKit = null
       var node2: ActorTestKit = null
 

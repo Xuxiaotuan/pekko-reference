@@ -18,25 +18,21 @@ import scala.concurrent.duration._
 
 /**
  * 故障恢复测试
- * 
+ *
  * 测试分布式工作流引擎的故障恢复能力：
  * - 模拟节点宕机
  * - 验证工作流自动迁移
  * - 验证状态完整恢复
  * - 验证路由自动更新
- * 
+ *
  * @author : Xuxiaotuan
  * @since : 2024-11-28
  */
 class FailoverRecoverySpec
-  extends ScalaTestWithActorTestKit(FailoverRecoverySpec.config)
-  with AnyWordSpecLike
-  with Matchers
-  with BeforeAndAfterAll
-  with ScalaFutures
-  with Eventually {
+    extends ScalaTestWithActorTestKit(FailoverRecoverySpec.config) with AnyWordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures
+    with Eventually {
 
-  override implicit val patience: PatienceConfig = PatienceConfig(timeout = Span(30, Seconds))
+  implicit override val patience: PatienceConfig = PatienceConfig(timeout = Span(30, Seconds))
 
   var node1: ActorTestKit = _
   var node2: ActorTestKit = _
@@ -44,21 +40,21 @@ class FailoverRecoverySpec
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    
+
     // 创建3个节点
     node1 = ActorTestKit("FailoverSystem", FailoverRecoverySpec.nodeConfig(2561))
     node2 = ActorTestKit("FailoverSystem", FailoverRecoverySpec.nodeConfig(2562))
     node3 = ActorTestKit("FailoverSystem", FailoverRecoverySpec.nodeConfig(2563))
-    
+
     // 让所有节点加入集群
     val cluster1 = Cluster(node1.system)
     val cluster2 = Cluster(node2.system)
     val cluster3 = Cluster(node3.system)
-    
+
     cluster1.manager ! Join(cluster1.selfMember.address)
     cluster2.manager ! Join(cluster1.selfMember.address)
     cluster3.manager ! Join(cluster1.selfMember.address)
-    
+
     // 等待集群形成
     eventually {
       cluster1.state.members.size shouldBe 3
@@ -79,15 +75,15 @@ class FailoverRecoverySpec
     "recover workflow after node failure" in {
       // 在所有节点上初始化WorkflowSharding
       implicit val ec = node1.system.executionContext
-      
+
       val executionEngine1 = new WorkflowExecutionEngine()(node1.system, ec)
-      val shardRegion1 = WorkflowSharding.init(node1.system, executionEngine1)
-      
+      val shardRegion1     = WorkflowSharding.init(node1.system, executionEngine1)
+
       val executionEngine2 = new WorkflowExecutionEngine()(node2.system, ec)
-      val shardRegion2 = WorkflowSharding.init(node2.system, executionEngine2)
-      
+      val shardRegion2     = WorkflowSharding.init(node2.system, executionEngine2)
+
       val executionEngine3 = new WorkflowExecutionEngine()(node3.system, ec)
-      val shardRegion3 = WorkflowSharding.init(node3.system, executionEngine3)
+      val shardRegion3     = WorkflowSharding.init(node3.system, executionEngine3)
 
       // 等待Sharding初始化完成
       Thread.sleep(3000)
@@ -140,14 +136,14 @@ class FailoverRecoverySpec
       // 模拟node2宕机
       val cluster2 = Cluster(node2.system)
       cluster2.manager ! Leave(cluster2.selfMember.address)
-      
+
       // 等待node2离开集群
       Thread.sleep(5000)
 
       // 验证集群现在只有2个节点
       val cluster1 = Cluster(node1.system)
       val cluster3 = Cluster(node3.system)
-      
+
       eventually {
         cluster1.state.members.size shouldBe 2
         cluster3.state.members.size shouldBe 2
@@ -177,12 +173,12 @@ class FailoverRecoverySpec
     "maintain workflow state after failover" in {
       // 在所有节点上初始化WorkflowSharding
       implicit val ec = node1.system.executionContext
-      
+
       val executionEngine1 = new WorkflowExecutionEngine()(node1.system, ec)
-      val shardRegion1 = WorkflowSharding.init(node1.system, executionEngine1)
-      
+      val shardRegion1     = WorkflowSharding.init(node1.system, executionEngine1)
+
       val executionEngine3 = new WorkflowExecutionEngine()(node3.system, ec)
-      val shardRegion3 = WorkflowSharding.init(node3.system, executionEngine3)
+      val shardRegion3     = WorkflowSharding.init(node3.system, executionEngine3)
 
       // 等待Sharding初始化完成
       Thread.sleep(3000)
@@ -230,7 +226,7 @@ class FailoverRecoverySpec
         EventSourcedWorkflowActor.Execute(execProbe.ref)
       )
       val execResponse = execProbe.expectMessageType[EventSourcedWorkflowActor.ExecutionResponse](5.seconds)
-      val executionId = execResponse.executionId
+      val executionId  = execResponse.executionId
 
       // 等待执行开始
       Thread.sleep(2000)
@@ -258,7 +254,7 @@ class FailoverRecoverySpec
       // 验证状态一致
       statusAfter.workflowId shouldBe statusBefore.workflowId
       statusAfter.state shouldBe statusBefore.state
-      
+
       // 验证执行历史保留
       if (statusBefore.allExecutions.nonEmpty) {
         statusAfter.allExecutions should not be empty
@@ -269,12 +265,12 @@ class FailoverRecoverySpec
     "handle multiple concurrent failures" in {
       // 在所有节点上初始化WorkflowSharding
       implicit val ec = node1.system.executionContext
-      
+
       val executionEngine1 = new WorkflowExecutionEngine()(node1.system, ec)
-      val shardRegion1 = WorkflowSharding.init(node1.system, executionEngine1)
-      
+      val shardRegion1     = WorkflowSharding.init(node1.system, executionEngine1)
+
       val executionEngine3 = new WorkflowExecutionEngine()(node3.system, ec)
-      val shardRegion3 = WorkflowSharding.init(node3.system, executionEngine3)
+      val shardRegion3     = WorkflowSharding.init(node3.system, executionEngine3)
 
       // 等待Sharding初始化完成
       Thread.sleep(3000)
@@ -315,7 +311,7 @@ class FailoverRecoverySpec
           EventSourcedWorkflowActor.Initialize(workflow, initProbe.ref)
         )
         initProbe.expectMessageType[EventSourcedWorkflowActor.InitializeResponse](5.seconds)
-        
+
         workflowId
       }
 
@@ -337,12 +333,12 @@ class FailoverRecoverySpec
     "automatically update routing after node failure" in {
       // 在所有节点上初始化WorkflowSharding
       implicit val ec = node1.system.executionContext
-      
+
       val executionEngine1 = new WorkflowExecutionEngine()(node1.system, ec)
-      val shardRegion1 = WorkflowSharding.init(node1.system, executionEngine1)
-      
+      val shardRegion1     = WorkflowSharding.init(node1.system, executionEngine1)
+
       val executionEngine3 = new WorkflowExecutionEngine()(node3.system, ec)
-      val shardRegion3 = WorkflowSharding.init(node3.system, executionEngine3)
+      val shardRegion3     = WorkflowSharding.init(node3.system, executionEngine3)
 
       // 等待Sharding初始化完成
       Thread.sleep(3000)
@@ -414,9 +410,9 @@ class FailoverRecoverySpec
 }
 
 object FailoverRecoverySpec {
-  
-  val config = ConfigFactory.parseString(
-    """
+
+  val config = ConfigFactory
+    .parseString("""
     pekko {
       actor.provider = "cluster"
       
@@ -460,13 +456,15 @@ object FailoverRecoverySpec {
       
       loglevel = "INFO"
     }
-    """).withFallback(ConfigFactory.load("application-test"))
+    """)
+    .withFallback(ConfigFactory.load("application-test"))
 
-  def nodeConfig(port: Int) = ConfigFactory.parseString(
-    s"""
+  def nodeConfig(port: Int) = ConfigFactory
+    .parseString(s"""
     pekko {
       remote.artery.canonical.port = $port
       cluster.roles = ["worker"]
     }
-    """).withFallback(config)
+    """)
+    .withFallback(config)
 }

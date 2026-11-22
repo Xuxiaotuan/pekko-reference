@@ -22,9 +22,10 @@ private[actors] object WorkflowDefinitionCodec {
     canonicalJson(workflow.toJson)
   }
   private def canonicalJson(value: JsValue): String = value match {
-    case JsObject(fields) => fields.toVector.sortBy(_._1).map { case (key, child) => s"${JsString(key).compactPrint}:${canonicalJson(child)}" }.mkString("{", ",", "}")
+    case JsObject(fields) =>
+      fields.toVector.sortBy(_._1).map { case (key, child) => s"${JsString(key).compactPrint}:${canonicalJson(child)}" }.mkString("{", ",", "}")
     case JsArray(values) => values.map(canonicalJson).mkString("[", ",", "]")
-    case other => other.compactPrint
+    case other           => other.compactPrint
   }
   private def canonicalAndValidate(workflow: WorkflowDSL.Workflow, registry: NodeRegistry): Either[Vector[String], String] = {
     val json = canonicalWorkflowJson(workflow)

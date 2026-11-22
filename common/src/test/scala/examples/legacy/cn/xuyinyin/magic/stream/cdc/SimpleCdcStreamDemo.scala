@@ -18,33 +18,32 @@ import scala.concurrent.duration._
  * 专注于展示流式处理和高低水位线算法
  */
 object SimpleCdcStreamDemo extends LazyLogging {
-  
+
   def main(args: Array[String]): Unit = {
     logger.info("=== 简化Pekko Stream CDC演示开始 ===")
-    
+
     // 创建组件
-    val simulator = new CdcDataSimulator()
+    val simulator        = new CdcDataSimulator()
     val watermarkManager = new WatermarkManager()
-    
+
     // 先全量，再增量
     demonstrateFullThenIncremental(simulator, watermarkManager)
-    
+
     logger.info("=== 简化Pekko Stream CDC演示完成 ===")
   }
-  
+
   /**
    * 演示流式CDC处理
    */
   private def demonstrateFullThenIncremental(
-    simulator: CdcDataSimulator,
-    watermarkManager: WatermarkManager
-  ): Unit = {
+      simulator: CdcDataSimulator,
+      watermarkManager: WatermarkManager): Unit = {
     implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "CdcStreamSystem")
-    implicit val mat: Materializer = Materializer(system)
-    implicit val ec: ExecutionContext = system.executionContext
+    implicit val mat: Materializer            = Materializer(system)
+    implicit val ec: ExecutionContext         = system.executionContext
 
     logger.info("开始全量->增量CDC处理演示...")
-    
+
     // 创建同步配置
     val fullConfig = SyncConfig(
       tableName = "users",
@@ -54,29 +53,29 @@ object SimpleCdcStreamDemo extends LazyLogging {
       syncInterval = 1000L,
       status = FULL_SYNC
     )
-    
+
     // 初始化水位线（按全量）
     watermarkManager.initializeFromConfig(fullConfig)
     logger.info("初始化水位线:")
     printWatermarkStatus(watermarkManager)
-    
+
     // 执行全量阶段（模拟：推进到目标高水位100，并让模拟器从该位点之后产生增量）
     watermarkManager.updateHighWatermark(100L)
     watermarkManager.advanceCurrentWatermark(100L)
     simulator.advanceBinlogPositionTo(101L)
     logger.info("全量阶段完成(边界=100，增量起点=101):")
     printWatermarkStatus(watermarkManager)
-    
+
     // 切换增量配置
     val incConfig = fullConfig.copy(status = INCREMENTAL_SYNC)
-    
+
     // 为增量阶段放开高水位线（允许新位点不断进入处理范围）
     watermarkManager.updateHighWatermark(Long.MaxValue)
     logger.info("切换到增量阶段: 放开高水位线为Long.MaxValue，允许持续消费新事件")
 
     // 创建CDC事件流（增量）
     val cdcEventStream = createCdcEventStream(simulator, incConfig)
-    
+
     // 处理CDC事件流
     val processingResult = cdcEventStream
       .via(validateEventFlow(incConfig, watermarkManager))
@@ -84,53 +83,53 @@ object SimpleCdcStreamDemo extends LazyLogging {
       .via(updateWatermarkFlow(watermarkManager))
       .via(monitorFlow())
       .runWith(Sink.foreach { result =>
-        logger.info(s"[增量] 已处理位点=${result.lastProcessedPosition} (current=${watermarkManager.getCurrentWatermark}, high=${watermarkManager.getHighWatermark})")
+        logger.info(
+          s"[增量] 已处理位点=${result.lastProcessedPosition} (current=${watermarkManager.getCurrentWatermark}, high=${watermarkManager.getHighWatermark})")
       })
-    
+
     // 运行一段时间后停止
     Thread.sleep(10000) // 增量运行10秒
-    
+
     logger.info("流式CDC处理演示完成:")
     printWatermarkStatus(watermarkManager)
-    
+
     system.terminate()
   }
-  
+
   /**
    * 创建CDC事件流
    */
   private def createCdcEventStream(
-    simulator: CdcDataSimulator,
-    config: SyncConfig
-  ): org.apache.pekko.stream.scaladsl.Source[CdcEvent, org.apache.pekko.NotUsed] = {
-    Source.tick(0.seconds, config.syncInterval.millis, ())
+      simulator: CdcDataSimulator,
+      config: SyncConfig): org.apache.pekko.stream.scaladsl.Source[CdcEvent, org.apache.pekko.NotUsed] = {
+    Source
+      .tick(0.seconds, config.syncInterval.millis, ())
       .map(_ => generateCdcEvent(simulator, config.tableName))
       .filter(_.isDefined)
       .map(_.get)
       .buffer(100, OverflowStrategy.backpressure)
       .mapMaterializedValue(_ => org.apache.pekko.NotUsed)
   }
-  
+
   /**
    * 生成CDC事件
    */
   private def generateCdcEvent(simulator: CdcDataSimulator, tableName: String): Option[CdcEvent] = {
     tableName match {
-      case "users" => Some(simulator.generateUserCdcEvent())
+      case "users"  => Some(simulator.generateUserCdcEvent())
       case "orders" => Some(simulator.generateOrderCdcEvent())
-      case _ => 
+      case _ =>
         logger.warn(s"未知的表名: $tableName")
         None
     }
   }
-  
+
   /**
    * 事件验证流
    */
   private def validateEventFlow(
-    config: SyncConfig,
-    watermarkManager: WatermarkManager
-  ): Flow[CdcEvent, CdcEvent, org.apache.pekko.NotUsed] = {
+      config: SyncConfig,
+      watermarkManager: WatermarkManager): Flow[CdcEvent, CdcEvent, org.apache.pekko.NotUsed] = {
     Flow[CdcEvent]
       .filter { event =>
         // 检查事件是否在安全的水位线范围内
@@ -153,7 +152,7 @@ object SimpleCdcStreamDemo extends LazyLogging {
         isTargetTable
       }
   }
-  
+
   /**
    * 事件处理流
    */
@@ -163,7 +162,7 @@ object SimpleCdcStreamDemo extends LazyLogging {
         processCdcEvent(event, config)
       }
   }
-  
+
   /**
    * 水位线更新流
    */
@@ -172,17 +171,17 @@ object SimpleCdcStreamDemo extends LazyLogging {
       .map { result =>
         // 更新当前水位线
         watermarkManager.advanceCurrentWatermark(result.lastProcessedPosition)
-        
+
         // 检查是否可以推进高水位线
         if (watermarkManager.canAdvanceHighWatermark(result.lastProcessedPosition)) {
           watermarkManager.updateHighWatermark(result.lastProcessedPosition)
           logger.debug(s"推进高水位线到: ${result.lastProcessedPosition}")
         }
-        
+
         result
       }
   }
-  
+
   /**
    * 监控流
    */
@@ -194,7 +193,7 @@ object SimpleCdcStreamDemo extends LazyLogging {
         result
       }
   }
-  
+
   /**
    * 处理单个CDC事件
    */
@@ -213,7 +212,7 @@ object SimpleCdcStreamDemo extends LazyLogging {
       timestamp = Instant.now()
     )
   }
-  
+
   /**
    * 处理INSERT事件
    */
@@ -226,7 +225,7 @@ object SimpleCdcStreamDemo extends LazyLogging {
         logger.warn(s"INSERT事件缺少afterData: eventId=${event.eventId}")
     }
   }
-  
+
   /**
    * 处理UPDATE事件
    */
@@ -239,7 +238,7 @@ object SimpleCdcStreamDemo extends LazyLogging {
         logger.warn(s"UPDATE事件数据不完整: eventId=${event.eventId}")
     }
   }
-  
+
   /**
    * 处理DELETE事件
    */
@@ -252,7 +251,7 @@ object SimpleCdcStreamDemo extends LazyLogging {
         logger.warn(s"DELETE事件缺少beforeData: eventId=${event.eventId}")
     }
   }
-  
+
   /**
    * 模拟数据处理
    */
@@ -261,7 +260,7 @@ object SimpleCdcStreamDemo extends LazyLogging {
     Thread.sleep(10)
     logger.debug(s"模拟数据处理: 操作=$operation, 数据=$data")
   }
-  
+
   /**
    * 打印水位线状态
    */
@@ -278,45 +277,45 @@ object SimpleCdcStreamDemo extends LazyLogging {
  * 水位线算法流演示
  */
 object WatermarkStreamAlgorithmDemo extends LazyLogging {
-  
+
   def main(args: Array[String]): Unit = {
     logger.info("=== 水位线算法流演示开始 ===")
-    
+
     val watermarkManager = new WatermarkManager()
-    
+
     // 演示水位线操作
     logger.info("初始水位线状态:")
     printWatermarkStatus(watermarkManager)
-    
+
     // 设置初始范围
     watermarkManager.updateLowWatermark(100L)
     watermarkManager.updateHighWatermark(1000L)
     watermarkManager.advanceCurrentWatermark(200L)
-    
+
     logger.info("设置初始范围后的状态:")
     printWatermarkStatus(watermarkManager)
-    
+
     // 演示安全范围检查
     logger.info("安全范围检查:")
     logger.info(s"位置150在安全范围内: ${watermarkManager.isInSafeRange(150L)}")
     logger.info(s"位置50在安全范围内: ${watermarkManager.isInSafeRange(50L)}")
     logger.info(s"位置1500在安全范围内: ${watermarkManager.isInSafeRange(1500L)}")
-    
+
     // 演示水位线推进
     watermarkManager.advanceCurrentWatermark(500L)
     logger.info("推进当前水位线到500后的状态:")
     printWatermarkStatus(watermarkManager)
-    
+
     // 演示高水位线推进
     if (watermarkManager.canAdvanceHighWatermark(500L)) {
       watermarkManager.updateHighWatermark(500L)
       logger.info("推进高水位线到500后的状态:")
       printWatermarkStatus(watermarkManager)
     }
-    
+
     logger.info("水位线算法流演示完成")
   }
-  
+
   private def printWatermarkStatus(watermarkManager: WatermarkManager): Unit = {
     val status = watermarkManager.getWatermarkStatus
     logger.info(s"  当前水位线: ${status.current}")

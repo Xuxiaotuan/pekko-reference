@@ -24,7 +24,7 @@ class ScheduleCalculatorSpec extends AnyWordSpec with Matchers {
     "preserve a valid six-field cron expression" in {
       ScheduleCalculator.normalize("0 0 0 * * ?") shouldBe "0 0 0 * * ?"
       ScheduleCalculator.next(CronSchedule("0 0 1 * * ?"), Instant.parse("2026-08-29T00:30:00Z")) shouldBe
-        Instant.parse("2026-08-29T01:00:00Z")
+      Instant.parse("2026-08-29T01:00:00Z")
     }
 
     "reject invalid cron expressions" in {

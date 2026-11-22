@@ -13,17 +13,35 @@ import spray.json._
 /** Verifies the actual standalone route assembly, not the persistence or CDC data path. */
 class CdcStandaloneRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRouteTest {
   override def testConfigSource: String = "pekko.actor.provider = local"
-  private val request = CdcTaskRequest("request-1", "capture-1", "orders", "g1", "target_orders")
-  private val task = CdcTaskView("task-1", request.requestId, request.captureId, request.table,
-    request.generation, request.targetTable, "fingerprint", "RUNNING", 1L, "QUEUED", 0L, None,
-    "STARTING", None, "UNKNOWN", "NOT_ALLOCATED", None, 1L, None, true)
-  private final class Service extends CdcTaskService {
-    var submitted = Vector.empty[CdcTaskRequest]
-    var canceled = Vector.empty[String]
-    def status = CdcPlatformStatus(true, "ACTIVE", None, 0, 2)
-    def captures() = Future.successful(Vector(CdcCaptureView("capture-1", "shop", "STARTING", "UNKNOWN", None)))
-    def submit(value: CdcTaskRequest) = { submitted :+= value; Future.successful(CdcTaskAcceptance(task, true)) }
-    def get(id: String) = Future.successful(Option.when(id == task.taskId)(task))
+  private val request                   = CdcTaskRequest("request-1", "capture-1", "orders", "g1", "target_orders")
+  private val task = CdcTaskView(
+    "task-1",
+    request.requestId,
+    request.captureId,
+    request.table,
+    request.generation,
+    request.targetTable,
+    "fingerprint",
+    "RUNNING",
+    1L,
+    "QUEUED",
+    0L,
+    None,
+    "STARTING",
+    None,
+    "UNKNOWN",
+    "NOT_ALLOCATED",
+    None,
+    1L,
+    None,
+    true)
+  final private class Service extends CdcTaskService {
+    var submitted                                    = Vector.empty[CdcTaskRequest]
+    var canceled                                     = Vector.empty[String]
+    def status                                       = CdcPlatformStatus(true, "ACTIVE", None, 0, 2)
+    def captures()                                   = Future.successful(Vector(CdcCaptureView("capture-1", "shop", "STARTING", "UNKNOWN", None)))
+    def submit(value: CdcTaskRequest)                = { submitted :+= value; Future.successful(CdcTaskAcceptance(task, true)) }
+    def get(id: String)                              = Future.successful(Option.when(id == task.taskId)(task))
     def listAfter(after: Option[String], limit: Int) = Future.successful(CdcTaskPage(Vector(task), None))
     def cancel(id: String) = { canceled :+= id; Future.successful(task.copy(desiredState = "CANCELED", phase = "CANCELING")) }
   }
@@ -44,24 +62,28 @@ class CdcStandaloneRoutesSpec extends AnyWordSpecLike with Matchers with Scalate
   "Standalone CDC routes" should {
     "reject disabled, managed, and v2 configurations before opening resources" in {
       intercept[IllegalArgumentException](CdcRuntime.start(ConfigFactory.empty()))
-      intercept[IllegalArgumentException](CdcRuntime.start(
-        ConfigFactory.parseString("pekko.cdc-standalone.managed-worker=true").withFallback(platform())))
-      intercept[IllegalArgumentException](CdcRuntime.start(
-        ConfigFactory.parseString("pekko.workflow.snapshot-ha.enabled=true").withFallback(platform())))
-      intercept[IllegalArgumentException](CdcRuntime.start(platform(",source-fence-v2=true,source-observer-username=observer,source-observer-password=observer")))
+      intercept[IllegalArgumentException](
+        CdcRuntime.start(ConfigFactory.parseString("pekko.cdc-standalone.managed-worker=true").withFallback(platform())))
+      intercept[IllegalArgumentException](
+        CdcRuntime.start(ConfigFactory.parseString("pekko.workflow.snapshot-ha.enabled=true").withFallback(platform())))
+      intercept[IllegalArgumentException](
+        CdcRuntime.start(platform(",source-fence-v2=true,source-observer-username=observer,source-observer-password=observer")))
     }
     "require an explicit loopback management endpoint" in {
       CdcRuntime.httpAddress(ConfigFactory.parseString("pekko.cdc-standalone.http.port=0")) shouldBe ("127.0.0.1" -> 0)
       intercept[IllegalArgumentException](CdcRuntime.httpAddress(ConfigFactory.empty()))
-      intercept[IllegalArgumentException](CdcRuntime.httpAddress(ConfigFactory.parseString(
-        "pekko.cdc-standalone.http { host=0.0.0.0, port=8080 }")))
+      intercept[IllegalArgumentException](CdcRuntime.httpAddress(ConfigFactory.parseString("pekko.cdc-standalone.http { host=0.0.0.0, port=8080 }")))
     }
 
     "expose CDC operations and no workflow, schedule, or front-end routes" in {
       val service = new Service
-      val route = CdcRuntime.routes(service)(system.dispatcher)
-      val body = JsObject("requestId" -> JsString(request.requestId), "captureId" -> JsString(request.captureId),
-        "table" -> JsString(request.table), "generation" -> JsString(request.generation), "targetTable" -> JsString(request.targetTable))
+      val route   = CdcRuntime.routes(service)(system.dispatcher)
+      val body = JsObject(
+        "requestId"   -> JsString(request.requestId),
+        "captureId"   -> JsString(request.captureId),
+        "table"       -> JsString(request.table),
+        "generation"  -> JsString(request.generation),
+        "targetTable" -> JsString(request.targetTable))
       Post("/api/v1/cdc-tasks", HttpEntity(ContentTypes.`application/json`, body.compactPrint)) ~> route ~> check {
         status shouldBe StatusCodes.Accepted
         responseAs[String].parseJson.asJsObject.fields("task").asJsObject.fields("phase") shouldBe JsString("QUEUED")

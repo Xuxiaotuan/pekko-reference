@@ -8,16 +8,19 @@ class DebeziumDependencySpec extends STSpec {
       import cn.xuyinyin.magic.cdc.recovery.{CdcExecutionException, ExecutionFailure}
       import scala.concurrent.Await
       import scala.concurrent.duration._
-      val access=new RealDebeziumEngineAccess(new java.util.Properties(), (_,callback) =>
-        new io.debezium.engine.DebeziumEngine[io.debezium.engine.RecordChangeEvent[org.apache.kafka.connect.source.SourceRecord]] {
-          def run():Unit=callback.handle(false,"secret",new IllegalStateException("secret",new java.sql.SQLRecoverableException("secret","08S01")))
-          def close():Unit=()
-        })
-      val result=access.start(new DebeziumBatchConsumer {
-        def handleBatch(r:Vector[org.apache.kafka.connect.source.SourceRecord],h:CdcBatchCommitHandle):Unit=()
+      val access = new RealDebeziumEngineAccess(
+        new java.util.Properties(),
+        (_, callback) =>
+          new io.debezium.engine.DebeziumEngine[io.debezium.engine.RecordChangeEvent[org.apache.kafka.connect.source.SourceRecord]] {
+            def run(): Unit =
+              callback.handle(false, "secret", new IllegalStateException("secret", new java.sql.SQLRecoverableException("secret", "08S01")))
+            def close(): Unit = ()
+          })
+      val result = access.start(new DebeziumBatchConsumer {
+        def handleBatch(r: Vector[org.apache.kafka.connect.source.SourceRecord], h: CdcBatchCommitHandle): Unit = ()
       })
       try {
-        val failure=Await.result(result.failed,3.seconds).asInstanceOf[CdcExecutionException]
+        val failure = Await.result(result.failed, 3.seconds).asInstanceOf[CdcExecutionException]
         failure.failure.code shouldBe ExecutionFailure.Transient
         failure.toString should not include "secret"
         failure.getCause.getCause shouldBe null

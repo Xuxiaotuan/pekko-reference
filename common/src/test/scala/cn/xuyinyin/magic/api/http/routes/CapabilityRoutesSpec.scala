@@ -1,7 +1,7 @@
 package cn.xuyinyin.magic.api.http.routes
 
-import cn.xuyinyin.magic.infrastructure.cluster.{HealthChecker}
-import cn.xuyinyin.magic.bootstrap.{PekkoGuardian}
+import cn.xuyinyin.magic.infrastructure.cluster.HealthChecker
+import cn.xuyinyin.magic.bootstrap.PekkoGuardian
 import cn.xuyinyin.magic.workflow.actors.WorkflowSupervisor
 import cn.xuyinyin.magic.workflow.scheduler.SchedulerCoordinator
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
@@ -15,7 +15,7 @@ import spray.json._
 /** Prevent unavailable observations being presented as measured zeros or this node's ownership. */
 class CapabilityRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRouteTest {
   override def testConfigSource: String = "pekko.remote.artery.canonical.port = 0\npekko.cluster.seed-nodes = []"
-  private def clusterRoutes = new ClusterRoutes()(system.toTyped, system.dispatcher).routes
+  private def clusterRoutes             = new ClusterRoutes()(system.toTyped, system.dispatcher).routes
 
   "Cluster observations" should {
     "preserve member information without inventing shard or entity counts" in {
@@ -45,7 +45,8 @@ class CapabilityRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestR
     }
     "mark the legacy static metrics endpoint unavailable" in {
       val typed = system.toTyped
-      val routes = HttpRoutes.createRoutes(typed,
+      val routes = HttpRoutes.createRoutes(
+        typed,
         typed.systemActorOf(Behaviors.ignore[HealthChecker.Command], "cap-health"),
         typed.systemActorOf(Behaviors.ignore[PekkoGuardian.Command], "cap-guardian"),
         typed.systemActorOf(Behaviors.ignore[SchedulerCoordinator.Command], "cap-scheduler"),

@@ -9,8 +9,5 @@ import org.scalatest.wordspec.AnyWordSpec
  *
  * @author : Xuxiaotuan
  * @since : 2024-03-30 10:08
-*/
-trait STSpec extends AnyWordSpec
-  with Matchers
-  with BeforeAndAfterEach
-  with BeforeAndAfterAll
+ */
+trait STSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll

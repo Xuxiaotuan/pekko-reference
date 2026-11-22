@@ -20,30 +20,28 @@ import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
-private[source] final class CdcAcknowledgementRegistry {
+final private[source] class CdcAcknowledgementRegistry {
   final class Scope private[CdcAcknowledgementRegistry] () {
     private[CdcAcknowledgementRegistry] var closed = false
   }
 
   final class Acknowledgement private[CdcAcknowledgementRegistry] (
-    val scope: Scope,
-    val bridge: DebeziumBatchBridge,
-    val deliveryToken: Long,
-    val batchId: String
-  )
+      val scope: Scope,
+      val bridge: DebeziumBatchBridge,
+      val deliveryToken: Long,
+      val batchId: String)
 
   private val entries = new ConcurrentHashMap[String, Acknowledgement]()
-  private val lock = new AnyRef
+  private val lock    = new AnyRef
 
   def openScope(): Scope = new Scope()
 
   def register(
-    scope: Scope,
-    batchId: String,
-    bridge: DebeziumBatchBridge,
-    deliveryToken: Long,
-    expectedBatchId: Option[String] = None
-  ): Unit = lock.synchronized {
+      scope: Scope,
+      batchId: String,
+      bridge: DebeziumBatchBridge,
+      deliveryToken: Long,
+      expectedBatchId: Option[String] = None): Unit = lock.synchronized {
     val deliveryBatchId = expectedBatchId.getOrElse(batchId)
     if (scope.closed) {
       reject(bridge, deliveryToken, deliveryBatchId, new IllegalStateException("CDC acknowledgement scope is closed"))
@@ -80,11 +78,10 @@ private[source] final class CdcAcknowledgementRegistry {
   }
 
   private def reject(
-    bridge: DebeziumBatchBridge,
-    deliveryToken: Long,
-    batchId: String,
-    error: IllegalStateException
-  ): Nothing = {
+      bridge: DebeziumBatchBridge,
+      deliveryToken: Long,
+      batchId: String,
+      error: IllegalStateException): Nothing = {
     try bridge.fail(deliveryToken, batchId, error)
     catch { case NonFatal(_) => () }
     throw error
@@ -92,9 +89,9 @@ private[source] final class CdcAcknowledgementRegistry {
 }
 
 class MySQLCdcSourceNode(
-  engineFactory: DebeziumEngineFactory = DebeziumEngineFactory.real,
-  loadStateConfig: () => MySQLCdcStateConfig = () => MySQLCdcStateConfig.load(ConfigFactory.load())
-) extends NodeSource with CheckpointedNodeSource {
+    engineFactory: DebeziumEngineFactory = DebeziumEngineFactory.real,
+    loadStateConfig: () => MySQLCdcStateConfig = () => MySQLCdcStateConfig.load(ConfigFactory.load()))
+    extends NodeSource with CheckpointedNodeSource {
   import MySQLCdcSourceNode._
 
   private val acknowledgements = new CdcAcknowledgementRegistry
@@ -122,22 +119,26 @@ class MySQLCdcSourceNode(
     } finally statement.close()
   }
 
-  /** A group generation starts only from an operator-established, durable streaming D.
-    * It cannot bootstrap a snapshot or silently restart at current binlog after losing D.
-    */
+  /**
+   * A group generation starts only from an operator-established, durable streaming D.
+   * It cannot bootstrap a snapshot or silently restart at current binlog after losing D.
+   */
   protected[source] def verifyStreamingState(properties: Properties): Unit = {
-    val connection = DriverManager.getConnection(properties.getProperty("offset.storage.jdbc.connection.url"),
-      properties.getProperty("offset.storage.jdbc.connection.user"), properties.getProperty("offset.storage.jdbc.connection.password"))
+    val connection = DriverManager.getConnection(
+      properties.getProperty("offset.storage.jdbc.connection.url"),
+      properties.getProperty("offset.storage.jdbc.connection.user"),
+      properties.getProperty("offset.storage.jdbc.connection.password"))
     try {
       val statement = connection.createStatement()
-      val table = properties.getProperty("offset.storage.jdbc.table.name")
+      val table     = properties.getProperty("offset.storage.jdbc.table.name")
       try {
         val rows = statement.executeQuery(s"SELECT offset_val FROM `$table` WHERE offset_val IS NOT NULL")
         try {
           require(rows.next(), "CDC group protocol requires an existing durable streaming offset baseline")
           val value = rows.getString(1).parseJson.asJsObject.fields
-          require(value.get("file").exists { case JsString(v) => v.nonEmpty; case _ => false } &&
-            value.get("snapshot").forall(v => v == JsBoolean(false) || v == JsString("false")),
+          require(
+            value.get("file").exists { case JsString(v) => v.nonEmpty; case _ => false } &&
+              value.get("snapshot").forall(v => v == JsBoolean(false) || v == JsString("false")),
             "CDC group protocol requires a completed streaming offset baseline")
         } finally rows.close()
       } finally statement.close()
@@ -145,10 +146,10 @@ class MySQLCdcSourceNode(
   }
 
   override def discoverBoundary(
-    node: WorkflowDSL.Node,
-    resumeFrom: Option[BatchCheckpoint],
-    onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] = {
+      node: WorkflowDSL.Node,
+      resumeFrom: Option[BatchCheckpoint],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] = {
     val config = parseConfig(node)
     Future {
       var connection: Connection = null
@@ -166,27 +167,38 @@ class MySQLCdcSourceNode(
   }
 
   override def createBatches(
-    node: WorkflowDSL.Node,
-    executionId: String,
-    boundary: SnapshotBoundary,
-    resumeFrom: Option[BatchCheckpoint],
-    onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] =
+      node: WorkflowDSL.Node,
+      executionId: String,
+      boundary: SnapshotBoundary,
+      resumeFrom: Option[BatchCheckpoint],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed] =
     batchSession(node, executionId, boundary, resumeFrom, onLog, blockingEc, managed = false).source
 
-  override def openBatches(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
-    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext)
-    (implicit blockingEc: ExecutionContext): BatchSourceSession =
+  override def openBatches(
+      node: WorkflowDSL.Node,
+      executionId: String,
+      boundary: SnapshotBoundary,
+      resumeFrom: Option[BatchCheckpoint],
+      onLog: String => Unit,
+      closeEc: ExecutionContext
+    )(implicit blockingEc: ExecutionContext): BatchSourceSession =
     batchSession(node, executionId, boundary, resumeFrom, onLog, closeEc, managed = true)
 
-  private def batchSession(node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
-    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext, managed: Boolean)
-    (implicit blockingEc: ExecutionContext): BatchSourceSession = {
+  private def batchSession(
+      node: WorkflowDSL.Node,
+      executionId: String,
+      boundary: SnapshotBoundary,
+      resumeFrom: Option[BatchCheckpoint],
+      onLog: String => Unit,
+      closeEc: ExecutionContext,
+      managed: Boolean
+    )(implicit blockingEc: ExecutionContext): BatchSourceSession = {
     val config = parseConfig(node)
     validateBoundary(node, config, boundary, resumeFrom)
-    val state = loadStateConfig()
+    val state      = loadStateConfig()
     val properties = connectorProperties(config, state)
-    val identity = boundary.upperBound.get
+    val identity   = boundary.upperBound.get
     val firstSequence = resumeFrom match {
       case Some(checkpoint) =>
         if (checkpoint.batchSequence == Long.MaxValue) {
@@ -197,36 +209,38 @@ class MySQLCdcSourceNode(
     }
 
     BatchSourceSession.resource[CdcResource](
-      create = () => Future {
-        var connection: Connection = null
-        try {
-          connection = openMetadataConnection(config)
-          config.groupProtocol.foreach(p => verifySourceLineage(connection, p.sourceLineage))
-          val currentIdentity = streamIdentity(config, resolveMetadata(connection, config))
-          if (currentIdentity != identity) {
-            throw new IllegalArgumentException(
-              "MySQL CDC source schema identity changed since boundary discovery"
-            )
-          }
-        } finally close(connection)
-        if (config.groupProtocol.nonEmpty) verifyStreamingState(properties)
-        onLog(s"MySQL CDC engine starting connectorId=${config.connectorId} database=${config.database} table=${config.table}")
-        new CdcResource(node.id, executionId, config, identity, firstSequence, properties, onLog)
-      }(blockingEc),
+      create = () =>
+        Future {
+          var connection: Connection = null
+          try {
+            connection = openMetadataConnection(config)
+            config.groupProtocol.foreach(p => verifySourceLineage(connection, p.sourceLineage))
+            val currentIdentity = streamIdentity(config, resolveMetadata(connection, config))
+            if (currentIdentity != identity) {
+              throw new IllegalArgumentException(
+                "MySQL CDC source schema identity changed since boundary discovery"
+              )
+            }
+          } finally close(connection)
+          if (config.groupProtocol.nonEmpty) verifyStreamingState(properties)
+          onLog(s"MySQL CDC engine starting connectorId=${config.connectorId} database=${config.database} table=${config.table}")
+          new CdcResource(node.id, executionId, config, identity, firstSequence, properties, onLog)
+        }(blockingEc),
       read = resource => resource.nextBatchAsync(),
-      closeResource = resource => Future {
-        resource.close()
-        Done
-      }(closeEc),
+      closeResource = resource =>
+        Future {
+          resource.close()
+          Done
+        }(closeEc),
       managed = managed
     )
   }
 
   override def acknowledgeCommittedBatch(
-    node: WorkflowDSL.Node,
-    batch: SourceBatch,
-    onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Future[Done] = Future {
+      node: WorkflowDSL.Node,
+      batch: SourceBatch,
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Future[Done] = Future {
     val config = parseConfig(node)
     if (batch.sourceNodeId != node.id) {
       throw new IllegalArgumentException("CDC batch source does not match node")
@@ -235,9 +249,10 @@ class MySQLCdcSourceNode(
       throw new IllegalArgumentException("CDC batch partition does not match connector")
     }
 
-    val acknowledgementKey = if (batch.cursor.kind == MySQLCdcGroupProtocol.CursorKind)
-      batch.acknowledgementId.getOrElse(throw new IllegalStateException("CDC delivery session acknowledgement is missing"))
-    else batch.batchId
+    val acknowledgementKey =
+      if (batch.cursor.kind == MySQLCdcGroupProtocol.CursorKind)
+        batch.acknowledgementId.getOrElse(throw new IllegalStateException("CDC delivery session acknowledgement is missing"))
+      else batch.batchId
     val acknowledgement = acknowledgements.claim(acknowledgementKey, Some(batch.batchId))
     acknowledgement.bridge.acknowledge(acknowledgement.deliveryToken, batch.batchId)
     onLog(s"MySQL CDC batch acknowledged batchId=${batch.batchId}")
@@ -248,29 +263,32 @@ class MySQLCdcSourceNode(
     if (node.config.fields.contains("password")) MySQLCdcWorkflowConfig.parseTrustedRuntime(node)
     else MySQLCdcWorkflowConfig.parse(node, getenv)
 
-  private final class CdcResource(
-    sourceNodeId: String,
-    executionId: String,
-    config: MySQLCdcSourceConfig,
-    streamIdentity: String,
-    initialSequence: Long,
-    properties: Properties,
-    onLog: String => Unit
-  ) extends AutoCloseable {
+  final private class CdcResource(
+      sourceNodeId: String,
+      executionId: String,
+      config: MySQLCdcSourceConfig,
+      streamIdentity: String,
+      initialSequence: Long,
+      properties: Properties,
+      onLog: String => Unit)
+      extends AutoCloseable {
     private val acknowledgementScope = acknowledgements.openScope()
-    private val bridge = new DebeziumBatchBridge
-    private val engine = engineFactory.create(properties)
-    private val deliverySequence = new AtomicLong(initialSequence)
-    private val outputSequence = new AtomicLong(initialSequence)
-    private val terminal = new AtomicReference[Try[Done]]()
-    private val closed = new AtomicBoolean(false)
+    private val bridge               = new DebeziumBatchBridge
+    private val engine               = engineFactory.create(properties)
+    private val deliverySequence     = new AtomicLong(initialSequence)
+    private val outputSequence       = new AtomicLong(initialSequence)
+    private val terminal             = new AtomicReference[Try[Done]]()
+    private val closed               = new AtomicBoolean(false)
 
     private val assembler = config.groupProtocol.map { _ =>
-      new MySQLCdcGroupAssembler(config, (rows, cursor, handle) => {
-        val sequence = deliverySequence.getAndIncrement()
-        val batchId = BatchId.sha256(executionId, sourceNodeId, partitionId(config.connectorId), sequence)
-        bridge.publish(batchId, rows, cursor, handle)
-      }, onLog)
+      new MySQLCdcGroupAssembler(
+        config,
+        (rows, cursor, handle) => {
+          val sequence = deliverySequence.getAndIncrement()
+          val batchId  = BatchId.sha256(executionId, sourceNodeId, partitionId(config.connectorId), sequence)
+          bridge.publish(batchId, rows, cursor, handle)
+        },
+        onLog)
     }
 
     private val consumer = new DebeziumBatchConsumer {
@@ -281,7 +299,7 @@ class MySQLCdcSourceNode(
         if (assembler.nonEmpty) assembler.get.accept(records, commitHandle)
         else {
           val sequence = deliverySequence.getAndIncrement()
-          val batchId = BatchId.sha256(executionId, sourceNodeId, partitionId(config.connectorId), sequence)
+          val batchId  = BatchId.sha256(executionId, sourceNodeId, partitionId(config.connectorId), sequence)
           val rows = records.flatMap { record =>
             MySQLCdcEnvelope.decode(record, config.connectorId) match {
               case Right(Some(envelope)) =>
@@ -298,15 +316,16 @@ class MySQLCdcSourceNode(
       }
     }
 
-    private val engineDone = try engine.start(consumer)
-    catch {
-      case error: Throwable =>
-        assembler.foreach(_.close())
-        bridge.close()
-        try engine.close()
-        catch { case NonFatal(cleanup) => throw new SourceAcquisitionCleanupFailed(error, cleanup) }
-        throw error
-    }
+    private val engineDone =
+      try engine.start(consumer)
+      catch {
+        case error: Throwable =>
+          assembler.foreach(_.close())
+          bridge.close()
+          try engine.close()
+          catch { case NonFatal(cleanup) => throw new SourceAcquisitionCleanupFailed(error, cleanup) }
+          throw error
+      }
 
     engineDone.onComplete { result =>
       val observed = result match {
@@ -320,47 +339,49 @@ class MySQLCdcSourceNode(
     }(ExecutionContext.parasitic)
 
     def nextBatchAsync(): Future[Option[SourceBatch]] = {
-      bridge.takeAsync().map { bridged =>
-        val sequence = outputSequence.get()
-        val expectedBatchId = BatchId.sha256(
-          executionId,
-          sourceNodeId,
-          partitionId(config.connectorId),
-          sequence
-        )
-        if (bridged.batchId != expectedBatchId) {
-          val error = new IllegalStateException("Debezium delivery sequence does not match source sequence")
-          bridge.fail(bridged.deliveryToken, bridged.batchId, error)
-          throw error
-        }
-        val acknowledgementKey = if (assembler.nonEmpty) java.util.UUID.randomUUID().toString else bridged.batchId
-        acknowledgements.register(
-          acknowledgementScope,
-          acknowledgementKey,
-          bridge,
-          bridged.deliveryToken,
-          Some(bridged.batchId)
-        )
-        outputSequence.incrementAndGet()
-        Some(SourceBatch(
-          sourceNodeId = sourceNodeId,
-          partitionId = partitionId(config.connectorId),
-          batchSequence = sequence,
-          batchId = bridged.batchId,
-          cursor = SourceCursor(if (assembler.nonEmpty) MySQLCdcGroupProtocol.CursorKind else CursorKind,
-            bridged.cursorValue, streamIdentity),
-          rows = bridged.rows,
-          acknowledgementId = Option.when(assembler.nonEmpty)(acknowledgementKey)
-        ))
-      }(ExecutionContext.parasitic).recover {
-        case error: IllegalStateException =>
-          terminal.get() match {
-            case Failure(cause) => throw cause
-            case Success(_) => None
-            case null if closed.get() => None
-            case _ => throw error
+      bridge
+        .takeAsync()
+        .map { bridged =>
+          val sequence = outputSequence.get()
+          val expectedBatchId = BatchId.sha256(
+            executionId,
+            sourceNodeId,
+            partitionId(config.connectorId),
+            sequence
+          )
+          if (bridged.batchId != expectedBatchId) {
+            val error = new IllegalStateException("Debezium delivery sequence does not match source sequence")
+            bridge.fail(bridged.deliveryToken, bridged.batchId, error)
+            throw error
           }
-      }(ExecutionContext.parasitic)
+          val acknowledgementKey = if (assembler.nonEmpty) java.util.UUID.randomUUID().toString else bridged.batchId
+          acknowledgements.register(
+            acknowledgementScope,
+            acknowledgementKey,
+            bridge,
+            bridged.deliveryToken,
+            Some(bridged.batchId)
+          )
+          outputSequence.incrementAndGet()
+          Some(
+            SourceBatch(
+              sourceNodeId = sourceNodeId,
+              partitionId = partitionId(config.connectorId),
+              batchSequence = sequence,
+              batchId = bridged.batchId,
+              cursor = SourceCursor(if (assembler.nonEmpty) MySQLCdcGroupProtocol.CursorKind else CursorKind, bridged.cursorValue, streamIdentity),
+              rows = bridged.rows,
+              acknowledgementId = Option.when(assembler.nonEmpty)(acknowledgementKey)
+            ))
+        }(ExecutionContext.parasitic)
+        .recover { case error: IllegalStateException =>
+          terminal.get() match {
+            case Failure(cause)       => throw cause
+            case Success(_)           => None
+            case null if closed.get() => None
+            case _                    => throw error
+          }
+        }(ExecutionContext.parasitic)
     }
 
     override def close(): Unit = {
@@ -375,7 +396,7 @@ class MySQLCdcSourceNode(
 }
 
 object MySQLCdcSourceNode {
-  private val CursorKind = "mysql.binlog.v1"
+  private val CursorKind         = "mysql.binlog.v1"
   private val FingerprintPattern = "[0-9a-f]{64}".r
   private val SupportedJdbcTypes = Set(
     Types.BIT,
@@ -406,17 +427,16 @@ object MySQLCdcSourceNode {
     s"jdbc:mysql://${config.host}:${config.port}/${config.database}" +
       "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
 
-  private final case class ColumnMetadata(
-    name: String,
-    jdbcType: Int,
-    typeName: String,
-    nullable: Int,
-    ordinal: Int,
-    size: Int,
-    scale: Int
-  )
+  final private case class ColumnMetadata(
+      name: String,
+      jdbcType: Int,
+      typeName: String,
+      nullable: Int,
+      ordinal: Int,
+      size: Int,
+      scale: Int)
 
-  private final case class ResolvedMetadata(primaryKey: String, columns: Vector[ColumnMetadata])
+  final private case class ResolvedMetadata(primaryKey: String, columns: Vector[ColumnMetadata])
 
   // Compatibility for legacy nodes and test probes; shared capture uses the connector directly.
   private[source] def connectorProperties(source: MySQLCdcSourceConfig, state: MySQLCdcStateConfig): Properties =
@@ -428,11 +448,13 @@ object MySQLCdcSourceNode {
 
   private def resolveMetadata(connection: Connection, config: MySQLCdcSourceConfig): ResolvedMetadata = {
     val metadata = connection.getMetaData
-    val catalog = config.database
-    val schema = Option(connection.getSchema).filter(_.nonEmpty)
-    val table = metadataIdentifier(metadata, config.table)
+    val catalog  = config.database
+    val schema   = Option(connection.getSchema).filter(_.nonEmpty)
+    val table    = metadataIdentifier(metadata, config.table)
     val primaryKeys = using(metadata.getPrimaryKeys(catalog, schema.orNull, table)) { resultSet =>
-      Iterator.continually(resultSet.next()).takeWhile(identity)
+      Iterator
+        .continually(resultSet.next())
+        .takeWhile(identity)
         .filter(_ => matchesMetadataRow(resultSet, catalog, schema, table))
         .map(_ => resultSet.getInt("KEY_SEQ") -> resultSet.getString("COLUMN_NAME"))
         .toVector
@@ -443,23 +465,27 @@ object MySQLCdcSourceNode {
       throw new IllegalArgumentException("MySQL CDC source requires exactly one primary key")
     }
 
-    val columns = using(metadata.getColumns(
-      catalog,
-      schema.orNull,
-      escapeMetadataPattern(metadata, table),
-      null
-    )) { resultSet =>
-      Iterator.continually(resultSet.next()).takeWhile(identity)
+    val columns = using(
+      metadata.getColumns(
+        catalog,
+        schema.orNull,
+        escapeMetadataPattern(metadata, table),
+        null
+      )) { resultSet =>
+      Iterator
+        .continually(resultSet.next())
+        .takeWhile(identity)
         .filter(_ => matchesMetadataRow(resultSet, catalog, schema, table))
-        .map(_ => ColumnMetadata(
-          name = resultSet.getString("COLUMN_NAME"),
-          jdbcType = resultSet.getInt("DATA_TYPE"),
-          typeName = resultSet.getString("TYPE_NAME"),
-          nullable = resultSet.getInt("NULLABLE"),
-          ordinal = resultSet.getInt("ORDINAL_POSITION"),
-          size = resultSet.getInt("COLUMN_SIZE"),
-          scale = resultSet.getInt("DECIMAL_DIGITS")
-        ))
+        .map(_ =>
+          ColumnMetadata(
+            name = resultSet.getString("COLUMN_NAME"),
+            jdbcType = resultSet.getInt("DATA_TYPE"),
+            typeName = resultSet.getString("TYPE_NAME"),
+            nullable = resultSet.getInt("NULLABLE"),
+            ordinal = resultSet.getInt("ORDINAL_POSITION"),
+            size = resultSet.getInt("COLUMN_SIZE"),
+            scale = resultSet.getInt("DECIMAL_DIGITS")
+          ))
         .toVector
         .sortBy(_.ordinal)
     }
@@ -475,9 +501,11 @@ object MySQLCdcSourceNode {
     if (columns.map(_.name.toLowerCase(java.util.Locale.ROOT)).distinct.size != columns.size) {
       throw new IllegalArgumentException("MySQL CDC source column names are ambiguous")
     }
-    columns.find(column => column.name.equalsIgnoreCase(primaryKeys.head)).getOrElse(
-      throw new IllegalArgumentException("MySQL CDC primary key column metadata was not found")
-    )
+    columns
+      .find(column => column.name.equalsIgnoreCase(primaryKeys.head))
+      .getOrElse(
+        throw new IllegalArgumentException("MySQL CDC primary key column metadata was not found")
+      )
     columns.find(column => !SupportedJdbcTypes.contains(column.jdbcType)).foreach { column =>
       throw new IllegalArgumentException(
         s"unsupported source column type for ${column.name}: ${column.typeName} (${column.jdbcType})"
@@ -488,41 +516,44 @@ object MySQLCdcSourceNode {
 
   private def streamIdentity(config: MySQLCdcSourceConfig, metadata: ResolvedMetadata): String = {
     val schema = JsObject(
-      "version" -> JsNumber(1),
+      "version"    -> JsNumber(1),
       "primaryKey" -> JsString(metadata.primaryKey),
-      "columns" -> JsArray(metadata.columns.map { column => JsObject(
-        "name" -> JsString(column.name),
-        "jdbcType" -> JsNumber(column.jdbcType),
-        "typeName" -> JsString(column.typeName),
-        "nullable" -> JsNumber(column.nullable),
-        "ordinal" -> JsNumber(column.ordinal),
-        "size" -> JsNumber(column.size),
-        "scale" -> JsNumber(column.scale)
-      ) })
+      "columns" -> JsArray(metadata.columns.map { column =>
+        JsObject(
+          "name"     -> JsString(column.name),
+          "jdbcType" -> JsNumber(column.jdbcType),
+          "typeName" -> JsString(column.typeName),
+          "nullable" -> JsNumber(column.nullable),
+          "ordinal"  -> JsNumber(column.ordinal),
+          "size"     -> JsNumber(column.size),
+          "scale"    -> JsNumber(column.scale)
+        )
+      })
     )
     val fingerprint = sha256(canonicalJson(schema))
     val fields = JsObject(
-      "version" -> JsNumber(if (config.groupProtocol.nonEmpty) 2 else 1),
+      "version"     -> JsNumber(if (config.groupProtocol.nonEmpty) 2 else 1),
       "connectorId" -> JsString(config.connectorId),
-      "database" -> JsString(config.database),
-      "table" -> JsString(config.table),
-      "primaryKey" -> JsString(metadata.primaryKey),
-      "columns" -> JsArray(metadata.columns.map { column => JsObject(
-        "name" -> JsString(column.name),
-        "jdbcType" -> JsNumber(column.jdbcType),
-        "typeName" -> JsString(column.typeName)
-      ) }),
+      "database"    -> JsString(config.database),
+      "table"       -> JsString(config.table),
+      "primaryKey"  -> JsString(metadata.primaryKey),
+      "columns" -> JsArray(metadata.columns.map { column =>
+        JsObject(
+          "name"     -> JsString(column.name),
+          "jdbcType" -> JsNumber(column.jdbcType),
+          "typeName" -> JsString(column.typeName)
+        )
+      }),
       "schemaFingerprint" -> JsString(fingerprint)
     ).fields
     canonicalJson(JsObject(fields ++ config.groupProtocol.map(p => "groupProtocol" -> p.json)))
   }
 
   private def validateBoundary(
-    node: WorkflowDSL.Node,
-    config: MySQLCdcSourceConfig,
-    boundary: SnapshotBoundary,
-    resumeFrom: Option[BatchCheckpoint]
-  ): Unit = {
+      node: WorkflowDSL.Node,
+      config: MySQLCdcSourceConfig,
+      boundary: SnapshotBoundary,
+      resumeFrom: Option[BatchCheckpoint]): Unit = {
     if (boundary.sourceNodeId != node.id) {
       throw new IllegalArgumentException("CDC boundary source does not match node")
     }
@@ -550,14 +581,15 @@ object MySQLCdcSourceNode {
   }
 
   private def validateStreamIdentity(identity: String, config: MySQLCdcSourceConfig): Unit = {
-    val parsed = try identity.parseJson
-    catch { case NonFatal(_) => throw new IllegalArgumentException("CDC stream identity is malformed") }
+    val parsed =
+      try identity.parseJson
+      catch { case NonFatal(_) => throw new IllegalArgumentException("CDC stream identity is malformed") }
     if (canonicalJson(parsed) != identity) {
       throw new IllegalArgumentException("CDC stream identity is not canonical")
     }
     val fields = parsed match {
       case JsObject(value) => value
-      case _ => throw new IllegalArgumentException("CDC stream identity must be an object")
+      case _               => throw new IllegalArgumentException("CDC stream identity must be an object")
     }
     val grouped = config.groupProtocol.nonEmpty
     val expected = Set("version", "connectorId", "database", "table", "primaryKey", "columns", "schemaFingerprint") ++
@@ -568,7 +600,7 @@ object MySQLCdcSourceNode {
     }
     def string(name: String): String = fields.get(name) match {
       case Some(JsString(value)) if value.nonEmpty => value
-      case _ => throw new IllegalArgumentException(s"CDC stream identity $name is invalid")
+      case _                                       => throw new IllegalArgumentException(s"CDC stream identity $name is invalid")
     }
     if (string("connectorId") != config.connectorId ||
       string("database") != config.database ||
@@ -577,23 +609,24 @@ object MySQLCdcSourceNode {
     }
     val primaryKey = string("primaryKey")
     val columns = fields("columns") match {
-      case JsArray(values) if values.nonEmpty => values.map {
-        case JsObject(column) if column.keySet == Set("name", "jdbcType", "typeName") =>
-          val name = column.get("name") match {
-            case Some(JsString(value)) if value.nonEmpty => value
-            case _ => throw new IllegalArgumentException("CDC stream identity column name is invalid")
-          }
-          column.get("jdbcType") match {
-            case Some(JsNumber(value)) if value.isValidInt && SupportedJdbcTypes.contains(value.toInt) => ()
-            case _ => throw new IllegalArgumentException("CDC stream identity column type is invalid")
-          }
-          column.get("typeName") match {
-            case Some(JsString(value)) if value.nonEmpty => ()
-            case _ => throw new IllegalArgumentException("CDC stream identity column type name is invalid")
-          }
-          name
-        case _ => throw new IllegalArgumentException("CDC stream identity columns are invalid")
-      }
+      case JsArray(values) if values.nonEmpty =>
+        values.map {
+          case JsObject(column) if column.keySet == Set("name", "jdbcType", "typeName") =>
+            val name = column.get("name") match {
+              case Some(JsString(value)) if value.nonEmpty => value
+              case _                                       => throw new IllegalArgumentException("CDC stream identity column name is invalid")
+            }
+            column.get("jdbcType") match {
+              case Some(JsNumber(value)) if value.isValidInt && SupportedJdbcTypes.contains(value.toInt) => ()
+              case _ => throw new IllegalArgumentException("CDC stream identity column type is invalid")
+            }
+            column.get("typeName") match {
+              case Some(JsString(value)) if value.nonEmpty => ()
+              case _                                       => throw new IllegalArgumentException("CDC stream identity column type name is invalid")
+            }
+            name
+          case _ => throw new IllegalArgumentException("CDC stream identity columns are invalid")
+        }
       case _ => throw new IllegalArgumentException("CDC stream identity columns are missing")
     }
     if (!columns.exists(_.equalsIgnoreCase(primaryKey))) {
@@ -607,16 +640,16 @@ object MySQLCdcSourceNode {
   private[source] def cursorValue(record: SourceRecord): String = MySQLDebeziumConnector.cursorValue(record)
 
   private def canonicalJson(value: JsValue): String = MySQLDebeziumConnector.canonicalJson(value)
-  private def sha256(value: String): String = MySQLDebeziumConnector.sha256(value)
+  private def sha256(value: String): String         = MySQLDebeziumConnector.sha256(value)
 
   private def matchesMetadataRow(
-    resultSet: ResultSet,
-    catalog: String,
-    schema: Option[String],
-    table: String
-  ): Boolean =
+      resultSet: ResultSet,
+      catalog: String,
+      schema: Option[String],
+      table: String): Boolean =
     Option(resultSet.getString("TABLE_CAT")).exists(_.equalsIgnoreCase(catalog)) &&
-      schema.map(expected => Option(resultSet.getString("TABLE_SCHEM")).exists(_.equalsIgnoreCase(expected)))
+      schema
+        .map(expected => Option(resultSet.getString("TABLE_SCHEM")).exists(_.equalsIgnoreCase(expected)))
         .getOrElse(resultSet.getString("TABLE_SCHEM") == null) &&
       Option(resultSet.getString("TABLE_NAME")).exists(_.equalsIgnoreCase(table))
 
@@ -628,10 +661,11 @@ object MySQLCdcSourceNode {
   private def escapeMetadataPattern(metadata: DatabaseMetaData, identifier: String): String = {
     val escape = metadata.getSearchStringEscape
     if (escape == null || escape.isEmpty) identifier
-    else identifier
-      .replace(escape, escape + escape)
-      .replace("_", escape + "_")
-      .replace("%", escape + "%")
+    else
+      identifier
+        .replace(escape, escape + escape)
+        .replace("_", escape + "_")
+        .replace("%", escape + "%")
   }
 
   private def using[A <: AutoCloseable, B](resource: A)(body: A => B): B =

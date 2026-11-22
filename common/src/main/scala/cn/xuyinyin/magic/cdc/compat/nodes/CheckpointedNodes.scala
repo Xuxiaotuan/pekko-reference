@@ -9,58 +9,62 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait CheckpointedNodeSource { self: NodeSource =>
   def discoverBoundary(
-    node: WorkflowDSL.Node,
-    resumeFrom: Option[BatchCheckpoint],
-    onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] =
+      node: WorkflowDSL.Node,
+      resumeFrom: Option[BatchCheckpoint],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] =
     discoverBoundary(node, onLog)
 
-  def discoverBoundary(node: WorkflowDSL.Node, onLog: String => Unit)
-    (implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] =
-    Future.failed(new UnsupportedOperationException(
-      "CheckpointedNodeSource must implement boundary discovery"
-    ))
+  def discoverBoundary(node: WorkflowDSL.Node, onLog: String => Unit)(implicit blockingEc: ExecutionContext): Future[SnapshotBoundary] =
+    Future.failed(
+      new UnsupportedOperationException(
+        "CheckpointedNodeSource must implement boundary discovery"
+      ))
 
   def createBatches(
-    node: WorkflowDSL.Node,
-    executionId: String,
-    boundary: SnapshotBoundary,
-    resumeFrom: Option[BatchCheckpoint],
-    onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed]
+      node: WorkflowDSL.Node,
+      executionId: String,
+      boundary: SnapshotBoundary,
+      resumeFrom: Option[BatchCheckpoint],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Source[SourceBatch, NotUsed]
 
   /** Sources with asynchronous resource cleanup override this execution-session entry point. */
   def openBatches(
-    node: WorkflowDSL.Node, executionId: String, boundary: SnapshotBoundary,
-    resumeFrom: Option[BatchCheckpoint], onLog: String => Unit, closeEc: ExecutionContext
-  )(implicit blockingEc: ExecutionContext): BatchSourceSession =
+      node: WorkflowDSL.Node,
+      executionId: String,
+      boundary: SnapshotBoundary,
+      resumeFrom: Option[BatchCheckpoint],
+      onLog: String => Unit,
+      closeEc: ExecutionContext
+    )(implicit blockingEc: ExecutionContext): BatchSourceSession =
     BatchSourceSession(createBatches(node, executionId, boundary, resumeFrom, onLog), () => Future.successful(Done))
 
   def acknowledgeCommittedBatch(
-    node: WorkflowDSL.Node,
-    batch: SourceBatch,
-    onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Future[Done] = Future.successful(Done)
+      node: WorkflowDSL.Node,
+      batch: SourceBatch,
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Future[Done] = Future.successful(Done)
 }
 
 trait CheckpointedNodeSink { self: NodeSink =>
   def validateReady(
-    node: WorkflowDSL.Node,
-    onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Future[Done]
+      node: WorkflowDSL.Node,
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Future[Done]
 
   def validateSourceBoundary(
-    node: WorkflowDSL.Node,
-    boundary: SnapshotBoundary,
-    onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Future[Done] = Future.successful(Done)
+      node: WorkflowDSL.Node,
+      boundary: SnapshotBoundary,
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Future[Done] = Future.successful(Done)
 
   def commitBatch(
-    node: WorkflowDSL.Node,
-    workflowId: String,
-    executionId: String,
-    batch: SourceBatch,
-    transformedRows: Vector[String],
-    onLog: String => Unit
-  )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult]
+      node: WorkflowDSL.Node,
+      workflowId: String,
+      executionId: String,
+      batch: SourceBatch,
+      transformedRows: Vector[String],
+      onLog: String => Unit
+    )(implicit blockingEc: ExecutionContext): Future[BatchCommitResult]
 }

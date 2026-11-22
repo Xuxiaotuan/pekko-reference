@@ -9,26 +9,26 @@ class ExtractTableRepFromSelectSqlSpec extends STSpec {
 
     // 基础场景测试
     "extract table from simple select" in {
-      val sql = "SELECT * FROM table1"
+      val sql    = "SELECT * FROM table1"
       val result = extractTableRepFromSelectSql(sql)
       result shouldBe Right(Seq("table1"))
     }
 
     "handle join tables" in {
-      val sql = "SELECT a.id, b.name FROM table1 a JOIN table2 b ON a.id = b.id"
+      val sql    = "SELECT a.id, b.name FROM table1 a JOIN table2 b ON a.id = b.id"
       val result = extractTableRepFromSelectSql(sql)
       result shouldBe Right(Seq("table1", "table2"))
     }
 
     "process subquery in FROM clause" in {
-      val sql = "SELECT * FROM (SELECT * FROM temp) AS sub"
+      val sql    = "SELECT * FROM (SELECT * FROM temp) AS sub"
       val result = extractTableRepFromSelectSql(sql)
       result shouldBe Right(Seq("temp"))
     }
 
     // UNION 测试
     "handle union operations" in {
-      val sql = "SELECT * FROM t1 UNION SELECT * FROM t2"
+      val sql    = "SELECT * FROM t1 UNION SELECT * FROM t2"
       val result = extractTableRepFromSelectSql(sql)
       result shouldBe Right(Seq("t1", "t2"))
     }
@@ -68,7 +68,7 @@ class ExtractTableRepFromSelectSqlSpec extends STSpec {
           |""".stripMargin
 
       extractTableRepFromSelectSql(sql) shouldBe
-        Right(Seq("real_table", "other_table"))
+      Right(Seq("real_table", "other_table"))
     }
 
     "handle nested CTE scopes" in {
@@ -82,12 +82,12 @@ class ExtractTableRepFromSelectSqlSpec extends STSpec {
           |""".stripMargin
 
       extractTableRepFromSelectSql(sql) shouldBe
-        Right(Seq("inner_table"))
+      Right(Seq("inner_table"))
     }
 
     // 嵌套子查询测试
     "handle nested subqueries in WHERE" in {
-      val sql = "SELECT * FROM main WHERE id IN (SELECT id FROM sub)"
+      val sql    = "SELECT * FROM main WHERE id IN (SELECT id FROM sub)"
       val result = extractTableRepFromSelectSql(sql)
       result shouldBe Right(Seq("main", "sub"))
     }
@@ -102,21 +102,21 @@ class ExtractTableRepFromSelectSqlSpec extends STSpec {
 
     // 表别名测试
     "ignore table aliases" in {
-      val sql = "SELECT a.id FROM table1 AS a"
+      val sql    = "SELECT a.id FROM table1 AS a"
       val result = extractTableRepFromSelectSql(sql)
       result shouldBe Right(Seq("table1"))
     }
 
     // 异常场景测试
     "reject non-select statements" in {
-      val sql = "INSERT INTO table1 VALUES(1)"
+      val sql                                    = "INSERT INTO table1 VALUES(1)"
       val result: Either[Throwable, Seq[String]] = extractTableRepFromSelectSql(sql)
       assert(result.isLeft)
     }
 
     // 复杂标识符测试
     "handle quoted identifiers" in {
-      val sql = "SELECT * FROM `schema`.`table`"
+      val sql    = "SELECT * FROM `schema`.`table`"
       val result = extractTableRepFromSelectSql(sql)
       result shouldBe Right(Seq("schema.table"))
     }

@@ -22,7 +22,7 @@ import scala.concurrent.duration._
 import scala.io.Source.fromInputStream
 
 class MySQLSinkNodeSpec extends STSpec {
-  private implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](
+  implicit private val system: ActorSystem[Nothing] = ActorSystem[Nothing](
     Behaviors.empty[Nothing],
     "mysql-sink-node-spec",
     ConfigFactory.parseString(
@@ -31,8 +31,8 @@ class MySQLSinkNodeSpec extends STSpec {
         |pekko.coordinated-shutdown.exit-jvm = off""".stripMargin
     )
   )
-  private implicit val ec: ExecutionContext = system.executionContext
-  private implicit val materializer: Materializer = Materializer(system)
+  implicit private val ec: ExecutionContext       = system.executionContext
+  implicit private val materializer: Materializer = Materializer(system)
 
   override protected def afterAll(): Unit = {
     system.terminate()
@@ -44,11 +44,14 @@ class MySQLSinkNodeSpec extends STSpec {
     "report unconfirmed split target release instead of allowing a retry" in {
       withFixture { fixture =>
         fixture.initializeLedger(); fixture.initializeSplitEvidence(); fixture.failSplitClose = true
-        val batch = sourceBatch(0L, "1", Vector(row(1))).copy(partitionId = "plan:0",
-          cursor = SourceCursor(cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind, "1", "10"))
-        val failed = try intercept[cn.xuyinyin.magic.cdc.recovery.CdcExecutionException] {
-          Await.result(fixture.node.commitBatch(sinkNode(100), "w", "e", batch, batch.rows, _ => ()), 5.seconds)
-        } finally fixture.failSplitClose = false
+        val batch = sourceBatch(0L, "1", Vector(row(1)))
+          .copy(partitionId = "plan:0", cursor = SourceCursor(cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind, "1", "10"))
+        val failed =
+          try
+            intercept[cn.xuyinyin.magic.cdc.recovery.CdcExecutionException] {
+              Await.result(fixture.node.commitBatch(sinkNode(100), "w", "e", batch, batch.rows, _ => ()), 5.seconds)
+            }
+          finally fixture.failSplitClose = false
         failed.failure.releaseConfirmed shouldBe false
         fixture.selectCount("sink_rows") shouldBe 1
       }
@@ -58,8 +61,8 @@ class MySQLSinkNodeSpec extends STSpec {
       withFixture { fixture =>
         fixture.initializeLedger()
         fixture.initializeSplitEvidence()
-        val batch = sourceBatch(0L, "1", Vector(row(1))).copy(partitionId = "plan:0",
-          cursor = SourceCursor(cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind, "1", "10"))
+        val batch = sourceBatch(0L, "1", Vector(row(1)))
+          .copy(partitionId = "plan:0", cursor = SourceCursor(cn.xuyinyin.magic.cdc.snapshot.SnapshotSplitState.CursorKind, "1", "10"))
         Await.result(fixture.node.commitBatch(sinkNode(100), "w", "e", batch, batch.rows, _ => ()), 5.seconds)
         val changed = batch.copy(rows = Vector("""{"id":1,"payload":"changed"}"""))
         intercept[IllegalStateException] {
@@ -71,20 +74,19 @@ class MySQLSinkNodeSpec extends STSpec {
     }
 
     "pass an environment-backed password to JDBC setup without exposing it in workflow data, logs, or errors" in {
-      val node = sinkNode(batchSize = 100, passwordEnv = Some("WORKFLOW_DB_PASSWORD"))
+      val node              = sinkNode(batchSize = 100, passwordEnv = Some("WORKFLOW_DB_PASSWORD"))
       val capturedPasswords = ArrayBuffer.empty[String]
-      val logs = ArrayBuffer.empty[String]
+      val logs              = ArrayBuffer.empty[String]
       val sink = new MySQLSinkNode {
         override protected[sink] def getenv(name: String): Option[String] =
           Option.when(name == "WORKFLOW_DB_PASSWORD")("runtime-secret")
 
         override protected[sink] def createDataSource(
-          host: String,
-          port: Int,
-          database: String,
-          username: String,
-          password: String
-        ): HikariDataSource = {
+            host: String,
+            port: Int,
+            database: String,
+            username: String,
+            password: String): HikariDataSource = {
           capturedPasswords += password
           throw new IllegalStateException("jdbc setup failed")
         }
@@ -101,10 +103,12 @@ class MySQLSinkNodeSpec extends STSpec {
     }
 
     "resolve passwordEnv using an injected environment lookup" in {
-      MySQLSinkConfig.parse(
-        sinkNode(batchSize = 100, passwordEnv = Some("WORKFLOW_DB_PASSWORD")),
-        name => Option.when(name == "WORKFLOW_DB_PASSWORD")("s3cr3t")
-      ).password shouldBe "s3cr3t"
+      MySQLSinkConfig
+        .parse(
+          sinkNode(batchSize = 100, passwordEnv = Some("WORKFLOW_DB_PASSWORD")),
+          name => Option.when(name == "WORKFLOW_DB_PASSWORD")("s3cr3t")
+        )
+        .password shouldBe "s3cr3t"
     }
 
     "write every row across complete and partial batches" in {
@@ -131,7 +135,7 @@ class MySQLSinkNodeSpec extends STSpec {
         val stored = fixture.selectString("SELECT payload FROM sink_rows WHERE id = 501")
         stored shouldBe """{"labels":["alpha","beta"],"metadata":{"enabled":true}}"""
         stored.parseJson shouldBe JsObject(
-          "labels" -> JsArray(JsString("alpha"), JsString("beta")),
+          "labels"   -> JsArray(JsString("alpha"), JsString("beta")),
           "metadata" -> JsObject("enabled" -> JsBoolean(true))
         )
       }
@@ -343,7 +347,7 @@ class MySQLSinkNodeSpec extends STSpec {
       val claimBarrier = new CyclicBarrier(2)
       withClaimHook(_ => claimBarrier.await(5, TimeUnit.SECONDS)) { fixture =>
         fixture.initializeLedger()
-        val batch = sourceBatch(sequence = 0L, cursor = "2", rows = Vector(row(1), row(2)))
+        val batch    = sourceBatch(sequence = 0L, cursor = "2", rows = Vector(row(1), row(2)))
         val executor = Executors.newFixedThreadPool(2)
         val commitEc = ExecutionContext.fromExecutorService(executor)
         try {
@@ -494,9 +498,9 @@ class MySQLSinkNodeSpec extends STSpec {
     }
   }
 
-  private implicit class BatchCommitResultOps(private val result: cn.xuyinyin.magic.cdc.checkpoint.BatchCommitResult) {
+  implicit private class BatchCommitResultOps(private val result: cn.xuyinyin.magic.cdc.checkpoint.BatchCommitResult) {
     def checkpoint = result match {
-      case Committed(value) => value
+      case Committed(value)        => value
       case AlreadyCommitted(value) => value
     }
   }
@@ -511,27 +515,27 @@ class MySQLSinkNodeSpec extends STSpec {
       .runWith(fixture.node.createSink(sinkNode(batchSize = 100), _ => ()))
 
   private def sinkNode(
-    batchSize: Int,
-    passwordEnv: Option[String] = None
-  ): WorkflowDSL.Node =
+      batchSize: Int,
+      passwordEnv: Option[String] = None): WorkflowDSL.Node =
     WorkflowDSL.Node(
       id = "mysql-sink",
       `type` = "sink",
       nodeType = "mysql.write",
       label = "MySQL",
       position = WorkflowDSL.Position(0, 0),
-      config = JsObject((Vector(
-        "host" -> JsString("unused"),
-        "port" -> JsNumber(3306),
-        "database" -> JsString("unused"),
-        "table" -> JsString("sink_rows"),
-        "username" -> JsString("sa"),
-        "batchSize" -> JsNumber(batchSize),
-        "mode" -> JsString("insert")
-      ) ++ (passwordEnv match {
-        case Some(value) => Vector("passwordEnv" -> JsString(value))
-        case None => Vector("password" -> JsString("test-password"))
-      })): _*)
+      config = JsObject(
+        (Vector(
+          "host"      -> JsString("unused"),
+          "port"      -> JsNumber(3306),
+          "database"  -> JsString("unused"),
+          "table"     -> JsString("sink_rows"),
+          "username"  -> JsString("sa"),
+          "batchSize" -> JsNumber(batchSize),
+          "mode"      -> JsString("insert")
+        ) ++ (passwordEnv match {
+          case Some(value) => Vector("passwordEnv" -> JsString(value))
+          case None        => Vector("password" -> JsString("test-password"))
+        })): _*)
     )
 
   private def row(id: Int): String = s"""{"id":$id,"payload":"row-$id"}"""
@@ -560,22 +564,21 @@ class MySQLSinkNodeSpec extends STSpec {
     finally fixture.close()
   }
 
-  private final class H2Fixture(failInnerSink: Boolean, claimHook: String => Unit) {
-    var failSplitClose = false
+  final private class H2Fixture(failInnerSink: Boolean, claimHook: String => Unit) {
+    var failSplitClose  = false
     private val jdbcUrl = s"jdbc:h2:mem:mysql_sink_${UUID.randomUUID().toString.replace('-', '_')};MODE=MySQL;DB_CLOSE_DELAY=0"
     Class.forName("org.h2.Driver")
     private val inspectionConnection: Connection = DriverManager.getConnection(jdbcUrl, "sa", "")
-    private var dataSources = Vector.empty[HikariDataSource]
-    private val created = Promise[HikariDataSource]()
+    private var dataSources                      = Vector.empty[HikariDataSource]
+    private val created                          = Promise[HikariDataSource]()
 
     val node = new MySQLSinkNode {
       override protected[sink] def createDataSource(
-        host: String,
-        port: Int,
-        database: String,
-        username: String,
-        password: String
-      ): HikariDataSource = {
+          host: String,
+          port: Int,
+          database: String,
+          username: String,
+          password: String): HikariDataSource = {
         val config = new HikariConfig()
         config.setJdbcUrl(jdbcUrl)
         config.setDriverClassName("org.h2.Driver")
@@ -584,23 +587,30 @@ class MySQLSinkNodeSpec extends STSpec {
         config.setMaximumPoolSize(1)
         config.setMinimumIdle(0)
         val dataSource = new HikariDataSource(config) {
-          override def close(): Unit = { super.close(); if (failSplitClose) throw new IllegalStateException("injected target close observation failure") }
+          override def close(): Unit = {
+            super.close(); if (failSplitClose) throw new IllegalStateException("injected target close observation failure")
+          }
         }
         dataSources :+= dataSource
         created.trySuccess(dataSource)
         dataSource
       }
 
-      override protected[sink] def createSplitDataSource(host: String, port: Int, database: String, username: String, password: String): HikariDataSource =
+      override protected[sink] def createSplitDataSource(
+          host: String,
+          port: Int,
+          database: String,
+          username: String,
+          password: String): HikariDataSource =
         createDataSource(host, port, database, username, password)
 
       override protected[sink] def createInnerSink(
-        dataSource: HikariDataSource,
-        table: String,
-        batchSize: Int,
-        mode: String,
-        onLog: String => Unit
-      )(implicit executionContext: ExecutionContext) = {
+          dataSource: HikariDataSource,
+          table: String,
+          batchSize: Int,
+          mode: String,
+          onLog: String => Unit
+        )(implicit executionContext: ExecutionContext) = {
         if (failInnerSink) throw new IllegalStateException("inner sink setup failed")
         super.createInnerSink(dataSource, table, batchSize, mode, onLog)(executionContext)
       }
@@ -610,10 +620,10 @@ class MySQLSinkNodeSpec extends STSpec {
 
     initializeTable()
 
-    def dataSourceCount: Int = dataSources.size
+    def dataSourceCount: Int                        = dataSources.size
     def dataSourceCreated: Future[HikariDataSource] = created.future
-    def lastDataSource: HikariDataSource = dataSources.last
-    def activeConnections: Int = lastDataSource.getHikariPoolMXBean.getActiveConnections
+    def lastDataSource: HikariDataSource            = dataSources.last
+    def activeConnections: Int                      = lastDataSource.getHikariPoolMXBean.getActiveConnections
 
     def selectCount(table: String): Int = {
       val statement = inspectionConnection.createStatement()
@@ -648,14 +658,18 @@ class MySQLSinkNodeSpec extends STSpec {
 
     def initializeSplitEvidence(): Unit = {
       val statement = inspectionConnection.createStatement()
-      try statement.execute("CREATE TABLE pekko_snapshot_batch_evidence (batch_id VARCHAR(64) PRIMARY KEY, source_sha256 VARCHAR(64) NOT NULL, target_sha256 VARCHAR(64) NOT NULL)")
+      try
+        statement.execute(
+          "CREATE TABLE pekko_snapshot_batch_evidence (batch_id VARCHAR(64) PRIMARY KEY, source_sha256 VARCHAR(64) NOT NULL, target_sha256 VARCHAR(64) NOT NULL)")
       finally statement.close()
     }
 
     def initializeLedger(): Unit = {
       val input = Option(getClass.getClassLoader.getResourceAsStream("schema/h2/pekko-sync-ledger-schema.sql"))
         .getOrElse(throw new IllegalStateException("missing H2 ledger schema"))
-      val sql = try fromInputStream(input).mkString finally input.close()
+      val sql =
+        try fromInputStream(input).mkString
+        finally input.close()
       val statement = inspectionConnection.createStatement()
       try sql.split(";").map(_.trim).filter(_.nonEmpty).foreach(statement.execute)
       finally statement.close()
@@ -713,8 +727,7 @@ class MySQLSinkNodeSpec extends STSpec {
         val columns = Set.newBuilder[String]
         while (result.next()) columns += result.getString("COLUMN_NAME").toLowerCase
         columns.result()
-      }
-      finally result.close()
+      } finally result.close()
     }
 
     def hasUniqueIndex(table: String, expectedColumns: Set[String]): Boolean = {
@@ -722,7 +735,7 @@ class MySQLSinkNodeSpec extends STSpec {
       try {
         val indexes = scala.collection.mutable.Map.empty[String, Set[String]].withDefaultValue(Set.empty)
         while (result.next()) {
-          val indexName = result.getString("INDEX_NAME")
+          val indexName  = result.getString("INDEX_NAME")
           val columnName = result.getString("COLUMN_NAME")
           if (indexName != null && columnName != null) {
             indexes.update(indexName, indexes(indexName) + columnName.toLowerCase)

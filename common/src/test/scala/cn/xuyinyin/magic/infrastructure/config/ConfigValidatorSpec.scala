@@ -17,16 +17,18 @@ class ConfigValidatorSpec extends STSpec {
        |""".stripMargin
 
   private def cdcOnlyConfig(state: String): Config =
-    ConfigFactory.parseString(
-      s"""
-         |pekko.workflow.mysql-cdc {
-         |  enabled = true
-         |  state-jdbc {
-         |    $state
-         |  }
-         |}
-         |""".stripMargin
-    ).resolve()
+    ConfigFactory
+      .parseString(
+        s"""
+           |pekko.workflow.mysql-cdc {
+           |  enabled = true
+           |  state-jdbc {
+           |    $state
+           |  }
+           |}
+           |""".stripMargin
+      )
+      .resolve()
 
   private def enabledConfig(state: String): Config =
     cdcOnlyConfig(state).withFallback(ConfigFactory.load()).resolve()

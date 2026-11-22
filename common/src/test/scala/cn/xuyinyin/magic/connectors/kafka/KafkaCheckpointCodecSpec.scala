@@ -17,17 +17,17 @@ class KafkaCheckpointCodecSpec extends AnyWordSpecLike with Matchers {
   "KafkaCheckpointCodec" should {
     "encode a boundary with deterministic canonical JSON and decode it" in {
       KafkaCheckpointCodec.encodeBoundary(boundary) shouldBe
-        """{"bootstrapServers":"kafka:9092","deadlineEpochMillis":123456789,"partitions":[{"endOffset":4,"partition":0,"startOffset":0},{"endOffset":8,"partition":1,"startOffset":4}],"topic":"events","version":1}"""
+      """{"bootstrapServers":"kafka:9092","deadlineEpochMillis":123456789,"partitions":[{"endOffset":4,"partition":0,"startOffset":0},{"endOffset":8,"partition":1,"startOffset":4}],"topic":"events","version":1}"""
 
       KafkaCheckpointCodec.decodeBoundary(KafkaCheckpointCodec.encodeBoundary(boundary)).partitions.map(_.partition) shouldBe
-        Vector(0, 1)
+      Vector(0, 1)
     }
 
     "encode and decode a cursor canonically" in {
       val cursor = KafkaCursorV1(Map(1 -> 8L, 0 -> 4L), recordsConsumed = 12L)
 
       KafkaCheckpointCodec.encodeCursor(cursor) shouldBe
-        """{"nextOffsets":{"0":4,"1":8},"recordsConsumed":12,"version":1}"""
+      """{"nextOffsets":{"0":4,"1":8},"recordsConsumed":12,"version":1}"""
       KafkaCheckpointCodec.decodeCursor(KafkaCheckpointCodec.encodeCursor(cursor)) shouldBe cursor
     }
 
@@ -76,7 +76,7 @@ class KafkaCheckpointCodecSpec extends AnyWordSpecLike with Matchers {
 
     "require exactly the boundary partition set in a cursor" in {
       val missing = KafkaCursorV1(Map(0 -> 4L), recordsConsumed = 4L)
-      val extra = KafkaCursorV1(Map(0 -> 4L, 1 -> 8L, 2 -> 0L), recordsConsumed = 4L)
+      val extra   = KafkaCursorV1(Map(0 -> 4L, 1 -> 8L, 2 -> 0L), recordsConsumed = 4L)
 
       intercept[IllegalArgumentException](KafkaCheckpointCodec.validateCursor(boundary, missing))
       intercept[IllegalArgumentException](KafkaCheckpointCodec.validateCursor(boundary, extra))

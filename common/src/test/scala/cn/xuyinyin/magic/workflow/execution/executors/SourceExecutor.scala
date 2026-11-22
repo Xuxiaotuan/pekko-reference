@@ -7,16 +7,16 @@ import org.apache.pekko.stream.scaladsl.Source
 
 /**
  * Source节点执行器
- * 
+ *
  * 使用NodeRegistry查找和执行节点
- * 
+ *
  * @author : Xuxiaotuan
  * @since : 2024-11-15
  */
 class SourceExecutor(registry: NodeRegistry = NodeRegistry.builtins()) extends NodeExecutor {
-  
+
   override def supportedTypes: Set[String] = registry.supportedSourceTypes
-  
+
   /**
    * 创建Source (使用NodeRegistry)
    */
@@ -27,7 +27,7 @@ class SourceExecutor(registry: NodeRegistry = NodeRegistry.builtins()) extends N
       case None =>
         throw new IllegalArgumentException(
           s"不支持的Source类型: ${node.nodeType}\n" +
-          s"支持的类型: ${supportedTypes.mkString(", ")}"
+            s"支持的类型: ${supportedTypes.mkString(", ")}"
         )
     }
   }

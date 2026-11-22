@@ -17,22 +17,39 @@ class WorkflowRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRou
     "expose a paused recovery without dropping the execution context" in {
       import cn.xuyinyin.magic.cdc.compat.WorkflowEvents._
       import cn.xuyinyin.magic.cdc.recovery.ExecutionFailure
-      val typedSystem=system.toTyped
-      val current=EventSourcedWorkflowActor.ExecutionState("same-execution",ExecutionTrigger("manual"),1L,
-        recovery=Some(ExecutionRecoveryState(3,3,"blocked",0L,ExecutionFailure.BudgetExhausted,"target-commit",
-          Some(ExecutionFailure(ExecutionFailure.CommitUnknown,"target-commit",Some("batch-id"))))))
-      val supervisor=typedSystem.systemActorOf(Behaviors.receiveMessage[WorkflowSupervisor.Command] {
-        case WorkflowSupervisor.GetWorkflowSummary(id,replyTo) =>
-          replyTo ! EventSourcedWorkflowActor.WorkflowSummary(id,1L,EventSourcedWorkflowActor.WorkflowStatus("recovery_blocked"),Some(current),Vector.empty)
-          Behaviors.same
-        case _ => Behaviors.unhandled
-      },s"recovery-summary-${java.util.UUID.randomUUID()}")
-      val routes=new EnhancedWorkflowRoutes(supervisor)(typedSystem,typedSystem.executionContext).routes
+      val typedSystem = system.toTyped
+      val current = EventSourcedWorkflowActor.ExecutionState(
+        "same-execution",
+        ExecutionTrigger("manual"),
+        1L,
+        recovery = Some(
+          ExecutionRecoveryState(
+            3,
+            3,
+            "blocked",
+            0L,
+            ExecutionFailure.BudgetExhausted,
+            "target-commit",
+            Some(ExecutionFailure(ExecutionFailure.CommitUnknown, "target-commit", Some("batch-id"))))))
+      val supervisor = typedSystem.systemActorOf(
+        Behaviors.receiveMessage[WorkflowSupervisor.Command] {
+          case WorkflowSupervisor.GetWorkflowSummary(id, replyTo) =>
+            replyTo ! EventSourcedWorkflowActor.WorkflowSummary(
+              id,
+              1L,
+              EventSourcedWorkflowActor.WorkflowStatus("recovery_blocked"),
+              Some(current),
+              Vector.empty)
+            Behaviors.same
+          case _ => Behaviors.unhandled
+        },
+        s"recovery-summary-${java.util.UUID.randomUUID()}")
+      val routes = new EnhancedWorkflowRoutes(supervisor)(typedSystem, typedSystem.executionContext).routes
       Get("/api/v1/workflows/paused") ~> routes ~> check {
         status shouldBe StatusCodes.OK
-        val e=responseAs[String].parseJson.asJsObject.fields("currentExecution").asJsObject
+        val e = responseAs[String].parseJson.asJsObject.fields("currentExecution").asJsObject
         e.fields("executionId") shouldBe JsString("same-execution")
-        val r=e.fields("recovery").asJsObject
+        val r = e.fields("recovery").asJsObject
         r.fields("attemptsStarted") shouldBe JsNumber(3)
         r.fields("primaryFailureCode") shouldBe JsString(ExecutionFailure.CommitUnknown)
         r.fields("batchId") shouldBe JsString("batch-id")
@@ -46,10 +63,10 @@ class WorkflowRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRou
     }
     "return explicit overload and deadline statuses for list queries" in {
       val typedSystem = system.toTyped
-      val supervisor = typedSystem.systemActorOf(Behaviors.ignore[WorkflowSupervisor.Command], s"list-errors-${java.util.UUID.randomUUID()}")
+      val supervisor  = typedSystem.systemActorOf(Behaviors.ignore[WorkflowSupervisor.Command], s"list-errors-${java.util.UUID.randomUUID()}")
       val failures = Vector(
         new java.util.concurrent.RejectedExecutionException("workflow query capacity exhausted") -> StatusCodes.ServiceUnavailable,
-        new java.util.concurrent.TimeoutException("workflow list deadline") -> StatusCodes.GatewayTimeout
+        new java.util.concurrent.TimeoutException("workflow list deadline")                      -> StatusCodes.GatewayTimeout
       )
       failures.foreach { case (failure, expected) =>
         val query = new cn.xuyinyin.magic.workflow.query.WorkflowQueryService(typedSystem, supervisor)(typedSystem.executionContext) {
@@ -65,12 +82,14 @@ class WorkflowRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRou
 
     "return Created only after the entity confirms the definition" in {
       val typedSystem = system.toTyped
-      val supervisor = typedSystem.systemActorOf(Behaviors.receiveMessage[WorkflowSupervisor.Command] {
-        case WorkflowSupervisor.DefineWorkflow(workflow, _, replyTo) =>
-          replyTo ! EventSourcedWorkflowActor.Defined(workflow.id, 1L)
-          Behaviors.same
-        case _ => Behaviors.unhandled
-      }, s"workflow-routes-${java.util.UUID.randomUUID()}")
+      val supervisor = typedSystem.systemActorOf(
+        Behaviors.receiveMessage[WorkflowSupervisor.Command] {
+          case WorkflowSupervisor.DefineWorkflow(workflow, _, replyTo) =>
+            replyTo ! EventSourcedWorkflowActor.Defined(workflow.id, 1L)
+            Behaviors.same
+          case _ => Behaviors.unhandled
+        },
+        s"workflow-routes-${java.util.UUID.randomUUID()}")
       val routes = new EnhancedWorkflowRoutes(supervisor)(typedSystem, typedSystem.executionContext).routes
 
       Post("/api/v1/workflows", HttpEntity(ContentTypes.`application/json`, WorkflowFixtures.linearWorkflow.toJson.compactPrint)) ~> routes ~> check {
@@ -81,12 +100,14 @@ class WorkflowRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRou
 
     "return NotFound for an uninitialized status entity" in {
       val typedSystem = system.toTyped
-      val supervisor = typedSystem.systemActorOf(Behaviors.receiveMessage[WorkflowSupervisor.Command] {
-        case WorkflowSupervisor.GetWorkflowStatus(id, replyTo) =>
-          replyTo ! EventSourcedWorkflowActor.StatusResponse(id, "uninitialized", None, Nil)
-          Behaviors.same
-        case _ => Behaviors.unhandled
-      }, s"workflow-status-${java.util.UUID.randomUUID()}")
+      val supervisor = typedSystem.systemActorOf(
+        Behaviors.receiveMessage[WorkflowSupervisor.Command] {
+          case WorkflowSupervisor.GetWorkflowStatus(id, replyTo) =>
+            replyTo ! EventSourcedWorkflowActor.StatusResponse(id, "uninitialized", None, Nil)
+            Behaviors.same
+          case _ => Behaviors.unhandled
+        },
+        s"workflow-status-${java.util.UUID.randomUUID()}")
       val routes = new EnhancedWorkflowRoutes(supervisor)(typedSystem, typedSystem.executionContext).routes
 
       Get("/api/v1/workflows/missing/status") ~> routes ~> check {

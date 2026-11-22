@@ -13,23 +13,28 @@ import scala.concurrent.duration._
 /** Binding ownership and coordinated ingress/drain; no workflow or recovery decisions. */
 private[magic] object HttpServerLifecycle {
   def start(system: ActorSystem[PekkoGuardian.Command]): Future[Http.ServerBinding] = {
-    implicit val ec: ExecutionContext = system.executionContext
-    implicit val timeout: Timeout = Timeout(5.seconds)
+    implicit val ec: ExecutionContext                              = system.executionContext
+    implicit val timeout: Timeout                                  = Timeout(5.seconds)
     implicit val scheduler: org.apache.pekko.actor.typed.Scheduler = system.scheduler
-    val health = system.ask(ref => PekkoGuardian.GetHealthChecker(ref))
-    val coordinator = system.ask(ref => PekkoGuardian.GetSchedulerCoordinator(ref))
-    val supervisor = system.ask(ref => PekkoGuardian.GetWorkflowSupervisor(ref))
-    for { h <- health; c <- coordinator; w <- supervisor
-      binding <- bind(system, HttpRoutes.createRoutes(system,h,system,c,w))
+    val health                                                     = system.ask(ref => PekkoGuardian.GetHealthChecker(ref))
+    val coordinator                                                = system.ask(ref => PekkoGuardian.GetSchedulerCoordinator(ref))
+    val supervisor                                                 = system.ask(ref => PekkoGuardian.GetWorkflowSupervisor(ref))
+    for {
+      h       <- health
+      c       <- coordinator
+      w       <- supervisor
+      binding <- bind(system, HttpRoutes.createRoutes(system, h, system, c, w))
     } yield binding
   }
 
   def bind(system: ActorSystem[_], routes: Route): Future[Http.ServerBinding] = {
     implicit val classic: org.apache.pekko.actor.ActorSystem = system.classicSystem
-    implicit val ec: ExecutionContext = system.executionContext
-    val config = system.settings.config
-    val grace = shutdownGrace(config)
-    Http().newServerAt(config.getString("http.host"),config.getInt("http.port")).bind(routes)
+    implicit val ec: ExecutionContext                        = system.executionContext
+    val config                                               = system.settings.config
+    val grace                                                = shutdownGrace(config)
+    Http()
+      .newServerAt(config.getString("http.host"), config.getInt("http.port"))
+      .bind(routes)
       .map(_.addToCoordinatedShutdown(grace))
   }
   private[bootstrap] def shutdownGrace(config: com.typesafe.config.Config): FiniteDuration = {

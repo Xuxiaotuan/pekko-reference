@@ -15,10 +15,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * 节点健康检查器
- * 
+ *
  * 监控集群节点的健康状态，包括系统资源、Actor状态和网络连接检查。
  * 提供周期性健康检查和按需健康状态查询功能。
- * 
+ *
  * @author : Xuxiaotuan
  * @since : 2024-09-21 22:18
  */
@@ -31,56 +31,50 @@ object HealthChecker {
    */
   sealed trait Command
   final case class CheckHealth(replyTo: ActorRef[HealthStatus]) extends Command
-  final case class StartPeriodicCheck(intervalMs: Long) extends Command
-  final case class StopPeriodicCheck() extends Command
+  final case class StartPeriodicCheck(intervalMs: Long)         extends Command
+  final case class StopPeriodicCheck()                          extends Command
   final case class GetMetrics(replyTo: ActorRef[SystemMetrics]) extends Command
-  private case class PeriodicCheck() extends Command
+  private case class PeriodicCheck()                            extends Command
 
   /**
    * 健康状态数据结构
    */
   final case class HealthStatus(
-    isHealthy: Boolean,
-    timestamp: Long,
-    checks: Map[String, Boolean],
-    overallScore: Double,
-    issues: List[String]
-  )
+      isHealthy: Boolean,
+      timestamp: Long,
+      checks: Map[String, Boolean],
+      overallScore: Double,
+      issues: List[String])
 
   /**
    * 系统指标数据结构
    */
   final case class SystemMetrics(
-    memoryUsage: MemoryMetrics,
-    cpuUsage: Double,
-    actorSystemMetrics: ActorMetrics,
-    diskSpace: DiskMetrics,
-    networkStatus: NetworkMetrics
-  )
+      memoryUsage: MemoryMetrics,
+      cpuUsage: Double,
+      actorSystemMetrics: ActorMetrics,
+      diskSpace: DiskMetrics,
+      networkStatus: NetworkMetrics)
 
   final case class MemoryMetrics(
-    used: Long,
-    max: Long,
-    usagePercentage: Double
-  )
+      used: Long,
+      max: Long,
+      usagePercentage: Double)
 
   final case class ActorMetrics(
-    totalActors: Int,
-    activeActors: Int,
-    deadLetters: Long
-  )
+      totalActors: Int,
+      activeActors: Int,
+      deadLetters: Long)
 
   final case class DiskMetrics(
-    freeSpace: Long,
-    totalSpace: Long,
-    usagePercentage: Double
-  )
+      freeSpace: Long,
+      totalSpace: Long,
+      usagePercentage: Double)
 
   final case class NetworkMetrics(
-    isReachable: Boolean,
-    responseTime: Long,
-    connectionsActive: Int
-  )
+      isReachable: Boolean,
+      responseTime: Long,
+      connectionsActive: Int)
 
   final case class ReadinessStatus(memberUp: Boolean, shardingInitialized: Boolean, jdbcAvailable: Boolean) {
     def ready: Boolean = memberUp && shardingInitialized && jdbcAvailable
@@ -91,10 +85,14 @@ object HealthChecker {
     def confirmed(probe: () => Future[Boolean]): Future[Boolean] =
       try probe().recover { case scala.util.control.NonFatal(_) => false }
       catch { case scala.util.control.NonFatal(_) => Future.successful(false) }
-    val member = confirmed(probes.memberUp)
+    val member   = confirmed(probes.memberUp)
     val sharding = confirmed(probes.shardingInitialized)
-    val jdbc = confirmed(probes.jdbcAvailable)
-    for { m <- member; s <- sharding; j <- jdbc } yield ReadinessStatus(m, s, j)
+    val jdbc     = confirmed(probes.jdbcAvailable)
+    for {
+      m <- member
+      s <- sharding
+      j <- jdbc
+    } yield ReadinessStatus(m, s, j)
   }
 
   def defaultReadinessProbes(system: ActorSystem[_], shardingProbe: () => Future[Boolean])(implicit ec: ExecutionContext): ReadinessProbes = {
@@ -102,7 +100,10 @@ object HealthChecker {
     ReadinessProbes(
       () => Future.successful(org.apache.pekko.cluster.typed.Cluster(system).selfMember.status == org.apache.pekko.cluster.MemberStatus.Up),
       shardingProbe,
-      () => Future(PersistenceQuery(system).readJournalFor[JdbcReadJournal](JdbcReadJournal.Identifier)).flatMap(_.currentPersistenceIds().take(1).runWith(Sink.ignore)).map(_ => true)
+      () =>
+        Future(PersistenceQuery(system).readJournalFor[JdbcReadJournal](JdbcReadJournal.Identifier))
+          .flatMap(_.currentPersistenceIds().take(1).runWith(Sink.ignore))
+          .map(_ => true)
     )
   }
 
@@ -110,20 +111,20 @@ object HealthChecker {
    * 健康检查阈值配置
    */
   object Thresholds {
-    val MEMORY_WARNING_THRESHOLD = 80.0  // 内存使用率警告阈值
+    val MEMORY_WARNING_THRESHOLD  = 80.0 // 内存使用率警告阈值
     val MEMORY_CRITICAL_THRESHOLD = 90.0 // 内存使用率严重阈值
-    val CPU_WARNING_THRESHOLD = 70.0     // CPU使用率警告阈值
-    val CPU_CRITICAL_THRESHOLD = 85.0    // CPU使用率严重阈值
-    val DISK_WARNING_THRESHOLD = 85.0    // 磁盘使用率警告阈值
-    val DISK_CRITICAL_THRESHOLD = 95.0   // 磁盘使用率严重阈值
-    val NETWORK_TIMEOUT_MS = 5000        // 网络检查超时时间
+    val CPU_WARNING_THRESHOLD     = 70.0 // CPU使用率警告阈值
+    val CPU_CRITICAL_THRESHOLD    = 85.0 // CPU使用率严重阈值
+    val DISK_WARNING_THRESHOLD    = 85.0 // 磁盘使用率警告阈值
+    val DISK_CRITICAL_THRESHOLD   = 95.0 // 磁盘使用率严重阈值
+    val NETWORK_TIMEOUT_MS        = 5000 // 网络检查超时时间
   }
 
   def apply(): Behavior[Command] = Behaviors.setup { ctx =>
     Behaviors.withTimers { timers =>
       ctx.log.info("HealthChecker starting up")
-      
-      var checkInterval: Long = 30000L // 默认30秒检查一次
+
+      var checkInterval: Long   = 30000L // 默认30秒检查一次
       var isPeriodicCheckActive = false
 
       def startPeriodicCheck(): Unit = {
@@ -148,12 +149,12 @@ object HealthChecker {
           ctx.log.debug("Performing health check")
           val status = performHealthCheck(ctx)
           replyTo ! status
-          
+
           // 如果健康状态有问题，记录警告
           if (!status.isHealthy) {
             ctx.log.warn(s"Health check failed with score ${status.overallScore}%.1f%%: ${status.issues.mkString(", ")}")
           }
-          
+
           Behaviors.same
 
         case StartPeriodicCheck(intervalMs) =>
@@ -174,13 +175,13 @@ object HealthChecker {
         case PeriodicCheck() =>
           ctx.log.debug("Performing periodic health check")
           val status = performHealthCheck(ctx)
-          
+
           if (!status.isHealthy) {
             ctx.log.warn(s"Periodic health check failed: ${status.issues.mkString(", ")}")
           } else {
             ctx.log.debug(s"Periodic health check passed with score ${status.overallScore}%.1f%%")
           }
-          
+
           Behaviors.same
       }
     }
@@ -191,17 +192,17 @@ object HealthChecker {
    */
   private def performHealthCheck(ctx: org.apache.pekko.actor.typed.scaladsl.ActorContext[Command]): HealthStatus = {
     val checks = Map(
-      "memory" -> checkMemory(),
-      "cpu" -> checkCpu(),
-      "disk" -> checkDisk(),
-      "actors" -> checkActors(),
+      "memory"  -> checkMemory(),
+      "cpu"     -> checkCpu(),
+      "disk"    -> checkDisk(),
+      "actors"  -> checkActors(),
       "network" -> checkNetwork()
     )
-    
+
     val failedChecks = checks.filter(!_._2).keys.toList
     val overallScore = (checks.values.count(identity).toDouble / checks.size) * 100
-    val isHealthy = overallScore >= 80.0 && failedChecks.isEmpty
-    
+    val isHealthy    = overallScore >= 80.0 && failedChecks.isEmpty
+
     HealthStatus(
       isHealthy = isHealthy,
       timestamp = System.currentTimeMillis(),
@@ -216,11 +217,11 @@ object HealthChecker {
    */
   private def checkMemory(): Boolean = {
     try {
-      val runtime = Runtime.getRuntime
-      val usedMemory = runtime.totalMemory() - runtime.freeMemory()
-      val maxMemory = runtime.maxMemory()
+      val runtime         = Runtime.getRuntime
+      val usedMemory      = runtime.totalMemory() - runtime.freeMemory()
+      val maxMemory       = runtime.maxMemory()
       val usagePercentage = (usedMemory.toDouble / maxMemory) * 100
-      
+
       usagePercentage < Thresholds.MEMORY_CRITICAL_THRESHOLD
     } catch {
       case ex: Exception =>
@@ -234,9 +235,9 @@ object HealthChecker {
    */
   private def checkCpu(): Boolean = {
     try {
-      val osBean = ManagementFactory.getOperatingSystemMXBean.asInstanceOf[com.sun.management.OperatingSystemMXBean]
+      val osBean   = ManagementFactory.getOperatingSystemMXBean.asInstanceOf[com.sun.management.OperatingSystemMXBean]
       val cpuUsage = osBean.getProcessCpuLoad * 100
-      
+
       // 如果CPU使用率为负数（可能是因为系统刚启动），认为是健康的
       cpuUsage < 0 || cpuUsage < Thresholds.CPU_CRITICAL_THRESHOLD
     } catch {
@@ -256,13 +257,13 @@ object HealthChecker {
         logger.warn("No disk roots found")
         false
       } else {
-        val root = roots.head // 检查根分区
-        val freeSpace = root.getFreeSpace
+        val root       = roots.head // 检查根分区
+        val freeSpace  = root.getFreeSpace
         val totalSpace = root.getTotalSpace
         val usagePercentage = if (totalSpace > 0) {
           ((totalSpace - freeSpace).toDouble / totalSpace) * 100
         } else 0.0
-        
+
         usagePercentage < Thresholds.DISK_CRITICAL_THRESHOLD
       }
     } catch {
@@ -305,21 +306,21 @@ object HealthChecker {
    * 收集详细的系统指标
    */
   private def collectSystemMetrics(): SystemMetrics = {
-    val memoryMetrics = collectMemoryMetrics()
-    val cpuUsage = collectCpuUsage()
-    val actorMetrics = collectActorMetrics()
-    val diskMetrics = collectDiskMetrics()
+    val memoryMetrics  = collectMemoryMetrics()
+    val cpuUsage       = collectCpuUsage()
+    val actorMetrics   = collectActorMetrics()
+    val diskMetrics    = collectDiskMetrics()
     val networkMetrics = collectNetworkMetrics()
 
     SystemMetrics(memoryMetrics, cpuUsage, actorMetrics, diskMetrics, networkMetrics)
   }
 
   private def collectMemoryMetrics(): MemoryMetrics = {
-    val runtime = Runtime.getRuntime
-    val used = runtime.totalMemory() - runtime.freeMemory()
-    val max = runtime.maxMemory()
+    val runtime         = Runtime.getRuntime
+    val used            = runtime.totalMemory() - runtime.freeMemory()
+    val max             = runtime.maxMemory()
     val usagePercentage = if (max > 0) (used.toDouble / max) * 100 else 0.0
-    
+
     MemoryMetrics(used, max, usagePercentage)
   }
 
@@ -335,9 +336,9 @@ object HealthChecker {
   private def collectActorMetrics(): ActorMetrics = {
     // 简化实现，在实际应用中可以从Actor系统获取更详细的指标
     ActorMetrics(
-      totalActors = 0, // 需要从Actor系统获取
+      totalActors = 0,  // 需要从Actor系统获取
       activeActors = 0, // 需要从Actor系统获取
-      deadLetters = 0 // 需要从Actor系统获取
+      deadLetters = 0   // 需要从Actor系统获取
     )
   }
 
@@ -345,13 +346,13 @@ object HealthChecker {
     try {
       val roots = java.io.File.listRoots()
       if (roots.nonEmpty) {
-        val root = roots.head
-        val freeSpace = root.getFreeSpace
+        val root       = roots.head
+        val freeSpace  = root.getFreeSpace
         val totalSpace = root.getTotalSpace
         val usagePercentage = if (totalSpace > 0) {
           ((totalSpace - freeSpace).toDouble / totalSpace) * 100
         } else 0.0
-        
+
         DiskMetrics(freeSpace, totalSpace, usagePercentage)
       } else {
         DiskMetrics(0, 0, 0.0)
@@ -363,11 +364,11 @@ object HealthChecker {
 
   private def collectNetworkMetrics(): NetworkMetrics = {
     try {
-      val startTime = System.currentTimeMillis()
-      val address = java.net.InetAddress.getByName("127.0.0.1")
-      val isReachable = address.isReachable(Thresholds.NETWORK_TIMEOUT_MS)
+      val startTime    = System.currentTimeMillis()
+      val address      = java.net.InetAddress.getByName("127.0.0.1")
+      val isReachable  = address.isReachable(Thresholds.NETWORK_TIMEOUT_MS)
       val responseTime = System.currentTimeMillis() - startTime
-      
+
       NetworkMetrics(isReachable, responseTime, connectionsActive = 1)
     } catch {
       case _: Exception => NetworkMetrics(false, Thresholds.NETWORK_TIMEOUT_MS.toLong, 0)

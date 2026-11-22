@@ -43,7 +43,8 @@ class JdbcPersistenceConfigSpec extends AnyWordSpec with Matchers {
       val dev = ConfigFactory.load("application-dev.conf")
 
       dev.getString("pekko-persistence-jdbc.shared-databases.slick.profile") shouldBe "slick.jdbc.H2Profile$"
-      dev.getString("pekko-persistence-jdbc.shared-databases.slick.db.url") should include("INIT=RUNSCRIPT FROM 'classpath:db/h2/pekko-persistence-schema.sql'")
+      dev.getString("pekko-persistence-jdbc.shared-databases.slick.db.url") should include(
+        "INIT=RUNSCRIPT FROM 'classpath:db/h2/pekko-persistence-schema.sql'")
       Option(getClass.getClassLoader.getResource("db/h2/pekko-persistence-schema.sql")) should not be empty
       ConfigValidator.validate(dev) shouldBe None
     }
@@ -61,12 +62,14 @@ class JdbcPersistenceConfigSpec extends AnyWordSpec with Matchers {
 
     "serve persistence ids through the default JDBC read journal" in {
       val databaseName = s"default-jdbc-read-path-${System.nanoTime()}"
-      val runtime = ConfigFactory.parseString(s"""
+      val runtime = ConfigFactory
+        .parseString(s"""
         pekko.actor.provider = local
         pekko-persistence-jdbc.shared-databases.slick.db.url =
           "jdbc:h2:mem:$databaseName;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:db/h2/pekko-persistence-schema.sql'"
-      """).withFallback(ConfigFactory.load())
-      val system = ActorSystem[Nothing](Behaviors.empty, "default-jdbc-read-path", runtime)
+      """)
+        .withFallback(ConfigFactory.load())
+      val system                = ActorSystem[Nothing](Behaviors.empty, "default-jdbc-read-path", runtime)
       implicit val materializer = SystemMaterializer(system).materializer
 
       try {
@@ -79,12 +82,16 @@ class JdbcPersistenceConfigSpec extends AnyWordSpec with Matchers {
     }
 
     "reject inconsistent or incompatible JDBC settings" in {
-      val mismatchedPlugins = ConfigFactory.parseString(
-        "pekko.persistence.snapshot-store.plugin = pekko.persistence.snapshot-store.local"
-      ).withFallback(ConfigFactory.load())
-      val incompatibleDriver = ConfigFactory.parseString(
-        "pekko-persistence-jdbc.shared-databases.slick.db.driver = com.mysql.cj.jdbc.Driver"
-      ).withFallback(ConfigFactory.load("application-dev.conf"))
+      val mismatchedPlugins = ConfigFactory
+        .parseString(
+          "pekko.persistence.snapshot-store.plugin = pekko.persistence.snapshot-store.local"
+        )
+        .withFallback(ConfigFactory.load())
+      val incompatibleDriver = ConfigFactory
+        .parseString(
+          "pekko-persistence-jdbc.shared-databases.slick.db.driver = com.mysql.cj.jdbc.Driver"
+        )
+        .withFallback(ConfigFactory.load("application-dev.conf"))
 
       ConfigValidator.validate(mismatchedPlugins).get should contain("JDBC journal and snapshot-store plugins must be configured together")
       ConfigValidator.validate(incompatibleDriver).get should contain("H2 Slick profile requires an H2 JDBC driver and jdbc:h2: URL")
