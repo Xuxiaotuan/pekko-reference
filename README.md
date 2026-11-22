@@ -67,3 +67,35 @@ mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_NAME" \
   缺少总 byte bound 的既有证据缺口。
 - Task 7 仍保留 route-level 400/409 及逐路由 503/504/500 错误矩阵不完整的既有
   证据缺口。
+
+## CDC Runtime 学习入口
+
+当前 CDC 主线以 [`644d8bd`](https://github.com/Xuxiaotuan/pekko-reference/tree/644d8bdcc6d9721e7a08232b935793f05d70dac5) 为基线。生产部署只保留两个角色：`pekko-cdc-capture` 负责一个 MySQL 实例的 `SharedMySQLCapture`，`pekko-cdc-worker` 负责表级任务。`pekko-server` 仍是 SBT project ID 和兼容入口，不是第三个生产模块。
+
+```mermaid
+flowchart TB
+    DB["一个 MySQL 实例"] --> C["pekko-cdc-capture x1"]
+    C --> R["SharedMySQLCapture"]
+    R --> L["持久日志 L"]
+    L --> W["pekko-cdc-worker >= 2"]
+    W --> A["TableActor / TableCdcGraphRuntime"]
+    A --> K["表级 Checkpoint"]
+    K --> T["目标事务 + Journal + D"]
+```
+
+```mermaid
+flowchart LR
+    B["B / K"] --> LOW["LOW"]
+    LOW --> CH["分页 Chunk"]
+    CH --> HIGH["HIGH"]
+    HIGH --> F["回放到 F"]
+    F --> TJ["T/J/D"]
+    TJ --> STREAM["STREAMING"]
+    RESTART["跨 JVM 无 continuation"] --> RESET["清理旧 baseline，revision + 1"]
+    RESET --> LOW
+    UNKNOWN["fence / L floor 证据不足"] --> PAUSE["安全暂停"]
+```
+
+本轮真实材料验证了同 owner continuation 和无 continuation 的跨 JVM full rescan。两条路径都完成真实 MySQL、Debezium Reader、Actor Journal、MySQL Sink 的逐字段对账。[实验材料](https://github.com/Xuxiaotuan/pekko-reference/blob/644d8bdcc6d9721e7a08232b935793f05d70dac5/support/docs/experiments/2026-11-22-cross-chunk-restart/README.md)。已有两表共享 Reader Graph 材料用于机制级验证，因此本项目不把七十万张真实物理表作为当前必要验收目标。
+
+仍保留三条未验证边界：source fence v2 的独立 guardian/observer/controller 多 owner 接管，L floor 的独立跨进程恢复矩阵，以及 `TableCdcGraphRuntime` 从 façade 演进为完整 materialized Graph。
