@@ -608,6 +608,15 @@ final class CdcBootstrapKernel(
       }
       CdcKernelOutcome(result.progress, released, result.didWork, result.validationComplete, result.nextDelayMillis, proof)
     } catch {
+      case e: CdcKernelDeferred =>
+        // A deferred attempt has not entered the table graph. Do not retain a
+        // Journal/graph session across the retry, otherwise a reservation or
+        // a recovery gate left by the previous owner can make every later
+        // attempt defer against the same stale session.
+        try stopJournal(session.journal)
+        catch { case release: Throwable => release.addSuppressed(e); throw release }
+        synchronized(sessions.remove(id))
+        throw e
       case e: Throwable =>
         observeFailure(e)
         if (ExecutionFailure.from(e, "cdc-kernel").releaseConfirmed) {

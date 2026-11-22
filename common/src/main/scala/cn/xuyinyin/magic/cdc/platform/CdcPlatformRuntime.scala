@@ -374,7 +374,16 @@ final class CdcPlatformRuntime(
               result match {
                 case Failure(_: CdcKernelDeferred) =>
                   logger.warn("CDC task deferred before execution task={} owner={}", g.task.view.taskId, runtimeAttemptId)
-                  try store.defer(g, limits.tailDelayMillis, now, lease)
+                  try {
+                    // A bounded validation deferral is safe only while this
+                    // owner still controls the runtime. Once stop or guardian
+                    // loss has started, leaving the grant ACTIVE would make a
+                    // replacement owner wait forever. Persist the conservative
+                    // UNKNOWN result so the next owner can audit and replay it.
+                    if (stopping.get() || guardianLost.get())
+                      store.finishUnknown(g, ExecutionFailure.ReleaseUnknown, now, lease)
+                    else store.defer(g, limits.tailDelayMillis, now, lease)
+                  }
                   catch { case NonFatal(_) => ownerState = "UNKNOWN"; reason = Some("STORAGE_UNAVAILABLE") }
                 case Failure(e) =>
                   val failure = ExecutionFailure.from(e, "cdc-step")

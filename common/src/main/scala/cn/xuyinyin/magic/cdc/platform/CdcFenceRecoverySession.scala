@@ -215,14 +215,18 @@ final private[cdc] class CdcFenceRecoverySession(
     try
       store.withReadyProofState(p.id, p.taskId, digest, execution, capture) { (c, old, currentD) =>
         log.pendingBDescriptorOn(c, currentD, p.taskId).filter(d => d.status == "CAPTURE_READY" && d.barrier.nonEmpty).foreach { descriptor =>
-          val identity = old.identity.copy(
-            offset = currentD,
-            head = descriptor.head,
-            anchor = descriptor.anchor,
-            intent = descriptor.intentDigest,
-            priorHead = Some(old.identity.head),
-            priorDigest = Some(old.headDigest))
-          pages.beginOn(c, identity)
+          val identity = pages.incompleteMatchingOn(c, old.identity, old.headDigest).getOrElse(
+            old.identity.copy(
+              offset = currentD,
+              head = descriptor.head,
+              anchor = descriptor.anchor,
+              intent = descriptor.intentDigest,
+              priorHead = Some(old.identity.head),
+              priorDigest = Some(old.headDigest)))
+          pages.statusIfPresentOn(c, identity) match {
+            case Some(_) => ()
+            case None    => pages.beginOn(c, identity); ()
+          }
           val state = pages.statusOn(c, identity)
           if (!state.done) pages.stepOn(c, identity, state.revision, 128)
         }

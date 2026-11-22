@@ -48,3 +48,11 @@
 ready 之后的实际失败发生在 B 提交结果未知窗口。代理证据为 `PROXY_COMMIT_OK_DROPPED`，随后任务进入 `PAUSED/local_release_unconfirmed`，旧 owner 为 `UNKNOWN`，源侧仍保留一个 `cs_*` Sleep 会话，替换 owner 在 `old owner drained and replacement forked` 等待窗口超时。此轮没有进入 source fence v2 的 Reader gate、真实 Sink 提交或逐字段对账。
 
 这组证据把下一步收窄为旧 owner 的 JDBC/代理连接排空确认。需要先证明连接从 processlist 消失并完成 Guardian drain，再重跑 V2_READER，不能用 Worker ready 或 Journal/L 材料替代接管证明。
+
+## 最终 V2_READER 主流程复跑
+
+最终版本在同一 `bigdata-lab` 隔离双 MySQL 环境复跑了无故障 Reader 主流程。该轮不把 C1 未知提交窗口混入主流程验收，因此验收目标是 Graph 从已启动的 SharedMySQLCapture 读取、提交真实 Sink，并完成源表与目标表逐字段对账。
+
+结果为 `PASS`。`03-v2-reader-b-captured.json` 显示 `equal=true`、`fieldsCompared=384`，缺失、额外和字段差异均为空。`cleanup.json` 显示 Guardian drain 已确认、源端会话已消失、数据断言通过。证据文件已更新到 [`k8s-v2-reader-20261122`](k8s-v2-reader-20261122/README.md)。
+
+C1 `PROXY_COMMIT_OK_DROPPED` 仍单独保留在 [`v2-reader-c1-failure-20261122`](k8s-v2-reader-20261122/v2-reader-c1-failure-20261122/)。该轮在 `RECOVERY_PENDING/local_release_unconfirmed` 停止，证明安全暂停边界仍然存在，不能把主流程 PASS 扩大为未知提交自动恢复已完成。

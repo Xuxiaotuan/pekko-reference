@@ -5,10 +5,9 @@
 ## 结果
 
 - Worker 启动阶段全部完成，包含 Guardian attestation、managed manifest、runtime、capture 和 HTTP ready。
-- `PROXY_COMMIT_OK_DROPPED` 已实际发生，旧 owner 的 Source binlog 会话被 Guardian 观察并最终排空。
-- 旧 owner 隔离证明、`db_drained`、新 owner 启动和 source fence recovery permit 均有记录。
-- 新 Reader 实际收到 `B_BOUND` 和 `BARRIER`，L 中存在对应 barrier，订阅状态进入 `CAPTURE_READY`。
-- 任务在新 owner 控制轮询期间遇到 `ManagedOwnerStore.registerInstance` 的资源登记竞态，最终回到 `QUEUED`，目标表没有写入。
-- `03-v2-reader-b-captured.json` 的 `equal=false`，缺失源表 64 行，不能记为 Sink 逐字段一致。
+- V2_READER 主流程使用无故障 Reader 启动路径，真实 MySQL Source、Actor Journal、Graph 和 Sink 均完成运行。
+- `03-v2-reader-b-captured.json` 的 `equal=true`，`fieldsCompared=384`，`missing=[]`、`extra=[]`、`fieldDifferences=[]`。
+- `cleanup.json` 显示 `guardianDrainConfirmed=true`、`sessionsGone=true`、`dataAssertionsPassed=true`。
+- 旧 C1 `PROXY_COMMIT_OK_DROPPED` 失败材料保存在 [`v2-reader-c1-failure-20261122`](v2-reader-c1-failure-20261122/)，其中任务停在 `RECOVERY_PENDING/local_release_unconfirmed`，不能用主流程通过覆盖这个边界。
 
-`result.json` 中测试套件的 PASS 只表示故障清理和 Guardian 证据检查通过，不能升级为端到端数据对账通过。原始 `03` 文件保留了这一差异。
+`result.json` 的 `V2_READER_B_ONLY_PASS` 对应本次主流程逐字段对账。C1 结果仍按失败证据记录，未知提交回复后的自动恢复尚未宣称通过。

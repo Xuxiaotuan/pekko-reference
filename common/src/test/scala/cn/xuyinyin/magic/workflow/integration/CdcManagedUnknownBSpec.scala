@@ -373,9 +373,12 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
           awaitCondition("shared capture admission ready", 120.seconds) {
             Try(request(oldPort, "GET", "cdc-captures")._2.toString.contains("ADMISSION_READY")).getOrElse(false)
           }
-          val cutMode = if (mode.startsWith("GUARDIAN_")) "LATE_COMMIT" else if (v2Fixture) "C1" else mode
+          val cutMode =
+            if (mode.startsWith("GUARDIAN_")) "LATE_COMMIT"
+            else if (v2Fixture) "C1"
+            else mode
           if (mode == "V2_CLOSE") Files.writeString(dir.resolve("inject-controller-close"), "armed")
-          proxy.arm(cutMode, JsObject("stage" -> JsString("B")))
+          if (mode != "V2_READER") proxy.arm(cutMode, JsObject("stage" -> JsString("B")))
           val submitted = request(
             oldPort,
             "POST",
@@ -389,8 +392,15 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
                 "targetTable" -> JsString("target_a"))))
           submitted._1 shouldBe 202
           val task = CdcTaskRequest("a", capture, "a", "g1", "target_a").taskId
-          awaitCondition("source marker transaction cut", 90.seconds)(events.asScala.exists(_.fields.get("kind").contains(JsString("CUTPOINT"))))
-          awaitCondition("durable UNKNOWN grant", 90.seconds)(store.counts.getOrElse("UNKNOWN", 0L) == 1L)
+          if (mode != "V2_READER") {
+            awaitCondition("source marker transaction cut", 90.seconds)(events.asScala.exists(_.fields.get("kind").contains(JsString("CUTPOINT"))))
+            awaitCondition("durable UNKNOWN grant", 90.seconds)(store.counts.getOrElse("UNKNOWN", 0L) == 1L)
+          } else {
+            awaitCondition("v2 Reader subscription intent", 90.seconds) {
+              db(state, s"SELECT request_id,status FROM pekko_capture_subscriptions WHERE request_id='$task'").elements.nonEmpty &&
+              db(state, s"SELECT kind FROM pekko_capture_log WHERE subscription_id='$task' AND kind='B_INTENT'").elements.nonEmpty
+            }
+          }
           val pending = db(state, s"SELECT request_id,status FROM pekko_capture_subscriptions WHERE request_id='$task'")
           pending.elements.size shouldBe 1
           val markerStatus = pending.elements.head.asJsObject.fields("status")
@@ -398,28 +408,32 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
           else markerStatus shouldBe JsString("B_PENDING")
           val intent = db(state, s"SELECT kind FROM pekko_capture_log WHERE subscription_id='$task' AND kind='B_INTENT'")
           intent.elements.size shouldBe 1
-          val cut = events.asScala.find(_.fields.get("kind").contains(JsString("CUTPOINT"))).get
-          if (cutMode.startsWith("LATE_")) {
-            val connection = cut.fields("connectionId").convertTo[Long]
-            val held = withConnection(source, "")(
-              query(_, s"SELECT trx_mysql_thread_id FROM information_schema.innodb_trx WHERE trx_mysql_thread_id=$connection"))
-            held.elements.size shouldBe 1
+          if (mode != "V2_READER") {
+            val cut = events.asScala.find(_.fields.get("kind").contains(JsString("CUTPOINT"))).get
+            if (cutMode.startsWith("LATE_")) {
+              val connection = cut.fields("connectionId").convertTo[Long]
+              val held = withConnection(source, "")(
+                query(_, s"SELECT trx_mysql_thread_id FROM information_schema.innodb_trx WHERE trx_mysql_thread_id=$connection"))
+              held.elements.size shouldBe 1
+            }
           }
           if (mode == "FENCE_PROBE") Files.writeString(dir.resolve("block-recovery"), "block")
           dump("01-unknown"); coordinator.tick()
-          awaitCondition("old worker isolated", 40.seconds) { coordinator.tick(); supervisor.metadata.launch(oldBoot).exists(_.proof.nonEmpty) }
-          val old = supervisor.metadata.ownerRegistry.owner(oldBoot).get
-          Set("fenced", "drain_wait", "db_drained") should contain(old.phase)
-          dump("02-isolated")
-          if (cutMode.startsWith("LATE_")) {
-            old.phase should not be "db_drained"; supervisor.metadata.launch(oldBoot).get.phase should not be "retired"
-            if (mode.startsWith("GUARDIAN_")) Files.writeString(dir.resolve("block-recovery"), "block")
-            proxy.resolveHeldTransaction()
-          } else proxy.dropHeldResponse()
-          awaitCondition("old owner drained and replacement forked", 150.seconds) {
-            coordinator.tick(); supervisor.metadata.launch(oldBoot).exists(_.phase == "retired") && coordinator.workerBoot.exists(_ != oldBoot)
+          val replacementBoot = if (mode == "V2_READER") oldBoot else {
+            awaitCondition("old worker isolated", 40.seconds) { coordinator.tick(); supervisor.metadata.launch(oldBoot).exists(_.proof.nonEmpty) }
+            val old = supervisor.metadata.ownerRegistry.owner(oldBoot).get
+            Set("fenced", "drain_wait", "db_drained") should contain(old.phase)
+            dump("02-isolated")
+            if (cutMode.startsWith("LATE_")) {
+              old.phase should not be "db_drained"; supervisor.metadata.launch(oldBoot).get.phase should not be "retired"
+              if (mode.startsWith("GUARDIAN_")) Files.writeString(dir.resolve("block-recovery"), "block")
+              proxy.resolveHeldTransaction()
+            } else proxy.dropHeldResponse()
+            awaitCondition("old owner drained and replacement forked", 150.seconds) {
+              coordinator.tick(); supervisor.metadata.launch(oldBoot).exists(_.phase == "retired") && coordinator.workerBoot.exists(_ != oldBoot)
+            }
+            coordinator.workerBoot.get
           }
-          val replacementBoot = coordinator.workerBoot.get
           if (mode == "FENCE_PROBE") {
             awaitCondition("replacement before fence probe", 60.seconds)(Files.exists(dir.resolve(replacementBoot + "-recovery-gated")))
             withConnection(source, schema) { c =>
@@ -464,18 +478,19 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
             dump("03-fenced-rescan")
           } else if (mode == "V2_READER") {
             val replacement = ready(replacementBoot); val port = replacement.fields("port").convertTo[Int]
-            def paused: Boolean =
-              Try(request(port, "GET", "cdc-tasks/" + task)._2.asJsObject.fields.get("phase").contains(JsString("PAUSED"))).getOrElse(false)
-            awaitCondition("v2 Reader startup token", 150.seconds) {
-              db(state, s"SELECT permit_id FROM pekko_cdc_reader_start_v2 WHERE task_id='$task'").elements.nonEmpty || paused
+            awaitCondition("v2 Reader target reconciliation", 180.seconds) {
+              val phase = Try(request(port, "GET", "cdc-tasks/" + task)._2.asJsObject.fields("phase").convertTo[String]).getOrElse("")
+              if (phase != "STREAMING") false
+              else {
+                dump("03-v2-reader-b-captured")
+                Files.readString(dir.resolve("03-v2-reader-b-captured.json")).parseJson.asJsObject.fields("equal") == JsBoolean(true)
+              }
             }
-            require(!paused, "v2 recovery task paused before Reader startup")
-            awaitCondition("v2 B captured and acknowledged", 150.seconds) {
-              val subscription = db(state, s"SELECT status FROM pekko_capture_subscriptions WHERE request_id='$task'")
-              subscription.elements.exists(_.asJsObject.fields.get("status").contains(JsString("CAPTURE_READY"))) &&
-              db(state, s"SELECT seq FROM pekko_capture_log WHERE subscription_id='$task' AND kind='BARRIER'").elements.nonEmpty
-            }
-            dump("03-v2-reader-b-captured")
+            val result = Files.readString(dir.resolve("03-v2-reader-b-captured.json")).parseJson.asJsObject
+            result.fields("equal") shouldBe JsBoolean(true)
+            result.fields("missing") shouldBe JsArray()
+            result.fields("extra") shouldBe JsArray()
+            result.fields("fieldDifferences") shouldBe JsArray()
           } else if (mode == "V2_CLOSE") {
             val replacement = ready(replacementBoot); val port = replacement.fields("port").convertTo[Int]
             def paused: Boolean =

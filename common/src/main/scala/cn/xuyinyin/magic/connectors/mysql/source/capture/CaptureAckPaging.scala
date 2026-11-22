@@ -3,6 +3,7 @@ package cn.xuyinyin.magic.connectors.mysql.source.capture
 import cn.xuyinyin.magic.cdc.MySQLCdcGroup
 import java.sql.{Connection, PreparedStatement}
 import spray.json._
+import spray.json.DefaultJsonProtocol._
 
 /** Identity of one immutable recovery proof. The caller must independently validate the fence. */
 final case class CaptureAckPageIdentity(
@@ -217,9 +218,20 @@ private[magic] object CapturePinnedProof {
           Some(old.headDigest))
         val pages = new CaptureAckPaging(unavailable, store)
         pages.statusIfPresentOn(c, i) match {
-          case None               => None
-          case Some(s) if !s.done => None
-          case Some(_)            => Some(verifyAdvancedOn(c, old, currentOffset))
+          case Some(s) if s.done => Some(verifyAdvancedOn(c, old, currentOffset))
+          case _ =>
+            pages.completedMatchingOn(c, old.identity, old.headDigest, currentOffset).map { completed =>
+              val state = pages.statusOn(c, completed)
+              require(state.done && pages.containsOn(c, completed, d.barrier.get), "completed ACK proof does not cover B")
+              CapturePinnedWitness(
+                old.capture,
+                old.lineage,
+                completed,
+                pages.proofId(completed),
+                d.intentSeq,
+                store.proofFrame(c, completed.head)("digest"),
+                "COVERED")
+            }
         }
       }
     } finally store.clearProofConnection(c)
@@ -567,6 +579,62 @@ final class CaptureAckPaging(open: () => Connection, store: MySQLCaptureStore) {
         "orphaned ACK proof evidence")
       None
     }
+  }
+
+  private def identityFromJson(value: String): CaptureAckPageIdentity = {
+    val f = value.parseJson.asJsObject.fields
+    CaptureAckPageIdentity(
+      f("task").convertTo[String],
+      MySQLCdcGroup.canonical(f("offset")),
+      f("head").convertTo[Long],
+      f("anchor").convertTo[Long],
+      f("intent").convertTo[String],
+      f("fence").convertTo[String],
+      f("guardian").convertTo[String],
+      f.get("priorHead").collect { case JsNumber(n) => n.toLongExact },
+      f.get("priorDigest").collect { case JsString(s) => s })
+  }
+
+  /** Find a completed proof for the same immutable B identity and D offset.
+    * The ACK head may be older than the latest head when several ACKs share
+    * the same physical binlog offset. It is still a valid lower-bound proof.
+    */
+  private[magic] def completedMatchingOn(
+      c: Connection,
+      base: CaptureAckPageIdentity,
+      baseDigest: String,
+      currentOffset: String
+    ): Option[CaptureAckPageIdentity] = {
+    lockHead(c)
+    rows(
+      c,
+      "SELECT identity_json FROM pekko_capture_ack_pages_v1 WHERE capture_id=? AND done=TRUE ORDER BY head_seq DESC",
+      store.captureId).iterator
+      .map(r => identityFromJson(r("identity_json")))
+      .find { i =>
+        i.task == base.task && i.anchor == base.anchor && i.intent == base.intent && i.sourceFence == base.sourceFence &&
+        i.guardianAttempt == base.guardianAttempt && i.priorHead == Some(base.head) && i.priorDigest == Some(baseDigest) &&
+        store.proofOffsetKey(i.offset) == store.proofOffsetKey(currentOffset)
+      }
+  }
+
+  /** Return the oldest in-progress proof for an immutable B identity so a
+    * retry advances it instead of creating a fresh moving-head proof.
+    */
+  private[magic] def incompleteMatchingOn(
+      c: Connection,
+      base: CaptureAckPageIdentity,
+      baseDigest: String
+    ): Option[CaptureAckPageIdentity] = {
+    lockHead(c)
+    rows(
+      c,
+      "SELECT identity_json FROM pekko_capture_ack_pages_v1 WHERE capture_id=? AND done=FALSE ORDER BY head_seq",
+      store.captureId).iterator
+      .map(r => identityFromJson(r("identity_json")))
+      .find(i =>
+        i.task == base.task && i.anchor == base.anchor && i.intent == base.intent && i.sourceFence == base.sourceFence &&
+          i.guardianAttempt == base.guardianAttempt && i.priorHead == Some(base.head) && i.priorDigest == Some(baseDigest))
   }
   private[magic] def containsAckOn(c: Connection, i: CaptureAckPageIdentity, seq: Long): Boolean = {
     lockHead(c);

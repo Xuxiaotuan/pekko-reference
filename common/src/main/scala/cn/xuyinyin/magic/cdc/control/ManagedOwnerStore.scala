@@ -122,9 +122,24 @@ abstract class ManagedOwnerStore protected[control] (protected val store: Manage
         audit(c, id, None, "instance_registered", JsObject("instance" -> JsString(key)).compactPrint)
     }
   }
-  def registerInstance(id: String, key: String, uuid: String, started: Long): Unit = transaction(registerInstance(_, id, key, uuid, started))
+  private def retryOwnerActivation[A](operation: => A): A = {
+    var attempt                     = 0
+    var last: IllegalStateException = null
+    while (attempt < 3) {
+      try return operation
+      catch {
+        case e: IllegalStateException if e.getMessage == "owner is revoked; no new database resources may be opened" =>
+          last = e; attempt += 1
+          if (attempt < 3) Thread.sleep(100L)
+        case e: Throwable => throw e
+      }
+    }
+    throw last
+  }
+  def registerInstance(id: String, key: String, uuid: String, started: Long): Unit =
+    retryOwnerActivation(transaction(registerInstance(_, id, key, uuid, started)))
   def registerSession(id: String, key: String, uuid: String, started: Long, connectionId: Long, role: String, databaseUser: String = ""): Unit =
-    transaction(registerSession(_, id, key, uuid, started, connectionId, role, databaseUser))
+    retryOwnerActivation(transaction(registerSession(_, id, key, uuid, started, connectionId, role, databaseUser)))
   private def registerSession(
       c: Connection,
       id: String,
