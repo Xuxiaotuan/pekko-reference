@@ -7,7 +7,6 @@ A 阶段将 12 个 Scala 文件从 `src/main/scala` 原样迁入
 
 | 原路径（相对 Scala 源根） | 新位置 |
 |---|---|
-| `cn/xuyinyin/magic/workflow/actors/WorkflowActor.scala` | `../scala/examples/legacy/` 下原相对路径 |
 | `cn/xuyinyin/magic/stream/cdc/`（7 文件） | 同上 |
 | `cn/xuyinyin/magic/common/DDataHelper.scala` | 同上 |
 | `cn/xuyinyin/magic/single/PNCounterCache.scala`、`PekkoGc.scala` | 同上 |
