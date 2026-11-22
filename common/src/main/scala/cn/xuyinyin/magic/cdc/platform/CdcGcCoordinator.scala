@@ -44,6 +44,11 @@ final private[cdc] class CdcGcCoordinator(
         try scala.io.Source.fromInputStream(ledger).mkString
         finally ledger.close()
       ddl.split(";").map(_.trim).filter(_.nonEmpty).foreach(update(c, _))
+      val definerParts = settings.ledgerDefiner.split("@", 2)
+      require(definerParts.length == 2, "ledger definer must include user and host")
+      val definerUser = definerParts(0)
+      val definerHost = definerParts(1)
+      val definerClause = s"DEFINER='${definerUser.replace("'", "''")}'@'${definerHost.replace("'", "''")}'"
       Vector("update" -> "UPDATE", "delete" -> "DELETE").foreach { case (name, event) =>
         if (query(
             c,
@@ -51,7 +56,7 @@ final private[cdc] class CdcGcCoordinator(
             "pekko_ledger_no_" + name).isEmpty)
           update(
             c,
-            s"CREATE TRIGGER pekko_ledger_no_$name BEFORE $event ON pekko_sync_cdc_group_ledger FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='ledger immutable'")
+            s"CREATE $definerClause TRIGGER pekko_ledger_no_$name BEFORE $event ON pekko_sync_cdc_group_ledger FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='ledger immutable'")
       }
       update(c, "INSERT IGNORE INTO pekko_capture_gc_schedule_v1 VALUES(?,'',0,NULL,'ENABLING',NULL)", capture)
     }

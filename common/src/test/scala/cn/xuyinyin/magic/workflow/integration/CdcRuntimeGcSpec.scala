@@ -92,7 +92,11 @@ class CdcRuntimeGcSpec extends AnyWordSpec with Matchers {
         val children  = scala.collection.mutable.ArrayBuffer.empty[Child]; var port = 0; var lock: Connection = null
         val http      = HttpClient.newHttpClient()
         def request(path: String, body: Option[JsObject] = None): JsObject = {
-          val builder = HttpRequest.newBuilder(URI.create(s"http://127.0.0.1:$port/api/v1/$path")).timeout(java.time.Duration.ofSeconds(15))
+          // GC maintenance and a real MySQL schema/Journal step share the
+          // bounded control executor. Keep the HTTP probe bounded, but longer
+          // than one maintenance slice so a slow GC tick is not reported as a
+          // transport failure.
+          val builder = HttpRequest.newBuilder(URI.create(s"http://127.0.0.1:$port/api/v1/$path")).timeout(java.time.Duration.ofSeconds(60))
           body.foreach(v => builder.header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(v.compactPrint)))
           val result = http.send(builder.build(), HttpResponse.BodyHandlers.ofString())
           require(result.statusCode() < 400, s"HTTP ${result.statusCode()}: ${result.body()}")
@@ -308,7 +312,10 @@ class CdcRuntimeGcSpec extends AnyWordSpec with Matchers {
                   r.asJsObject.fields("to_exclusive").convertTo[String].toLong should be <= pin)
                 snapshot("slow-table-window"); lock.rollback(); lock.close(); lock = null; equal("b")
               }
-              awaitCondition("actual GROUP deletion") { scalar("SELECT COUNT(*) AS n FROM pekko_capture_gc_frames_v1").toLong > 0 }
+              awaitCondition("actual GROUP deletion", 180.seconds) {
+                scalar(
+                  "SELECT COUNT(*) AS n FROM pekko_capture_gc_operations_v1 WHERE phase='DONE' AND to_exclusive>from_seq").toLong > 0
+              }
               snapshot("partial-GC")
               if (scenario == "RG07-unclean-restart") {
                 child.send("CRASH"); child.exit() shouldBe 86

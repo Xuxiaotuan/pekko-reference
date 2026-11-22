@@ -23,3 +23,11 @@
 - `RG01-final-http-timeout`：继续修正 planned-stop 后重启路径后，真实 MySQL + Debezium 子进程在启动阶段 HTTP 查询超时，未形成业务对账结果。
 
 这两次材料都属于 `evidence_incomplete`。它们证明探针没有把 GC 失败伪装成成功，也不能证明 L floor 安全 GC 已完成。当前可确认的是 namespace 账号边界和主流程资源释放修复，GROUP 删除和跨重启 GC 仍待单独定位。
+
+## 2026-11-23 再复跑
+
+- `RG01-pass-20261123`：RG01 已通过。GC namespace 为 `COMPLETE`，GC operation 为 `DONE`，audit 为 `ACTIVE`，`to_exclusive > from_seq`，任务重启后恢复到 `STREAMING`，源/目标逐字段对账通过。
+- `RG02-failure-20261123`：慢表窗口未通过。GC 进入 `actual D proof pending`，两个任务随后出现 `local_release_unconfirmed`，材料保留了 pins、checkpoint、任务和 GC 状态。
+- RG07 本次联合运行被 RG02 长窗口拖住，未形成可签收的独立结果，不能写成通过。
+
+本轮同时发现并修复了 GC ledger trigger 的 definer 绑定问题。后续 RG07 必须使用同一版本单独复跑。
