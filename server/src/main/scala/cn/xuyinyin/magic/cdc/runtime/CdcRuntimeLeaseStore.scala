@@ -327,10 +327,20 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
             (Option(grant("lease_state")).forall(state => state != "ACTIVE" && state != "DRAINING") ||
               Option(grant("lease_expires_at")).exists(_.toLong <= now))
         }
+        // A worker can die after a normal step has released its task lease but
+        // before the durable task state is scheduled again. Such a task has no
+        // target batch in flight and is safe to replay from its persisted
+        // checkpoint once the old owner lease has expired.
+        val abandonedCheck = connection.prepareStatement(
+          "SELECT t.task_id,t.phase,t.release_status,l.state,l.last_target_batch " +
+            "FROM pekko_cdc_tasks_v1 t JOIN pekko_cdc_task_lease_v1 l ON l.task_id=t.task_id " +
+            "WHERE l.worker_id=? AND l.state='RELEASED' AND l.last_target_batch IS NULL " +
+            "AND t.desired_state='RUNNING' AND t.grant_id IS NULL AND t.phase NOT IN ('CANCELED','COMPLETED') FOR UPDATE")
+        val abandoned = try { abandonedCheck.setString(1, attempt); queryRows(abandonedCheck) } finally abandonedCheck.close()
         val pendingCheck = connection.prepareStatement(
           "SELECT 1 AS n FROM pekko_cdc_b_recovery_v1 WHERE consumed=FALSE LIMIT 1")
         val hasPendingRecovery = try queryOne(pendingCheck).nonEmpty finally pendingCheck.close()
-        if (leaseExpired && !hasActiveTask && !hasPendingRecovery && (!activeGrant && (grants.isEmpty || replayableUnknown))) {
+        if (leaseExpired && !hasActiveTask && !hasPendingRecovery && (!activeGrant && (grants.isEmpty || replayableUnknown || abandoned.nonEmpty))) {
           grants.filter(_("status") == "UNKNOWN").foreach { grant =>
             val proof = s"{\"decision\":\"REPLAY_WITHOUT_TARGET_BATCH\",\"grantId\":\"${grant("grant_id")}\",\"taskId\":\"${grant("task_id")}\",\"oldOwner\":\"$attempt\"}"
             val audit = connection.prepareStatement(
@@ -348,6 +358,24 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
             val releaseLease = connection.prepareStatement(
               "UPDATE pekko_cdc_task_lease_v1 SET state='RELEASED',release_state='RELEASED',release_proof=?,lease_expires_at=NULL,updated_at=?,control_revision=control_revision+1 WHERE task_id=? AND state IN ('UNKNOWN','ACTIVE','DRAINING') AND (lease_expires_at IS NULL OR lease_expires_at<=?)")
             try { releaseLease.setString(1, proof); releaseLease.setLong(2, now); releaseLease.setString(3, grant("task_id")); releaseLease.setLong(4, now); releaseLease.executeUpdate() } finally releaseLease.close()
+          }
+          abandoned.foreach { task =>
+            // grant_id is bounded to 64 characters while task ids are 64-char
+            // digests. Keep a deterministic, namespaced audit id within that
+            // storage contract.
+            val syntheticGrant = "abandoned:" + task("task_id").take(52)
+            val proof = s"{\"decision\":\"REPLAY_ABANDONED_TASK\",\"taskId\":\"${task("task_id")}\",\"oldOwner\":\"$attempt\"}"
+            val audit = connection.prepareStatement(
+              "INSERT INTO pekko_cdc_unknown_recovery_v1(grant_id,task_id,old_owner_attempt,decision,proof_json,created_at) VALUES(?,?,?,?,?,?) " +
+                "ON DUPLICATE KEY UPDATE decision=VALUES(decision),proof_json=VALUES(proof_json)")
+            try {
+              audit.setString(1, syntheticGrant); audit.setString(2, task("task_id")); audit.setString(3, attempt)
+              audit.setString(4, "REPLAY_ABANDONED_TASK"); audit.setString(5, proof); audit.setLong(6, now); audit.executeUpdate()
+            } finally audit.close()
+            val resetTask = connection.prepareStatement(
+              "UPDATE pekko_cdc_tasks_v1 SET phase='QUEUED',runtime_health='WAITING',release_status='RELEASED',failure_code='ABANDONED_TASK_REQUEUED',grant_id=NULL,grant_owner=NULL,schedulable=TRUE,due_at=?,observed_at=? " +
+                "WHERE task_id=? AND desired_state='RUNNING' AND phase NOT IN ('CANCELED','COMPLETED') AND release_status='RELEASED' AND grant_id IS NULL")
+            try { resetTask.setLong(1, now); resetTask.setLong(2, now); resetTask.setString(3, task("task_id")); resetTask.executeUpdate() } finally resetTask.close()
           }
           val stopWorker = connection.prepareStatement(
             "UPDATE pekko_cdc_worker_v1 SET state='STOPPED',lease_expires_at=NULL,updated_at=?,control_revision=control_revision+1 WHERE worker_id=? AND state<>'STOPPED'")

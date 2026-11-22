@@ -304,6 +304,29 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       taskStore.ownerStatus shouldBe "STOPPED"
     }
 
+    "must requeue a released task left in SCANNING after an expired worker owner" in {
+      val url = database()
+      val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits())
+      taskStore.initialize()
+      taskStore.beginOwner("worker-abandoned", 1L) shouldBe true
+      val accepted = taskStore.submit(CdcTaskRequest("request-abandoned", "capture", "orders", "g1", "orders_target"), 1L)
+      val leases = new CdcRuntimeLeaseStore(() => DriverManager.getConnection(url))
+      val worker = leases.registerWorker("worker-abandoned", "incarnation", "{\"snapshotSteps\":1}")
+      val task = leases.claimTasks(worker, 1).head
+      leases.releaseTask(task, "step-released", "RELEASED") shouldBe true
+      val connection = DriverManager.getConnection(url)
+      try {
+        val taskState = connection.prepareStatement("UPDATE pekko_cdc_tasks_v1 SET phase='SCANNING',runtime_health='UNKNOWN',release_status='RELEASED',schedulable=FALSE WHERE task_id=?")
+        try { taskState.setString(1, accepted.task.taskId); taskState.executeUpdate() shouldBe 1 } finally taskState.close()
+        val workerState = connection.prepareStatement("UPDATE pekko_cdc_worker_v1 SET lease_expires_at=0 WHERE worker_id=?")
+        try { workerState.setString(1, worker.workerId); workerState.executeUpdate() shouldBe 1 } finally workerState.close()
+      } finally connection.close()
+
+      leases.recoverExpiredOwner(System.currentTimeMillis()) shouldBe true
+      val replacement = leases.registerWorker("worker-replacement", "incarnation", "{\"snapshotSteps\":1}")
+      leases.claimTasks(replacement, 1).map(_.taskId) shouldBe Vector(accepted.task.taskId)
+    }
+
     "must project task lifecycle changes into the capture subscription view" in {
       val url = database()
       val taskStore = new CdcTaskStore(() => DriverManager.getConnection(url), CdcPlatformLimits())

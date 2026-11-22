@@ -117,8 +117,8 @@ spec:
                   kubectl -n "$TARGET_NAMESPACE" set image deployment/"$WORKER_DEPLOYMENT" cdc-worker="$worker_image"
                   kubectl -n "$TARGET_NAMESPACE" rollout status deployment/"$CAPTURE_DEPLOYMENT" --timeout=300s
                   kubectl -n "$TARGET_NAMESPACE" rollout status deployment/"$WORKER_DEPLOYMENT" --timeout=300s
-                  kubectl -n "$TARGET_NAMESPACE" get deployment "$CAPTURE_DEPLOYMENT" -o jsonpath='{.metadata.name}{"="}{.spec.template.spec.containers[0].image}{"\n"}'
-                  kubectl -n "$TARGET_NAMESPACE" get deployment "$WORKER_DEPLOYMENT" -o jsonpath='{.metadata.name}{"="}{.spec.template.spec.containers[0].image}{"\n"}'
+                  kubectl -n "$TARGET_NAMESPACE" get deployment "$CAPTURE_DEPLOYMENT" -o wide
+                  kubectl -n "$TARGET_NAMESPACE" get deployment "$WORKER_DEPLOYMENT" -o wide
                 '''
               }
             }
