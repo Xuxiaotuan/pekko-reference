@@ -26,7 +26,8 @@ val pekkoPersistenceJdbcVersion = "1.1.1"
 val debeziumVersion      = "3.6.1.Final"
 
 // JSON和序列化
-val jacksonVersion       = "2.17.2"      // 统一Jackson版本，避免冲突
+val jacksonVersion       = "2.21.2"      // 与 Pekko 生产运行时保持一致，避免模块版本漂移
+val jacksonAnnotationsVersion = "2.21"   // Jackson Core 2.21.x 的 annotations 发布版本
 val sprayJsonVersion     = "1.3.6"
 
 // 日志系统
@@ -138,9 +139,11 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("server"))
         "com.google.protobuf" % "protobuf-java" % protobufVersion,
         "com.fasterxml.jackson.core"     % "jackson-databind"              % jacksonVersion,
         "com.fasterxml.jackson.core"     % "jackson-core"                  % jacksonVersion,
-        "com.fasterxml.jackson.core"     % "jackson-annotations"           % jacksonVersion,
+        "com.fasterxml.jackson.core"     % "jackson-annotations"           % jacksonAnnotationsVersion,
         "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310"       % jacksonVersion,
         "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8"         % jacksonVersion,
+        "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor"       % jacksonVersion,
+        "com.fasterxml.jackson.module"  %% "jackson-module-scala"            % jacksonVersion,
         "com.fasterxml.jackson.module"  %% "jackson-module-parameter-names" % jacksonVersion
       ),
       
@@ -242,7 +245,7 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("server"))
       // Jackson显式依赖 - 确保版本一致性
       "com.fasterxml.jackson.core"   % "jackson-databind"     % jacksonVersion,
       "com.fasterxml.jackson.core"   % "jackson-core"         % jacksonVersion,
-      "com.fasterxml.jackson.core"   % "jackson-annotations"  % jacksonVersion,
+      "com.fasterxml.jackson.core"   % "jackson-annotations"  % jacksonAnnotationsVersion,
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
       
       // ================================
