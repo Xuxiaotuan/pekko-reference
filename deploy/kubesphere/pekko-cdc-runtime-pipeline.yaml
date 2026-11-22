@@ -32,9 +32,10 @@ spec:
 
         environment {
           REGISTRY = '100.97.53.78:5001'
-          IMAGE_REPOSITORY = 'xxt/pekko-cdc-runtime'
+          CAPTURE_IMAGE_REPOSITORY = 'xxt/pekko-cdc-capture'
+          WORKER_IMAGE_REPOSITORY = 'xxt/pekko-cdc-worker'
           SOURCE_REPOSITORY = 'https://github.com/Xuxiaotuan/pekko-reference.git'
-          SOURCE_BRANCH = 'feature/pekkosync-mvp-cleanup-datafusion'
+          SOURCE_BRANCH = 'master'
           TARGET_NAMESPACE = 'bigdata-lab'
           CAPTURE_DEPLOYMENT = 'pekko-cdc-capture'
           WORKER_DEPLOYMENT = 'pekko-cdc-worker'
@@ -76,7 +77,7 @@ spec:
                   export COURSIER_CACHE="/root/.m2/coursier"
                   sbt -batch 'project pekko-server' Compile/compile \
                     'testOnly cn.xuyinyin.magic.cdc.platform.CdcJdbcSpec cn.xuyinyin.magic.cdc.platform.CdcPlatformRuntimeSpec cn.xuyinyin.magic.cdc.runtime.CdcRuntimeLeaseStoreSpec cn.xuyinyin.magic.connectors.mysql.sink.MySQLCdcApplySinkNodeSpec'
-                  sbt -batch 'project pekko-server' dockerBuild
+                  sbt -batch 'pekko-cdc-capture/Docker/publishLocal' 'pekko-cdc-worker/Docker/publishLocal'
                 '''
               }
             }
@@ -88,12 +89,15 @@ spec:
                 withCredentials([usernamePassword(credentialsId: 'xxt-harbor', usernameVariable: 'HARBOR_USER', passwordVariable: 'HARBOR_PASSWORD')]) {
                   sh '''
                     set -eu
-                    image="$REGISTRY/$IMAGE_REPOSITORY"
+                    capture_image="$REGISTRY/$CAPTURE_IMAGE_REPOSITORY"
+                    worker_image="$REGISTRY/$WORKER_IMAGE_REPOSITORY"
                     tag="build-${BUILD_NUMBER}-$(cat .git-short)"
                     echo "$HARBOR_PASSWORD" | docker login "$REGISTRY" -u "$HARBOR_USER" --password-stdin
-                    docker tag pekko-reference:0.1 "$image:$tag"
-                    docker push "$image:$tag"
-                    printf '%s\n' "$image:$tag" > .image
+                    docker tag pekko-cdc-capture:0.1 "$capture_image:$tag"
+                    docker tag pekko-cdc-worker:0.1 "$worker_image:$tag"
+                    docker push "$capture_image:$tag"
+                    docker push "$worker_image:$tag"
+                    printf '%s\n%s\n' "$capture_image:$tag" "$worker_image:$tag" > .image
                   '''
                 }
               }
@@ -105,11 +109,12 @@ spec:
               container('maven') {
                 sh '''
                   set -eu
-                  image="$(cat .image)"
+                  capture_image="$(sed -n '1p' .image)"
+                  worker_image="$(sed -n '2p' .image)"
                   kubectl apply -k deploy/kubernetes/bigdata-lab/cdc-runtime
                   kubectl -n "$TARGET_NAMESPACE" scale deployment/pekko-cdc-runtime --replicas=0 >/dev/null 2>&1 || true
-                  kubectl -n "$TARGET_NAMESPACE" set image deployment/"$CAPTURE_DEPLOYMENT" cdc-capture="$image"
-                  kubectl -n "$TARGET_NAMESPACE" set image deployment/"$WORKER_DEPLOYMENT" cdc-worker="$image"
+                  kubectl -n "$TARGET_NAMESPACE" set image deployment/"$CAPTURE_DEPLOYMENT" cdc-capture="$capture_image"
+                  kubectl -n "$TARGET_NAMESPACE" set image deployment/"$WORKER_DEPLOYMENT" cdc-worker="$worker_image"
                   kubectl -n "$TARGET_NAMESPACE" rollout status deployment/"$CAPTURE_DEPLOYMENT" --timeout=300s
                   kubectl -n "$TARGET_NAMESPACE" rollout status deployment/"$WORKER_DEPLOYMENT" --timeout=300s
                   kubectl -n "$TARGET_NAMESPACE" get deployment "$CAPTURE_DEPLOYMENT" -o jsonpath='{.metadata.name}{"="}{.spec.template.spec.containers[0].image}{"\n"}'

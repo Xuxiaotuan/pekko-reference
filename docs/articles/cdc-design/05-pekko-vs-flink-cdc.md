@@ -9,6 +9,20 @@
 >
 > **证据口径**：Pekko 侧引用当前源码和已保存实验；Flink 侧按 Flink CDC 3.6.0 的源码与公开运行模型对照。本轮没有同数据集、同 Sink、同故障切点的 Flink 基准，因此不把架构比较写成性能结论。
 
+
+## 本系列的运行时基线
+
+本文以 `master` 分支的两模块 CDC Runtime 为基线。生产模块只有 `pekko-cdc-capture` 和 `pekko-cdc-worker`。Capture 运行一个副本并持有 SharedMySQLCapture。Worker 至少运行两个副本，通过 TaskLease 创建独立的 TableActor 和 materialized TableCdcGraph，不创建第二个 Capture Reader。`pekko-server` 只表示共享兼容库和历史测试入口。
+
+```mermaid
+flowchart LR
+    C[pekko-cdc-capture x1] --> L[Capture lease]
+    L --> R[SharedMySQLCapture]
+    R --> W[pekko-cdc-worker]
+    W --> G[TableActor + TableCdcGraph]
+    G --> T[T/J/D]
+```
+
 Flink 对照按 Flink CDC 3.6.0 的运行模型和源码阅读组织；本轮没有在同一数据集、同一 Sink 和同一故障切点上重跑 Flink。Flink CDC 3.7.0 与 Paimon 实验属于另一组材料，不混入本文的性能或可靠性结论。
 
 > “Pekko 比 Flink 更适合 70 万张表”不是一个可以直接回答的命题。两者首先解决的是不同层次的问题：Flink CDC 提供成熟的流式运行时、Checkpoint 和连接器生态；Pekko CDC 把常驻任务的生命周期、表级状态和有限资源准入放到了 Actor 与持久化控制面中。

@@ -4,7 +4,7 @@ name: cdc-runtime
 
 on:
   push:
-    branches: [main, feature/pekkosync-mvp-cleanup-datafusion]
+    branches: [main, master]
     paths:
       - 'server/**'
       - 'build.sbt'
@@ -69,19 +69,18 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - run: sbt 'project pekko-server' dockerBuild
+      - run: sbt 'pekko-cdc-capture/Docker/publishLocal' 'pekko-cdc-worker/Docker/publishLocal'
       - run: |
-          image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-runtime:${GITHUB_SHA}"
-          docker tag pekko-reference:0.1 "$image"
-          docker push "$image"
+          capture_image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-capture:${GITHUB_SHA}"
+          worker_image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-worker:${GITHUB_SHA}"
+          docker tag pekko-cdc-capture:0.1 "$capture_image"
+          docker tag pekko-cdc-worker:0.1 "$worker_image"
+          docker push "$capture_image"
+          docker push "$worker_image"
 
   deploy:
-    # The workflow currently lives on the CDC feature branch rather than the
-    # repository default branch, so GitHub does not render a manual dispatch
-    # button.  Keep ordinary pushes non-deploying and allow one explicit,
-    # auditable marker for this branch; workflow_dispatch remains supported
-    # once the workflow is installed on the default branch.
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.deploy) || (github.event_name == 'push' && github.ref == 'refs/heads/feature/pekkosync-mvp-cleanup-datafusion' && contains(github.event.head_commit.message, '[deploy-cdc-runtime]')) }}
+    # Deployment is explicit on the CDC master baseline.
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.deploy) || (github.event_name == 'push' && github.ref == 'refs/heads/master' && contains(github.event.head_commit.message, '[deploy-cdc-runtime]')) }}
     needs: image
     runs-on: ubuntu-24.04
     environment: cdc-runtime
@@ -99,14 +98,19 @@ jobs:
           echo "KUBECONFIG=$RUNNER_TEMP/kube/config" >> "$GITHUB_ENV"
       - name: Validate isolated manifest
         run: |
-          image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-runtime:${GITHUB_SHA}"
+          capture_image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-capture:${GITHUB_SHA}"
+          worker_image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-worker:${GITHUB_SHA}"
           kubectl kustomize deploy/kubernetes/bigdata-lab/cdc-runtime \
-            | sed "s#ghcr.io/xuxiaotuan/pekko-reference/cdc-runtime:dev#$image#g" \
+            | sed -e "s#ghcr.io/xuxiaotuan/pekko-reference/cdc-capture:dev#$capture_image#g" \
+                  -e "s#ghcr.io/xuxiaotuan/pekko-reference/cdc-worker:dev#$worker_image#g" \
             | kubectl apply --dry-run=server -f -
       - name: Apply isolated CDC Runtime only
         run: |
-          image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-runtime:${GITHUB_SHA}"
+          capture_image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-capture:${GITHUB_SHA}"
+          worker_image="ghcr.io/${GITHUB_REPOSITORY,,}/cdc-worker:${GITHUB_SHA}"
           kubectl kustomize deploy/kubernetes/bigdata-lab/cdc-runtime \
-            | sed "s#ghcr.io/xuxiaotuan/pekko-reference/cdc-runtime:dev#$image#g" \
+            | sed -e "s#ghcr.io/xuxiaotuan/pekko-reference/cdc-capture:dev#$capture_image#g" \
+                  -e "s#ghcr.io/xuxiaotuan/pekko-reference/cdc-worker:dev#$worker_image#g" \
             | kubectl apply --server-side --field-manager=cdc-runtime-pipeline -f -
-          kubectl -n bigdata-lab rollout status deployment/pekko-cdc-runtime --timeout=180s
+          kubectl -n bigdata-lab rollout status deployment/pekko-cdc-capture --timeout=180s
+          kubectl -n bigdata-lab rollout status deployment/pekko-cdc-worker --timeout=180s

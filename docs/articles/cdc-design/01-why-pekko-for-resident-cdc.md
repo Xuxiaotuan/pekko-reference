@@ -11,6 +11,20 @@
 
 ## 0 结论
 
+
+## 本系列的运行时基线
+
+本文以 `master` 分支的两模块 CDC Runtime 为基线。生产模块只有 `pekko-cdc-capture` 和 `pekko-cdc-worker`。Capture 运行一个副本并持有 SharedMySQLCapture。Worker 至少运行两个副本，通过 TaskLease 创建独立的 TableActor 和 materialized TableCdcGraph，不创建第二个 Capture Reader。`pekko-server` 只表示共享兼容库和历史测试入口。
+
+```mermaid
+flowchart LR
+    C[pekko-cdc-capture x1] --> L[Capture lease]
+    L --> R[SharedMySQLCapture]
+    R --> W[pekko-cdc-worker]
+    W --> G[TableActor + TableCdcGraph]
+    G --> T[T/J/D]
+```
+
 这个问题首先是资源模型问题，其次才是 Actor API 问题。当前实现把三个数量分开：
 
 - `N`：目录中登记的表数，可能是 700,000；

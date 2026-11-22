@@ -273,13 +273,50 @@ lazy val pekkoServer = Project(id = "pekko-server", base = file("server"))
     )
   )
 
+// The deployable CDC roles are separate application modules.  They reuse the
+// server project as the compatibility/core library while exposing distinct
+// entry points and container images.
+def cdcRoleSettings(moduleName: String, entryPoint: String) = Seq(
+  name := moduleName,
+  Compile / mainClass := Some(entryPoint),
+  Universal / javaOptions ++= Seq("-J-Xms256m", "-J-Xmx512m"),
+  Docker / packageName := moduleName,
+  Docker / version := projectVersion,
+  Docker / daemonUser := moduleName,
+  dockerBaseImage := "eclipse-temurin:17-jre",
+  dockerExposedPorts := Seq(8080),
+  dockerUpdateLatest := true,
+  dockerCommands ++= Seq(
+    Cmd("USER", "root"),
+    Cmd("RUN", "ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime"),
+    Cmd("RUN", "echo 'Asia/Shanghai' > /etc/timezone"),
+    Cmd("USER", moduleName)
+  )
+)
+
+lazy val cdcCapture = Project(id = "pekko-cdc-capture", base = file("modules/capture"))
+  .enablePlugins(JavaServerAppPackaging, DockerPlugin, AshScriptPlugin)
+  .dependsOn(pekkoServer)
+  .settings(commonSettings ++ cdcRoleSettings(
+    "pekko-cdc-capture",
+    "cn.xuyinyin.magic.cdc.capture.CaptureMain"))
+
+lazy val cdcWorker = Project(id = "pekko-cdc-worker", base = file("modules/worker"))
+  .enablePlugins(JavaServerAppPackaging, DockerPlugin, AshScriptPlugin)
+  .dependsOn(pekkoServer)
+  .settings(commonSettings ++ cdcRoleSettings(
+    "pekko-cdc-worker",
+    "cn.xuyinyin.magic.cdc.worker.WorkerMain"))
+
 // ================================
 // 根项目配置
 // ================================
 lazy val root = (project in file("."))
   .settings(commonSettings)
   .aggregate(
-    pekkoServer
+    pekkoServer,
+    cdcCapture,
+    cdcWorker
   )
   .settings(
     name := projectName,
@@ -292,9 +329,11 @@ lazy val root = (project in file("."))
     addCommandAlias("runServer", "pekko-server/run"),
     addCommandAlias("runCdcRuntime", "pekko-server/run"),
     addCommandAlias("runCdcStandalone", "pekko-server/runMain cn.xuyinyin.magic.cdc.runtime.CdcRuntimeMain"),
+    addCommandAlias("runCdcCapture", "pekko-cdc-capture/run"),
+    addCommandAlias("runCdcWorker", "pekko-cdc-worker/run"),
     addCommandAlias("testAll", "test"),
-    addCommandAlias("dockerBuild", "pekko-server/Docker/publishLocal"),
-    addCommandAlias("dockerPublish", "pekko-server/Docker/publish"),
+    addCommandAlias("dockerBuild", "pekko-cdc-capture/Docker/publishLocal; pekko-cdc-worker/Docker/publishLocal"),
+    addCommandAlias("dockerPublish", "pekko-cdc-capture/Docker/publish; pekko-cdc-worker/Docker/publish"),
     addCommandAlias("checkDeps", "pekko-server/dependencyTree"),
     addCommandAlias("cleanAll", "clean; pekko-server/clean")
   )

@@ -9,6 +9,20 @@
 >
 > **证据口径**：源码结论来自当前 `BootstrapRunner`、`SharedMySQLCapture` 和 Split 调用链；实验结果只对应列出的真实 MySQL、Actor Journal、Sink 和固定切点；历史材料不会被当前提交自动继承。
 
+
+## 本系列的运行时基线
+
+本文以 `master` 分支的两模块 CDC Runtime 为基线。生产模块只有 `pekko-cdc-capture` 和 `pekko-cdc-worker`。Capture 运行一个副本并持有 SharedMySQLCapture。Worker 至少运行两个副本，通过 TaskLease 创建独立的 TableActor 和 materialized TableCdcGraph，不创建第二个 Capture Reader。`pekko-server` 只表示共享兼容库和历史测试入口。
+
+```mermaid
+flowchart LR
+    C[pekko-cdc-capture x1] --> L[Capture lease]
+    L --> R[SharedMySQLCapture]
+    R --> W[pekko-cdc-worker]
+    W --> G[TableActor + TableCdcGraph]
+    G --> T[T/J/D]
+```
+
 本文的 LOW/HIGH 历史实验来自各自冻结版本；当前源码阅读基线是 `b17b9d1659f923fc256e3b09ad73777ac7acc677`。除非段落明确写出“本轮重跑”，历史 I01—I24 的结果只说明当时版本和切点，不自动升级为当前提交的端到端结果。
 
 > 本文回答一个经常被简化的问题：一张新表先做全量，再追上实时变更，究竟需要哪些边界？答案不是“读完快照再启动 binlog”，而是把订阅意图、读视图、窗口回填、日志回放和流式发布串成一条可恢复状态机。

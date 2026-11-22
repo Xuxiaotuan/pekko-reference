@@ -15,6 +15,20 @@
 
 ## 0 先固定问题：接受不是一个回调返回值
 
+
+## 本系列的运行时基线
+
+本文以 `master` 分支的两模块 CDC Runtime 为基线。生产模块只有 `pekko-cdc-capture` 和 `pekko-cdc-worker`。Capture 运行一个副本并持有 SharedMySQLCapture。Worker 至少运行两个副本，通过 TaskLease 创建独立的 TableActor 和 materialized TableCdcGraph，不创建第二个 Capture Reader。`pekko-server` 只表示共享兼容库和历史测试入口。
+
+```mermaid
+flowchart LR
+    C[pekko-cdc-capture x1] --> L[Capture lease]
+    L --> R[SharedMySQLCapture]
+    R --> W[pekko-cdc-worker]
+    W --> G[TableActor + TableCdcGraph]
+    G --> T[T/J/D]
+```
+
 一次 MySQL UPDATE 至少要经过四个边界：源事件已经被识别，事件组已经写入 L，目标事务 T 已经有可核验的 ledger，Journal J 和源 offset D 之间建立了可重读的交接。把 `markProcessedAndFinished()`、目标 `COMMIT` 或当前行值单独当成“接受”，都会把不同存储域的事实混在一起。
 
 对事件组 `g`，本文使用下面的局部判定：

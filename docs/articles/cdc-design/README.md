@@ -1,5 +1,19 @@
 # 从 Flink CDC 到 Pekko：共享捕获、全量转流与恢复协议
 
+## 当前代码基线与两模块运行模型
+
+本系列统一以 `master` 分支的 CDC 代码为基线。生产部署只有两个应用模块：
+
+```text
+pekko-cdc-capture  1 replica
+    └── one SharedMySQLCapture owner per capture domain
+
+pekko-cdc-worker   ≥ 2 replicas
+    └── TaskLease → TableActor → materialized TableCdcGraph
+```
+
+Capture 使用单副本持有 `SharedMySQLCapture`。Worker 至少运行两个副本，只竞争任务租约，不持有源端 Reader。文章中的历史 `pekko-server` 路径表示共享兼容库，不再表示第三个生产运行时。
+
 一个 MySQL 实例有 70 多万张表，按需选择其中几张，先同步已有数据再持续追实时，并允许不停其他表地增加、取消订阅。本系列围绕这个目标解释当前代码、实验和剩余设计。70 万是业务目录背景，不是已完成的活跃复制规模验收。
 
 2026-10-27 的修订把持久任务索引、有界步骤和平台入口接回原来的五篇主线：资源模型与执行实体 → 真实 UPDATE 源码链路 → T/J/D 恢复协议 → LOW/HIGH 与批转流 → 与 Flink CDC 的具体取舍。源码变化、当前实测和历史材料分别标识；Actor 机制、旧 T/J/D 推导及失败仍保留在独立[技术附录](appendices/README.md)。文章更新不自动改变旧实验的版本或结果。

@@ -5,7 +5,7 @@ metadata:
   namespace: bigdata-lab
   labels: {app: pekko-cdc-worker}
 spec:
-  replicas: 1
+  replicas: 2
   strategy: {type: Recreate}
   selector: {matchLabels: {app: pekko-cdc-worker}}
   template:
@@ -16,9 +16,9 @@ spec:
       imagePullSecrets: [{name: xxt-harbor-pull}]
       containers:
         - name: cdc-worker
-          image: pekko-cdc-runtime:dev
+          image: pekko-cdc-worker:dev
           imagePullPolicy: IfNotPresent
-          command: ["/opt/docker/bin/cdc-runtime"]
+          command: ["/opt/docker/bin/pekko-cdc-worker"]
           envFrom: [{secretRef: {name: pekko-cdc-runtime-config}}]
           env:
             - name: JAVA_OPTS

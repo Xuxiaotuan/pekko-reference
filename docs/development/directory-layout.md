@@ -1,6 +1,8 @@
 # 目录与兼容入口
 
-当前默认入口是 `cn.xuyinyin.magic.cdc.runtime.CdcRuntimeMain`。管理前端已从产品源码移除；早期前端试验保存在 `server/src/test/examples/legacy-console`。SBT 项目 ID 仍为 `pekko-server`。
+当前 CDC 基线是 `master` 分支。两个生产 SBT 应用模块是 `pekko-cdc-capture` 和 `pekko-cdc-worker`。核心兼容代码暂存于 `pekko-server`，不作为生产部署模块。Capture 模块的默认入口是 `cn.xuyinyin.magic.cdc.capture.CaptureMain`，Worker 模块的默认入口是 `cn.xuyinyin.magic.cdc.worker.WorkerMain`。管理前端已从产品源码移除；早期前端试验保存在 `server/src/test/examples/legacy-console`。
+
+Capture 部署运行一个副本并持有 SharedMySQLCapture。Worker 至少运行两个副本，通过 Control DB lease 竞争任务，任务 Graph 与 Capture Reader 分离。
 
 CDC 平台协调与任务控制位于 `server/src/main/scala/cn/xuyinyin/magic/cdc/platform`，引导流程位于 `cdc/bootstrap`，检查点位于 `cdc/checkpoint`，Split 状态与读取协调位于 `cdc/snapshot`，启动入口位于 `cdc/runtime`，旧 Workflow 节点接口和静态快照执行器位于 `cdc/compat/nodes`，MySQL 捕获与应用位于 `connectors/mysql`。旧 Workflow HTTP、Cron、Sharding 和 Server 仅保留为测试材料，不属于生产 Compile 源集。
 

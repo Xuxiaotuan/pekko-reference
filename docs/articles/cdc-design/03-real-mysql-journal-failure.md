@@ -11,6 +11,20 @@
 
 ## 0 先看真实故障
 
+
+## 本系列的运行时基线
+
+本文以 `master` 分支的两模块 CDC Runtime 为基线。生产模块只有 `pekko-cdc-capture` 和 `pekko-cdc-worker`。Capture 运行一个副本并持有 SharedMySQLCapture。Worker 至少运行两个副本，通过 TaskLease 创建独立的 TableActor 和 materialized TableCdcGraph，不创建第二个 Capture Reader。`pekko-server` 只表示共享兼容库和历史测试入口。
+
+```mermaid
+flowchart LR
+    C[pekko-cdc-capture x1] --> L[Capture lease]
+    L --> R[SharedMySQLCapture]
+    R --> W[pekko-cdc-worker]
+    W --> G[TableActor + TableCdcGraph]
+    G --> T[T/J/D]
+```
+
 在一次长 ACK 链的真实运行中，`pekko_capture_log` 已经积累 7,110 条 ACK，旧实现的 4,096 节点预算使 GC 返回 `ACK proof budget exceeded`。业务行当时仍可对账相等，但系统没有资格删除 L，因为“D 有值”和“D 的 ancestry 已被证明”不是同一件事。
 
 另一类窗口更接近业务事故：目标事务 T 已经提交，Journal J 还停在旧 revision，进程在两者之间退出。重启时系统必须先隔离旧 owner，再核验目标 ledger、Journal receipt、ACK proof 和 source fence；只有这些证据属于同一代，才允许继续，否则保持 `UNKNOWN/PAUSED`。

@@ -1,5 +1,29 @@
 # Pekko CDC Runtime
 
+> **当前基线**：CDC 实现以本仓库的 `master` 分支为唯一基线。当前远端历史默认分支仍是旧 Workflow 工程，不能作为 CDC 代码基线。`master` 的生产部署由两个应用模块组成：`pekko-cdc-capture` 和 `pekko-cdc-worker`。
+
+## 两个生产模块
+
+```text
+pekko-cdc-capture  1 个副本
+  └── 每个 MySQL capture domain 一个 SharedMySQLCapture
+
+pekko-cdc-worker   至少 2 个副本
+  └── 领取 TaskLease
+      └── materialize 独立 TableCdcGraph
+          └── TableActor 管理 Graph 生命周期
+```
+
+Capture 保持单副本并由 Capture lease 保护 Reader。Worker 至少运行两个副本，通过 Control DB 竞争任务租约，扩容不会复制 Capture Reader。
+
+构建两个生产模块：
+
+```bash
+sbt 'pekko-cdc-capture/Docker/publishLocal' 'pekko-cdc-worker/Docker/publishLocal'
+```
+
+核心共享实现仍位于 `pekko-server` 兼容库中，两个模块只提供独立应用入口和镜像。旧 Workflow、前端和历史持久化迁移不属于这两个生产模块。
+
 项目目标是面向单 MySQL 实例的按需常驻 CDC：通过共享 Reader 捕获变更，为新增表执行分页全量与增量衔接，再持续同步到目标。70 万张表是目标场景，尚不是 70 万张真实物理表的容量验收结果。
 
 默认启动类是 `cn.xuyinyin.magic.cdc.runtime.CdcRuntimeMain`，只装配 CDC 服务和 `/api/v1/cdc-*` 路由。原 Workflow HTTP、Cron 和管理前端不属于当前入口。历史实验和失败证据仍在 `docs/experiments`，旧前端试验保留在 `server/src/test/examples/legacy-console`。

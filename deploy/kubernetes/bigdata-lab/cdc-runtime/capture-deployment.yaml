@@ -16,9 +16,9 @@ spec:
       imagePullSecrets: [{name: xxt-harbor-pull}]
       containers:
         - name: cdc-capture
-          image: pekko-cdc-runtime:dev
+          image: pekko-cdc-capture:dev
           imagePullPolicy: IfNotPresent
-          command: ["/opt/docker/bin/cdc-capture-runtime-main"]
+          command: ["/opt/docker/bin/pekko-cdc-capture"]
           envFrom: [{secretRef: {name: pekko-cdc-runtime-config}}]
           env:
             - name: JAVA_OPTS

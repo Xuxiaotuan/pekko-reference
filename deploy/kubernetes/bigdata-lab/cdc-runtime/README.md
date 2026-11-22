@@ -1,5 +1,7 @@
 # 独立 CDC Runtime 部署
 
+该目录部署两个生产模块：`pekko-cdc-capture` 与 `pekko-cdc-worker`。Capture 运行 1 个副本并打开 SharedMySQLCapture，Worker 运行至少 2 个副本并可通过 HPA 扩展。
+
 这个目录只部署 `CdcRuntimeMain`，不修改 `pekko-cdc-single`、`pekko-workflow` 或其数据库。它要求部署方先创建同名 Secret `pekko-cdc-runtime-config`，至少提供：
 
 `CDC_SOURCE_HOST`、`CDC_SOURCE_PORT`、`CDC_SOURCE_DATABASE`、`CDC_SOURCE_USER`、`CDC_SOURCE_PASSWORD`、`CDC_SOURCE_LINEAGE`、`CDC_STATE_HOST`、`CDC_STATE_PORT`、`CDC_STATE_DATABASE`、`CDC_STATE_USER`、`CDC_STATE_PASSWORD`、`CDC_STATE_LINEAGE`、`CDC_STATE_SDK_USER`、`CDC_STATE_SDK_PASSWORD`。

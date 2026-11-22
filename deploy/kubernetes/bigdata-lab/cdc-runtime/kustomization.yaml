@@ -16,6 +16,9 @@ configMapGenerator:
 generatorOptions:
   disableNameSuffixHash: true
 images:
-  - name: pekko-cdc-runtime
-    newName: ghcr.io/xuxiaotuan/pekko-reference/cdc-runtime
+  - name: pekko-cdc-capture
+    newName: ghcr.io/xuxiaotuan/pekko-reference/cdc-capture
+    newTag: dev
+  - name: pekko-cdc-worker
+    newName: ghcr.io/xuxiaotuan/pekko-reference/cdc-worker
     newTag: dev
