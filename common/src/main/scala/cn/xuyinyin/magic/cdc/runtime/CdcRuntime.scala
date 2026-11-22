@@ -63,7 +63,7 @@ object CdcRuntime {
     def observe(): Unit = try {
       if (status() == "STOPPED") result.trySuccess(Done)
       else if (System.nanoTime() >= deadline) result.tryFailure(new TimeoutException("CDC shutdown remains unconfirmed"))
-      else system.scheduler.scheduleOnce(100.millis, new Runnable { def run(): Unit = observe() })
+      else system.scheduler.scheduleOnce(100.millis, () => observe())
     } catch { case NonFatal(error) => result.tryFailure(error) }
     try { requestStop(); observe() }
     catch { case NonFatal(error) => result.tryFailure(error) }

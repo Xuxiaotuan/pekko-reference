@@ -293,9 +293,9 @@ final class CdcCaptureRuntime(settings: CdcPlatformSettings, leases: CdcRuntimeL
       }
     }
     heartbeat.scheduleWithFixedDelay(
-      new Runnable {
-        def run(): Unit = try renewLeases()
-        catch { case error: Throwable => logger.warn("CDC capture heartbeat failed", error) }
+      () => try renewLeases()
+      catch {
+        case error: Throwable => logger.warn("CDC capture heartbeat failed", error)
       },
       1000L,
       1000L,
