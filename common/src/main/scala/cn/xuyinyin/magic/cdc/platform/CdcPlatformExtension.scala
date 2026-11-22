@@ -37,7 +37,10 @@ final class CdcPlatformExtension(system: ActorSystem[_]) extends Extension {
     val store = new CdcTaskStore(
       () => ManagedCdcJdbc.open(CdcJdbc.withTimeouts(state.jdbcUrl), state.username, state.password, "control", managed.nonEmpty),
       settings.limits,
-      requireCaptureReadiness = true)
+      // A worker-only runtime consumes the CaptureRuntime projection. The
+      // combined standalone entry owns its SharedMySQLCapture locally and
+      // must gate dispatch on that reader's own admission evidence instead.
+      requireCaptureReadiness = settings.runtimeRole == "worker")
     val runtimeLeases = new cn.xuyinyin.magic.cdc.runtime.CdcRuntimeLeaseStore(() =>
       ManagedCdcJdbc.open(CdcJdbc.withTimeouts(state.jdbcUrl), state.username, state.password, "control", managed.nonEmpty))
     val recover = managed
@@ -70,7 +73,10 @@ final class CdcPlatformExtension(system: ActorSystem[_]) extends Extension {
       managedOwner = managed,
       recoverManaged = recover,
       guardianCheck = guardianCheck,
-      runtimeLeases = Some(runtimeLeases))
+      // The combined standalone entry executes grants in its own bounded
+      // scheduler. WorkerRuntime leases and their heartbeat belong only to
+      // the split worker role, which registers an explicit worker identity.
+      runtimeLeases = if (settings.runtimeRole == "worker") Some(runtimeLeases) else None)
     CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate, "stop-cdc-platform") { () =>
       // UNKNOWN remains in the durable owner/grant records; process exit is never a release proof.
       runtime.stopRuntime().map(_ => Done)(ExecutionContext.parasitic)

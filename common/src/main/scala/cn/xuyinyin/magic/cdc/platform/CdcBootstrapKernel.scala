@@ -67,7 +67,11 @@ final class CdcBootstrapKernel(
     // A live binlog socket is only transport readiness. BootstrapRunner must
     // wait for the persisted checkpoint/ACK admission guard as well, otherwise
     // it repeatedly returns QUEUED while the recovery Reader is already alive.
-    def ready    = reader.bootstrapReady
+    // The durable L/D admission proof and a live binlog socket are both
+    // required before the capture can enter the scheduler's healthy set.
+    // Treating the proof alone as ready leaves a short window where tasks are
+    // accepted but no capture is dispatchable.
+    def ready = reader.bootstrapReady && reader.streamingConnected.contains(true)
     while (!ready && System.nanoTime() < deadline) {
       reader.startupEvidence
       if (!ready) Thread.sleep(50L)
@@ -267,7 +271,15 @@ final class CdcBootstrapKernel(
       }
       if (stopping.get()) return
       if (deferred.contains(cfg.id)) synchronized { recoveryOnly += cfg.id }
-      else if (captureEnabled) reader.start()
+      else if (captureEnabled) {
+        // Do not publish ADMISSION_READY merely because the Debezium engine
+        // accepted the start request. The scheduler may submit a table while
+        // the binlog socket is live but the persisted L/D admission evidence
+        // is still being established, leaving the task queued without a
+        // dispatchable healthy capture.
+        reader.start()
+        awaitCaptureReady(cfg.id, reader)
+      }
       else
         markCaptureReady(cfg.id)
     }

@@ -2505,6 +2505,20 @@ final class CdcTaskStore(
       updateTaskLease(c, lease, TaskProgressSnapshot(lease.lastLSeq, lease.lastJournalRevision, lease.lastTargetBatch), "RELEASED"))
     syncCaptureSubscription(c, grant.task.view.taskId, now)
   }
+  /** Release a grant acquired immediately before a planned runtime stop. */
+  private[cdc] def finishPlannedStop(grant: CdcTaskGrant, now: Long, taskLease: Option[TaskLease] = None): Unit = transaction { c =>
+    val old = requireGrant(c, grant)
+    update(c, "UPDATE pekko_cdc_grants_v1 SET status='RELEASED',finished_at=? WHERE grant_id=?", now, grant.id)
+    update(
+      c,
+      "UPDATE pekko_cdc_tasks_v1 SET runtime_health='WAITING',release_status='RELEASED',failure_code=NULL,observed_at=?,schedulable=TRUE,grant_id=NULL,grant_owner=NULL,due_at=? WHERE task_id=?",
+      now,
+      now,
+      old.view.taskId)
+    taskLease.foreach(lease =>
+      updateTaskLease(c, lease, TaskProgressSnapshot(lease.lastLSeq, lease.lastJournalRevision, lease.lastTargetBatch), "RELEASED"))
+    syncCaptureSubscription(c, old.view.taskId, now)
+  }
   private[cdc] def finishUnknown(grant: CdcTaskGrant, code: String, now: Long, taskLease: Option[TaskLease] = None): Unit = transaction { c =>
     val current = owner(c)
     requireGrant(c, grant)

@@ -84,6 +84,9 @@ final class CdcPlatformRuntime(
   private val workerEc              = ExecutionContext.fromExecutorService(workers)
   private val active                = new AtomicInteger(); private val pending = new AtomicInteger(); private val ticking      = new AtomicBoolean()
   private val stopping              = new AtomicBoolean(); private val stopped = new AtomicBoolean(); private val closingCheck = new AtomicBoolean()
+  // Serialize the stop transition with grant acquisition. Without this small
+  // critical section a poll can claim a tail grant just after shutdown starts.
+  private val admissionLock         = new AnyRef
   private val logger                = org.slf4j.LoggerFactory.getLogger(getClass)
   private val markingStartupFailure = new AtomicBoolean()
   private val startupFailedFlag     = new AtomicBoolean()
@@ -384,8 +387,13 @@ final class CdcPlatformRuntime(
                     // loss has started, leaving the grant ACTIVE would make a
                     // replacement owner wait forever. Persist the conservative
                     // UNKNOWN result so the next owner can audit and replay it.
-                    if (stopping.get() || guardianLost.get())
-                      store.finishUnknown(g, ExecutionFailure.ReleaseUnknown, now, lease)
+                    if (stopping.get() && !guardianLost.get())
+                      // The kernel deferred before entering the graph after a
+                      // planned stop. No target or source operation started,
+                      // so this grant has a confirmed release and must not
+                      // poison a normal restart with UNKNOWN.
+                      store.finishPlannedStop(g, now, lease)
+                    else if (guardianLost.get()) store.finishUnknown(g, ExecutionFailure.ReleaseUnknown, now, lease)
                     else store.defer(g, limits.tailDelayMillis, now, lease)
                   }
                   catch { case NonFatal(_) => ownerState = "UNKNOWN"; reason = Some("STORAGE_UNAVAILABLE") }
@@ -415,23 +423,32 @@ final class CdcPlatformRuntime(
               workerRuntime
                 .flatMap(_.currentWorker)
                 .flatMap { worker =>
-                  store.claimFenceRecoveryWithLease(runtimeAttemptId, kernel.recoveryCaptureIds, now, worker, leases)
+                  admissionLock.synchronized {
+                    if (stopping.get()) None
+                    else store.claimFenceRecoveryWithLease(runtimeAttemptId, kernel.recoveryCaptureIds, now, worker, leases)
+                  }
                 }
                 .foreach { case (grant, lease) => launch(grant, Some(lease)) }
-            case None => store.claimFenceRecovery(runtimeAttemptId, kernel.recoveryCaptureIds, now).foreach(g => launch(g))
+            case None =>
+              admissionLock.synchronized {
+                if (!stopping.get()) store.claimFenceRecovery(runtimeAttemptId, kernel.recoveryCaptureIds, now).foreach(g => launch(g))
+              }
           }
         for (pool <- Vector("TAIL", "SNAPSHOT")) {
           val maximum = if (pool == "TAIL") limits.tailSteps else limits.snapshotSteps
           var left    = maximum; var more = true
           while (left > 0 && more && !stopping.get()) {
-            val claimed: Option[(CdcTaskGrant, Option[TaskLease])] = runtimeLeases match {
-              case Some(leases) =>
-                workerRuntime.flatMap(_.currentWorker).flatMap { worker =>
-                  store
-                    .claimWithLease(runtimeAttemptId, pool, ready, now, kernel.admissibleTasks(pool), worker, leases)
-                    .map { case (grant, lease) => grant -> Some(lease) }
-                }
-              case None => store.claim(runtimeAttemptId, pool, ready, now, kernel.admissibleTasks(pool)).map(_ -> None)
+            val claimed: Option[(CdcTaskGrant, Option[TaskLease])] = admissionLock.synchronized {
+              if (stopping.get()) None
+              else runtimeLeases match {
+                case Some(leases) =>
+                  workerRuntime.flatMap(_.currentWorker).flatMap { worker =>
+                    store
+                      .claimWithLease(runtimeAttemptId, pool, ready, now, kernel.admissibleTasks(pool), worker, leases)
+                      .map { case (grant, lease) => grant -> Some(lease) }
+                  }
+                case None => store.claim(runtimeAttemptId, pool, ready, now, kernel.admissibleTasks(pool)).map(_ -> None)
+              }
             }
             claimed match {
               case None             => more = false
@@ -464,7 +481,8 @@ final class CdcPlatformRuntime(
    * The caller's response is bounded; a late physical release stays attached to this operation.
    */
   def stopRuntime(): Future[Boolean] = {
-    if (stopping.compareAndSet(false, true)) {
+    val firstStop = admissionLock.synchronized(stopping.compareAndSet(false, true))
+    if (firstStop) {
       logger.warn(
         "CDC runtime stop requested attempt={} ownerState={} reason={} activeSteps={} guardianLost={}",
         runtimeAttemptId,

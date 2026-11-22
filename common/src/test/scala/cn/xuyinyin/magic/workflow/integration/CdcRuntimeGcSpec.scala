@@ -9,6 +9,7 @@ import java.net.http.{HttpClient, HttpRequest, HttpResponse}
 import java.sql.{Connection, DriverManager}
 import java.io.File
 import java.util.UUID
+import scala.concurrent.duration._
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import spray.json._
@@ -68,8 +69,18 @@ class CdcRuntimeGcSpec extends AnyWordSpec with Matchers {
           "pekko_capture_consumers_v1",
           "pekko_capture_epochs_v1",
           "pekko_capture_gc_retention_v1",
-          "pekko_capture_gc_pins_v1")
-        val gcTables          = sdkTables ++ Vector("pekko_capture_gc_checkpoints_v1", "pekko_capture_gc_frames_v1", "pekko_capture_gc_operations_v1")
+          "pekko_capture_gc_pins_v1",
+          "pekko_capture_ack_pages_v1",
+          "pekko_capture_ack_page_nodes_v1",
+          "pekko_capture_ack_page_pins_v1",
+          "pekko_capture_ack_prior_v1",
+          "pekko_capture_ack_page_refs_v1",
+          "pekko_capture_ack_gc_state_v1")
+        val gcTables          = sdkTables ++ Vector(
+          "pekko_capture_gc_checkpoints_v1",
+          "pekko_capture_gc_frames_v1",
+          "pekko_capture_gc_operations_v1",
+          "pekko_capture_gc_actual_d_v1")
         val sdkConfig         = MySQLCdcStateConfig(state.url(schema), sdk, state.password, "capture_offsets", "capture_history", 0)
         val (offset, history) = MySQLCdcSourceNode.connectorStateTables(sdkConfig, capture)
         sql(state, s"GRANT SELECT,CREATE ON `$schema`.* TO '$sdk'@'127.0.0.1'")
@@ -139,7 +150,11 @@ class CdcRuntimeGcSpec extends AnyWordSpec with Matchers {
                 "table"       -> JsString(t),
                 "generation"  -> JsString("g1"),
                 "targetTable" -> JsString("target_" + t))))
-          awaitCondition("streaming " + t) { request("cdc-tasks/" + r.taskId).fields("phase") == JsString("STREAMING") }
+          // A real Debezium schema snapshot plus the bounded bootstrap graph
+          // can take longer than the generic 60-second fixture budget on the
+          // isolated cluster. Keep the assertion bounded, but do not turn a
+          // slow database into a false GC failure.
+          awaitCondition("streaming " + t, 180.seconds) { request("cdc-tasks/" + r.taskId).fields("phase") == JsString("STREAMING") }
         }
         def mutate(t: String, label: String): Unit = sql(
           source,

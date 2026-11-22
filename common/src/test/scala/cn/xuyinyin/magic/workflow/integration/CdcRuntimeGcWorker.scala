@@ -39,7 +39,13 @@ object CdcRuntimeGcWorker {
         "password"               -> state.password,
         "account-host"           -> "127.0.0.1",
         "ledger-definer"         -> "root@localhost",
-        "trusted-admin-accounts" -> Vector("root@localhost").asJava,
+        // The disposable MySQL image retains its bootstrap accounts. The
+        // state/control connection is the trusted observer for this probe,
+        // while the bootstrap accounts remain explicit inventory entries.
+        "trusted-admin-accounts" -> Vector(
+          "root@localhost",
+          "root@%",
+          "cdc_lab@%").asJava,
         "producer-accounts"      -> Vector(sdkUser + "@127.0.0.1").asJava,
         "enable-legacy"          -> Boolean.box(true),
         "interval-ms"            -> Long.box(300),
