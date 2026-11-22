@@ -17,7 +17,7 @@ class CaptureControlFenceTriggerMySqlSpec extends AnyWordSpec with Matchers {
       def open(url:String):Connection=DriverManager.getConnection(url,user,pw)
       def exec(c:Connection,s:String):Unit={val q=c.createStatement();try {q.execute(s);()}finally q.close()}
       def scalar(c:Connection,s:String):String={val q=c.createStatement();try {val r=q.executeQuery(s);try {require(r.next());r.getString(1)}finally r.close()}finally q.close()}
-      val admin=open(base);val suffix=UUID.randomUUID().toString.replace("-","").take(10);val schema="pekko_test_fence_"+suffix
+      val admin=open(base);val clientHost=scalar(admin,"SELECT SUBSTRING_INDEX(HOST,':',1) FROM information_schema.processlist WHERE ID=CONNECTION_ID()");val suffix=UUID.randomUUID().toString.replace("-","").take(10);val schema="pekko_test_fence_"+suffix
       exec(admin,s"CREATE DATABASE $schema")
       val c=open(base.replace("pekko_test_shared_wire",schema));val other=open(base.replace("pekko_test_shared_wire",schema))
       try {
@@ -38,23 +38,26 @@ class CaptureControlFenceTriggerMySqlSpec extends AnyWordSpec with Matchers {
         ddlBlocked.getErrorCode shouldBe 1205
         c.commit()
         val restricted="fence_"+suffix
-        exec(admin,s"CREATE USER '$restricted'@'127.0.0.1' IDENTIFIED BY 'isolated-fixture-only-password'")
-        exec(admin,s"GRANT SELECT ON `$schema`.* TO '$restricted'@'127.0.0.1'")
-        exec(admin,s"GRANT EXECUTE ON PROCEDURE `$schema`.pekko_control_write_open_v1 TO '$restricted'@'127.0.0.1'")
+        // The disposable MySQL container sees the host JVM through its bridge
+        // address. Keep the fixture account scoped to this temporary schema,
+        // while allowing the bridge address to authenticate.
+        exec(admin,s"CREATE USER '$restricted'@'$clientHost' IDENTIFIED BY 'isolated-fixture-only-password'")
+        exec(admin,s"GRANT SELECT ON `$schema`.* TO '$restricted'@'$clientHost'")
+        exec(admin,s"GRANT EXECUTE ON PROCEDURE `$schema`.pekko_control_write_open_v1 TO '$restricted'@'$clientHost'")
         val controller="fctrl_"+suffix
-        exec(admin,s"CREATE USER '$controller'@'127.0.0.1' IDENTIFIED BY 'isolated-fixture-controller-password'")
-        exec(admin,s"GRANT SELECT ON `$schema`.* TO '$controller'@'127.0.0.1'")
-        exec(admin,s"GRANT SELECT,INSERT,UPDATE ON `$schema`.pekko_capture_control TO '$controller'@'127.0.0.1'")
-        exec(admin,s"GRANT SELECT,UPDATE ON `$schema`.pekko_capture_control_fence_v1 TO '$controller'@'127.0.0.1'")
-        exec(admin,s"GRANT SELECT,INSERT ON `$schema`.pekko_capture_control_release_v1 TO '$controller'@'127.0.0.1'")
+        exec(admin,s"CREATE USER '$controller'@'$clientHost' IDENTIFIED BY 'isolated-fixture-controller-password'")
+        exec(admin,s"GRANT SELECT ON `$schema`.* TO '$controller'@'$clientHost'")
+        exec(admin,s"GRANT SELECT,INSERT,UPDATE ON `$schema`.pekko_capture_control TO '$controller'@'$clientHost'")
+        exec(admin,s"GRANT SELECT,UPDATE ON `$schema`.pekko_capture_control_fence_v1 TO '$controller'@'$clientHost'")
+        exec(admin,s"GRANT SELECT,INSERT ON `$schema`.pekko_capture_control_release_v1 TO '$controller'@'$clientHost'")
         val wildcard="fwide_"+suffix;val roleUser="frole_"+suffix;val role="fcrole_"+suffix
         exec(admin,s"CREATE USER '$wildcard'@'%' IDENTIFIED BY 'isolated-fixture-only-password'")
         exec(admin,s"GRANT SELECT ON `$schema`.* TO '$wildcard'@'%'")
         exec(admin,s"GRANT EXECUTE ON PROCEDURE `$schema`.pekko_control_write_open_v1 TO '$wildcard'@'%'")
-        exec(admin,s"CREATE USER '$roleUser'@'127.0.0.1' IDENTIFIED BY 'isolated-fixture-only-password'")
-        exec(admin,s"GRANT SELECT ON `$schema`.* TO '$roleUser'@'127.0.0.1'")
-        exec(admin,s"GRANT EXECUTE ON PROCEDURE `$schema`.pekko_control_write_open_v1 TO '$roleUser'@'127.0.0.1'")
-        exec(admin,s"CREATE ROLE '$role'");exec(admin,s"GRANT '$role' TO '$roleUser'@'127.0.0.1'")
+        exec(admin,s"CREATE USER '$roleUser'@'$clientHost' IDENTIFIED BY 'isolated-fixture-only-password'")
+        exec(admin,s"GRANT SELECT ON `$schema`.* TO '$roleUser'@'$clientHost'")
+        exec(admin,s"GRANT EXECUTE ON PROCEDURE `$schema`.pekko_control_write_open_v1 TO '$roleUser'@'$clientHost'")
+        exec(admin,s"CREATE ROLE '$role'");exec(admin,s"GRANT '$role' TO '$roleUser'@'$clientHost'")
         Vector(wildcard,roleUser).foreach {name=>
           val rejected=DriverManager.getConnection(base.replace("pekko_test_shared_wire",schema),name,"isolated-fixture-only-password")
           try {rejected.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);rejected.setAutoCommit(false)
