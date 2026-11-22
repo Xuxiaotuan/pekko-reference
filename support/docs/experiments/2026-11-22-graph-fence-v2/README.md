@@ -34,3 +34,11 @@
 - `cdc-runtime-acceptance` 中完整的 source fence v2、guardian 隔离、旧事务排空、Graph 到真实 Sink 的逐字段对账仍未通过。
 - L floor 的 Graph 持续推进已完成代码接线和组件级验证，尚未在共享 Reader 的真实 GC 删除窗口中单独复跑。
 - `TableCdcGraphRuntime` 已接管 Streaming 尾流，快照 LOW/HIGH/F 仍由 `BootstrapRunner` 执行，尚非完全移除 Runner 的重写。
+
+## V2_READER 启动阶段复核
+
+新增的 Worker 启动阶段文件显示，Worker 已完成 owner bootstrap、Guardian attestation、kernel 创建、managed manifest、runtime 创建、Capture readiness 和 HTTP ready。此前“未生成 ready 证据”的判断是测试进程尚未把阶段材料落盘造成的表象。
+
+ready 之后的实际失败发生在 B 提交结果未知窗口。代理证据为 `PROXY_COMMIT_OK_DROPPED`，随后任务进入 `PAUSED/local_release_unconfirmed`，旧 owner 为 `UNKNOWN`，源侧仍保留一个 `cs_*` Sleep 会话，替换 owner 在 `old owner drained and replacement forked` 等待窗口超时。此轮没有进入 source fence v2 的 Reader gate、真实 Sink 提交或逐字段对账。
+
+这组证据把下一步收窄为旧 owner 的 JDBC/代理连接排空确认。需要先证明连接从 processlist 消失并完成 Guardian drain，再重跑 V2_READER，不能用 Worker ready 或 Journal/L 材料替代接管证明。

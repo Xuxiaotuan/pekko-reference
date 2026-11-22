@@ -24,16 +24,28 @@ import spray.json._
 object CdcManagedMatrixWorker {
   def main(args: Array[String]): Unit = {
     val Array(supervisorPath, workerPath, boot, directory) = args
+    val evidenceDir                                        = Path.of(directory)
+    def stage(name: String): Unit = Files.writeString(
+      evidenceDir.resolve(s"$boot-startup.jsonl"),
+      name + "\n",
+      java.nio.file.StandardOpenOption.CREATE,
+      java.nio.file.StandardOpenOption.APPEND)
+    stage("process-start")
     val base = ConfigFactory.parseFile(Path.of(workerPath).toFile).withFallback(ConfigFactory.load("application-test"))
     val overrideConfig = ConfigFactory.parseString(s"""pekko.workflow.snapshot-ha.owner-id="$boot"
       pekko.workflow.snapshot-ha.supervisor-config="$supervisorPath"""")
-    val config                                               = SnapshotOwnerBootstrap.prepare(overrideConfig.withFallback(base).resolve())
-    val system                                               = ActorSystem(Behaviors.empty[String], "managed-cdc-" + boot.take(8), config)
+    stage("before-owner-bootstrap")
+    val config = SnapshotOwnerBootstrap.prepare(overrideConfig.withFallback(base).resolve())
+    stage("owner-bootstrap-ready")
+    val system = ActorSystem(Behaviors.empty[String], "managed-cdc-" + boot.take(8), config)
+    stage("actor-system-ready")
     implicit val ec: ExecutionContext                        = system.executionContext
     implicit val classic: org.apache.pekko.actor.ActorSystem = system.classicSystem
     val state                                                = MySQLCdcStateConfig.load(config); val settings = CdcPlatformSettings.load(config).get
     val ctx                                                  = SnapshotOwnerJdbc.context.get
-    val supervisor                                           = new SnapshotSupervisorSettings(Path.of(supervisorPath))
+    stage("settings-ready")
+    val supervisor = new SnapshotSupervisorSettings(Path.of(supervisorPath))
+    stage("supervisor-settings-ready")
     val (binding, guardianCheck, freshAttest) =
       try {
         supervisor.metadata.verifyWorker(boot, ctx.identity, config.getString("pekko.workflow.snapshot-ha.launch-profile"))
@@ -46,6 +58,7 @@ object CdcManagedMatrixWorker {
           (context: SnapshotGuardianWire.WorkerAttestationContext, nonce: String) =>
             client.attestContextWithNonce(ctx.identity, profile, context, nonce))
       } finally supervisor.close()
+    stage("guardian-attestation-ready")
     val owner = CdcManagedOwner(
       boot,
       ctx.identity.deploymentId,
@@ -169,6 +182,7 @@ object CdcManagedMatrixWorker {
       recoveryStore = Some(store),
       freshAttest = Some(freshAttest),
       wrapSource = wrap)
+    stage("kernel-created")
     if (settings.captures.exists(_.sourceControllerUsername.nonEmpty)) {
       def diagnostic(stage: String)(f: => Unit): Unit = try f
       catch {
@@ -187,6 +201,7 @@ object CdcManagedMatrixWorker {
       diagnostic("store-initialize") { store.initialize() }
       diagnostic("managed-manifest") { kernel.prepareManagedManifest(); () }
     }
+    stage("managed-manifest-ready")
     val runtime = new CdcPlatformRuntime(
       store,
       kernel,
@@ -195,8 +210,11 @@ object CdcManagedMatrixWorker {
       managedOwner = Some(owner),
       recoverManaged = () => CdcManagedRecovery.recover(store, settings, Path.of(supervisorPath), guardianCheck),
       guardianCheck = guardianCheck)
+    stage("runtime-created")
     Await.result(runtime.captures(), 30.seconds)
+    stage("captures-ready")
     val http = Await.result(Http().newServerAt("127.0.0.1", 0).bind(new CdcTaskRoutes(Some(runtime)).routes), 20.seconds)
+    stage("http-ready")
     Files.writeString(
       Path.of(directory, boot + "-ready.json"),
       JsObject(
