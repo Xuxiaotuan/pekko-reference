@@ -19,7 +19,9 @@ final class BootstrapTarget(open:()=>Connection,val table:String,codec:Bootstrap
         "CREATE TABLE IF NOT EXISTS pekko_bootstrap_receipts(bootstrap_id VARCHAR(128),operation_id VARCHAR(160),payload LONGTEXT NOT NULL,digest CHAR(64) NOT NULL,PRIMARY KEY(bootstrap_id,operation_id))"
       ).foreach(q=>update(c,q+" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin"))
       require(query(c,"SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ('pekko_bootstrap_targets','pekko_bootstrap_receipts') AND engine='InnoDB'").head("n")=="2","bootstrap target receipts require InnoDB")
-      require(query(c,"SELECT engine FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=?",table).head("engine")=="InnoDB","bootstrap target requires InnoDB")
+      val targetEngine=query(c,"SELECT engine FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=?",table)
+        .headOption.map(_("engine")).getOrElse(throw new IllegalArgumentException("bootstrap target table not found: "+table))
+      require(targetEngine=="InnoDB","bootstrap target requires InnoDB")
       val indexes=c.getMetaData.getIndexInfo(c.getCatalog,null,table,true,false)
       try {while(indexes.next())if(indexes.getString("COLUMN_NAME")!=null)require(indexes.getString("INDEX_NAME")=="PRIMARY","bootstrap v1 forbids secondary unique constraints")}finally indexes.close()
       require(query(c,"SELECT COUNT(*) AS n FROM information_schema.triggers WHERE event_object_schema=DATABASE() AND event_object_table=?",table).head("n")=="0","bootstrap v1 forbids target business triggers")

@@ -26,7 +26,7 @@ sbt 'pekko-cdc-capture/Docker/publishLocal' 'pekko-cdc-worker/Docker/publishLoca
 
 项目目标是面向单 MySQL 实例的按需常驻 CDC：通过共享 Reader 捕获变更，为新增表执行分页全量与增量衔接，再持续同步到目标。70 万张表是目标场景，尚不是 70 万张真实物理表的容量验收结果。
 
-默认启动类是 `cn.xuyinyin.magic.cdc.runtime.CdcRuntimeMain`，只装配 CDC 服务和 `/api/v1/cdc-*` 路由。原 Workflow HTTP、Cron 和管理前端不属于当前入口。历史实验和失败证据仍在 `docs/experiments`，旧前端试验保留在 `server/src/test/examples/legacy-console`。
+生产启动类分别是 `cn.xuyinyin.magic.cdc.capture.CaptureMain` 和 `cn.xuyinyin.magic.cdc.worker.WorkerMain`，只装配 CDC 服务和 `/api/v1/cdc-*` 路由。`CdcRuntimeMain` 仅作为旧脚本兼容入口，不是当前生产模块。原 Workflow HTTP、Cron 和管理前端不属于当前入口。历史实验和失败证据仍在 `docs/experiments`，旧前端试验保留在 `server/src/test/examples/legacy-console`。
 
 生产 `workflow` 目录已移除。旧 Actor、执行器、注册表和 Workflow receipt 投影保留在测试设施；生产仅保留历史状态模型、manifest 迁移及必要的旧表互斥/配额兼容。生产包和排除测试类的真实 MySQL 接管检查见[运行时收敛记录](docs/experiments/2026-11-08-cdc-standalone-entry/retire-workflow-runtime-20261111/README.md)。系列文章见 [CDC 设计系列](docs/articles/cdc-design/README.md)。
 

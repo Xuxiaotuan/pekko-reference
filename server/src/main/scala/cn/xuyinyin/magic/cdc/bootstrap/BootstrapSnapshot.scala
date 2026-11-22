@@ -10,13 +10,16 @@ final class BootstrapSnapshot(open:()=>Connection,val table:String,val codec:Boo
   private val jdbc=new BootstrapJdbc(open,1)
   import jdbc._
   private val key=s"`${codec.primaryKey}`"
+  private def one(rows:Vector[Map[String,String]],message:String):Map[String,String]=
+    rows.headOption.getOrElse(throw new IllegalArgumentException(message))
   private def bounds(lower:Option[String],upper:String):(String,Seq[Any])=
     lower.fold((s"$key<=?",Seq[Any](new java.math.BigDecimal(upper))))(l=>(s"$key>? AND $key<=?",Seq[Any](new java.math.BigDecimal(l),new java.math.BigDecimal(upper))))
   def validate(expectedLineage:Option[String]=None):Unit=connection {c=>
-    require(expectedLineage.forall(_==query(c,"SELECT @@server_uuid AS uuid").head("uuid")),"bootstrap source lineage changed")
-    val f=query(c,"SELECT @@binlog_format AS f,@@binlog_row_image AS r,@@binlog_order_commits AS o").head
+    require(expectedLineage.forall(_==one(query(c,"SELECT @@server_uuid AS uuid"),"bootstrap source identity unavailable")("uuid")),"bootstrap source lineage changed")
+    val f=one(query(c,"SELECT @@binlog_format AS f,@@binlog_row_image AS r,@@binlog_order_commits AS o"),"bootstrap source binlog profile unavailable")
     require(f("f")=="ROW" && f("r")=="FULL" && f("o")=="1","unsupported bootstrap binlog profile")
-    require(query(c,"SELECT engine FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=?",table).head("engine")=="InnoDB","bootstrap source requires InnoDB")
+    val sourceEngine=one(query(c,"SELECT engine FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=?",table),"bootstrap source table not found: "+table)("engine")
+    require(sourceEngine=="InnoDB","bootstrap source requires InnoDB")
     require(query(c,"SELECT engine FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='pekko_capture_control'").headOption.exists(_("engine")=="InnoDB"),"bootstrap control markers require InnoDB")
     val columns=c.getMetaData.getColumns(c.getCatalog,null,table,null);val b=Vector.newBuilder[(String,Int)]
     try while(columns.next())if(columns.getString("TABLE_NAME")==table)b+=columns.getString("COLUMN_NAME")->columns.getInt("DATA_TYPE") finally columns.close()
@@ -35,7 +38,7 @@ final class BootstrapSnapshot(open:()=>Connection,val table:String,val codec:Boo
   def scan(window:String,lower:Option[String],upper:String,pageRows:Int,store:BootstrapStore,canceled:()=>Boolean):Unit=connection {c=>
     c.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);c.setReadOnly(true);c.setAutoCommit(false)
     val q=c.createStatement();try q.execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")finally q.close()
-    val connectionId=query(c,"SELECT CONNECTION_ID() AS id").head("id")
+    val connectionId=one(query(c,"SELECT CONNECTION_ID() AS id"),"bootstrap source connection identity unavailable")("id")
     observe("READ_OPEN",JsObject("window"->JsString(window),"connectionId"->JsString(connectionId)))
     var cursor=lower;var index=0;var total=0;var bytes=0L;var done=false
     val start=System.nanoTime()
