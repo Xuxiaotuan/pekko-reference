@@ -23,7 +23,7 @@
 - 同 owner continuation 可以保留已经封存的窗口，只替换未封口的当前窗口。
 - 新 JVM 没有 continuation 时，任何处于 STREAMING 之前且已经产生计划、窗口或完成索引的状态都触发持久化基线重建。
 - 新窗口 ID 包含 Journal revision、Chunk index 和 attempt，避免跨重启复用旧读视图命名空间。
-- `TableCdcGraphRuntime` 是当前 Kernel 使用的统一 per-table façade，内部仍委托 `BootstrapRunner`。这一步统一了入口，不等于已经把所有执行逻辑重写成独立 materialized Graph。
+- `TableCdcGraphRuntime.fromGraph` 现在是正式的 materialized Graph 入口，真实 Graph 测试通过该入口验证 T→J→L 顺序和独立停止。Kernel 的 pre-F bootstrap 仍委托 `BootstrapRunner`，它负责快照窗口和 LOW/HIGH/F 状态机，两者没有被伪装成同一段执行逻辑。
 
 ## 未验证边界
 

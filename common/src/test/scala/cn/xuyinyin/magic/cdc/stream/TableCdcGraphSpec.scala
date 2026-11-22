@@ -36,7 +36,7 @@ class TableCdcGraphSpec extends AnyWordSpec with Matchers {
             cn.xuyinyin.magic.connectors.mysql.source.capture.CdcCapturedBatchWorkflowAdapter.toWorkflow(b).cursor,
             b.rows.size,b.rows.size))) }
       }
-      val graph=new TableCdcGraph(capture,TableGraphSettings("sub-1","source-1","execution-1","a"*64),sink,journal)
+      val graph=TableCdcGraphRuntime.fromGraph(new TableCdcGraph(capture,TableGraphSettings("sub-1","source-1","execution-1","a"*64),sink,journal))
       val materialized=graph.materialize()
       Await.result(materialized.completion,5.seconds) shouldBe Done
       acknowledged.get() shouldBe 1
