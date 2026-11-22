@@ -112,5 +112,6 @@ jobs:
             | sed -e "s#ghcr.io/xuxiaotuan/pekko-reference/cdc-capture:dev#$capture_image#g" \
                   -e "s#ghcr.io/xuxiaotuan/pekko-reference/cdc-worker:dev#$worker_image#g" \
             | kubectl apply --server-side --field-manager=cdc-runtime-pipeline -f -
+          kubectl -n bigdata-lab delete deployment/pekko-cdc-runtime service/pekko-cdc-runtime --ignore-not-found
           kubectl -n bigdata-lab rollout status deployment/pekko-cdc-capture --timeout=180s
           kubectl -n bigdata-lab rollout status deployment/pekko-cdc-worker --timeout=180s

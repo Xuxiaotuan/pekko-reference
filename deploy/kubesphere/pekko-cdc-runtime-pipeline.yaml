@@ -112,7 +112,7 @@ spec:
                   capture_image="$(sed -n '1p' .image)"
                   worker_image="$(sed -n '2p' .image)"
                   kubectl apply -k deploy/kubernetes/bigdata-lab/cdc-runtime
-                  kubectl -n "$TARGET_NAMESPACE" scale deployment/pekko-cdc-runtime --replicas=0 >/dev/null 2>&1 || true
+                  kubectl -n "$TARGET_NAMESPACE" delete deployment/pekko-cdc-runtime service/pekko-cdc-runtime --ignore-not-found
                   kubectl -n "$TARGET_NAMESPACE" set image deployment/"$CAPTURE_DEPLOYMENT" cdc-capture="$capture_image"
                   kubectl -n "$TARGET_NAMESPACE" set image deployment/"$WORKER_DEPLOYMENT" cdc-worker="$worker_image"
                   kubectl -n "$TARGET_NAMESPACE" rollout status deployment/"$CAPTURE_DEPLOYMENT" --timeout=300s
