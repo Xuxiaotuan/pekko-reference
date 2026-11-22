@@ -7,11 +7,13 @@ import cn.xuyinyin.magic.cdc.recovery.{CdcExecutionException, ExecutionFailure}
 import cn.xuyinyin.magic.cdc.guardian.ManagedCdcJdbc
 import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
 import cn.xuyinyin.magic.cdc.savepoint.{CdcSavepointCoordinator,CdcSavepointHeader,CdcSavepointStore,TableCheckpointRef}
-import cn.xuyinyin.magic.cdc.stream.TableCdcGraphRuntime
+import cn.xuyinyin.magic.cdc.stream.{BootstrapJournalTableGraph,TableCdcGraph,TableCdcGraphRuntime,TableGraphSettings,TableGraphSink}
+import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint,Committed}
 import org.apache.pekko.Done
 import org.apache.pekko.actor.typed.{ActorRef,ActorSystem}
 import org.apache.pekko.actor.typed.scaladsl.{Behaviors,adapter}
 import org.apache.pekko.actor.typed.scaladsl.adapter._
+import org.apache.pekko.stream.SystemMaterializer
 import java.sql.Connection
 import java.util.UUID
 import java.util.concurrent.{Executors,ThreadFactory,TimeUnit}
@@ -251,7 +253,20 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
       val direct:ExecutionContext=ExecutionContext.parasitic
       val runner=new BootstrapRunner(id,task.table,task.generation,task.canonical,c.reader,c.store,spool,target,access,source,sink,
         c.settings.source.database,()=>stateOpen(c.settings),admission,c.settings.bootstrapLimits,onEvent,progressVerifier)(direct)
-      Session(TableCdcGraphRuntime.fromBootstrap(runner),journal,target,pool)
+      val consumerId=CaptureConsumerIdentity.bootstrap(c.store.captureId,id,task.generation)
+      val graphSink=new TableGraphSink {
+        override def commit(subscriptionId:String,executionId:String,batch:CdcCapturedBatch)(implicit ec:ExecutionContext)=
+          sink.commitBatch(subscriptionId,executionId,batch,_=>())(ec).map {_=>
+            val cursor=cn.xuyinyin.magic.cdc.checkpoint.SourceCursor(batch.cursor.kind,batch.cursor.value,batch.cursor.upperBound)
+            Committed(BatchCheckpoint(batch.sourceNodeId,batch.partitionId,batch.batchSequence,batch.batchId,cursor,batch.rows.size,batch.rows.size))
+          }(ExecutionContext.parasitic)
+      }
+      val graphJournal=new BootstrapJournalTableGraph(access,receipt=>progressVerifier.foreach {verifier=>
+        c.store.projectBootstrapVerified(consumerId,id,task.generation,runner.state.definition,receipt,verifier)
+      })
+      implicit val graphMaterializer:org.apache.pekko.stream.Materializer=SystemMaterializer(system).materializer
+      val graph=new TableCdcGraph(c.reader,TableGraphSettings(id,"bootstrap",id,consumerId),graphSink,graphJournal)
+      Session(TableCdcGraphRuntime.fromBootstrap(runner,graph),journal,target,pool)
     }catch {case e:Throwable=>stopJournal(journal);throw e}
   }
   private sealed trait Watch
@@ -339,8 +354,9 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
               }
               throw new CdcKernelDeferred
             }
-            // D may advance after a point-in-time check; the continuous runner gate remains closed.
-            throw new CdcPlatformException("SOURCE_FENCE_V2_RUNNER_GATE_UNAVAILABLE")
+            // The source release and Journal receipt are now durable. The
+            // graph tail starts from the same Journal deltaAfter, so no second
+            // source transaction or guessed D boundary is introduced here.
           case None=>
             require(Await.result(access.read(),10.seconds).phase!="RECOVERY_PENDING","pending Journal without v2 permit")
         }
@@ -412,6 +428,7 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
   }
   override def requestStop():Unit={
     stopping.set(true);refresh.shutdown()
+    synchronized(sessions.values.toVector).foreach(_.graph.stopMaterialized())
     val all=synchronized(capturesById.values.toVector)
     all.foreach {c=>
       val request=c.reader.requestClose()

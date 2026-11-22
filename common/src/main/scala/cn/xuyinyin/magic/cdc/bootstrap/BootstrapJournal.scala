@@ -134,7 +134,7 @@ final class BootstrapJournalAccess(ref:ActorRef[BootstrapJournal.Command])(impli
     ref.ask(r=>BootstrapJournal.ResumePendingBWithReceipt(expected,executionId,definition,permit,digest,r))
   private[magic] def persistedRecoveryReceipt():Future[Option[BootstrapJournal.PersistedRecoveryReceipt]]=
     ref.ask(BootstrapJournal.ReadPersistedRecoveryReceipt)
-  private[bootstrap] def persistedProgress():Future[Option[BootstrapJournal.PersistedProgress]]=
+  private[magic] def persistedProgress():Future[Option[BootstrapJournal.PersistedProgress]]=
     ref.ask(BootstrapJournal.ReadPersistedProgress)
   private[magic] def completeRecoveryReceipt(expected:Long,permit:String,digest:String):Future[String]=
     ref.ask(r=>BootstrapJournal.CompleteRecoveryReceipt(expected,permit,digest,r))

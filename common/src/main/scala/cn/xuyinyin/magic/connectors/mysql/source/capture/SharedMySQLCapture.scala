@@ -102,7 +102,8 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     sequence:Long,batchSize:Int,consumerId:String)(implicit ec:ExecutionContext):Source[CdcCapturedBatch,NotUsed]={
     require(subscriptionId.nonEmpty && sourceNodeId.nonEmpty && executionId.nonEmpty && consumerId.matches("[a-f0-9]{64}"))
     require(batchSize>0 && batchSize<=1000 && after>=0 && sequence>=0)
-    store.registerConsumer(consumerId,"WORKFLOW",subscriptionId,sourceNodeId,after)
+    val consumerKind=if(sourceNodeId=="bootstrap")"BOOTSTRAP"else"WORKFLOW"
+    store.registerConsumer(consumerId,consumerKind,subscriptionId,sourceNodeId,after)
     val reader=new CapturedLogReader(store,source.database)
     val cursor=new AnyRef
     var current=after
@@ -124,7 +125,8 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
     require(consumerId.matches("[a-f0-9]{64}") && journalRevision>=0)
     val reader=new CapturedLogReader(store,source.database)
     val floor=reader.resumePosition(subscriptionId,batch.cursor)
-    store.projectConsumerJournal(consumerId,"WORKFLOW",subscriptionId,sourceNodeId,floor,journalRevision,batch.batchId)
+    val consumerKind=if(sourceNodeId=="bootstrap")"BOOTSTRAP"else"WORKFLOW"
+    store.projectConsumerJournal(consumerId,consumerKind,subscriptionId,sourceNodeId,floor,journalRevision,batch.batchId)
     Done
   }
   /** Install only after state and source release proof; never replace a gate in flight. */
@@ -349,7 +351,7 @@ class SharedMySQLCapture(source:MySQLCdcSourceConfig,state:MySQLCdcStateConfig,v
       if(sourceFenceRequired && pendingRecovery.nonEmpty){
         installedRecoveryGate.get.requireLive();verifyOpenSourceFence(Some(installedRecoveryGate.get.releaseEpoch));assertOwner()
       }
-      val running=engine.start(new DebeziumBatchConsumer {def handleBatch(rs:Vector[SourceRecord],h:CdcBatchCommitHandle):Unit=accept(rs,h)})
+      val running=engine.start((rs: Vector[SourceRecord], h: CdcBatchCommitHandle) => accept(rs, h))
       completion=running
       (if(sourceFenceRequired)Vector.empty[String]else pendingRecovery).foreach {id=>
         val pending=store.subscription(id).getOrElse(throw new IllegalStateException("pending recovery subscription missing"))

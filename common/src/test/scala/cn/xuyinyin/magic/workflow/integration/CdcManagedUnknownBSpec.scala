@@ -32,8 +32,10 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
   import CdcJournalWindowSupport._
   import SnapshotGuardianWire._
   "managed unknown B recovery" should {
-    for(mode<-Vector("C0","C1","LATE_COMMIT","LATE_ROLLBACK","GUARDIAN_LOST","GUARDIAN_UNREACHABLE") ++
-      (if(sys.env.get("RUN_CDC_FENCE_MATRIX").contains("1"))Vector("FENCE_PROBE","V2_CLOSE","V2_READER")else Vector.empty)) {
+    for(mode<-(Vector("C0","C1","LATE_COMMIT","LATE_ROLLBACK","GUARDIAN_LOST","GUARDIAN_UNREACHABLE") ++
+      (if(sys.env.get("RUN_CDC_FENCE_MATRIX").contains("1"))Vector("FENCE_PROBE","V2_CLOSE","V2_READER")else Vector.empty)).filter {mode =>
+        sys.env.get("CDC_MANAGED_B_ONLY").forall(_.split(',').map(_.trim).filter(_.nonEmpty).contains(mode))
+      }) {
       s"preserve isolation and complete field reconciliation for $mode" taggedAs ExternalIntegration in {
         if(!sys.env.get("RUN_CDC_MANAGED_B_MATRIX").contains("1"))cancel("dedicated dual MySQL fixture required")
         require(sys.env.get("CDC_LAB_EXCLUSIVE_LEASE").exists(_.nonEmpty))
@@ -51,7 +53,7 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
         val dir=Path.of(sys.env("CDC_MANAGED_B_EVIDENCE"),mode+"-"+suffix).toAbsolutePath;Files.createDirectories(dir)
         val paths=Files.walk(Path.of("common/src/main/scala"))
         val production=try paths.iterator().asScala.filter(p=>Files.isRegularFile(p) && p.toString.endsWith(".scala")).toVector.sorted finally paths.close()
-        val testFiles=Vector("common/src/test/scala/cn/xuyinyin/magic/workflow/cdc/CdcManagedMatrixWorker.scala",
+        val testFiles=Vector("common/src/test/scala/cn/xuyinyin/magic/cdc/platform/CdcManagedMatrixWorker.scala",
           "common/src/test/scala/cn/xuyinyin/magic/workflow/integration/CdcManagedMatrixGuardian.scala",
           "common/src/test/scala/cn/xuyinyin/magic/workflow/integration/CdcManagedUnknownBSpec.scala",
           "common/src/test/scala/cn/xuyinyin/magic/workflow/integration/MySQLCommitResponseProxy.scala").map(Path.of(_))
@@ -137,7 +139,7 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
           "sdk-state-username"->sdkUser,"sdk-state-password"->state.password,"source-observer-username"->source.user,"source-observer-password"->source.password)
         val captureConfig=(if(v2Fixture)captureSettings++Map[String,AnyRef]("source-controller-username"->sourceController,
           "source-controller-password"->source.password,"source-fence-v2"->java.lang.Boolean.valueOf(mode!="FENCE_PROBE"))else captureSettings).asJava
-        val workerSettings=common++Map[String,AnyRef]("pekko.actor.provider"->"local","pekko.cluster.downing-provider-class"->"",
+        val workerSettings=common++Map[String,AnyRef]("pekko.actor.provider"->"local","pekko.cdc-test-worker-main"->"cn.xuyinyin.magic.cdc.platform.CdcManagedMatrixWorker","pekko.cdc-standalone.managed-worker"->java.lang.Boolean.TRUE,"pekko.cluster.downing-provider-class"->"",
           "pekko.workflow.table-scheduling.jdbc.username"->workerControl,
           "pekko-persistence-jdbc.shared-databases.slick.db.user"->workerControl,
           "pekko.cluster.auto-down-unreachable-after"->"off","pekko.workflow.cdc-platform.enabled"->java.lang.Boolean.TRUE,

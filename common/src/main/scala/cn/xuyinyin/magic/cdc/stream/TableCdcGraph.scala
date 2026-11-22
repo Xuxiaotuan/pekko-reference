@@ -1,6 +1,6 @@
 package cn.xuyinyin.magic.cdc.stream
 
-import cn.xuyinyin.magic.cdc.bootstrap.BootstrapJournalAccess
+import cn.xuyinyin.magic.cdc.bootstrap.{BootstrapJournal,BootstrapJournalAccess}
 import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint,BatchCommitResult,Committed,AlreadyCommitted}
 import cn.xuyinyin.magic.connectors.mysql.sink.{MySQLCdcApplyConfig,MySQLCdcApplyEngine}
 import cn.xuyinyin.magic.connectors.mysql.source.capture.{CdcCapturedBatch,CdcCapturedBatchWorkflowAdapter,SharedMySQLCapture}
@@ -70,7 +70,8 @@ final class MySQLTableGraphSink(config:MySQLCdcApplyConfig) extends TableGraphSi
 }
 
 /** Adapter that keeps the existing EventSourcedBehavior and its CAS protocol. */
-final class BootstrapJournalTableGraph(journal:BootstrapJournalAccess) extends TableGraphJournal {
+final class BootstrapJournalTableGraph(journal:BootstrapJournalAccess,
+  afterPersist:BootstrapJournal.PersistedProgress=>Unit=(_:BootstrapJournal.PersistedProgress)=>()) extends TableGraphJournal {
   private val latestRef=new AtomicReference[Option[BatchCheckpoint]](None)
   override def latest:Option[BatchCheckpoint]=latestRef.get()
   override def recover(settings:TableGraphSettings)(implicit ec:ExecutionContext):Future[TableGraphSettings]=
@@ -79,6 +80,10 @@ final class BootstrapJournalTableGraph(journal:BootstrapJournalAccess) extends T
     latestRef.set(Some(checkpoint))
     journal.update {state=>
       state.copy(batchSequence=checkpoint.batchSequence,deltaAfter=checkpoint.cursor.value.parseJson.asJsObject.fields("sequence").asInstanceOf[spray.json.JsNumber].value.toLongExact)
-    }.map(_.revision)
+    }.flatMap {_=>journal.persistedProgress().map {receipt=>
+      val value=receipt.getOrElse(throw new IllegalStateException("persisted graph Journal progress missing"))
+      afterPersist(value)
+      value.sequenceNr
+    }}
   }
 }

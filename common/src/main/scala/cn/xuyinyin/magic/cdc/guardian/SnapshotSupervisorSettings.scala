@@ -32,7 +32,13 @@ object SnapshotSupervisorSettings {
     url+separator+parameters
   }
   private[magic] def workerMain(worker:Config):String =
-    if(worker.hasPath("pekko.cdc-standalone.managed-worker") && worker.getBoolean("pekko.cdc-standalone.managed-worker")) {
+    if(worker.hasPath("pekko.cdc-test-worker-main")) {
+      // Test-only child entry. Production configurations never set this key,
+      // while the isolated JVM matrix can keep its HTTP/test orchestration
+      // without reintroducing the removed Workflow worker.
+      require(worker.getString("pekko.cdc-test-worker-main").startsWith("cn.xuyinyin.magic.cdc."),"invalid CDC test worker entry")
+      worker.getString("pekko.cdc-test-worker-main")
+    } else if(worker.hasPath("pekko.cdc-standalone.managed-worker") && worker.getBoolean("pekko.cdc-standalone.managed-worker")) {
       require(worker.hasPath("pekko.workflow.cdc-platform.enabled") && worker.getBoolean("pekko.workflow.cdc-platform.enabled"),"managed CDC worker requires CDC platform")
       "cn.xuyinyin.magic.cdc.runtime.CdcRuntimeMain"
     } else throw new IllegalArgumentException("Workflow workers are not part of the CDC runtime")
