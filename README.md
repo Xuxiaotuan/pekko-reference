@@ -1,6 +1,6 @@
 # Pekko CDC Runtime
 
-> **当前基线**：CDC 实现以本仓库的 `master` 分支为唯一基线。当前远端历史默认分支仍是旧 Workflow 工程，不能作为 CDC 代码基线。`master` 的生产部署由两个应用模块组成：`pekko-cdc-capture` 和 `pekko-cdc-worker`。
+> **当前基线**：CDC 实现以本仓库的 `main` 分支为唯一基线。当前远端历史默认分支仍是旧 Workflow 工程，不能作为 CDC 代码基线。`main` 的生产部署由两个应用模块组成：`pekko-cdc-capture` 和 `pekko-cdc-worker`。
 
 ## 两个生产模块
 

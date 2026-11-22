@@ -2,7 +2,7 @@
 
 ## 当前代码基线与两模块运行模型
 
-本系列统一以 `master` 分支的 CDC 代码为基线。生产部署只有两个应用模块：
+本系列统一以 `main` 分支的 CDC 代码为基线。生产部署只有两个应用模块：
 
 ```text
 pekko-cdc-capture  1 replica
