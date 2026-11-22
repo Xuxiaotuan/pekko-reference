@@ -65,6 +65,13 @@ final class BootstrapTarget(open:()=>Connection,val table:String,codec:Bootstrap
       try rows.foreach {row=>codec.bind(q,row);q.executeUpdate()}finally q.close()
     }
   }
+  /** Reset an exclusively claimed target before rebuilding a pre-F baseline. */
+  def resetForRescan(epoch:Int):Unit=transaction {c=>
+    val proof=canonical(JsObject("version"->JsNumber(1),"bootstrap"->JsString(id),
+      "table"->JsString(table),"epoch"->JsNumber(epoch)))
+    receipt(c,"RESET:"+epoch,proof) { update(c,s"DELETE FROM `$table`") }
+    ()
+  }
   def verifyPage(window:String,index:Int,manifest:String,rows:Vector[JsObject]):Unit=connection {c=>
     val expected=payload(window,index,manifest,rows)
     val r=query(c,"SELECT payload,digest FROM pekko_bootstrap_receipts WHERE bootstrap_id=? AND operation_id=?",id,window+":"+index).head

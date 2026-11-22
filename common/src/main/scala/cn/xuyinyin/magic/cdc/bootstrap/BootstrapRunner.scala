@@ -187,7 +187,9 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
       update(_.copy(phase="REPLAYING",fence=Some(f.id),deltaAfter=logStore.subscription(id).get.bSequence.get));return
     }
     if(s.window.isEmpty){val u=source.nextUpper(s.nextLower,s.upper.get,limits.chunkRows)
-      val w=id+"_"+s.index+"_"+s.attempt
+      // The Journal revision is the baseline namespace. A rebuilt baseline
+      // always gets a new revision before its first window is registered.
+      val w=BootstrapStepContinuation.windowId(id,s.revision,s.index,s.attempt)
       val spec=canonical(JsObject("index"->JsNumber(s.index),"lower"->s.nextLower.map(JsString(_)).getOrElse(JsNull),"upper"->JsString(u),"schema"->JsString(source.codec.schemaId)))
       spool.register(w,spec);s=update(_.copy(window=Some(w),manifest=None,appliedPage=0))
       emit("WINDOW_REGISTERED","window"->JsString(w),"spec"->spec.parseJson)
@@ -235,6 +237,22 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
       admission.writing {waitSink(sink.commitBatch(id,s.executionId,b,_=>()));emit("REPLAY_T","batchSequence"->JsNumber(b.batchSequence),"groups"->JsNumber(b.rows.size),"lastSequence"->JsNumber(entries.last.sequence))}
       update(_.copy(deltaAfter=entries.last.sequence,batchSequence=s.batchSequence+1));true
     }else false
+  }
+  /**
+    * A replacement Runner cannot inherit a former RR read view. Before F,
+    * completed windows are therefore untrusted partial baseline material too.
+    * Rebuild the spool and exclusively claimed target under a new epoch.
+    */
+  private def resetBaselineAfterRestart(before:BootstrapProgress):Unit={
+    require(before.phase!="STREAMING" && before.phase!="CANCELED" && before.phase!="PAUSED",
+      "baseline reset is only valid before streaming")
+    val epoch=(before.revision+1).toInt
+    spool.resetForRescan()
+    target.resetForRescan(epoch)
+    update(_.copy(phase="SCANNING",planned=false,upper=None,nextLower=None,index=0,attempt=0,
+      window=None,manifest=None,appliedPage=0,deltaAfter=0,batchSequence=0,
+      completionRoot="",failure=None))
+    emit("BASELINE_RESET_AFTER_RESTART","epoch"->JsNumber(epoch))
   }
   private def cancelStep():Unit={
     val s=logStore.subscription(id)
@@ -362,7 +380,15 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
       if(before.definition.isEmpty)update(_.copy(definition=MySQLCdcGroup.hash(boundDefinition),executionId=java.util.UUID.randomUUID().toString))
       else {
         require(before.definition==MySQLCdcGroup.hash(boundDefinition),"bootstrap definition changed")
-        if(proof.isEmpty){recover(ExecutionFailure.Interrupted);stepRestoring=true}
+        if(proof.isEmpty){
+          // A replacement JVM cannot reuse the old repeatable-read view.  The
+          // baseline reset is a deterministic rescan, not another retry of the
+          // failed step, so it must not consume the recovery budget.
+          if(BootstrapStepContinuation.requiresBaselineReset(before,hasContinuation=false))
+            resetBaselineAfterRestart(state)
+          else recover(ExecutionFailure.Interrupted)
+          stepRestoring=false
+        }
         else {
           // Cache replacement loses every former RR transaction even if the
           // previous scheduling grant closed cleanly after a retryable failure.
@@ -519,12 +545,15 @@ final class BootstrapRunner(val id:String,val table:String,val generation:String
             healthy()
             if(canceled)cancelStep()
             else {
-              // Any incomplete read view is discarded on invocation/retry; sealed windows survive unchanged.
-              if(recovering){val p=state;p.window.foreach {w=>if(BootstrapStepContinuation.needsReadViewRecovery(p,spool.manifest(w).nonEmpty)){
-                val next=id+"_"+p.index+"_"+(p.attempt+1)
-                spool.register(next,spool.spec(w))
-                update(_.copy(attempt=p.attempt+1,window=Some(next),manifest=None,appliedPage=0));emit("ABANDONED","window"->JsString(w))}}
-                recovering=false}
+              // A replacement Runner cannot reuse any pre-F baseline because
+              // each Chunk was read under its own RR view. Rebuild all baseline
+              // material and let the finite B-to-F replay close the window.
+              if(recovering){
+                val p=state
+                if(BootstrapStepContinuation.requiresBaselineReset(p,hasContinuation=false))
+                  resetBaselineAfterRestart(p)
+                recovering=false
+              }
               state.phase match {
                 case "SCANNING"=>scanStep()
                 case "REPLAYING"=>if(!replay(false))update(_.copy(phase="ACTIVATING",deltaAfter=activationFence(state.fence,logStore.subscription(id).get).sequence.get))

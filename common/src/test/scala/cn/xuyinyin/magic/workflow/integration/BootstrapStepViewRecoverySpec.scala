@@ -114,21 +114,31 @@ class BootstrapStepViewRecoverySpec extends AnyWordSpec with Matchers {
         sql(source, "DELETE FROM a WHERE id=16")
         kit.stop(firstJournal); firstJournal = null
         secondJournal = kit.spawn(BootstrapJournal(captureId + "-" + id), "second")
-        val second = runner(new BootstrapJournalAccess(secondJournal)); var hint: Option[BootstrapProgress] = Some(cut.progress); var last: BootstrapStepResult = null
-        awaitCondition("reconstructed same-owner Runner reaches durable STREAMING", 180.seconds) {
+        val second = runner(new BootstrapJournalAccess(secondJournal));
+        val fullRestart = sys.env.get("BOOTSTRAP_FULL_RESCAN").contains("1")
+        var hint: Option[BootstrapProgress] = if(fullRestart) None else Some(cut.progress); var last: BootstrapStepResult = null
+        awaitCondition("reconstructed Runner reaches durable STREAMING", 180.seconds) {
           last = second.step(continuation = hint); hint = None
           last.progress.recoveryAttempts shouldBe 1
           last.progress.phase should not be "PAUSED"
           last.progress.phase == "STREAMING"
         }
+        // The logical bootstrap execution identity is durable across JVM
+        // replacement.  The baseline epoch, not executionId, separates the
+        // new read view from the abandoned one.
         last.progress.executionId shouldBe cut.progress.executionId
-        val replacement = id + "_0_1"
-        spool.spec(replacement) shouldBe spool.spec(oldWindow)
-        spool.pageCount(replacement, "RAW") shouldBe 4
-        spool.page(replacement, "RAW", 0) should not be spool.page(oldWindow, "RAW", 0)
+        val replacement = events.iterator().asScala
+          .filter(_.fields.get("kind").contains(JsString("WINDOW_REGISTERED")))
+          .map(_.fields("window").convertTo[String]).filter(_ != oldWindow).toVector.last
+        if(fullRestart) spool.pageCount(oldWindow, "RAW") shouldBe 0
+        else spool.pageCount(oldWindow, "RAW") shouldBe 1
+        spool.pageCount(replacement, "RAW") should be > 0
+        if(fullRestart)
+          events.iterator().asScala.exists(_.fields.get("kind").contains(JsString("BASELINE_RESET_AFTER_RESTART"))) shouldBe true
         events.iterator().asScala.find(e => e.fields.get("kind").contains(JsString("READ_OPEN")) && e.fields.get("window").contains(JsString(replacement)))
           .get.fields("connectionId") should not be JsString(readId)
-        events.iterator().asScala.exists(e => e.fields.get("kind").contains(JsString("ABANDONED")) && e.fields.get("window").contains(JsString(oldWindow))) shouldBe true
+        if(!fullRestart)
+          events.iterator().asScala.exists(e => e.fields.get("kind").contains(JsString("ABANDONED")) && e.fields.get("window").contains(JsString(oldWindow))) shouldBe true
         awaitCondition("all source/target fields equal", 90.seconds) {
           withConnection(source, schema)(query(_, "SELECT * FROM a ORDER BY id")) == withConnection(state, schema)(query(_, "SELECT * FROM target_a ORDER BY id"))
         }

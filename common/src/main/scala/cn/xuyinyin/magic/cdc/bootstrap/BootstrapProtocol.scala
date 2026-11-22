@@ -6,8 +6,8 @@ import spray.json._
 import scala.collection.mutable
 
 object BootstrapPhases {
-  private val edges=Map("RECOVERY_PENDING"->Set.empty[String],"QUEUED"->Set("SCANNING"),"SCANNING"->Set("REPLAYING"),
-    "REPLAYING"->Set("ACTIVATING"),"ACTIVATING"->Set("STREAMING"),"STREAMING"->Set.empty[String],
+  private val edges=Map("RECOVERY_PENDING"->Set.empty[String],"QUEUED"->Set("SCANNING"),"SCANNING"->Set("REPLAYING","SCANNING"),
+    "REPLAYING"->Set("ACTIVATING","SCANNING"),"ACTIVATING"->Set("STREAMING","SCANNING"),"STREAMING"->Set.empty[String],
     "CANCELING"->Set("CANCELED"),"CANCELED"->Set.empty[String],"PAUSED"->Set.empty[String])
   def allowed(from:String,to:String):Boolean=edges.contains(from) && (from==to ||
     (from!="CANCELED" && to=="PAUSED") || (from!="CANCELED" && from!="PAUSED" && to=="CANCELING") || edges(from).contains(to))

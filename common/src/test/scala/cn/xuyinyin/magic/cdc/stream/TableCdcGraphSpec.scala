@@ -23,23 +23,25 @@ class TableCdcGraphSpec extends AnyWordSpec with Matchers {
       implicit val ec:ExecutionContext=system.executionContext
       implicit val materializer=SystemMaterializer(system).materializer
       val acknowledged=new AtomicInteger(0)
+      val order=scala.collection.mutable.ArrayBuffer.empty[String]
       val batch=CdcCapturedBatch("source-1","mysql-cdc:capture",0,"batch-1",
         CdcCaptureCursor("mysql.capture.groups.v1",JsObject("sequence"->JsNumber(1),"version"->JsNumber(1)).compactPrint,"{}"),
         Vector("{\"id\":1}"))
-      val capture=new FakeCapture(batch,acknowledged)
-      val journal=new RecordingJournal
+      val capture=new FakeCapture(batch,acknowledged,Some(order))
+      val journal=new RecordingJournal(Some(order))
       val sink=new TableGraphSink {
         override def commit(subscriptionId:String,executionId:String,b:CdcCapturedBatch)
           (implicit ec:ExecutionContext):Future[cn.xuyinyin.magic.cdc.checkpoint.BatchCommitResult]=
-          Future.successful(Committed(BatchCheckpoint(b.sourceNodeId,b.partitionId,b.batchSequence,b.batchId,
+          { order.synchronized(order += "T"); Future.successful(Committed(BatchCheckpoint(b.sourceNodeId,b.partitionId,b.batchSequence,b.batchId,
             cn.xuyinyin.magic.connectors.mysql.source.capture.CdcCapturedBatchWorkflowAdapter.toWorkflow(b).cursor,
-            b.rows.size,b.rows.size)))
+            b.rows.size,b.rows.size))) }
       }
       val graph=new TableCdcGraph(capture,TableGraphSettings("sub-1","source-1","execution-1","a"*64),sink,journal)
       val materialized=graph.materialize()
       Await.result(materialized.completion,5.seconds) shouldBe Done
       acknowledged.get() shouldBe 1
       journal.latest.map(_.batchId) shouldBe Some("batch-1")
+      order.toVector shouldBe Vector("T","J","L")
       Await.result(materialized.stop(),5.seconds) shouldBe Done
       system.terminate()
       Await.result(system.whenTerminated,5.seconds)
@@ -79,13 +81,13 @@ class TableCdcGraphSpec extends AnyWordSpec with Matchers {
     }
   }
 
-  private final class RecordingJournal extends TableGraphJournal {
+  private final class RecordingJournal(order:Option[scala.collection.mutable.ArrayBuffer[String]]=None) extends TableGraphJournal {
     @volatile private var value:Option[BatchCheckpoint]=None
-    override def persist(checkpoint:BatchCheckpoint)(implicit ec:ExecutionContext):Future[Long]={value=Some(checkpoint);Future.successful(1L)}
+    override def persist(checkpoint:BatchCheckpoint)(implicit ec:ExecutionContext):Future[Long]={order.foreach(buffer => buffer.synchronized { buffer += "J" });value=Some(checkpoint);Future.successful(1L)}
     override def latest:Option[BatchCheckpoint]=value
   }
 
-  private final class FakeCapture(batch:CdcCapturedBatch,acknowledged:AtomicInteger)
+  private final class FakeCapture(batch:CdcCapturedBatch,acknowledged:AtomicInteger,order:Option[scala.collection.mutable.ArrayBuffer[String]]=None)
     extends SharedMySQLCapture(
       MySQLCdcSourceConfig("cap","127.0.0.1",3306,"db","source_rows","u","p",1,1,1),
       MySQLCdcStateConfig("jdbc:mysql://127.0.0.1/db","u","p","offsets","history",0),
@@ -94,6 +96,6 @@ class TableCdcGraphSpec extends AnyWordSpec with Matchers {
       sequence:Long,batchSize:Int,consumerId:String)(implicit ec:ExecutionContext):Source[CdcCapturedBatch,NotUsed]=
       Source.single(batch)
     override def acknowledgeTableBatch(subscriptionId:String,sourceNodeId:String,consumerId:String,b:CdcCapturedBatch,
-      journalRevision:Long)(implicit ec:ExecutionContext):Future[Done]={acknowledged.incrementAndGet();Future.successful(Done)}
+      journalRevision:Long)(implicit ec:ExecutionContext):Future[Done]={acknowledged.incrementAndGet();order.foreach(buffer => buffer.synchronized { buffer += "L" });Future.successful(Done)}
   }
 }

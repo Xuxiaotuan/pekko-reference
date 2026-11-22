@@ -72,7 +72,12 @@ object CdcRuntime {
     val haEnabled=config.hasPath("pekko.workflow.snapshot-ha.enabled") && config.getBoolean("pekko.workflow.snapshot-ha.enabled")
     require(if(managed) supervised && haEnabled else !supervised && !haEnabled,
       "CDC managed startup requires an explicit supervisor launch")
-    require(!settings.captures.exists(_.sourceFenceV2), "CDC standalone does not support source fence v2")
+    if(settings.captures.exists(_.sourceFenceV2))
+      require(managed && supervised && haEnabled,
+        "source fence v2 requires managed supervisor and guardian control")
+    // Managed standalone may use source fencing. Supervisor/guardian
+    // configuration remains mandatory and startup fails closed when its
+    // identity or release proof is unavailable.
     val (host, port) = httpAddress(config)
     val grace = config.getDuration("http.shutdown-grace").toMillis.millis
     val phase = config.getDuration("pekko.coordinated-shutdown.phases.service-requests-done.timeout").toMillis.millis

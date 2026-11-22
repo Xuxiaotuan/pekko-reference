@@ -59,4 +59,24 @@ class BootstrapStepSpec extends AnyWordSpec with Matchers {
       unknown.releaseConfirmed shouldBe false
     }
   }
+
+  "pre-F restart recovery" should {
+    "reset even when earlier windows were already completed" in {
+      BootstrapStepContinuation.requiresBaselineReset(
+        clean.copy(phase="SCANNING",planned=true,index=2,window=None),hasContinuation=false) shouldBe true
+      BootstrapStepContinuation.requiresBaselineReset(
+        clean.copy(phase="SCANNING",planned=true,index=2,window=None),hasContinuation=true) shouldBe false
+    }
+    "keep a durable streaming state on its existing L cursor" in {
+      BootstrapStepContinuation.requiresBaselineReset(clean,hasContinuation=false) shouldBe false
+      BootstrapStepContinuation.windowId("orders",17,2,0) shouldBe "orders_17_2_0"
+      BootstrapStepContinuation.windowId("orders",18,2,0) should not be "orders_17_2_0"
+    }
+    "allow the Journal to persist a conservative baseline reset" in {
+      BootstrapPhases.allowed("SCANNING","SCANNING") shouldBe true
+      BootstrapPhases.allowed("REPLAYING","SCANNING") shouldBe true
+      BootstrapPhases.allowed("ACTIVATING","SCANNING") shouldBe true
+      BootstrapPhases.allowed("STREAMING","SCANNING") shouldBe false
+    }
+  }
 }

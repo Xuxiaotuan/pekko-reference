@@ -8,6 +8,8 @@
 
 Source 与 State 的 UUID 必须来自实际 `SELECT @@server_uuid`，并且账号必须按独占角色配置。Secret、Schema 初始化、业务表清单和 GC trusted admin 不写入 Git。
 
+需要 guardian 自动接管时，将 `source-fence-v2` 设为 `true`，并额外提供独立的 source observer/controller 账号和受管 supervisor 配置。该模式会把 B、版本锁、旧事务排空、Journal 恢复许可和 L floor 绑定到同一个 owner attempt；无法证明隔离时会暂停。默认模板仍保持关闭，避免没有受控账号时误启动。
+
 Runtime API 目前按设计绑定容器 loopback；Service 只保留资源入口，生产环境应通过已认证的管理代理暴露 API。部署模板的 TCP probe 只证明进程监听，不证明 CDC 已捕获就绪。
 
 GitHub Actions 的 `deploy` job 默认关闭，只有手动 `workflow_dispatch` 且提供环境 `cdc-runtime` 的 `KUBE_CONFIG_DATA` 时才 apply 本目录。流水线明确不引用旧 Workflow StatefulSet。

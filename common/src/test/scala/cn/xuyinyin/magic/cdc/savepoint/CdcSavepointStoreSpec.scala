@@ -6,6 +6,7 @@ import java.sql.DriverManager
 import java.util.UUID
 
 class CdcSavepointStoreSpec extends STSpec {
+  Class.forName("org.h2.Driver")
   private def db()= "jdbc:h2:mem:savepoint_"+UUID.randomUUID().toString.replace('-','_')+";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
   private val digest="a"*64
   private val ref=TableCheckpointRef("b"*64,"g1","STREAMING","c"*64,Some("j"),Some("t"),Some(digest),digest)

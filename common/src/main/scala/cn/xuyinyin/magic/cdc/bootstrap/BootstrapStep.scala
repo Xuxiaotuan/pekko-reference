@@ -26,6 +26,18 @@ final case class BootstrapStepResult(progress:BootstrapProgress,didWork:Boolean,
 }
 
 object BootstrapStepContinuation {
+  /**
+    * A new Runner without a same-owner clean continuation has no proof that
+    * any former pre-F Chunk still belongs to a valid read view. Completed
+    * windows are intentionally included in this decision.
+    */
+  def requiresBaselineReset(progress:BootstrapProgress,hasContinuation:Boolean):Boolean=
+    !hasContinuation && progress.phase!="STREAMING" && progress.phase!="CANCELED" &&
+      progress.phase!="PAUSED" && (progress.planned || progress.window.nonEmpty || progress.index>0)
+
+  def windowId(bootstrapId:String,journalRevision:Long,index:Long,attempt:Int):String=
+    bootstrapId+"_"+journalRevision+"_"+index+"_"+attempt
+
   /** A clean scheduling boundary proves resource release, not that a former RR
     * view survived. A replacement Runner may reuse only sealed window contents.
     */

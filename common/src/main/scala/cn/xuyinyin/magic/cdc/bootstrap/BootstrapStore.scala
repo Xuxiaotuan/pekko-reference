@@ -72,6 +72,13 @@ final class BootstrapStore(open:()=>Connection,val id:String,maxBytes:Long) {
     require(query(c,s"SELECT constraint_name FROM information_schema.referential_constraints WHERE (constraint_schema=DATABASE() AND table_name IN ($tableList)) OR (unique_constraint_schema=DATABASE() AND referenced_table_name IN ($tableList)) LIMIT 1").isEmpty,
       "bootstrap material foreign keys are unsupported")
   }
+  /** Idempotently discard material from an untrusted pre-F read view. */
+  def resetForRescan():Unit=tx {c=>
+    update(c,"DELETE FROM pekko_bootstrap_pages WHERE bootstrap_id=?",id)
+    update(c,"DELETE FROM pekko_bootstrap_windows WHERE bootstrap_id=?",id)
+    update(c,"DELETE FROM pekko_bootstrap_done WHERE bootstrap_id=?",id)
+    update(c,"UPDATE pekko_bootstrap_storage SET used_bytes=0 WHERE bootstrap_id=?",id)
+  }
   private def tx[A](f:Connection=>A):A=transaction {c=>query(c,"SELECT bootstrap_id FROM pekko_bootstrap_storage WHERE bootstrap_id=? FOR UPDATE",id).head;f(c)}
   private def reserve(c:Connection,payload:String):Unit={
     val bytes=payload.getBytes(java.nio.charset.StandardCharsets.UTF_8).length.toLong+256

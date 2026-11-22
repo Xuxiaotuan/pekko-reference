@@ -7,6 +7,7 @@ import cn.xuyinyin.magic.cdc.recovery.{CdcExecutionException, ExecutionFailure}
 import cn.xuyinyin.magic.cdc.guardian.ManagedCdcJdbc
 import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
 import cn.xuyinyin.magic.cdc.savepoint.{CdcSavepointCoordinator,CdcSavepointHeader,CdcSavepointStore,TableCheckpointRef}
+import cn.xuyinyin.magic.cdc.stream.TableCdcGraphRuntime
 import org.apache.pekko.Done
 import org.apache.pekko.actor.typed.{ActorRef,ActorSystem}
 import org.apache.pekko.actor.typed.scaladsl.{Behaviors,adapter}
@@ -39,7 +40,7 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
   private val admission=new BootstrapAdmission(settings.limits.snapshotSteps,settings.limits.snapshotSteps+settings.limits.tailSteps,
     settings.limits.snapshotSteps+settings.limits.tailSteps)
   private case class Capture(settings:CdcCaptureSettings,store:MySQLCaptureStore,reader:SharedMySQLCapture)
-  private case class Session(runner:BootstrapRunner,journal:ActorRef[BootstrapJournal.Command],target:BootstrapTarget,pool:String)
+  private case class Session(graph:TableCdcGraphRuntime,journal:ActorRef[BootstrapJournal.Command],target:BootstrapTarget,pool:String)
   private val capturesById=mutable.Map.empty[String,Capture]
   private val gcById=mutable.Map.empty[String,CdcGcCoordinator]
   private val recoveryOnly=mutable.Set.empty[String]
@@ -175,7 +176,6 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
       }
       if(!registered){reader.requestClose();throw new IllegalStateException("CDC kernel stopping")}
       if(captureEnabled) cfg.gc.foreach {g=>
-        require(!cfg.sourceFenceV2,"GC and source fence v2 require separate integration")
         val gc=new CdcGcCoordinator(cfg,store,reader,()=>stateOpen(cfg),()=>gcOpen(cfg),system,settings.captures.map(_.id).toSet,observe)
         synchronized {gcById.update(cfg.id,gc)}
         val root=new BootstrapJdbc(()=>stateOpen(cfg))
@@ -251,7 +251,7 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
       val direct:ExecutionContext=ExecutionContext.parasitic
       val runner=new BootstrapRunner(id,task.table,task.generation,task.canonical,c.reader,c.store,spool,target,access,source,sink,
         c.settings.source.database,()=>stateOpen(c.settings),admission,c.settings.bootstrapLimits,onEvent,progressVerifier)(direct)
-      Session(runner,journal,target,pool)
+      Session(TableCdcGraphRuntime.fromBootstrap(runner),journal,target,pool)
     }catch {case e:Throwable=>stopJournal(journal);throw e}
   }
   private sealed trait Watch
@@ -385,12 +385,12 @@ final class CdcBootstrapKernel(settings:CdcPlatformSettings,system:ActorSystem[_
       }
       if(cancel)Await.result(new BootstrapJournalAccess(session.journal).cancel(),10.seconds)
       gcRequest.foreach {floor=>
-        if(session.runner.state.phase=="STREAMING" && !gc.get.covered(session.runner.state,floor))session.runner.requestGcCheckpoint()
+        if(session.graph.state.phase=="STREAMING" && !gc.get.covered(session.graph.state,floor))session.graph.requestGcCheckpoint()
       }
-      val result=session.runner.step(stop,continuation)
-      if(result.progress.phase=="STREAMING" && result.validationComplete && !session.runner.gcCheckpointRequested)
+      val result=session.graph.step(stop,continuation)
+      if(result.progress.phase=="STREAMING" && result.validationComplete && !session.graph.gcCheckpointRequested)
         gcRequest.filter(f=>gc.get.covered(result.progress,f)).foreach {_=>
-          try gc.get.publish(id,session.runner) catch {case NonFatal(e)=>
+          try gc.get.publish(id,session.graph.bootstrapRunner) catch {case NonFatal(e)=>
             if(!ExecutionFailure.from(e,"gc-publication").releaseConfirmed)throw e
             val detail=(e.getClass.getSimpleName+":"+Option(e.getMessage).getOrElse("")).take(256)
             observe("GC_PUBLICATION_DEFERRED",JsObject("taskId"->JsString(id),"error"->JsString(detail)))
