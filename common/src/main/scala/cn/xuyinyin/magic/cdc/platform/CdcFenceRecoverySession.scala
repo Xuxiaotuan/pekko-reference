@@ -85,6 +85,23 @@ final private[cdc] class CdcFenceRecoverySession(
         initial.recoveryPermit.contains(p.id) &&
           initial.recoveryReceiptDigest.contains(d) && store.fenceRecoveryReady(p.id, p.taskId, d, initial.executionId, capture)))
       return Result(true, None)
+    // The permit remains durable while the table advances through SCANNING,
+    // REPLAYING and ACTIVATING. Once source release and the finite B proof have
+    // both been recorded, later bounded graph steps must reuse that proof. A
+    // second pass would look for a RECOVERY_PENDING Journal receipt that has
+    // already been completed and would incorrectly pause the task.
+    if (p.consumed && initial.phase != "RECOVERY_PENDING" && initial.phase != "PAUSED" && digest.exists { d =>
+        if (store.fenceReleaseRecorded(p.id, p.taskId, d, attempt)) {
+          // The Reader can advance D while a bounded graph step is applying a
+          // baseline page. Continue the retained ACK proof before admission,
+          // without asking Journal for a receipt that has already completed.
+          advanceReadyProof(p, d, initial.executionId, capture)
+          store.fenceRecoveryReady(p.id, p.taskId, d, initial.executionId, capture)
+        } else false
+      }) return Result(true, None)
+    if (p.consumed && initial.phase != "RECOVERY_PENDING" && initial.phase != "PAUSED" && digest.exists { d =>
+        store.fenceReleaseRecorded(p.id, p.taskId, d, attempt)
+      }) return Result(false, None)
     // Resume a release already committed on the source before a prior crash.
     val released = digest.exists { d =>
       source { (c, pc) =>

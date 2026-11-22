@@ -39,6 +39,7 @@ final class CdcBootstrapKernel(
     private[cdc] val savepointTasks: Option[CdcTaskStore] = None,
     private[cdc] val captureEnabled: Boolean = true)
     extends CdcPlatformKernel {
+  private val logger = org.slf4j.LoggerFactory.getLogger(getClass)
   implicit private val actorEc: ExecutionContext                         = system.executionContext
   implicit private val scheduler: org.apache.pekko.actor.typed.Scheduler = system.scheduler
   private val stopping                                                   = new AtomicBoolean()
@@ -63,7 +64,10 @@ final class CdcBootstrapKernel(
 
   private def awaitCaptureReady(captureId: String, reader: SharedMySQLCapture): Unit = {
     val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30L)
-    def ready    = reader.bootstrapReady || reader.streamingConnected.contains(true)
+    // A live binlog socket is only transport readiness. BootstrapRunner must
+    // wait for the persisted checkpoint/ACK admission guard as well, otherwise
+    // it repeatedly returns QUEUED while the recovery Reader is already alive.
+    def ready    = reader.bootstrapReady
     while (!ready && System.nanoTime() < deadline) {
       reader.startupEvidence
       if (!ready) Thread.sleep(50L)
@@ -510,6 +514,7 @@ final class CdcBootstrapKernel(
               binding,
               manifestDigest,
               paused)
+            logger.info("CDC recovery session task={} permit={} ready={} paused={} gate={}", id, permit, outcome.ready, paused, outcome.readerGate.nonEmpty)
             if (!outcome.ready) {
               if (paused) {
                 val gate   = outcome.readerGate.getOrElse(throw new IllegalStateException("reader recovery gate missing"))
@@ -591,6 +596,7 @@ final class CdcBootstrapKernel(
         if (session.graph.state.phase == "STREAMING" && !gc.get.covered(session.graph.state, floor)) session.graph.requestGcCheckpoint()
       }
       val result = session.graph.step(stop, continuation)
+      logger.info("CDC graph step completed task={} phase={} didWork={} validationComplete={}", id, result.progress.phase, result.didWork, result.validationComplete)
       if (result.progress.phase == "STREAMING" && result.validationComplete && !session.graph.gcCheckpointRequested)
         gcRequest.filter(f => gc.get.covered(result.progress, f)).foreach { _ =>
           try gc.get.publish(id, session.graph.bootstrapRunner)

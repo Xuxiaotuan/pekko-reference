@@ -113,6 +113,10 @@ final class MySQLCaptureStore(open: () => Connection, val captureId: String, val
   private val fenced              = new AtomicBoolean(false)
   private val archiveAvailability = new java.util.IdentityHashMap[Connection, java.lang.Boolean]()
   private val gcAvailability      = new java.util.IdentityHashMap[Connection, java.lang.Boolean]()
+  // Capture callbacks and proof pagination share the state schema. A short
+  // five-second query timeout turns ordinary row-lock overlap into a Reader
+  // failure, so keep the JDBC operation bounded but longer than one proof page.
+  private val statementTimeoutSeconds = 30
   def releaseConfirmed: Boolean   = !fenced.get()
   private def connection[A](f: Connection => A): A = {
     if (fenced.get())
@@ -138,7 +142,7 @@ final class MySQLCaptureStore(open: () => Connection, val captureId: String, val
     }
   }
   private def stmt[A](c: Connection, sql: String, args: Seq[Any])(f: PreparedStatement => A): A = {
-    val q = c.prepareStatement(sql); q.setQueryTimeout(5)
+    val q = c.prepareStatement(sql); q.setQueryTimeout(statementTimeoutSeconds)
     try { args.zipWithIndex.foreach { case (v, i) => q.setObject(i + 1, v) }; f(q) }
     finally q.close()
   }

@@ -46,6 +46,7 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
         val suffix           = UUID.randomUUID().toString.replace("-", "").take(12); val schema = "pekko_test_cdc_window_" + suffix
         val capture          = "managed_" + suffix; val srcUser                                 = "cs_" + suffix; val sdkUser = "ds_" + suffix
         val v2Fixture        = Set("FENCE_PROBE", "V2_CLOSE", "V2_READER")(mode)
+        val v2ReaderC1       = mode == "V2_READER" && sys.env.get("CDC_V2_READER_C1").contains("1")
         val workerControl    = if (v2Fixture) "wc_" + suffix else state.user
         val sourceController = "cc_" + suffix
         val sourceHost       = if (v2Fixture) "127.0.0.1" else "%"
@@ -374,11 +375,12 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
             Try(request(oldPort, "GET", "cdc-captures")._2.toString.contains("ADMISSION_READY")).getOrElse(false)
           }
           val cutMode =
-            if (mode.startsWith("GUARDIAN_")) "LATE_COMMIT"
+            if (v2ReaderC1) "C1"
+            else if (mode.startsWith("GUARDIAN_")) "LATE_COMMIT"
             else if (v2Fixture) "C1"
             else mode
           if (mode == "V2_CLOSE") Files.writeString(dir.resolve("inject-controller-close"), "armed")
-          if (mode != "V2_READER") proxy.arm(cutMode, JsObject("stage" -> JsString("B")))
+          if (mode != "V2_READER" || v2ReaderC1) proxy.arm(cutMode, JsObject("stage" -> JsString("B")))
           val submitted = request(
             oldPort,
             "POST",
@@ -392,7 +394,7 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
                 "targetTable" -> JsString("target_a"))))
           submitted._1 shouldBe 202
           val task = CdcTaskRequest("a", capture, "a", "g1", "target_a").taskId
-          if (mode != "V2_READER") {
+          if (mode != "V2_READER" || v2ReaderC1) {
             awaitCondition("source marker transaction cut", 90.seconds)(events.asScala.exists(_.fields.get("kind").contains(JsString("CUTPOINT"))))
             awaitCondition("durable UNKNOWN grant", 90.seconds)(store.counts.getOrElse("UNKNOWN", 0L) == 1L)
           } else {
@@ -408,7 +410,7 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
           else markerStatus shouldBe JsString("B_PENDING")
           val intent = db(state, s"SELECT kind FROM pekko_capture_log WHERE subscription_id='$task' AND kind='B_INTENT'")
           intent.elements.size shouldBe 1
-          if (mode != "V2_READER") {
+          if (mode != "V2_READER" || v2ReaderC1) {
             val cut = events.asScala.find(_.fields.get("kind").contains(JsString("CUTPOINT"))).get
             if (cutMode.startsWith("LATE_")) {
               val connection = cut.fields("connectionId").convertTo[Long]
@@ -419,7 +421,7 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
           }
           if (mode == "FENCE_PROBE") Files.writeString(dir.resolve("block-recovery"), "block")
           dump("01-unknown"); coordinator.tick()
-          val replacementBoot = if (mode == "V2_READER") oldBoot else {
+          val replacementBoot = if (mode == "V2_READER" && !v2ReaderC1) oldBoot else {
             awaitCondition("old worker isolated", 40.seconds) { coordinator.tick(); supervisor.metadata.launch(oldBoot).exists(_.proof.nonEmpty) }
             val old = supervisor.metadata.ownerRegistry.owner(oldBoot).get
             Set("fenced", "drain_wait", "db_drained") should contain(old.phase)
@@ -478,7 +480,21 @@ class CdcManagedUnknownBSpec extends AnyWordSpec with Matchers {
             dump("03-fenced-rescan")
           } else if (mode == "V2_READER") {
             val replacement = ready(replacementBoot); val port = replacement.fields("port").convertTo[Int]
-            awaitCondition("v2 Reader target reconciliation", 180.seconds) {
+            if (v2ReaderC1) {
+              def paused: Boolean =
+                Try(request(port, "GET", "cdc-tasks/" + task)._2.asJsObject.fields.get("phase").contains(JsString("PAUSED"))).getOrElse(false)
+              awaitCondition("v2 Reader startup token", 150.seconds) {
+                db(state, s"SELECT permit_id FROM pekko_cdc_reader_start_v2 WHERE task_id='$task'").elements.nonEmpty || paused
+              }
+              require(!paused, "v2 recovery task paused before Reader startup")
+              awaitCondition("v2 B captured and acknowledged", 150.seconds) {
+                val subscription = db(state, s"SELECT status FROM pekko_capture_subscriptions WHERE request_id='$task'")
+                subscription.elements.exists(_.asJsObject.fields.get("status").contains(JsString("CAPTURE_READY"))) &&
+                db(state, s"SELECT seq FROM pekko_capture_log WHERE subscription_id='$task' AND kind='BARRIER'").elements.nonEmpty
+              }
+            }
+            val reconciliationTimeout = if (v2ReaderC1) 360.seconds else 180.seconds
+            awaitCondition("v2 Reader target reconciliation", reconciliationTimeout) {
               val phase = Try(request(port, "GET", "cdc-tasks/" + task)._2.asJsObject.fields("phase").convertTo[String]).getOrElse("")
               if (phase != "STREAMING") false
               else {

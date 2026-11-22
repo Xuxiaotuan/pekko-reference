@@ -333,6 +333,8 @@ final class CdcPlatformRuntime(
           else kernel.captures.filter(c => c.readiness == "ADMISSION_READY" && c.runtimeHealth == "HEALTHY").map(_.captureId).toSet
         }
         def launch(g: CdcTaskGrant, preclaimed: Option[TaskLease] = None): Unit = {
+          logger.info("CDC task grant claimed task={} grant={} pool={} owner={} phase={} dueAt={}",
+            g.task.view.taskId, g.id, g.pool, runtimeAttemptId, g.task.view.phase, g.task.dueAt)
           val lease = preclaimed.orElse(workerRuntime.flatMap { runtime =>
             runtime.currentWorker.flatMap(worker => runtime.claimTask(worker, g.task.view.taskId, g.task.view.captureId))
           })
@@ -354,7 +356,7 @@ final class CdcPlatformRuntime(
                 sameOwner,
                 () => stopping.get(),
                 g.pool)
-              if (out.releaseConfirmed)
+              if (out.releaseConfirmed) {
                 store.finish(
                   g,
                   out.progress,
@@ -365,7 +367,9 @@ final class CdcPlatformRuntime(
                   if (out.progress.phase == "STREAMING") limits.tailDelayMillis else math.max(limits.snapshotDelayMillis, out.nextDelayMillis),
                   now,
                   lease)
-              else {
+                logger.info("CDC task grant released task={} grant={} phase={} didWork={} validationComplete={} nextDelay={}",
+                  g.task.view.taskId, g.id, out.progress.phase, out.didWork, out.validationComplete, out.nextDelayMillis)
+              } else {
                 unknownTaskLeases.synchronized(unknownTaskLeases += g.id)
                 store.finishUnknown(g, ExecutionFailure.ReleaseUnknown, now)
                 if (managedOwner.nonEmpty) { ownerState = "UNKNOWN"; reason = Some("RELEASE_UNKNOWN") }

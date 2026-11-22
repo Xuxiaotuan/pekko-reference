@@ -21,15 +21,17 @@
 
 ## 真实 MySQL/guardian 矩阵结果
 
-使用 CDC lab pool 创建了独立双 MySQL 槽，source/state UUID、端口和 datadir 均在派发前核对。矩阵首次运行暴露了测试设施中的两个旧边界，已修正源码路径和测试 worker 入口。修正后 `V2_READER` 子矩阵在 worker 启动阶段未生成 ready 证据，进程已终止，不能记为通过。
+使用 CDC lab pool 创建了独立双 MySQL 槽，source/state UUID、端口和 datadir 均在派发前核对。历史运行材料保留了测试设施修正前的启动失败、旧 Owner 未排空和逐字段缺失证据。最终运行在同一隔离环境完成了 source fence v2、Guardian、Journal、Graph 和真实 Sink 的 C1 逐字段对账。
 
-因此本轮真实故障矩阵结论是 `evidence_incomplete`。没有把 Graph 单测、source fence 存储测试或 bigdata-lab 两 Worker owner admission 结果升级成 source fence v2 + guardian + Graph + Sink 的端到端通过。
+历史材料仍按 `evidence_incomplete` 保存，不能删除或改写。最终 C1 材料单独记录为 `V2_READER_B_ONLY_PASS`，结论只覆盖本轮使用的单表、64 行、384 字段和固定故障窗口。
 
 ## bigdata-lab V2_READER 实际复跑
 
-在 `cdc-runtime-acceptance` 中创建了两个临时 MySQL 8.0.36 实例，业务 `bigdata-lab/mysql` 未复用。Worker 已完成 Guardian attestation、managed manifest、runtime、Capture 和 HTTP ready。`PROXY_COMMIT_OK_DROPPED` 真实发生，旧 owner 的 Source binlog 会话最终由 Guardian 证明排空，新 owner 消费了恢复许可，Reader 收到 `B_BOUND` 和 `BARRIER`，订阅进入 `CAPTURE_READY`。
+在 `cdc-runtime-acceptance` 中创建了两个临时 MySQL 8.0.36 实例，业务 `bigdata-lab/mysql` 未复用。Worker 已完成 Guardian attestation、managed manifest、runtime、Capture 和 HTTP ready。C1 代理真实丢弃旧 Owner 的 COMMIT 回复，旧 Owner 隔离、Source binlog 会话排空、新 Owner 消费 `RECOVERY_PENDING` permit、安装 Reader gate 后继续执行。
 
-最终 Sink 对账仍未通过。新 owner 控制轮询在 `ManagedOwnerStore.registerInstance` 资源登记竞态处失败，任务回到 `QUEUED`，`03-v2-reader-b-captured.json` 显示 384 个字段范围内缺失 64 行。该结果属于真实故障失败证据，不能用测试套件的清理 PASS 代替端到端一致性。原始材料见 [`k8s-v2-reader-20261122`](k8s-v2-reader-20261122/README.md)。
+最终 C1 结果为 `PASS`。新 Owner 完成两窗口 LOW/HIGH 扫描、B 到 F 回放、激活和 Streaming，`03-v2-reader-captured-c1-20261122.json` 显示 `equal=true`、`fieldsCompared=384`，缺失、额外和字段差异均为空。`cleanup-c1-20261122.json` 显示 Guardian drain 已确认、源端和 state 连接已释放、数据断言通过。完整材料见 [`k8s-v2-reader-20261122`](k8s-v2-reader-20261122/README.md)。
+
+修复前的 C1 失败材料仍保留在 [`v2-reader-c1-failure-20261122`](k8s-v2-reader-20261122/v2-reader-c1-failure-20261122/)，其中包含 `RECOVERY_PENDING/local_release_unconfirmed`、Reader 未启动和逐字段缺失证据，不能用修复后的通过结果覆盖。
 
 ## bigdata-lab 边界
 
@@ -37,22 +39,18 @@
 
 ## 未验证边界
 
-- `cdc-runtime-acceptance` 中完整的 source fence v2、guardian 隔离、旧事务排空、Graph 到真实 Sink 的逐字段对账仍未通过。
+- source fence v2、Guardian 隔离、旧 Owner 排空、Journal 恢复和 Graph 到真实 Sink 的 C1 矩阵已在本轮通过。证据是 `03-v2-reader-captured-c1-20261122.json` 和 `cleanup-c1-20261122.json`。
 - L floor 的 Graph 持续推进已完成代码接线和组件级验证，尚未在共享 Reader 的真实 GC 删除窗口中单独复跑。
 - `TableCdcGraphRuntime` 已接管 Streaming 尾流，快照 LOW/HIGH/F 仍由 `BootstrapRunner` 执行，尚非完全移除 Runner 的重写。
 
-## V2_READER 启动阶段复核
+## V2_READER 历史失败与最终复跑
 
-新增的 Worker 启动阶段文件显示，Worker 已完成 owner bootstrap、Guardian attestation、kernel 创建、managed manifest、runtime 创建、Capture readiness 和 HTTP ready。此前“未生成 ready 证据”的判断是测试进程尚未把阶段材料落盘造成的表象。
+历史 `final15`—`final22` 材料分别记录了 Worker ready 表象、旧 Owner 资源排空等待、重复恢复导致的 `unclassified_failure` 和 capture-state 5 秒查询超时。这些失败没有被删除。源码修复了三处实际问题，恢复入口只把 `bootstrapReady` 作为 admission 条件、已释放 permit 在 proof 分页未完成时继续推进、capture-state 控制语句使用 30 秒有界超时。
 
-ready 之后的实际失败发生在 B 提交结果未知窗口。代理证据为 `PROXY_COMMIT_OK_DROPPED`，随后任务进入 `PAUSED/local_release_unconfirmed`，旧 owner 为 `UNKNOWN`，源侧仍保留一个 `cs_*` Sleep 会话，替换 owner 在 `old owner drained and replacement forked` 等待窗口超时。此轮没有进入 source fence v2 的 Reader gate、真实 Sink 提交或逐字段对账。
-
-这组证据把下一步收窄为旧 owner 的 JDBC/代理连接排空确认。需要先证明连接从 processlist 消失并完成 Guardian drain，再重跑 V2_READER，不能用 Worker ready 或 Journal/L 材料替代接管证明。
+最终 `final23` 在同一环境完成了旧 Owner 隔离、遗留事务为空、Journal `RECOVERY_PENDING` 消费、Reader gate、两窗口扫描、B 到 F 回放、Graph 激活和目标对账。历史失败与最终通过分别保留，不能把最终通过追溯成历史运行也曾通过。
 
 ## 最终 V2_READER 主流程复跑
 
-最终版本在同一 `bigdata-lab` 隔离双 MySQL 环境复跑了无故障 Reader 主流程。该轮不把 C1 未知提交窗口混入主流程验收，因此验收目标是 Graph 从已启动的 SharedMySQLCapture 读取、提交真实 Sink，并完成源表与目标表逐字段对账。
+无故障主流程和 C1 故障流程均在同一隔离双 MySQL 环境完成。无故障流程的 `03-v2-reader-b-captured.json` 与 C1 流程的 `03-v2-reader-captured-c1-20261122.json` 都显示 `equal=true`、`fieldsCompared=384`，缺失、额外和字段差异均为空。两份 `cleanup` 均确认 Guardian drain、连接释放和数据断言。
 
-结果为 `PASS`。`03-v2-reader-b-captured.json` 显示 `equal=true`、`fieldsCompared=384`，缺失、额外和字段差异均为空。`cleanup.json` 显示 Guardian drain 已确认、源端会话已消失、数据断言通过。证据文件已更新到 [`k8s-v2-reader-20261122`](k8s-v2-reader-20261122/README.md)。
-
-C1 `PROXY_COMMIT_OK_DROPPED` 仍单独保留在 [`v2-reader-c1-failure-20261122`](k8s-v2-reader-20261122/v2-reader-c1-failure-20261122/)。该轮在 `RECOVERY_PENDING/local_release_unconfirmed` 停止，证明安全暂停边界仍然存在，不能把主流程 PASS 扩大为未知提交自动恢复已完成。
+本轮为两个真实边界提供了不同证据。主流程证明 Graph、真实 Sink 和逐字段对账链路，C1 证明旧 Owner 排空、Journal `RECOVERY_PENDING`、新 Owner Reader gate 和恢复后的 Graph 连续执行。修复前失败证据继续保留，不能把局部单测或旧失败抹掉。
