@@ -28,7 +28,6 @@
 
 - `RG01-pass-20261123`：RG01 已通过。GC namespace 为 `COMPLETE`，GC operation 为 `DONE`，audit 为 `ACTIVE`，`to_exclusive > from_seq`，任务重启后恢复到 `STREAMING`，源/目标逐字段对账通过。
 - `RG02-failure-20261123`：慢表窗口未通过。GC 进入 `actual D proof pending`，两个任务随后出现 `local_release_unconfirmed`，材料保留了 pins、checkpoint、任务和 GC 状态。
-- RG07 本次联合运行被 RG02 长窗口拖住，未形成可签收的独立结果，不能写成通过。
-
-本轮同时发现并修复了 GC ledger trigger 的 definer 绑定问题。后续 RG07 必须使用同一版本单独复跑。
 - `RG07-pass-20261123`：RG07 独立异常重启窗口通过，owner 未被猜测为已释放，重启后任务恢复并完成对账。
+
+本轮同时发现并修复了 GC ledger trigger 的 definer 绑定问题。RG02 的慢表窗口仍是未通过边界。
