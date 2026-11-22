@@ -572,7 +572,10 @@ final class CdcRuntimeLeaseStore(open: () => Connection) {
           row("worker_incarnation") == lease.workerIncarnation &&
           row("worker_epoch").toLong == lease.workerEpoch.getOrElse(lease.leaseEpoch) &&
           Option(row("worker_lease_id")).contains(lease.workerLeaseId.orElse(lease.leaseId).getOrElse("")) &&
-          row("state") == "RELEASED" && row.get("release_state").contains("RELEASED")
+          // release_state was added after the initial task-lease schema. The
+          // durable state is the authoritative proof for old rows, while a
+          // present release_state must still agree with it.
+          row("state") == "RELEASED" && Option(row("release_state")).forall(_ == "RELEASED")
       }
     } finally statement.close()
   }

@@ -314,6 +314,12 @@ class CdcRuntimeLeaseStoreSpec extends STSpec {
       val worker = leases.registerWorker("worker-abandoned", "incarnation", "{\"snapshotSteps\":1}")
       val task = leases.claimTasks(worker, 1).head
       leases.releaseTask(task, "step-released", "RELEASED") shouldBe true
+      val legacyRelease = DriverManager.getConnection(url)
+      try {
+        val clearReleaseState = legacyRelease.prepareStatement("UPDATE pekko_cdc_task_lease_v1 SET release_state=NULL WHERE task_id=?")
+        try { clearReleaseState.setString(1, task.taskId); clearReleaseState.executeUpdate() shouldBe 1 } finally clearReleaseState.close()
+      } finally legacyRelease.close()
+      leases.taskLeaseReleased(task) shouldBe true
       val connection = DriverManager.getConnection(url)
       try {
         val taskState = connection.prepareStatement("UPDATE pekko_cdc_tasks_v1 SET phase='SCANNING',runtime_health='UNKNOWN',release_status='RELEASED',schedulable=FALSE WHERE task_id=?")
