@@ -213,7 +213,7 @@ class SharedMySQLCapture(
         resourceObserver
           .map { observer =>
             val release = observer.sample(startup.evidence.runtimeAttemptId, ownerId, includeOwner)
-            observe(
+            diagnostic(
               "CAPTURE_SERVER_RELEASE_SAMPLE",
               JsObject(
                 "status"         -> JsString(release.status),
@@ -264,6 +264,9 @@ class SharedMySQLCapture(
       cn.xuyinyin.magic.cdc.recovery
         .ExecutionFailure(cn.xuyinyin.magic.cdc.recovery.ExecutionFailure.ReleaseUnknown, stage, releaseConfirmed = false),
       cause)
+  private def diagnostic(kind: String, data: JsObject): Unit =
+    try observe(kind, data)
+    catch { case _: Throwable => () }
   protected def sourceConnection(): Connection = DriverManager.getConnection(
     s"jdbc:mysql://${source.host}:${source.port}/${source.database}?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&connectTimeout=5000&socketTimeout=5000",
     source.username,
@@ -279,18 +282,18 @@ class SharedMySQLCapture(
     } catch { case _: Throwable => None }
   private def withSourceConnection[A](f: Connection => A): A = {
     val c = sourceConnection(); val id = connectionId(c); var primary: Throwable = null
-    observe("CAPTURE_SOURCE_CONNECTION_OPEN", JsObject("connectionId" -> id.map(JsNumber(_)).getOrElse(JsNull)))
+    diagnostic("CAPTURE_SOURCE_CONNECTION_OPEN", JsObject("connectionId" -> id.map(JsNumber(_)).getOrElse(JsNull)))
     try f(c)
     catch { case e: Throwable => primary = e; throw e }
     finally
       try {
-        observe("CAPTURE_SOURCE_CONNECTION_CLOSE_ATTEMPT", JsObject("connectionId" -> id.map(JsNumber(_)).getOrElse(JsNull)))
+        diagnostic("CAPTURE_SOURCE_CONNECTION_CLOSE_ATTEMPT", JsObject("connectionId" -> id.map(JsNumber(_)).getOrElse(JsNull)))
         c.close()
-        observe("CAPTURE_SOURCE_CONNECTION_CLOSE_CONFIRMED", JsObject("connectionId" -> id.map(JsNumber(_)).getOrElse(JsNull)))
+        diagnostic("CAPTURE_SOURCE_CONNECTION_CLOSE_CONFIRMED", JsObject("connectionId" -> id.map(JsNumber(_)).getOrElse(JsNull)))
       } catch {
         case release: Throwable =>
           sourceReleaseUncertain.set(true)
-          observe(
+          diagnostic(
             "CAPTURE_SOURCE_CONNECTION_CLOSE_UNKNOWN",
             JsObject("connectionId" -> id.map(JsNumber(_)).getOrElse(JsNull), "error" -> JsString(release.getClass.getName)))
           val unknown = releaseUnknown("capture-source-close", release)
