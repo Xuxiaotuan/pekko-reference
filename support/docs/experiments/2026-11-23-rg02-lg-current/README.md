@@ -30,3 +30,9 @@ RG02 retry7 将验收 worker 的 `snapshot-steps` 调整为 2。慢表目标锁�
 - 历史 `strict-final` 和 `final/verified3` 材料只能说明历史版本结果。
 - 两表实验不能证明 70 万物理表容量。
 - RG02 在 Journal ask 超时根因修复前不能标记为通过。
+
+## 3bf35ed 复跑
+
+- RG01 在 Journal ask 预算调整后的当前版本仍通过。
+- RG02 未通过。延长 Journal ask 预算后，任务保持 `STREAMING`，但慢表目标锁窗口内 A 表逐字段对账在窗口内未收敛，不能把等待时间调整写成恢复通过。
+- RG07 尚未在本轮最终版本中完成独立复跑。
