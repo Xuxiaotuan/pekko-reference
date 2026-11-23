@@ -189,8 +189,10 @@ object BootstrapJournal {
     }
 }
 
-final class BootstrapJournalAccess(ref: ActorRef[BootstrapJournal.Command])(implicit ec: ExecutionContext, scheduler: Scheduler) {
-  implicit private val timeout: Timeout   = Timeout(10.seconds)
+final class BootstrapJournalAccess(ref: ActorRef[BootstrapJournal.Command], requestTimeout: Timeout = Timeout(60.seconds))(
+    implicit ec: ExecutionContext,
+    scheduler: Scheduler) {
+  implicit private val timeout: Timeout   = requestTimeout
   def read(): Future[BootstrapProgress]   = ref.ask(BootstrapJournal.Read)
   def cancel(): Future[BootstrapProgress] = ref.ask(BootstrapJournal.Cancel)
   private[bootstrap] def sealGcCheckpoint(expected: Long, proof: String): Future[BootstrapJournal.Result] =

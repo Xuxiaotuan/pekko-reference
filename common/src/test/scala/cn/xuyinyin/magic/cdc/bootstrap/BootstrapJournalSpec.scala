@@ -141,5 +141,27 @@ pekko.persistence.snapshot-store.local.dir="target/bootstrap-journal-snapshots""
         intercept[cn.xuyinyin.magic.cdc.recovery.CdcExecutionException](Await.result(access.update(_.copy(phase = "STREAMING")), 10.seconds))
       } finally kit.shutdownTestKit()
     }
+    "allow a slow durable validation to finish within the recovery ask budget" in {
+      val kit = ActorTestKit(
+        "bootstrap-journal-slow-validation",
+        ConfigFactory
+          .parseString("""pekko.persistence.journal.plugin="pekko.persistence.journal.inmem"
+pekko.persistence.snapshot-store.plugin="pekko.persistence.snapshot-store.local"
+pekko.persistence.snapshot-store.local.dir="target/bootstrap-journal-slow-validation-snapshots"""")
+          .withFallback(ConfigFactory.load("application-test")))
+      implicit val ec: scala.concurrent.ExecutionContext             = kit.system.executionContext
+      implicit val scheduler: org.apache.pekko.actor.typed.Scheduler = kit.system.scheduler
+      try {
+        val ref = kit.spawn(
+          BootstrapJournal(
+            "slow-validation-" + System.nanoTime(),
+            validatePendingB = (_, _) => scala.concurrent.Future { Thread.sleep(11000L); true }))
+        val access = new BootstrapJournalAccess(ref)
+        val paused = Await.result(
+          access.update(_.copy(phase = "PAUSED", definition = "sealed", executionId = "execution", failure = Some("local_release_unconfirmed"))),
+          10.seconds)
+        Await.result(access.resumePendingB(paused.revision, "execution", "sealed", "permit"), 20.seconds) shouldBe "ACCEPTED"
+      } finally kit.shutdownTestKit()
+    }
   }
 }
