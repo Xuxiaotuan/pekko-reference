@@ -4,6 +4,7 @@ import cn.xuyinyin.magic.cdc.{CdcReplaySink, MySQLCdcGroup}
 import cn.xuyinyin.magic.cdc.bootstrap.{CdcReplaySink => WorkflowCdcReplaySink}
 import cn.xuyinyin.magic.connectors.mysql.source.capture._
 import cn.xuyinyin.magic.cdc.recovery.{CdcExecutionException, ExecutionFailure}
+import cn.xuyinyin.magic.cdc.stream.{TableGraphGcPublisher, TableGraphLifecycle}
 import java.sql.Connection
 import java.util.concurrent.{Semaphore, TimeUnit}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -61,7 +62,8 @@ final class BootstrapRunner(
     limits: BootstrapLimits = BootstrapLimits(),
     observe: (String, JsObject) => Unit = (_, _) => (),
     journalProgressVerifier: Option[BootstrapJournalProgressVerifier] = None
-  )(implicit sinkEc: ExecutionContext) {
+  )(implicit sinkEc: ExecutionContext)
+    extends TableGraphLifecycle {
 
   /** Retain the pre-separation constructor descriptor for compiled Workflow adapters. */
   def this(
@@ -138,7 +140,12 @@ final class BootstrapRunner(
     val receipt  = waitFor(journal.persistedProgress()).getOrElse(throw new IllegalStateException("durable GC checkpoint missing"))
     retention.rememberCheckpoint(receipt, verifier)
   }
-  private[magic] def gcCheckpointRequested: Boolean = gcSealRequested
+  override def gcCheckpointRequested: Boolean = gcSealRequested
+  override def gcPublisher: Option[TableGraphGcPublisher] = Some(new TableGraphGcPublisher {
+    override def state: BootstrapProgress = BootstrapRunner.this.state
+    override private[magic] def publishGcCheckpoint(retention: CaptureGcRetention): String =
+      BootstrapRunner.this.publishGcCheckpoint(retention)
+  })
   private def sealGcUnit(): Unit = {
     val s = state
     if (gcAudit.isEmpty) gcAudit = Some(new StepAudit(s))
