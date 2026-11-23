@@ -46,7 +46,7 @@ RG02 在同一最新 Graph 版本上复跑通过。此前失败版本在 B 表�
 
 ## Graph 重构边界
 
-`TableCdcGraphRuntime` 已移除对 `BootstrapRunner` 的公开委托。运行时只依赖表级生命周期和窄化的 `TableGraphGcPublisher` capability，快照阶段仍通过兼容适配器复用旧 Runner，Streaming 阶段由 materialized Graph 自己持有 Source、Sink、Journal 和 ACK 顺序。补充的 continuation 规则允许 Graph 推进同一 STREAMING 状态的 Journal，而不会把合法进度误判为篡改。这里完成的是执行边界和恢复匹配规则解耦，没有把 LOW/HIGH 快照算法写成另一套实现，也没有宣称已消除全部旧 Runner 兼容代码。
+`BootstrapRunner` 直接实现表级 `TableGraphLifecycle` 和窄化的 `TableGraphGcPublisher` capability，`CdcBootstrapKernel` 不再创建中间适配器。快照阶段的 LOW/HIGH 状态机仍由 Runner 实现，Streaming 阶段由 materialized Graph 自己持有 Source、Sink、Journal 和 ACK 顺序。补充的 continuation 规则允许 Graph 推进同一 STREAMING 状态的 Journal，而不会把合法进度误判为篡改。这里完成的是 Graph 执行边界和恢复匹配规则解耦，保留旧 Runner 的持久化实现以兼容历史状态。
 
 ## LG 当前版本状态
 
