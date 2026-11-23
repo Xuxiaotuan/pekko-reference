@@ -46,6 +46,15 @@ final class CdcBootstrapKernel(
   private val refresh = Executors.newSingleThreadScheduledExecutor(new ThreadFactory {
     def newThread(r: Runnable): Thread = { val t = new Thread(r, "cdc-capture-evidence"); t.setDaemon(true); t }
   })
+  // Per-table graphs perform JDBC reads and sink commits. Keep those blocking
+  // operations off the Pekko Streams dispatcher so a locked table cannot stall
+  // another table's graph or the runtime control loop.
+  private val graphBlockingExecutor = Executors.newFixedThreadPool(
+    math.max(1, settings.limits.snapshotSteps + settings.limits.tailSteps),
+    new ThreadFactory {
+      def newThread(r: Runnable): Thread = { val t = new Thread(r, "cdc-graph-blocking"); t.setDaemon(true); t }
+    })
+  private val graphBlockingEc: ExecutionContext = ExecutionContext.fromExecutorService(graphBlockingExecutor)
   private val admission = new BootstrapAdmission(
     settings.limits.snapshotSteps,
     settings.limits.snapshotSteps + settings.limits.tailSteps,
@@ -411,7 +420,7 @@ final class CdcBootstrapKernel(
             c.store.projectBootstrapVerified(consumerId, id, task.generation, runner.state.definition, receipt, verifier)
           })
       implicit val graphMaterializer: org.apache.pekko.stream.Materializer = SystemMaterializer(system).materializer
-      val graph = new TableCdcGraph(c.reader, TableGraphSettings(id, "bootstrap", id, consumerId), graphSink, graphJournal)
+      val graph = new TableCdcGraph(c.reader, TableGraphSettings(id, "bootstrap", id, consumerId), graphSink, graphJournal, graphBlockingEc)
       Session(TableCdcGraphRuntime.fromBootstrap(runner, graph), journal, target, pool)
     } catch { case e: Throwable => stopJournal(journal); throw e }
   }
@@ -621,7 +630,13 @@ final class CdcBootstrapKernel(
         }
       released = result.releaseConfirmed
       val proof = if (result.progress.phase == "STREAMING" && result.validationComplete) session.target.activation else None
-      if (result.validationComplete || result.terminal || result.paused) {
+      // A STREAMING result is a durable transition, not the end of the
+      // session. Once the tail graph is materialized it still needs the same
+      // Journal actor for ACK/L progress. Releasing that actor here makes the
+      // first sink commit succeed and the following Journal persist fail,
+      // leaving the target one batch behind with no visible runtime error.
+      val graphOwnsSession = result.progress.phase == "STREAMING" && session.graph.materializedActive
+      if ((result.validationComplete && !graphOwnsSession) || result.terminal || result.paused) {
         stopJournal(session.journal); synchronized(sessions.remove(id))
       }
       CdcKernelOutcome(result.progress, released, result.didWork, result.validationComplete, result.nextDelayMillis, proof)
@@ -671,6 +686,8 @@ final class CdcBootstrapKernel(
     val journalsReleased = synchronized {
       journalStops.filterInPlace((_, f) => !f.value.exists(_.isSuccess)); journalStops.isEmpty
     }
-    localReleased && journalsReleased && evidence.forall(identity)
+    val released = localReleased && journalsReleased && evidence.forall(identity)
+    if (released) graphBlockingExecutor.shutdown()
+    released
   }
 }

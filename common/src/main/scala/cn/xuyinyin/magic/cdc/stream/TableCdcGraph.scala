@@ -8,6 +8,7 @@ import org.apache.pekko.Done
 import org.apache.pekko.stream.{KillSwitches, Materializer, UniqueKillSwitch}
 import org.apache.pekko.stream.scaladsl.{Keep, Sink}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 import java.util.concurrent.atomic.AtomicReference
 import spray.json._
 
@@ -21,6 +22,9 @@ trait TableGraphJournal {
   /** The returned revision is the durable Journal revision used by the L projection. */
   def persist(checkpoint: BatchCheckpoint)(implicit ec: ExecutionContext): Future[Long]
   def latest: Option[BatchCheckpoint]
+  /** Run proof projection only after the Reader ACK has advanced observed L. */
+  def afterAck(checkpoint: BatchCheckpoint, revision: Long)(implicit ec: ExecutionContext): Future[Done] =
+    Future.successful(Done)
   def recover(settings: TableGraphSettings)(implicit ec: ExecutionContext): Future[TableGraphSettings] =
     Future.successful(
       latest.fold(settings)(checkpoint =>
@@ -38,7 +42,11 @@ final case class TableGraphSettings(
     nextBatchSequence: Long = 0L,
     batchSize: Int = 128)
 
-final case class TableGraphMaterialized(killSwitch: UniqueKillSwitch, completion: Future[Done], latestCheckpoint: () => Option[BatchCheckpoint]) {
+final case class TableGraphMaterialized(
+    killSwitch: UniqueKillSwitch,
+    completion: Future[Done],
+    latestCheckpoint: () => Option[BatchCheckpoint],
+    failure: () => Option[Throwable] = () => None) {
   def stop(): Future[Done] = { killSwitch.shutdown(); completion }
 }
 
@@ -46,7 +54,8 @@ final class TableCdcGraph(
     capture: SharedMySQLCapture,
     settings: TableGraphSettings,
     sink: TableGraphSink,
-    journal: TableGraphJournal
+    journal: TableGraphJournal,
+    blockingEc: ExecutionContext = ExecutionContext.global
   )(implicit materializer: Materializer,
     ec: ExecutionContext) {
   require(settings.consumerId.matches("[a-f0-9]{64}"))
@@ -63,23 +72,30 @@ final class TableCdcGraph(
       activeSettings.after,
       activeSettings.nextBatchSequence,
       activeSettings.batchSize,
-      activeSettings.consumerId)
+      activeSettings.consumerId)(blockingEc)
     val (kill, done) = source
       .viaMat(KillSwitches.single)(Keep.right)
       .mapAsync(1) { batch =>
-        sink.commit(activeSettings.subscriptionId, activeSettings.executionId, batch).flatMap { result =>
+        sink.commit(activeSettings.subscriptionId, activeSettings.executionId, batch)(blockingEc).flatMap { result =>
           val checkpoint = result match {
             case Committed(value)        => value
             case AlreadyCommitted(value) => value
           }
           journal.persist(checkpoint).flatMap { revision =>
-            capture.acknowledgeTableBatch(activeSettings.subscriptionId, activeSettings.sourceNodeId, activeSettings.consumerId, batch, revision)
+            capture
+              .acknowledgeTableBatch(activeSettings.subscriptionId, activeSettings.sourceNodeId, activeSettings.consumerId, batch, revision)
+              .flatMap(_ => journal.afterAck(checkpoint, revision))
           }
         }
       }
       .toMat(Sink.ignore)(Keep.both)
       .run()
-    TableGraphMaterialized(kill, done, () => journal.latest)
+    val failureRef = new AtomicReference[Option[Throwable]](None)
+    done.onComplete {
+      case Failure(error) => failureRef.set(Some(error))
+      case Success(_)     => ()
+    }(ExecutionContext.parasitic)
+    TableGraphMaterialized(kill, done, () => journal.latest, () => failureRef.get())
   }
 }
 
@@ -100,6 +116,7 @@ final class BootstrapJournalTableGraph(
     afterPersist: BootstrapJournal.PersistedProgress => Unit = (_: BootstrapJournal.PersistedProgress) => ())
     extends TableGraphJournal {
   private val latestRef                        = new AtomicReference[Option[BatchCheckpoint]](None)
+  private val pendingReceipt                  = new AtomicReference[Option[BootstrapJournal.PersistedProgress]](None)
   override def latest: Option[BatchCheckpoint] = latestRef.get()
   override def recover(settings: TableGraphSettings)(implicit ec: ExecutionContext): Future[TableGraphSettings] =
     journal.read().map(state => settings.copy(after = state.deltaAfter, nextBatchSequence = state.batchSequence + 1L))
@@ -114,9 +131,13 @@ final class BootstrapJournalTableGraph(
       .flatMap { _ =>
         journal.persistedProgress().map { receipt =>
           val value = receipt.getOrElse(throw new IllegalStateException("persisted graph Journal progress missing"))
-          afterPersist(value)
+          pendingReceipt.set(Some(value))
           value.sequenceNr
         }
       }
+  }
+  override def afterAck(checkpoint: BatchCheckpoint, revision: Long)(implicit ec: ExecutionContext): Future[Done] = Future {
+    pendingReceipt.getAndSet(None).foreach(afterPersist)
+    Done
   }
 }

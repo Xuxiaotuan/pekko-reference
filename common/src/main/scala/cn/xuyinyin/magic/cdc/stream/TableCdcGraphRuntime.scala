@@ -44,7 +44,10 @@ final class TableCdcGraphRuntime private (private val lifecycle: Option[TableGra
     // target commit, Journal update and L projection.
     if (graph.nonEmpty && activeLifecycle.state.phase == "STREAMING" && !activeLifecycle.gcCheckpointRequested) {
       if (stop()) stopMaterialized()
-      else if (materialized.get().isEmpty) {
+      else if (materialized.get().exists(_.failure().nonEmpty)) {
+        val failure = materialized.getAndSet(None).flatMap(_.failure()).get
+        throw failure
+      } else if (materialized.get().isEmpty) {
         val running = Await.result(graph.get.materializeRecovered(), 40.seconds)
         require(materialized.compareAndSet(None, Some(running)), "table graph materialization raced")
       }
@@ -58,6 +61,8 @@ final class TableCdcGraphRuntime private (private val lifecycle: Option[TableGra
   def run(stop: () => Boolean = () => false): Unit = lifecycle.getOrElse(throw new IllegalStateException("table graph lifecycle is unavailable")).run(stop)
   def requestGcCheckpoint(): Unit = lifecycle.getOrElse(throw new IllegalStateException("table graph lifecycle is unavailable")).requestGcCheckpoint()
   def gcCheckpointRequested: Boolean = lifecycle.exists(_.gcCheckpointRequested)
+  /** True while the streaming graph owns the live tail and Journal handoff. */
+  def materializedActive: Boolean = materialized.get().nonEmpty
 
   /** Stop the tail graph before cancellation, GC sealing, or owner release. */
   def stopMaterialized(): Unit = materialized.getAndSet(None).foreach { running =>
