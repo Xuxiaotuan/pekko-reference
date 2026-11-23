@@ -69,7 +69,15 @@ object BootstrapStepContinuation {
    * A late Journal write is not a clean scheduling boundary. Cancel is the only accepted
    * concurrent control transition; it preserves the entire data-plane progress.
    */
-  def matches(clean: BootstrapProgress, current: BootstrapProgress): Boolean =
-    clean == current || (!clean.cancelRequested && current.cancelRequested && current.phase == "CANCELING" &&
-      current.revision > clean.revision && current == clean.copy(revision = current.revision, phase = "CANCELING", cancelRequested = true))
+  def matches(clean: BootstrapProgress, current: BootstrapProgress): Boolean = {
+    val streamingProgress =
+      clean.phase == "STREAMING" && current.phase == "STREAMING" &&
+        current.revision > clean.revision &&
+        (current.deltaAfter > clean.deltaAfter || current.batchSequence > clean.batchSequence) &&
+        current.deltaAfter >= clean.deltaAfter && current.batchSequence >= clean.batchSequence &&
+        current.copy(revision = clean.revision, deltaAfter = clean.deltaAfter, batchSequence = clean.batchSequence) == clean
+    clean == current || streamingProgress ||
+      (!clean.cancelRequested && current.cancelRequested && current.phase == "CANCELING" &&
+        current.revision > clean.revision && current == clean.copy(revision = current.revision, phase = "CANCELING", cancelRequested = true))
+  }
 }

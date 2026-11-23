@@ -2,7 +2,7 @@
 
 ## 代码与发布基线
 
-- Pekko 代码：`02d8a77`
+- Pekko 代码：`ecb320c`
 - 网站：`4dbb538`
 - 当前分支：`main`
 - 当前实验使用 MySQL 8.0.36、Debezium、Actor Journal 和 MySQL Sink。
@@ -12,11 +12,11 @@
 | 项目 | 当前状态 | 证据 |
 | --- | --- | --- |
 | RG01 | passed | `support/docs/experiments/2026-11-23-rg02-lg-current/RG01-pass-56fea1c/` |
-| RG02 | passed | `support/docs/experiments/2026-11-23-rg02-lg-current/RG02-pass-b9c1111/` |
+| RG02 | passed | `support/docs/experiments/2026-11-23-rg02-lg-current/RG02-pass-a325e16/` |
 | RG07 | passed | `support/docs/experiments/2026-11-23-rg02-lg-current/RG07-pass-56fea1c/` |
 | LG01—LG16 | not_run_current_version | 当前版本尚未重新执行 |
 
-RG02 首次在延长 Journal ask 预算后仍未收敛。进一步检查发现两处实现缺口：流式 Graph 的 JDBC 阻塞操作占用 Streams 运行线程，且 STREAMING 进入后提前释放了仍被 Graph 使用的 Journal。修复后，慢表目标锁窗口内 A 表继续追平，B 表在解锁后恢复，GC 受 pin 保护，重启后两表逐字段一致。
+RG02 在同一最新 Graph 版本上复跑通过。此前失败版本在 B 表进入 STREAMING 后，物化 Graph 推进了 Journal 的 `revision/deltaAfter/batchSequence`，下一次调度仍用旧 clean continuation 做全量相等比较，触发 `clean bootstrap step no longer matches Journal`。修复后，Continuation 对同一 STREAMING 身份只接受 `revision` 增长且 `deltaAfter/batchSequence` 单调前进，仍拒绝执行身份、定义、页、GC proof 或游标回退。真实复跑中，慢表目标锁窗口内 A 表继续追平，B 表在解锁后恢复，GC 受 pin 保护，正常重启后两表逐字段一致。
 
 ## 实验环境
 
@@ -34,7 +34,7 @@ RG02 首次在延长 Journal ask 预算后仍未收敛。进一步检查发现�
 ## 当前版本复跑
 
 - RG01 在当前代码版本 `56fea1c` 通过，包含 GC DONE、正常重启和两表逐字段对账。
-- RG02 在前一提交 `1a0a0e4` 通过，包含慢表锁窗口、GC partial/final、重启计划和两表逐字段对账。Graph capability 重构只改变 GC 接口边界，未改变 Reader、Sink、Journal 或 L 顺序。
+- RG02 在当前修复提交上通过，证据包含慢表锁窗口、GC partial/final、重启计划和两表逐字段对账。此前 `a325e16` 的失败材料仍保留在历史实验目录，不被本次通过覆盖。
 - RG07 在当前代码版本 `56fea1c` 通过，异常重启保持安全暂停，随后恢复并完成两表逐字段对账。
 
 ## 当前实现修复
@@ -46,7 +46,7 @@ RG02 首次在延长 Journal ask 预算后仍未收敛。进一步检查发现�
 
 ## Graph 重构边界
 
-`TableCdcGraphRuntime` 已移除对 `BootstrapRunner` 的公开委托。运行时只依赖表级生命周期和窄化的 `TableGraphGcPublisher` capability，快照阶段仍通过兼容适配器复用旧 Runner，Streaming 阶段由 materialized Graph 自己持有 Source、Sink、Journal 和 ACK 顺序。这完成了执行边界解耦，没有宣称 LOW/HIGH 快照算法已经重写。
+`TableCdcGraphRuntime` 已移除对 `BootstrapRunner` 的公开委托。运行时只依赖表级生命周期和窄化的 `TableGraphGcPublisher` capability，快照阶段仍通过兼容适配器复用旧 Runner，Streaming 阶段由 materialized Graph 自己持有 Source、Sink、Journal 和 ACK 顺序。补充的 continuation 规则允许 Graph 推进同一 STREAMING 状态的 Journal，而不会把合法进度误判为篡改。这里完成的是执行边界和恢复匹配规则解耦，没有把 LOW/HIGH 快照算法写成另一套实现，也没有宣称已消除全部旧 Runner 兼容代码。
 
 ## LG 当前版本状态
 

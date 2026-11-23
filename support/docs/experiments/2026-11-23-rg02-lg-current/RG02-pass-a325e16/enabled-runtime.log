@@ -1,0 +1,402 @@
+10:58:17,906 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.12
+10:58:17,907 |-INFO in ch.qos.logback.classic.util.ContextInitializer@61fe30 - No custom configurators were discovered as a service.
+10:58:17,907 |-INFO in ch.qos.logback.classic.util.ContextInitializer@61fe30 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+10:58:17,907 |-INFO in ch.qos.logback.classic.util.ContextInitializer@61fe30 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+10:58:17,908 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+10:58:17,909 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+10:58:17,911 |-INFO in ch.qos.logback.classic.util.ContextInitializer@61fe30 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 2 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+10:58:17,911 |-INFO in ch.qos.logback.classic.util.ContextInitializer@61fe30 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+10:58:17,911 |-INFO in ch.qos.logback.classic.util.ContextInitializer@61fe30 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+10:58:17,911 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+10:58:17,913 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/Users/xujiawei/magic/scala-workbench/pekko-reference/common/target/scala-2.13/classes/logback.xml]
+10:58:17,959 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [STDOUT]
+10:58:17,959 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+10:58:17,961 |-WARN in ch.qos.logback.core.model.processor.ImplicitModelHandler - Ignoring unknown property [withJansi] in [ch.qos.logback.classic.encoder.PatternLayoutEncoder]
+10:58:17,969 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [CLUSTER_EVENTS]
+10:58:17,969 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+10:58:17,969 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC]
+10:58:17,969 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+10:58:17,970 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [STDOUT] to ch.qos.logback.classic.AsyncAppender[ASYNC]
+10:58:17,970 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Attaching appender named [STDOUT] to AsyncAppender.
+10:58:17,971 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC] - Setting discardingThreshold to 1638
+10:58:17,971 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [ClusterEvents] to INFO
+10:58:17,972 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [ClusterEvents] to false
+10:58:17,972 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [CLUSTER_EVENTS] to Logger[ClusterEvents]
+10:58:17,972 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to INFO
+10:58:17,972 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC] to Logger[ROOT]
+10:58:17,972 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@c9d0d6 - End of configuration.
+10:58:17,972 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@6ccdb29f - Registering current configuration as safe fallback point
+10:58:17,972 |-INFO in ch.qos.logback.classic.util.ContextInitializer@61fe30 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 61 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+10:58:18.102 [34mINFO [0;39m [36m[runtime-gc-runtime_190f7b9fdb0b-pekko.actor.default-dispatcher-3][0;39m [1;35m[o.a.pekko.event.slf4j.Slf4jLogger][0;39m - Slf4jLogger started
+10:58:18.531 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.magic.cdc.platform.CdcTaskStore][0;39m - CDC control JDBC endpoint=jdbc:mysql://127.0.0.1:25832/pekko_test_cdc_window_190f7b9fdb0b?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=30000 database=pekko_test_cdc_window_190f7b9fdb0b
+WINDOW {"pid":23134,"httpPort":60729,"kind":"PROCESS_READY","at":"2026-11-23T10:58:18.697404Z"}
+10:58:19.441 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC owner admission granted attempt=3a7c5c70-c62d-4387-8028-687d0a06850e persisted=3a7c5c70-c62d-4387-8028-687d0a06850e
+10:58:23.569 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[o.a.k.common.config.AbstractConfig][0;39m - EmbeddedWorkerConfig values: 
+	access.control.allow.methods = 
+	access.control.allow.origin = 
+	admin.listeners = null
+	bootstrap.servers = [localhost:9092]
+	client.dns.lookup = use_all_dns_ips
+	config.providers = []
+	connector.client.config.override.policy = All
+	header.converter = class org.apache.kafka.connect.storage.SimpleHeaderConverter
+	header.converter.plugin.version = null
+	key.converter = class org.apache.kafka.connect.json.JsonConverter
+	key.converter.plugin.version = null
+	listeners = [http://:8083]
+	metric.reporters = [org.apache.kafka.common.metrics.JmxReporter]
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	offset.flush.interval.ms = 0
+	offset.flush.timeout.ms = 2000
+	offset.storage.file.filename = 
+	offset.storage.partitions = null
+	offset.storage.replication.factor = null
+	offset.storage.topic = 
+	plugin.discovery = hybrid_warn
+	plugin.path = null
+	response.http.headers.config = 
+	rest.advertised.host.name = null
+	rest.advertised.listener = null
+	rest.advertised.port = null
+	rest.extension.classes = []
+	ssl.cipher.suites = []
+	ssl.client.auth = none
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	task.shutdown.graceful.timeout.ms = 5000
+	topic.creation.enable = true
+	topic.tracking.allow.reset = true
+	topic.tracking.enable = true
+	value.converter = class org.apache.kafka.connect.json.JsonConverter
+	value.converter.plugin.version = null
+
+10:58:23.580 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[o.a.k.common.config.AbstractConfig][0;39m - JsonConverterConfig values: 
+	converter.type = key
+	decimal.format = BASE64
+	replace.null.with.default = true
+	schema.content = null
+	schemas.cache.size = 1000
+	schemas.enable = false
+
+10:58:23.581 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[o.a.k.common.config.AbstractConfig][0;39m - JsonConverterConfig values: 
+	converter.type = value
+	decimal.format = BASE64
+	replace.null.with.default = true
+	schema.content = null
+	schemas.cache.size = 1000
+	schemas.enable = false
+
+10:58:23.582 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'CREATING' to 'INITIALIZING'
+10:58:23.598 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom source info struct maker plugin: io.debezium.connector.mysql.MySqlSourceInfoStructMaker
+10:58:23.608 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = runtime_190f7b9fdb0b named = connection-validation
+10:58:23.609 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-runtime_190f7b9fdb0b-connection-validation
+10:58:23.759 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-connection-validation][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - MySQL version 8.0.36 detected, falling back to 'SHOW MASTER STATUS'
+10:58:23.769 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-connection-validation][0;39m [1;35m[i.d.connector.binlog.BinlogConnector][0;39m - Successfully tested connection for jdbc:mysql://127.0.0.1:25821/?useInformationSchema=true&nullCatalogMeansCurrent=false&useUnicode=true&characterEncoding=UTF-8&characterSetResults=UTF-8&zeroDateTimeBehavior=CONVERT_TO_NULL&connectTimeout=30000 with user 'rs_190f7b9fdb0b'
+10:58:23.769 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-connection-validation][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component JdbcConnection, id = JdbcConnection named = jdbc-connection-close
+10:58:23.769 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-connection-validation][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-jdbcconnection-JdbcConnection-jdbc-connection-close
+10:58:23.773 [34mINFO [0;39m [36m[debezium-jdbcconnection-JdbcConnection-jdbc-connection-close][0;39m [1;35m[io.debezium.jdbc.JdbcConnection][0;39m - Connection gracefully closed
+10:58:23.782 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.storage.jdbc.JdbcCommonConfig][0;39m - Configuration for 'JdbcOffsetBackingStoreConfig' with prefix 'offset.storage.': {jdbc.table.name=capture_offsets_9c9f8a05f274fe4da35139e830b593ae, jdbc.connection.user=rd_190f7b9fdb0b, jdbc.connection.url=jdbc:mysql://127.0.0.1:25832/pekko_test_cdc_window_190f7b9fdb0b?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=30000, jdbc.connection.password=********, jdbc.table.ddl=CREATE TABLE %s (id VARCHAR(36) NOT NULL, offset_key VARCHAR(1255), offset_val VARCHAR(1255), record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id)), file.filename=}
+10:58:23.825 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.s.j.o.JdbcOffsetBackingStore][0;39m - Starting JdbcOffsetBackingStore db 'jdbc:mysql://127.0.0.1:25832/pekko_test_cdc_window_190f7b9fdb0b?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=30000'
+10:58:23.840 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'INITIALIZING' to 'CREATING_TASKS'
+10:58:23.845 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'CREATING_TASKS' to 'STARTING_TASKS'
+10:58:23.845 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Waiting max. for 40000 ms for individual source tasks to start.
+10:58:23.846 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom source info struct maker plugin: io.debezium.connector.mysql.MySqlSourceInfoStructMaker
+10:58:23.848 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.o.emitter.NoOpLineageEmitter][0;39m - You are using a no-op lineage emitter. If you want to emit open lineage event, please set 'openlineage.integration.enabled=true'
+10:58:23.850 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - Starting MySqlConnectorTask with configuration:
+   connector.class = io.debezium.connector.mysql.MySqlConnector
+   snapshot.locking.mode = none
+   bootstrap.servers = localhost:9092
+   driver.forceConnectionTimeZoneToSession = true
+   include.schema.changes = true
+   schema.history.internal.jdbc.connection.url = jdbc:mysql://127.0.0.1:25832/pekko_test_cdc_window_190f7b9fdb0b?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=30000
+   poll.interval.ms = 100
+   record.processing.threads = 1
+   errors.retry.delay.initial.ms = 300
+   driver.allowPublicKeyRetrieval = true
+   key.converter = org.apache.kafka.connect.json.JsonConverter
+   database.user = rs_190f7b9fdb0b
+   offset.storage = io.debezium.storage.jdbc.offset.JdbcOffsetBackingStore
+   heartbeat.interval.ms = 1000
+   offset.storage.jdbc.table.name = capture_offsets_9c9f8a05f274fe4da35139e830b593ae
+   internal.task.management.timeout.ms = 40000
+   errors.max.retries = -1
+   database.password = ********
+   name = runtime_190f7b9fdb0b
+   offset.storage.jdbc.connection.password = ********
+   offset.storage.jdbc.table.ddl = CREATE TABLE %s (id VARCHAR(36) NOT NULL, offset_key VARCHAR(1255), offset_val VARCHAR(1255), record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id))
+   max.batch.size = 128
+   skipped.operations = none
+   snapshot.mode = no_data
+   schema.history.internal.jdbc.connection.password = ********
+   record.processing.shutdown.timeout.ms = 1000
+   provide.transaction.metadata = true
+   schema.history.internal.store.only.captured.databases.ddl = true
+   record.processing.order = ORDERED
+   tombstones.on.delete = false
+   topic.prefix = runtime_190f7b9fdb0b
+   decimal.handling.mode = string
+   offset.storage.file.filename = 
+   schema.history.internal.jdbc.table.ddl = CREATE TABLE %s (id VARCHAR(36) NOT NULL, history_data LONGTEXT, history_data_seq INT, record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id, history_data_seq))
+   value.converter = org.apache.kafka.connect.json.JsonConverter
+   offset.storage.jdbc.connection.url = jdbc:mysql://127.0.0.1:25832/pekko_test_cdc_window_190f7b9fdb0b?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=30000
+   database.server.id = 142826189
+   max.queue.size.in.bytes = 16777216
+   schema.history.internal.jdbc.table.name = capture_history_9c9f8a05f274fe4da35139e830b593ae
+   offset.flush.timeout.ms = 2000
+   errors.retry.delay.max.ms = 10000
+   offset.storage.jdbc.connection.user = rd_190f7b9fdb0b
+   database.port = 25821
+   offset.flush.interval.ms = 0
+   schema.history.internal = io.debezium.storage.jdbc.history.JdbcSchemaHistory
+   record.processing.with.serial.consumer = false
+   database.hostname = 127.0.0.1
+   database.connectionTimeZone = UTC
+   schema.history.internal.jdbc.connection.user = rd_190f7b9fdb0b
+   connect.keep.alive.interval.ms = 5000
+   table.include.list = \Qpekko_test_cdc_window_190f7b9fdb0b\E\..*
+   database.include.list = pekko_test_cdc_window_190f7b9fdb0b
+
+10:58:23.850 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom topic naming strategy plugin: io.debezium.schema.DefaultTopicNamingStrategy
+10:58:23.958 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - MySQL version 8.0.36 detected, falling back to 'SHOW MASTER STATUS'
+10:58:23.974 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - Found previous partition offset BinlogPartition{serverName='runtime_190f7b9fdb0b'} io.debezium.connector.mysql.MySqlPartition@881d44c: {transaction_id=0612ca3b-e729-11f1-928a-9e62edb60a79:241, file=mysql-bin.000003, pos=109377, gtids=0612ca3b-e729-11f1-928a-9e62edb60a79:1-240, transaction_data_collection_order_pekko_test_cdc_window_190f7b9fdb0b.a=1, event=3}
+10:58:24.006 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.storage.jdbc.JdbcCommonConfig][0;39m - Configuration for 'JdbcSchemaHistoryConfig' with prefix 'schema.history.internal.': {connector.class=io.debezium.connector.mysql.MySqlConnector, jdbc.table.name=capture_history_9c9f8a05f274fe4da35139e830b593ae, jdbc.connection.user=rd_190f7b9fdb0b, name=runtime_190f7b9fdb0b-schemahistory, jdbc.connection.url=jdbc:mysql://127.0.0.1:25832/pekko_test_cdc_window_190f7b9fdb0b?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=30000, jdbc.connection.password=********, connector.id=runtime_190f7b9fdb0b, jdbc.table.ddl=CREATE TABLE %s (id VARCHAR(36) NOT NULL, history_data LONGTEXT, history_data_seq INT, record_insert_ts TIMESTAMP(6) NOT NULL, record_insert_seq INT NOT NULL, PRIMARY KEY (id, history_data_seq)), store.only.captured.databases.ddl=true}
+10:58:24.054 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlDatabaseSchema][0;39m - Using MySql DdlParserType DEFAULT
+10:58:24.173 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - MySQL version 8.0.36 detected, falling back to 'SHOW MASTER STATUS'
+10:58:24.186 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - Guardrail validation skipped
+10:58:24.186 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - Closing connection before starting schema recovery
+10:58:24.186 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component JdbcConnection, id = JdbcConnection named = jdbc-connection-close
+10:58:24.186 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-jdbcconnection-JdbcConnection-jdbc-connection-close
+10:58:24.190 [34mINFO [0;39m [36m[debezium-jdbcconnection-JdbcConnection-jdbc-connection-close][0;39m [1;35m[io.debezium.jdbc.JdbcConnection][0;39m - Connection gracefully closed
+10:58:24.305 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - GTID Set retained: '0612ca3b-e729-11f1-928a-9e62edb60a79:1-240'
+10:58:24.306 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - The current GTID set '0612ca3b-e729-11f1-928a-9e62edb60a79:1-241' does not contain the GTID set '0612ca3b-e729-11f1-928a-9e62edb60a79:1-240' required by the connector
+10:58:24.316 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - Server has already purged '' GTIDs
+10:58:24.320 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.b.j.BinlogConnectorConnection][0;39m - GTIDs known by the server but not processed yet '0612ca3b-e729-11f1-928a-9e62edb60a79:241-241', for replication are available only '0612ca3b-e729-11f1-928a-9e62edb60a79:241-241'
+10:58:24.320 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - Reconnecting after validating schema recovery
+10:58:24.343 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.mysql.MySqlConnectorTask][0;39m - Found previous offset BinlogOffsetContext{sourceInfoSchema=Schema{io.debezium.connector.mysql.Source:STRUCT}, sourceInfo=BinlogSourceInfo{currentGtid='null', currentBinlogFilename='mysql-bin.000003', currentBinlogPosition=109377, currentRowNumber=0, serverId=0, sourceTime=null, threadId=-1, currentQuery='null', tableIds=[], databaseName='null'}, snapshotCompleted=false, transactionContext=TransactionContext [currentTransactionId=0612ca3b-e729-11f1-928a-9e62edb60a79:241, perTableEventCount={pekko_test_cdc_window_190f7b9fdb0b.a=1}, totalEventCount=1], restartGtidSet='0612ca3b-e729-11f1-928a-9e62edb60a79:1-240', currentGtidSet='0612ca3b-e729-11f1-928a-9e62edb60a79:1-240', restartBinlogFilename='mysql-bin.000003', restartBinlogPosition=109377, restartRowsToSkip=0, restartEventsToSkip=3, currentEventLengthInBytes=0, inTransaction=false, transactionId='null', incrementalSnapshotContext=IncrementalSnapshotContext [windowOpened=false, chunkEndPosition=null, dataCollectionsToSnapshot=[], lastEventKeySent=null, maximumKey=null]}
+10:58:24.344 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.c.b.QueueProviderServiceProvider][0;39m - Using QueueProvider io.debezium.connector.base.DefaultQueueProvider
+10:58:24.347 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = runtime_190f7b9fdb0b named = SignalProcessor
+10:58:24.351 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.config.CommonConnectorConfig][0;39m - Loading the custom topic naming strategy plugin: io.debezium.schema.SchemaTopicNamingStrategy
+10:58:24.369 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = runtime_190f7b9fdb0b named = change-event-source-coordinator
+10:58:24.369 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = runtime_190f7b9fdb0b named = blocking-snapshot
+10:58:24.370 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator
+10:58:24.371 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - All tasks have started successfully.
+10:58:24.371 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'STARTING_TASKS' to 'POLLING_TASKS'
+10:58:24.371 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Using io.debezium.embedded.async.ParallelSmtAndConvertBatchProcessor processor
+10:58:24.371 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Metrics registered
+10:58:24.372 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Context created
+10:58:24.382 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.r.history.SchemaHistoryMetrics][0;39m - Started database schema history recovery
+10:58:24.606 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.r.history.SchemaHistoryMetrics][0;39m - Finished database schema history recovery of 24 change(s) in 223 ms
+10:58:24.622 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.r.RelationalSnapshotChangeEventSource][0;39m - A previous offset indicating a completed snapshot has been found.
+10:58:24.622 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Snapshot ended with SnapshotResult [status=SKIPPED, offset=BinlogOffsetContext{sourceInfoSchema=Schema{io.debezium.connector.mysql.Source:STRUCT}, sourceInfo=BinlogSourceInfo{currentGtid='null', currentBinlogFilename='mysql-bin.000003', currentBinlogPosition=109377, currentRowNumber=0, serverId=0, sourceTime=null, threadId=-1, currentQuery='null', tableIds=[], databaseName='null'}, snapshotCompleted=false, transactionContext=TransactionContext [currentTransactionId=0612ca3b-e729-11f1-928a-9e62edb60a79:241, perTableEventCount={pekko_test_cdc_window_190f7b9fdb0b.a=1}, totalEventCount=1], restartGtidSet='0612ca3b-e729-11f1-928a-9e62edb60a79:1-240', currentGtidSet='0612ca3b-e729-11f1-928a-9e62edb60a79:1-240', restartBinlogFilename='mysql-bin.000003', restartBinlogPosition=109377, restartRowsToSkip=0, restartEventsToSkip=3, currentEventLengthInBytes=0, inTransaction=false, transactionId='null', incrementalSnapshotContext=IncrementalSnapshotContext [windowOpened=false, chunkEndPosition=null, dataCollectionsToSnapshot=[], lastEventKeySent=null, maximumKey=null]}]
+10:58:24.625 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component MySqlConnector, id = runtime_190f7b9fdb0b named = binlog-client
+10:58:24.629 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Enable ssl PREFERRED mode for connector runtime_190f7b9fdb0b
+10:58:24.637 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.pipeline.signal.SignalProcessor][0;39m - SignalProcessor started. Scheduling it every 5000ms
+10:58:24.637 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-runtime_190f7b9fdb0b-SignalProcessor
+10:58:24.637 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Starting streaming
+10:58:24.645 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - GTID set purged on server: ''
+10:58:24.645 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Attempting to generate a filtered GTID set
+10:58:24.645 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - GTID set from previous recorded offset: 0612ca3b-e729-11f1-928a-9e62edb60a79:1-240
+10:58:24.646 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - GTID set available on server: 0612ca3b-e729-11f1-928a-9e62edb60a79:1-241
+10:58:24.646 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Using first available positions for new GTID channels
+10:58:24.646 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Relevant GTID set available on server: 0612ca3b-e729-11f1-928a-9e62edb60a79:1-241
+10:58:24.646 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.c.mysql.jdbc.MySqlConnection][0;39m - Final merged GTID set to use when connecting to MySQL: 0612ca3b-e729-11f1-928a-9e62edb60a79:1-240
+10:58:24.646 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Registering binlog reader with GTID set: '0612ca3b-e729-11f1-928a-9e62edb60a79:1-240'
+11月 23, 2026 10:58:24 上午 com.github.shyiko.mysql.binlog.BinaryLogClient setGtidSet
+信息: Enabling GTID
+10:58:24.649 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Skip 3 events on streaming start
+10:58:24.649 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Skip 0 rows on streaming start
+10:58:24.649 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-runtime_190f7b9fdb0b-binlog-client
+10:58:24.651 [34mINFO [0;39m [36m[blc-127.0.0.1:25821][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-runtime_190f7b9fdb0b-binlog-client
+11月 23, 2026 10:58:24 上午 com.github.shyiko.mysql.binlog.BinaryLogClient resolveDatabaseVersion
+信息: Database version: 8.0.36 (major=8, minor=0, mariadb=false)
+11月 23, 2026 10:58:24 上午 com.github.shyiko.mysql.binlog.BinaryLogClient tryUpgradeToSSL
+信息: SSL enabled
+11月 23, 2026 10:58:24 上午 com.github.shyiko.mysql.binlog.BinaryLogClient requestBinaryLogStreamMysql
+信息: Requesting streaming from position filename: , position: 4, GTID set: 0612ca3b-e729-11f1-928a-9e62edb60a79:1-240
+11月 23, 2026 10:58:24 上午 com.github.shyiko.mysql.binlog.BinaryLogClient connect
+信息: Connected to 127.0.0.1:25821 at 0612ca3b-e729-11f1-928a-9e62edb60a79:1-240 (sid:142826189, cid:1036)
+10:58:24.737 [34mINFO [0;39m [36m[blc-127.0.0.1:25821][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Connected to binlog at 127.0.0.1:25821, starting at BinlogOffsetContext{sourceInfoSchema=Schema{io.debezium.connector.mysql.Source:STRUCT}, sourceInfo=BinlogSourceInfo{currentGtid='null', currentBinlogFilename='mysql-bin.000003', currentBinlogPosition=109377, currentRowNumber=0, serverId=0, sourceTime=null, threadId=-1, currentQuery='null', tableIds=[], databaseName='null'}, snapshotCompleted=false, transactionContext=TransactionContext [currentTransactionId=0612ca3b-e729-11f1-928a-9e62edb60a79:241, perTableEventCount={pekko_test_cdc_window_190f7b9fdb0b.a=1}, totalEventCount=1], restartGtidSet='0612ca3b-e729-11f1-928a-9e62edb60a79:1-240', currentGtidSet='0612ca3b-e729-11f1-928a-9e62edb60a79:1-240', restartBinlogFilename='mysql-bin.000003', restartBinlogPosition=109377, restartRowsToSkip=0, restartEventsToSkip=3, currentEventLengthInBytes=0, inTransaction=false, transactionId='null', incrementalSnapshotContext=IncrementalSnapshotContext [windowOpened=false, chunkEndPosition=null, dataCollectionsToSnapshot=[], lastEventKeySent=null, maximumKey=null]}
+10:58:24.737 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Waiting for keepalive thread to start
+10:58:24.738 [34mINFO [0;39m [36m[blc-127.0.0.1:25821][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-mysqlconnector-runtime_190f7b9fdb0b-binlog-client
+10:58:24.752 [34mINFO [0;39m [36m[blc-127.0.0.1:25821][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Skipping previously processed row event: Event{header=EventHeaderV4{timestamp=1795431486000, eventType=EXT_UPDATE_ROWS, serverId=250001, headerLength=19, dataLength=101, nextPosition=109711, flags=0}, data=UpdateRowsEventData{tableId=123, includedColumnsBeforeUpdate={0, 1, 2, 3, 4, 5}, includedColumns={0, 1, 2, 3, 4, 5}, rows=[
+    {before=[1, [B@6bbb8387, 1.7450, [B@1e85e513, 2026-11-12T02:03:04.123456, 5], after=[1, [B@7d4031be, 1.8700, [B@4ad0322a, 2026-11-12T02:03:04.123456, 6]}
+]}}
+10:58:24.848 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Keepalive thread is running
+10:58:26.743 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=b46bbc35-a976-4f44-af76-7caf120deb7a pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431506418
+10:58:26.837 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=e9694c46-caf4-4dde-8a98-9aff3598bbb9 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431506418
+10:58:27.044 [34mINFO [0;39m [36m[runtime-gc-runtime_190f7b9fdb0b-pekko.persistence.dispatchers.default-plugin-dispatcher-10][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Starting...
+10:58:27.048 [34mINFO [0;39m [36m[runtime-gc-runtime_190f7b9fdb0b-pekko.persistence.dispatchers.default-plugin-dispatcher-10][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Start completed.
+10:58:30.546 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - 6 records sent during previous 00:00:06.701, last recorded offset of {server=runtime_190f7b9fdb0b} partition is {ts_sec=1795431506, file=mysql-bin.000003, pos=110205, gtids=0612ca3b-e729-11f1-928a-9e62edb60a79:1-242, server_id=250001}
+10:58:32.099 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=true validationComplete=false
+10:58:32.194 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=b46bbc35-a976-4f44-af76-7caf120deb7a phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:58:32.450 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=208ae043-12d4-4652-9a65-fd953cbfae31 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431512129
+10:58:33.984 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:58:34.069 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=e9694c46-caf4-4dde-8a98-9aff3598bbb9 phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:58:34.335 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=1010a426-b3c0-4fe4-880d-5b2d6db25ec4 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431514014
+10:58:35.046 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=true validationComplete=false
+10:58:35.146 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=208ae043-12d4-4652-9a65-fd953cbfae31 phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:58:35.448 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=fffbd2f0-d35d-4b40-b2c3-54d805e5328c pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431515076
+10:58:38.311 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=true validationComplete=false
+10:58:38.402 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=fffbd2f0-d35d-4b40-b2c3-54d805e5328c phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:58:38.499 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:58:38.506 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=3919bb7d-1c11-4a83-9ae6-6b7cc54382c8 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431518341
+10:58:38.595 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=1010a426-b3c0-4fe4-880d-5b2d6db25ec4 phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:58:38.941 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=f343f3fe-8cd1-4584-8ac9-da006acdc8b6 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431518529
+10:58:41.446 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=true validationComplete=false
+10:58:41.528 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=3919bb7d-1c11-4a83-9ae6-6b7cc54382c8 phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:58:41.592 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=9c494c2d-61ba-46cb-9518-a0673199ca11 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431521476
+10:58:41.941 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=true validationComplete=false
+10:58:42.023 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=9c494c2d-61ba-46cb-9518-a0673199ca11 phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:58:42.144 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=53c5201e-2f7c-481a-8285-638814d40e3d pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431521971
+10:58:42.539 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - 3 records sent during previous 00:00:11.993, last recorded offset of {server=runtime_190f7b9fdb0b} partition is {ts_sec=1795431506, file=mysql-bin.000003, pos=110205, gtids=0612ca3b-e729-11f1-928a-9e62edb60a79:1-242, server_id=250001}
+10:58:42.965 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:58:43.040 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=f343f3fe-8cd1-4584-8ac9-da006acdc8b6 phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:58:43.151 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=ba5bd7ab-3924-47f5-a4a6-239732b32019 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431522995
+10:58:43.276 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=true validationComplete=false
+10:58:43.361 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=53c5201e-2f7c-481a-8285-638814d40e3d phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:58:43.483 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=a396ba81-205b-4843-a1dc-03db95f67ef7 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431523306
+10:58:44.835 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=true validationComplete=true
+10:58:45.883 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=a396ba81-205b-4843-a1dc-03db95f67ef7 phase=STREAMING didWork=true validationComplete=true nextDelay=0
+10:58:47.820 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:58:47.916 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=ba5bd7ab-3924-47f5-a4a6-239732b32019 phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:58:48.123 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=35d399b7-3585-4c31-86f4-b05b7334c3de pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431527850
+10:58:48.487 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:58:48.583 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=35d399b7-3585-4c31-86f4-b05b7334c3de phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:58:48.757 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=5f477248-2509-4428-9edb-07972e67f0b3 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431528517
+10:58:50.669 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=true
+10:58:51.816 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=5f477248-2509-4428-9edb-07972e67f0b3 phase=STREAMING didWork=true validationComplete=true nextDelay=0
+10:58:51.895 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=12cef9ca-bb72-46d9-aa3d-5ba2b5887c43 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431531760
+10:58:52.421 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=false validationComplete=true
+10:58:52.564 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=12cef9ca-bb72-46d9-aa3d-5ba2b5887c43 phase=STREAMING didWork=false validationComplete=true nextDelay=250
+10:58:52.674 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=366fbf54-2141-474e-a11c-8972bc1acb8c pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431532495
+10:58:52.819 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=false validationComplete=true
+10:58:52.949 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=366fbf54-2141-474e-a11c-8972bc1acb8c phase=STREAMING didWork=false validationComplete=true nextDelay=250
+10:58:52.995 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=6456b826-7cbe-4941-921f-02441c85d6a4 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431532886
+10:58:53.116 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=false validationComplete=true
+10:58:53.252 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=6456b826-7cbe-4941-921f-02441c85d6a4 phase=STREAMING didWork=false validationComplete=true nextDelay=250
+10:58:53.360 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=8e27c7a8-4419-4bab-b7f6-5d81b5f4936e pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431533189
+10:58:54.431 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=3470011c-a5c2-458c-be10-f3b36c369d27 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431534224
+10:58:55.149 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=false validationComplete=true
+10:58:55.283 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=3470011c-a5c2-458c-be10-f3b36c369d27 phase=STREAMING didWork=false validationComplete=true nextDelay=250
+10:58:55.505 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=b0c17c2c-8f4a-4f51-af28-1975d230baa1 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431535228
+10:58:55.651 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=false validationComplete=true
+10:58:55.797 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=b0c17c2c-8f4a-4f51-af28-1975d230baa1 phase=STREAMING didWork=false validationComplete=true nextDelay=250
+10:58:55.873 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=d39f9cd6-f1c3-4e7c-88eb-009bb25da003 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431535727
+10:58:56.011 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=false validationComplete=true
+10:58:56.151 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=d39f9cd6-f1c3-4e7c-88eb-009bb25da003 phase=STREAMING didWork=false validationComplete=true nextDelay=250
+10:58:56.297 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=dcce8072-4722-4a16-acbe-d0838cd7dd1c pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431536090
+10:58:59.235 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:58:59.339 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=8e27c7a8-4419-4bab-b7f6-5d81b5f4936e phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:58:59.591 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=47f923da-217e-42ec-b7c9-5b0bb54e63bb pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431539265
+10:58:59.970 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=true validationComplete=false
+10:59:00.091 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=dcce8072-4722-4a16-acbe-d0838cd7dd1c phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:00.175 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=d318d061-0b0e-4ec9-b33a-d7f77ab4cb6a pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431540000
+10:59:01.611 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - 20 records sent during previous 00:00:19.071, last recorded offset of {server=runtime_190f7b9fdb0b} partition is {ts_sec=1795431533, file=mysql-bin.000003, pos=112420, gtids=0612ca3b-e729-11f1-928a-9e62edb60a79:1-247, server_id=250001}
+10:59:02.835 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=true validationComplete=false
+10:59:02.998 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=d318d061-0b0e-4ec9-b33a-d7f77ab4cb6a phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:03.167 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=31b62635-9f69-4687-a965-ac8ab64e2a8c pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431542865
+10:59:04.013 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:59:04.110 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=47f923da-217e-42ec-b7c9-5b0bb54e63bb phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:04.282 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=c0456962-2a83-4f79-bf46-db251a26830b pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431544043
+10:59:06.181 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=true validationComplete=false
+10:59:06.268 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=31b62635-9f69-4687-a965-ac8ab64e2a8c phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:06.325 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=1fd84a6e-1317-4586-98a8-f632ca490212 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431546211
+10:59:08.633 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:59:08.742 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=c0456962-2a83-4f79-bf46-db251a26830b phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:09.003 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=f73cec3e-bd78-45be-99d4-1d5ebcf64081 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431548663
+10:59:09.350 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=true validationComplete=false
+10:59:09.443 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=1fd84a6e-1317-4586-98a8-f632ca490212 phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:09.549 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=4b4daf7e-042c-48af-99a0-57627ca8ee6c pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431549380
+10:59:09.923 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=true validationComplete=false
+10:59:10.018 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=4b4daf7e-042c-48af-99a0-57627ca8ee6c phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:10.155 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=05eb5edb-ab97-44b4-bb49-553775afddf6 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431549953
+10:59:11.283 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=true validationComplete=false
+10:59:11.376 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=05eb5edb-ab97-44b4-bb49-553775afddf6 phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:11.541 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=f939a3d7-0d59-486d-a7f4-9fdcc8b0660a pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431551313
+10:59:13.227 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d phase=STREAMING didWork=true validationComplete=true
+10:59:13.882 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:59:14.126 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=f73cec3e-bd78-45be-99d4-1d5ebcf64081 phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:14.415 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=289069e8fb6fe299906f33bfeb1167ad08f02b3f43140abc161f812ebd1df11d grant=f939a3d7-0d59-486d-a7f4-9fdcc8b0660a phase=STREAMING didWork=true validationComplete=true nextDelay=0
+10:59:14.640 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=757d56e1-9cdc-4977-8d09-4247e6d86c63 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431553912
+10:59:15.224 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:59:15.321 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=757d56e1-9cdc-4977-8d09-4247e6d86c63 phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:15.440 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=3e46624b-83fe-450d-a57b-01254ef9e39a pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431555254
+10:59:17.337 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:59:17.433 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=3e46624b-83fe-450d-a57b-01254ef9e39a phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:17.487 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=81436890-7939-4d27-bc66-f186676b90db pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431557367
+10:59:18.816 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=true
+10:59:19.840 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=81436890-7939-4d27-bc66-f186676b90db phase=STREAMING didWork=true validationComplete=true nextDelay=0
+10:59:20.096 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=bb1bc6b1-7603-461e-a7c6-1e49a5f3279f pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431559757
+10:59:20.826 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=false validationComplete=true
+10:59:20.988 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=bb1bc6b1-7603-461e-a7c6-1e49a5f3279f phase=STREAMING didWork=false validationComplete=true nextDelay=250
+10:59:21.122 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=0b03aec1-8ea2-434a-8f23-71bd7b0ee0b4 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431560909
+10:59:21.293 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=false validationComplete=true
+10:59:21.450 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=0b03aec1-8ea2-434a-8f23-71bd7b0ee0b4 phase=STREAMING didWork=false validationComplete=true nextDelay=250
+10:59:21.484 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=29a7d334-3a14-41ea-a849-dc02777d2c43 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431561375
+10:59:21.652 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=false validationComplete=true
+10:59:21.865 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=29a7d334-3a14-41ea-a849-dc02777d2c43 phase=STREAMING didWork=false validationComplete=true nextDelay=250
+10:59:23.397 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=e332dd2e-5132-43e0-972b-60a45ca0c7f8 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431561748
+10:59:29.832 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:59:29.939 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=e332dd2e-5132-43e0-972b-60a45ca0c7f8 phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:30.306 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=98701b42-a017-4cfd-ad5a-0a48a655b75d pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431569862
+10:59:35.095 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:59:35.216 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=98701b42-a017-4cfd-ad5a-0a48a655b75d phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:35.491 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=f567140d-e37f-434e-a6be-1ac5c38084cc pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431575125
+10:59:40.532 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:59:40.657 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=f567140d-e37f-434e-a6be-1ac5c38084cc phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:40.900 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=d1dd95cc-5d02-4018-a784-0e67c86f6fbf pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431580562
+10:59:41.579 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - 10 records sent during previous 00:00:39.969, last recorded offset of {server=runtime_190f7b9fdb0b} partition is {ts_sec=1795431533, file=mysql-bin.000003, pos=112420, gtids=0612ca3b-e729-11f1-928a-9e62edb60a79:1-247, server_id=250001}
+10:59:46.473 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:59:46.590 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=d1dd95cc-5d02-4018-a784-0e67c86f6fbf phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:46.843 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=13baa42f-fcb1-411d-85be-6cb804806fbf pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431586503
+10:59:47.314 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:59:47.561 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=13baa42f-fcb1-411d-85be-6cb804806fbf phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:47.680 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=8183520b-7e89-40d7-a390-3df6e34ff28e pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431587344
+10:59:49.601 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=false
+10:59:49.713 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=8183520b-7e89-40d7-a390-3df6e34ff28e phase=STREAMING didWork=true validationComplete=false nextDelay=0
+10:59:50.027 [34mINFO [0;39m [36m[cdc-platform-control-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant claimed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=2351c4c8-cf1c-4daf-8fa3-dbbdf77cac80 pool=TAIL owner=3a7c5c70-c62d-4387-8028-687d0a06850e phase=STREAMING dueAt=1795431589631
+10:59:51.863 [31mWARN [0;39m [36m[runtime-gc-runtime_190f7b9fdb0b-pekko.actor.internal-dispatcher-4][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC runtime stop requested attempt=3a7c5c70-c62d-4387-8028-687d0a06850e ownerState=ACTIVE reason=none activeSteps=1 guardianLost=false
+10:59:51.868 [34mINFO [0;39m [36m[capture-close-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'POLLING_TASKS' to 'STOPPING'
+10:59:51.868 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Task interrupted while polling.
+10:59:51.868 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.connector.common.BaseSourceTask][0;39m - Stopping down connector
+11月 23, 2026 10:59:51 上午 com.github.shyiko.mysql.binlog.BinaryLogClient$5 run
+信息: threadExecutor is shut down, terminating keepalive thread
+10:59:51.913 [34mINFO [0;39m [36m[debezium-mysqlconnector-runtime_190f7b9fdb0b-change-event-source-coordinator][0;39m [1;35m[i.d.p.ChangeEventSourceCoordinator][0;39m - Finished streaming
+10:59:51.913 [34mINFO [0;39m [36m[blc-127.0.0.1:25821][0;39m [1;35m[i.d.c.b.BinlogStreamingChangeEventSource][0;39m - Stopped reading binlog after 59 events, last recorded offset: {ts_sec=1795431533, file=mysql-bin.000003, pos=112420, gtids=0612ca3b-e729-11f1-928a-9e62edb60a79:1-247, server_id=250001, event=1}
+10:59:51.914 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.pipeline.signal.SignalProcessor][0;39m - SignalProcessor stopped
+10:59:51.914 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[i.d.service.DefaultServiceRegistry][0;39m - Debezium ServiceRegistry stopped.
+10:59:51.914 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component JdbcConnection, id = JdbcConnection named = jdbc-connection-close
+10:59:51.914 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-jdbcconnection-JdbcConnection-jdbc-connection-close
+10:59:51.920 [34mINFO [0;39m [36m[debezium-jdbcconnection-JdbcConnection-jdbc-connection-close][0;39m [1;35m[io.debezium.jdbc.JdbcConnection][0;39m - Connection gracefully closed
+10:59:51.920 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Requested thread factory for component JdbcConnection, id = JdbcConnection named = jdbc-connection-close
+10:59:51.920 [34mINFO [0;39m [36m[pool-1-thread-1][0;39m [1;35m[io.debezium.util.Threads][0;39m - Creating thread debezium-jdbcconnection-JdbcConnection-jdbc-connection-close
+10:59:51.925 [34mINFO [0;39m [36m[debezium-jdbcconnection-JdbcConnection-jdbc-connection-close][0;39m [1;35m[io.debezium.jdbc.JdbcConnection][0;39m - Connection gracefully closed
+10:59:51.932 [34mINFO [0;39m [36m[capture-close-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Stopped task #1 out of 1 tasks (it took 63 ms to stop the task).
+10:59:51.940 [34mINFO [0;39m [36m[capture-close-1][0;39m [1;35m[i.d.s.j.o.JdbcOffsetBackingStore][0;39m - Stopped JdbcOffsetBackingStore
+10:59:51.941 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine is stopped.
+10:59:51.941 [34mINFO [0;39m [36m[mysql-cdc-debezium-engine-1][0;39m [1;35m[i.d.e.async.AsyncEmbeddedEngine][0;39m - Engine state has changed from 'STOPPING' to 'STOPPED'
+10:59:54.108 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcBootstrapKernel][0;39m - CDC graph step completed task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 phase=STREAMING didWork=true validationComplete=true
+10:59:54.330 [31mWARN [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.p.CdcPlatformExtension][0;39m - CDC GC_PUBLICATION_DEFERRED {"error":"IllegalArgumentException:requirement failed: GC capture attempt is stopping or unhealthy","taskId":"a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638"}
+10:59:54.497 [34mINFO [0;39m [36m[cdc-platform-step-3a7c5c70][0;39m [1;35m[c.x.m.c.platform.CdcPlatformRuntime][0;39m - CDC task grant released task=a15eee1ac14a7547d51644105d698a6c841a39e04100128edceda77cac833638 grant=2351c4c8-cf1c-4daf-8fa3-dbbdf77cac80 phase=STREAMING didWork=true validationComplete=true nextDelay=0
+10:59:57.995 [34mINFO [0;39m [36m[runtime-gc-runtime_190f7b9fdb0b-pekko.actor.default-dispatcher-8][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown initiated...
+10:59:57.997 [34mINFO [0;39m [36m[runtime-gc-runtime_190f7b9fdb0b-pekko.actor.default-dispatcher-8][0;39m [1;35m[com.zaxxer.hikari.HikariDataSource][0;39m - db - Shutdown completed.
+WINDOW {"kind":"PROCESS_STOPPED","at":"2026-11-23T10:59:58.009452Z"}

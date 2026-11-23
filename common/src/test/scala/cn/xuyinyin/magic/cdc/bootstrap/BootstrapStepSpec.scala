@@ -38,6 +38,13 @@ class BootstrapStepSpec extends AnyWordSpec with Matchers {
         clean.copy(recoveryAttempts = 3))
         .foreach(next => BootstrapStepContinuation.matches(clean, next) shouldBe false)
     }
+    "accept monotonic Journal progress made by the materialized streaming graph" in {
+      val advanced = clean.copy(revision = 19, deltaAfter = 204, batchSequence = 11)
+      BootstrapStepContinuation.matches(clean, advanced) shouldBe true
+      BootstrapStepContinuation.matches(clean, advanced.copy(deltaAfter = 189)) shouldBe false
+      BootstrapStepContinuation.matches(clean, advanced.copy(batchSequence = 7)) shouldBe false
+      BootstrapStepContinuation.matches(clean, advanced.copy(gcCheckpoint = Some("sealed"))) shouldBe false
+    }
     "discard an unsealed read view even when the scheduling grant was clean" in {
       val retry =
         clean.copy(phase = "SCANNING", window = Some("range_0_0"), manifest = None, upper = Some("64"), nextLower = Some("32"), recoveryAttempts = 1)
