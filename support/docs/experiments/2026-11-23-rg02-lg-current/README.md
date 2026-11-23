@@ -3,7 +3,7 @@
 ## 代码与发布基线
 
 - Pekko 代码：`1a0a0e4`
-- 网站：`747d9ed`
+- 网站：`228df13`
 - 当前分支：`main`
 - 当前实验使用 MySQL 8.0.36、Debezium、Actor Journal 和 MySQL Sink。
 
