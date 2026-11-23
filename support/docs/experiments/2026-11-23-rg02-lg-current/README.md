@@ -2,8 +2,8 @@
 
 ## 代码与发布基线
 
-- Pekko 代码：`56fea1c`
-- 网站：`8c563e3`
+- Pekko 代码：`02d8a77`
+- 网站：`4dbb538`
 - 当前分支：`main`
 - 当前实验使用 MySQL 8.0.36、Debezium、Actor Journal 和 MySQL Sink。
 
