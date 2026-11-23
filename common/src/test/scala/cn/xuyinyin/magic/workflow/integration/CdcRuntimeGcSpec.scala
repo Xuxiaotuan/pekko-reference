@@ -38,6 +38,9 @@ class CdcRuntimeGcSpec extends AnyWordSpec with Matchers {
         def sql(s: Settings, q: String): Unit = withConnection(s, schema)(executeSql(_, q))
         def rows(q: String): JsArray          = withConnection(state, schema)(query(_, q))
         def scalar(q: String): String         = rows(q).elements.head.asJsObject.fields.values.head.convertTo[String]
+        def scalarOrEmpty(q: String): String =
+          try scalar(q)
+          catch { case _: Throwable => "" }
         def createUser(s: Settings, user: String): Unit = withConnection(s, "") { c =>
           val q = c.prepareStatement(s"CREATE USER '$user'@'127.0.0.1' IDENTIFIED BY ?");
           try { q.setString(1, s.password); q.executeUpdate() }
@@ -297,7 +300,7 @@ class CdcRuntimeGcSpec extends AnyWordSpec with Matchers {
               scalar("SELECT COUNT(*) AS n FROM pekko_capture_gc_frames_v1") shouldBe "0"
               mutate("a", "gc-blocked-business-still-live"); equal("a"); snapshot("blocked-final"); stop(child)
             } else {
-              awaitCondition("old namespace certified") { scalar("SELECT phase FROM pekko_capture_gc_namespace_v1") == "COMPLETE" }
+              awaitCondition("old namespace certified") { scalarOrEmpty("SELECT phase FROM pekko_capture_gc_namespace_v1") == "COMPLETE" }
               if (scenario == "RG02-slow-table") {
                 mutate("b", "slow-baseline"); equal("b")
                 awaitCondition("b active certificate") {

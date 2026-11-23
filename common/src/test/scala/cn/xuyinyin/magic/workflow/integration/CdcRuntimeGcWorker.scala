@@ -61,7 +61,10 @@ object CdcRuntimeGcWorker {
           "pekko.workflow.cdc-platform.captures"                         -> Vector(captureConfig.asJava).asJava,
           "pekko.workflow.cdc-platform.tail-delay-ms"                    -> Long.box(30),
           "pekko.workflow.cdc-platform.poll-interval-ms"                 -> Long.box(30),
-          "pekko.workflow.cdc-platform.snapshot-steps"                   -> Int.box(1),
+          // RG02 holds one target table lock while the other table must keep
+          // making progress. One snapshot slot would turn that test into a
+          // global scheduler stall rather than a slow-table isolation probe.
+          "pekko.workflow.cdc-platform.snapshot-steps"                   -> Int.box(2),
           "pekko.workflow.cdc-platform.tail-steps"                       -> Int.box(2),
           "pekko.workflow.mysql-cdc.state-jdbc.url"                      -> state.url(schema),
           "pekko.workflow.mysql-cdc.state-jdbc.username"                 -> state.user,

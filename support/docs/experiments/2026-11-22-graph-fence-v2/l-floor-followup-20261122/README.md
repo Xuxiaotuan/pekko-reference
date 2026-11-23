@@ -31,3 +31,5 @@
 - `RG07-pass-20261123`：RG07 独立异常重启窗口通过，owner 未被猜测为已释放，重启后任务恢复并完成对账。
 
 本轮同时发现并修复了 GC ledger trigger 的 definer 绑定问题。RG02 的慢表窗口仍是未通过边界。
+
+- `RG02-failure-20261123-retry7`：将验收 worker 的 `snapshot-steps` 提高到 2 后重跑，A 仍在 B 目标锁窗口中出现 `local_release_unconfirmed`，最终进入安全暂停，未形成逐字段一致。该结果排除了单一 snapshot slot 作为唯一原因，保留为当前版本失败证据。
