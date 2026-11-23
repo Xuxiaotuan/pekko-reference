@@ -620,7 +620,7 @@ final class CdcBootstrapKernel(
       logger.info("CDC graph step completed task={} phase={} didWork={} validationComplete={}", id, result.progress.phase, result.didWork, result.validationComplete)
       if (result.progress.phase == "STREAMING" && result.validationComplete && !session.graph.gcCheckpointRequested)
         gcRequest.filter(f => gc.get.covered(result.progress, f)).foreach { _ =>
-          try gc.get.publish(id, session.graph.bootstrapRunner)
+          try gc.get.publish(id, session.graph.gcPublisher)
           catch {
             case NonFatal(e) =>
               if (!ExecutionFailure.from(e, "gc-publication").releaseConfirmed) throw e

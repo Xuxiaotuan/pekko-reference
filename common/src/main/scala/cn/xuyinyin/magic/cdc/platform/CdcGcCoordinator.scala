@@ -1,6 +1,7 @@
 package cn.xuyinyin.magic.cdc.platform
 
-import cn.xuyinyin.magic.cdc.bootstrap.{BootstrapJdbc, BootstrapProgress, BootstrapRunner}
+import cn.xuyinyin.magic.cdc.bootstrap.{BootstrapJdbc, BootstrapProgress}
+import cn.xuyinyin.magic.cdc.stream.TableGraphGcPublisher
 import cn.xuyinyin.magic.connectors.mysql.source.MySQLDebeziumConnector
 import cn.xuyinyin.magic.connectors.mysql.source.capture._
 import java.sql.Connection
@@ -92,10 +93,10 @@ final private[cdc] class CdcGcCoordinator(
       .getOrElse(false))
 
   /** Called inside the same task grant, while its actual Actor can still issue a receipt. */
-  def publish(id: String, runner: BootstrapRunner): Unit = {
-    val proof = runner.publishGcCheckpoint(retention)
+  def publish(id: String, publisher: TableGraphGcPublisher): Unit = {
+    val proof = publisher.publishGcCheckpoint(retention)
     connection(c => retention.activateCheckpoint(proof, reader, c, settings.account, settings.ledgerDefiner))
-    val acceptedFloor = runner.state.gcCheckpoint.get.parseJson.asJsObject.fields("deltaAfter").asInstanceOf[JsNumber].value.toLongExact
+    val acceptedFloor = publisher.state.gcCheckpoint.get.parseJson.asJsObject.fields("deltaAfter").asInstanceOf[JsNumber].value.toLongExact
     connection(c =>
       update(
         c,

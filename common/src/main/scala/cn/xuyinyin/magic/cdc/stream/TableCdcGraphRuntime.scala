@@ -19,7 +19,13 @@ trait TableGraphLifecycle {
   def run(stop: () => Boolean): Unit
   def requestGcCheckpoint(): Unit
   def gcCheckpointRequested: Boolean
-  def bootstrapRunner: Option[BootstrapRunner]
+  def gcPublisher: Option[TableGraphGcPublisher]
+}
+
+/** Narrow capability needed by GC. The runtime no longer exposes BootstrapRunner. */
+trait TableGraphGcPublisher {
+  def state: BootstrapProgress
+  private[magic] def publishGcCheckpoint(retention: cn.xuyinyin.magic.connectors.mysql.source.capture.CaptureGcRetention): String
 }
 
 private final class BootstrapRunnerLifecycle(runner: BootstrapRunner) extends TableGraphLifecycle {
@@ -28,13 +34,17 @@ private final class BootstrapRunnerLifecycle(runner: BootstrapRunner) extends Ta
   override def run(stop: () => Boolean): Unit = runner.run(stop)
   override def requestGcCheckpoint(): Unit = runner.requestGcCheckpoint()
   override def gcCheckpointRequested: Boolean = runner.gcCheckpointRequested
-  override def bootstrapRunner: Option[BootstrapRunner] = Some(runner)
+  override def gcPublisher: Option[TableGraphGcPublisher] = Some(new TableGraphGcPublisher {
+    override def state: BootstrapProgress = runner.state
+    override private[magic] def publishGcCheckpoint(retention: cn.xuyinyin.magic.connectors.mysql.source.capture.CaptureGcRetention): String =
+      runner.publishGcCheckpoint(retention)
+  })
 }
 
 final class TableCdcGraphRuntime private (private val lifecycle: Option[TableGraphLifecycle], private val graph: Option[TableCdcGraph]) {
   private val materialized = new AtomicReference[Option[TableGraphMaterialized]](None)
-  def bootstrapRunner: BootstrapRunner =
-    lifecycle.flatMap(_.bootstrapRunner).getOrElse(throw new IllegalStateException("bootstrap runner is unavailable for a materialized table graph"))
+  def gcPublisher: TableGraphGcPublisher =
+    lifecycle.flatMap(_.gcPublisher).getOrElse(throw new IllegalStateException("GC publisher is unavailable for a materialized table graph"))
   def state: BootstrapProgress = lifecycle.map(_.state).getOrElse(throw new IllegalStateException("table graph state is unavailable"))
   def step(stop: () => Boolean = () => false, continuation: Option[BootstrapProgress] = None): BootstrapStepResult = {
     implicit val graphEc: ExecutionContext = ExecutionContext.parasitic
