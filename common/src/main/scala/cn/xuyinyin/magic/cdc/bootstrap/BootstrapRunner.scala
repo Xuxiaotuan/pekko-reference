@@ -306,6 +306,12 @@ final class BootstrapRunner(
   }
   private def scanStep(): Unit = {
     var s = state
+    if (s.window.isEmpty && !s.planned) {
+      val upper = source.maximum()
+      update(_.copy(phase = "SCANNING", upper = upper, planned = true, nextLower = None))
+      emit("BASELINE_PLANNED_AFTER_RESET", "upper" -> upper.map(JsString(_)).getOrElse(JsNull))
+      return
+    }
     if (s.window.isEmpty && s.planned && s.nextLower == s.upper) {
       // Empty input has no ranges. Nonempty input finishes exactly at frozen upper U.
       emit("BEFORE_F"); val f = fence(id + "_F", "F", context("F")); emit("F_READY", "sequence" -> JsNumber(f.sequence.get))
