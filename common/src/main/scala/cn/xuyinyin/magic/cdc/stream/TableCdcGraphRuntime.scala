@@ -1,6 +1,6 @@
 package cn.xuyinyin.magic.cdc.stream
 
-import cn.xuyinyin.magic.cdc.bootstrap.{BootstrapProgress, BootstrapRunner, BootstrapStepResult}
+import cn.xuyinyin.magic.cdc.bootstrap.{BootstrapProgress, BootstrapStepResult}
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.Await
@@ -26,19 +26,6 @@ trait TableGraphLifecycle {
 trait TableGraphGcPublisher {
   def state: BootstrapProgress
   private[magic] def publishGcCheckpoint(retention: cn.xuyinyin.magic.connectors.mysql.source.capture.CaptureGcRetention): String
-}
-
-private final class BootstrapRunnerLifecycle(runner: BootstrapRunner) extends TableGraphLifecycle {
-  override def state: BootstrapProgress = runner.state
-  override def step(stop: () => Boolean, continuation: Option[BootstrapProgress]): BootstrapStepResult = runner.step(stop, continuation)
-  override def run(stop: () => Boolean): Unit = runner.run(stop)
-  override def requestGcCheckpoint(): Unit = runner.requestGcCheckpoint()
-  override def gcCheckpointRequested: Boolean = runner.gcCheckpointRequested
-  override def gcPublisher: Option[TableGraphGcPublisher] = Some(new TableGraphGcPublisher {
-    override def state: BootstrapProgress = runner.state
-    override private[magic] def publishGcCheckpoint(retention: cn.xuyinyin.magic.connectors.mysql.source.capture.CaptureGcRetention): String =
-      runner.publishGcCheckpoint(retention)
-  })
 }
 
 final class TableCdcGraphRuntime private (private val lifecycle: Option[TableGraphLifecycle], private val graph: Option[TableCdcGraph]) {
@@ -85,13 +72,9 @@ final class TableCdcGraphRuntime private (private val lifecycle: Option[TableGra
 }
 
 object TableCdcGraphRuntime {
-  def fromBootstrap(runner: BootstrapRunner): TableCdcGraphRuntime = {
-    require(runner != null, "table CDC graph runtime requires a bootstrap runner")
-    new TableCdcGraphRuntime(Some(new BootstrapRunnerLifecycle(runner)), None)
-  }
-  def fromBootstrap(runner: BootstrapRunner, graph: TableCdcGraph): TableCdcGraphRuntime = {
-    require(runner != null && graph != null, "table CDC graph runtime requires bootstrap and streaming graph")
-    new TableCdcGraphRuntime(Some(new BootstrapRunnerLifecycle(runner)), Some(graph))
+  def fromSnapshot(lifecycle: TableGraphLifecycle, graph: Option[TableCdcGraph]): TableCdcGraphRuntime = {
+    require(lifecycle != null, "table CDC graph runtime requires a table lifecycle")
+    new TableCdcGraphRuntime(Some(lifecycle), graph)
   }
   def fromGraph(graph: TableCdcGraph): TableCdcGraphRuntime = {
     require(graph != null, "table CDC graph runtime requires a graph")

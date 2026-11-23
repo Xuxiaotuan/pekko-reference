@@ -7,7 +7,7 @@ import cn.xuyinyin.magic.cdc.recovery.{CdcExecutionException, ExecutionFailure}
 import cn.xuyinyin.magic.cdc.guardian.ManagedCdcJdbc
 import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
 import cn.xuyinyin.magic.cdc.savepoint.{CdcSavepointCoordinator, CdcSavepointHeader, CdcSavepointStore, TableCheckpointRef}
-import cn.xuyinyin.magic.cdc.stream.{BootstrapJournalTableGraph, TableCdcGraph, TableCdcGraphRuntime, TableGraphSettings, TableGraphSink}
+import cn.xuyinyin.magic.cdc.stream.{BootstrapJournalTableGraph, BootstrapTableGraphAdapter, TableCdcGraph, TableCdcGraphRuntime, TableGraphSettings, TableGraphSink}
 import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, Committed}
 import org.apache.pekko.Done
 import org.apache.pekko.actor.typed.{ActorRef, ActorSystem}
@@ -421,7 +421,7 @@ final class CdcBootstrapKernel(
           })
       implicit val graphMaterializer: org.apache.pekko.stream.Materializer = SystemMaterializer(system).materializer
       val graph = new TableCdcGraph(c.reader, TableGraphSettings(id, "bootstrap", id, consumerId), graphSink, graphJournal, graphBlockingEc)
-      Session(TableCdcGraphRuntime.fromBootstrap(runner, graph), journal, target, pool)
+      Session(TableCdcGraphRuntime.fromSnapshot(new BootstrapTableGraphAdapter(runner), Some(graph)), journal, target, pool)
     } catch { case e: Throwable => stopJournal(journal); throw e }
   }
   sealed private trait Watch
