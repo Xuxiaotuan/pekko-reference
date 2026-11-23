@@ -7,13 +7,10 @@ import cn.xuyinyin.magic.cdc.recovery.{CdcExecutionException, ExecutionFailure}
 import cn.xuyinyin.magic.cdc.guardian.ManagedCdcJdbc
 import cn.xuyinyin.magic.cdc.guardian.SnapshotGuardianWire
 import cn.xuyinyin.magic.cdc.savepoint.{CdcSavepointCoordinator, CdcSavepointHeader, CdcSavepointStore, TableCheckpointRef}
-import cn.xuyinyin.magic.cdc.stream.{BootstrapJournalTableGraph, TableCdcGraph, TableCdcGraphRuntime, TableGraphSettings, TableGraphSink}
-import cn.xuyinyin.magic.cdc.checkpoint.{BatchCheckpoint, Committed}
 import org.apache.pekko.Done
 import org.apache.pekko.actor.typed.{ActorRef, ActorSystem}
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.scaladsl.adapter._
-import org.apache.pekko.stream.SystemMaterializer
 import java.sql.Connection
 import java.util.UUID
 import java.util.concurrent.{Executors, ThreadFactory, TimeUnit}
@@ -55,13 +52,13 @@ final class CdcBootstrapKernel(
       def newThread(r: Runnable): Thread = { val t = new Thread(r, "cdc-graph-blocking"); t.setDaemon(true); t }
     })
   private val graphBlockingEc: ExecutionContext = ExecutionContext.fromExecutorService(graphBlockingExecutor)
+  private val jdbcConnections = new CdcJdbcConnections(managed)
   private val admission = new BootstrapAdmission(
     settings.limits.snapshotSteps,
     settings.limits.snapshotSteps + settings.limits.tailSteps,
     settings.limits.snapshotSteps + settings.limits.tailSteps)
-  private case class Capture(settings: CdcCaptureSettings, store: MySQLCaptureStore, reader: SharedMySQLCapture)
-  private case class Session(graph: TableCdcGraphRuntime, journal: ActorRef[BootstrapJournal.Command], target: BootstrapTarget, pool: String)
-  private val capturesById  = mutable.Map.empty[String, Capture]
+  private val tableSessionFactory = new CdcTableSessionFactory(system, managed, recoveryStore, jdbcConnections, admission, graphBlockingEc, observe)
+  private val capturesById  = mutable.Map.empty[String, CdcCaptureHandle]
   private val gcById        = mutable.Map.empty[String, CdcGcCoordinator]
   private val recoveryOnly  = mutable.Set.empty[String]
   private val recoveryReady = mutable.Set.empty[String]
@@ -102,7 +99,7 @@ final class CdcBootstrapKernel(
     synchronized { recoveryOnly.remove(captureId); recoveryReady.add(captureId) }
     markCaptureReady(captureId)
   }
-  private val sessions               = mutable.Map.empty[String, Session]
+  private val sessions               = mutable.Map.empty[String, CdcTableSession]
   private val reservations           = mutable.Map.empty[String, String]
   private var peakSessions           = 0
   private val journalStops           = mutable.Map.empty[ActorRef[BootstrapJournal.Command], Future[Done]]
@@ -134,46 +131,11 @@ final class CdcBootstrapKernel(
   def captureReleaseEvidence: Vector[(String, CaptureReleaseEvidence)] = synchronized(capturesById.toVector.collect {
     case (id, c) if closing.contains(id) => id -> c.reader.releaseEvidence
   })
-  private def stateOpen(c: CdcCaptureSettings): Connection =
-    ManagedCdcJdbc.open(CdcJdbc.withTimeouts(c.controlState.jdbcUrl), c.controlState.username, c.controlState.password, "control", managed)
-  private def gcOpen(c: CdcCaptureSettings): Connection = {
-    val account = c.gc.get
-    ManagedCdcJdbc.open(CdcJdbc.withTimeouts(c.controlState.jdbcUrl), account.username, account.password, "control", managed)
-  }
   override def gcEnabled: Boolean        = captureEnabled && settings.captures.exists(_.gc.nonEmpty)
   override def gcViews: Vector[JsObject] = synchronized(gcById.values.toVector).map(_.status)
   override def maintainGc(attempt: String, stop: () => Boolean): Unit = {
     val ready = dispatchCaptureIds
     synchronized(gcById.toVector).filter(x => ready(x._1)).foreach(_._2.tick(attempt, stop))
-  }
-  private def materialOpen(c: CdcCaptureSettings): Connection = c.materialState match {
-    case Some(account) => ManagedCdcJdbc.open(CdcJdbc.withTimeouts(account.jdbcUrl), account.username, account.password, "control", managed)
-    case None          => stateOpen(c)
-  }
-  private def captureLogOpen(c: CdcCaptureSettings): Connection =
-    ManagedCdcJdbc.open(CdcJdbc.withTimeouts(c.controlState.jdbcUrl), c.sdkState.username, c.sdkState.password, "control", managed)
-  private def sourceOpen(c: CdcCaptureSettings, observer: Boolean = false, controller: Boolean = false): Connection = {
-    require(!(observer && controller), "source roles are mutually exclusive")
-    val username =
-      if (controller) c.sourceControllerUsername.getOrElse(throw new IllegalStateException("source controller missing"))
-      else if (observer) c.sourceObserverUsername.getOrElse(c.source.username)
-      else c.source.username
-    val password =
-      if (controller) c.sourceControllerPassword.getOrElse(throw new IllegalStateException("source controller password missing"))
-      else if (observer) c.sourceObserverPassword.getOrElse(c.source.password)
-      else c.source.password
-    ManagedCdcJdbc.open(
-      s"jdbc:mysql://${c.source.host}:${c.source.port}/${c.source.database}?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&connectTimeout=5000&socketTimeout=5000",
-      username,
-      password,
-      "source",
-      managed)
-  }
-  private def stateIdentity(c: CdcCaptureSettings): Unit = {
-    val jdbc = new BootstrapJdbc(() => stateOpen(c), 1)
-    jdbc.connection { connection =>
-      require(jdbc.query(connection, "SELECT @@server_uuid AS uuid").head("uuid") == c.stateLineage, "CDC platform state lineage changed")
-    }
   }
   override def prepareManagedManifest(): String = {
     require(managed, "resource manifest is only valid for a managed owner")
@@ -192,13 +154,13 @@ final class CdcBootstrapKernel(
       } finally c.close()
     }
     settings.captures.foreach { cfg =>
-      record(() => stateOpen(cfg), cfg.stateLineage)
-      record(() => captureLogOpen(cfg), cfg.stateLineage)
-      cfg.materialState.foreach(_ => record(() => materialOpen(cfg), cfg.stateLineage))
-      cfg.gc.foreach(_ => record(() => gcOpen(cfg), cfg.stateLineage))
-      record(() => sourceOpen(cfg), cfg.sourceLineage)
-      if (cfg.sourceObserverUsername.nonEmpty) record(() => sourceOpen(cfg, observer = true), cfg.sourceLineage)
-      if (cfg.sourceControllerUsername.nonEmpty) record(() => sourceOpen(cfg, controller = true), cfg.sourceLineage)
+      record(() => jdbcConnections.state(cfg), cfg.stateLineage)
+      record(() => jdbcConnections.captureLog(cfg), cfg.stateLineage)
+      cfg.materialState.foreach(_ => record(() => jdbcConnections.material(cfg), cfg.stateLineage))
+      cfg.gc.foreach(_ => record(() => jdbcConnections.gc(cfg), cfg.stateLineage))
+      record(() => jdbcConnections.source(cfg), cfg.sourceLineage)
+      if (cfg.sourceObserverUsername.nonEmpty) record(() => jdbcConnections.source(cfg, observer = true), cfg.sourceLineage)
+      if (cfg.sourceControllerUsername.nonEmpty) record(() => jdbcConnections.source(cfg, controller = true), cfg.sourceLineage)
     }
     val journal     = system.settings.config.getConfig("pekko-persistence-jdbc.shared-databases.slick.db")
     val journalUrl  = journal.getString("url")
@@ -227,7 +189,7 @@ final class CdcBootstrapKernel(
     val enabledV2 = settings.captures.filter(_.sourceFenceV2).map(_.id).toSet
     // Even direct unmanaged construction must inspect the configured state DB;
     // missing/uninitialized guard tables fail closed instead of implying v1.
-    val guard     = fenceGuardStore.orElse(recoveryStore).getOrElse(new CdcTaskStore(() => stateOpen(settings.captures.head), settings.limits))
+    val guard     = fenceGuardStore.orElse(recoveryStore).getOrElse(new CdcTaskStore(() => jdbcConnections.state(settings.captures.head), settings.limits))
     val persisted = guard.persistedFenceCaptures()
     require(persisted.subsetOf(enabledV2) && (managed || persisted.isEmpty), "persisted source fence cannot be downgraded")
     val deferred = recoveryStore
@@ -243,13 +205,13 @@ final class CdcBootstrapKernel(
           cfg.sourceObserverUsername.nonEmpty && cfg.sourceControllerUsername.nonEmpty &&
             Set(cfg.source.username, cfg.sourceObserverUsername.get, cfg.sourceControllerUsername.get).size == 3,
           "distinct source fence accounts required")
-      stateIdentity(cfg)
+      jdbcConnections.requireStateIdentity(cfg)
       // L stays in the control schema, but every L connection belongs to the capture's observed account domain.
-      val store = new MySQLCaptureStore(() => captureLogOpen(cfg), cfg.id, cfg.sourceLineage, cfg.maxLogBytes)
+      val store = new MySQLCaptureStore(() => jdbcConnections.captureLog(cfg), cfg.id, cfg.sourceLineage, cfg.maxLogBytes)
       store.initialize()
       val observer = CaptureResourceObserver.exclusiveAccounts(
-        () => sourceOpen(cfg, observer = true),
-        () => stateOpen(cfg),
+        () => jdbcConnections.source(cfg, observer = true),
+        () => jdbcConnections.state(cfg),
         cfg.source.username,
         cfg.sdkState.username,
         cfg.sourceLineage,
@@ -263,17 +225,17 @@ final class CdcBootstrapKernel(
         resourceObserver = Some(observer),
         authorizePendingB = recoveryStore.map(s => (offset: String, ids: Vector[String]) => s.authorizedBPermits(cfg.id, offset, ids)),
         sourceFenceRequired = cfg.sourceFenceV2,
-        sourceFenceObserver = if (cfg.sourceFenceV2) Some(() => sourceOpen(cfg, observer = true)) else None,
+        sourceFenceObserver = if (cfg.sourceFenceV2) Some(() => jdbcConnections.source(cfg, observer = true)) else None,
         sourceFenceUuid = if (cfg.sourceFenceV2) Some(cfg.sourceLineage) else None)
       if (!captureEnabled) reader.enableSharedLogOnly()
       val registered = synchronized {
-        if (stopping.get()) false else { capturesById.update(cfg.id, Capture(cfg, store, reader)); true }
+        if (stopping.get()) false else { capturesById.update(cfg.id, CdcCaptureHandle(cfg, store, reader)); true }
       }
       if (!registered) { reader.requestClose(); throw new IllegalStateException("CDC kernel stopping") }
       if (captureEnabled) cfg.gc.foreach { g =>
-        val gc = new CdcGcCoordinator(cfg, store, reader, () => stateOpen(cfg), () => gcOpen(cfg), system, settings.captures.map(_.id).toSet, observe)
+        val gc = new CdcGcCoordinator(cfg, store, reader, () => jdbcConnections.state(cfg), () => jdbcConnections.gc(cfg), system, settings.captures.map(_.id).toSet, observe)
         synchronized { gcById.update(cfg.id, gc) }
-        val root = new BootstrapJdbc(() => stateOpen(cfg))
+        val root = new BootstrapJdbc(() => jdbcConnections.state(cfg))
         val owner =
           root.connection(c => root.query(c, "SELECT owner_attempt FROM pekko_cdc_owner_v1 WHERE platform_id='default'").head("owner_attempt"))
         gc.initialize(owner, () => stopping.get())
@@ -339,90 +301,9 @@ final class CdcBootstrapKernel(
     val maximum = if (pool == "TAIL") settings.limits.tailSteps else settings.limits.snapshotSteps
     if (occupied.size >= maximum) Some(occupied) else None
   }
-  private def create(task: CdcTaskRequest, id: String, pool: String): Session = {
-    val c     = synchronized(capturesById.getOrElse(task.captureId, throw new CdcPlatformException("CAPTURE_NOT_CONFIGURED")))
-    val codec = new BootstrapRowCodec(c.store.schema(task.table).getOrElse(throw new CdcPlatformException("SCHEMA_NOT_READY")).definition)
-    val validate: (String, BootstrapProgress) => Future[Boolean] = (permit, _) =>
-      Future {
-        scala.concurrent.blocking(recoveryStore.exists(_.authorizedBPermit(permit, id)))
-      }(scala.concurrent.ExecutionContext.global)
-    // Recording a receipt only enters RECOVERY_PENDING; it never authorizes execution.
-    val validateReceipt: (String, String, BootstrapProgress) => Future[Boolean] = (permit, digest, _) =>
-      Future {
-        scala.concurrent.blocking(recoveryStore.exists(_.receiptDigestForPermit(permit, id).contains(digest)))
-      }(scala.concurrent.ExecutionContext.global)
-    val validateConsumed: (String, String, BootstrapProgress) => Future[Boolean] = (permit, digest, state) =>
-      Future {
-        scala.concurrent.blocking(recoveryStore.exists { store =>
-          store.fenceRecoveryReady(permit, id, digest, state.executionId, CdcCaptureFenceVerifier.create(c.settings, store))
-        })
-      }(scala.concurrent.ExecutionContext.global)
-    val journal = system.systemActorOf(
-      BootstrapJournal(task.captureId + "-" + id, validate, validateReceipt, validateConsumed),
-      "cdc-journal-" + UUID.randomUUID().toString)
-    try {
-      val access                              = new BootstrapJournalAccess(journal)
-      val spool                               = new BootstrapStore(() => materialOpen(c.settings), id, c.settings.maxSpoolBytes)
-      val target                              = new BootstrapTarget(() => stateOpen(c.settings), task.targetTable, codec, id)
-      val onEvent: (String, JsObject) => Unit = (kind, data) => observe(kind, JsObject(data.fields + ("taskId" -> JsString(id))))
-      val source = new BootstrapSnapshot(
-        () => sourceOpen(c.settings),
-        task.table,
-        codec,
-        c.settings.bootstrapLimits.windowRows,
-        c.settings.bootstrapLimits.windowBytes,
-        onEvent)
-      val targetConfig = CdcTargetConfig.forTarget(c.settings, task.targetTable)
-      val sink         = new BootstrapReplaySink(_ => stateOpen(c.settings)).bind(targetConfig)
-      val progressVerifier = if (c.store.discoveryComplete) {
-        val j = system.settings.config.getConfig("pekko-persistence-jdbc.shared-databases.slick.db")
-        Some(
-          BootstrapJournalProgressVerifier.create(
-            system,
-            () => stateOpen(c.settings),
-            () => ManagedCdcJdbc.open(j.getString("url"), j.getString("user"), j.getString("password"), "journal", managed)))
-      } else None
-      // Sink execution stays on the caller's bounded step worker, never the Actor dispatcher.
-      val direct: ExecutionContext = ExecutionContext.parasitic
-      val runner = new BootstrapRunner(
-        id,
-        task.table,
-        task.generation,
-        task.canonical,
-        c.reader,
-        c.store,
-        spool,
-        target,
-        access,
-        source,
-        sink,
-        c.settings.source.database,
-        () => stateOpen(c.settings),
-        admission,
-        c.settings.bootstrapLimits,
-        onEvent,
-        progressVerifier)(direct)
-      val consumerId = CaptureConsumerIdentity.bootstrap(c.store.captureId, id, task.generation)
-      val graphSink = new TableGraphSink {
-        override def commit(subscriptionId: String, executionId: String, batch: CdcCapturedBatch)(implicit ec: ExecutionContext) =
-          sink
-            .commitBatch(subscriptionId, executionId, batch, _ => ())(ec)
-            .map { _ =>
-              val cursor = cn.xuyinyin.magic.cdc.checkpoint.SourceCursor(batch.cursor.kind, batch.cursor.value, batch.cursor.upperBound)
-              Committed(
-                BatchCheckpoint(batch.sourceNodeId, batch.partitionId, batch.batchSequence, batch.batchId, cursor, batch.rows.size, batch.rows.size))
-            }(ExecutionContext.parasitic)
-      }
-      val graphJournal = new BootstrapJournalTableGraph(
-        access,
-        receipt =>
-          progressVerifier.foreach { verifier =>
-            c.store.projectBootstrapVerified(consumerId, id, task.generation, runner.state.definition, receipt, verifier)
-          })
-      implicit val graphMaterializer: org.apache.pekko.stream.Materializer = SystemMaterializer(system).materializer
-      val graph = new TableCdcGraph(c.reader, TableGraphSettings(id, "bootstrap", id, consumerId), graphSink, graphJournal, graphBlockingEc)
-      Session(TableCdcGraphRuntime.fromSnapshot(runner, Some(graph)), journal, target, pool)
-    } catch { case e: Throwable => stopJournal(journal); throw e }
+  private def create(task: CdcTaskRequest, id: String, pool: String): CdcTableSession = {
+    val capture = synchronized(capturesById.getOrElse(task.captureId, throw new CdcPlatformException("CAPTURE_NOT_CONFIGURED")))
+    tableSessionFactory.create(task, id, pool, capture, stopJournal)
   }
   sealed private trait Watch
   private case object Gone extends Watch

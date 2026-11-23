@@ -40,6 +40,19 @@ final case class BootstrapLimits(
   require(chunkRows > 0 && pageRows > 0 && groupBatch > 0 && groupBatch <= 1000 && windowRows >= chunkRows && windowBytes > 0)
 }
 
+/** Persisted phase names. Keeping them in one place makes transitions readable without changing the wire values. */
+private object BootstrapPhase {
+  val Paused          = "PAUSED"
+  val Canceled        = "CANCELED"
+  val RecoveryPending = "RECOVERY_PENDING"
+  val Streaming       = "STREAMING"
+  val Scanning        = "SCANNING"
+  val Replaying       = "REPLAYING"
+  val Activating      = "ACTIVATING"
+  val BPending        = "B_PENDING"
+  val CaptureReady    = "CAPTURE_READY"
+}
+
 /**
  * Serial table initialization + application, independent from the shared Reader callback thread.
  * Call run on a dedicated blocking execution context. Journal asks use the actor dispatcher.
@@ -130,7 +143,7 @@ final class BootstrapRunner(
 
   /** Consumed by normal bounded scheduling steps, never on the Reader callback thread. */
   def requestGcCheckpoint(): Unit = synchronized {
-    require(state.phase == "STREAMING" && !state.cancelRequested, "GC checkpoint requires an active streaming subscription")
+    require(state.phase == BootstrapPhase.Streaming && !state.cancelRequested, "GC checkpoint requires an active streaming subscription")
     gcSealRequested = true
   }
 
@@ -238,7 +251,7 @@ final class BootstrapRunner(
   }
   private def recover(reason: String): Unit = {
     val s = state
-    if (s.recoveryAttempts >= 3) update(_.copy(phase = "PAUSED", failure = Some(ExecutionFailure.BudgetExhausted)))
+    if (s.recoveryAttempts >= 3) update(_.copy(phase = BootstrapPhase.Paused, failure = Some(ExecutionFailure.BudgetExhausted)))
     else update(_.copy(recoveryAttempts = s.recoveryAttempts + 1, failure = Some(reason)))
   }
   private def verifyWindow(w: String, m: String): Unit = {
@@ -308,14 +321,14 @@ final class BootstrapRunner(
     var s = state
     if (s.window.isEmpty && !s.planned) {
       val upper = source.maximum()
-      update(_.copy(phase = "SCANNING", upper = upper, planned = true, nextLower = None))
+      update(_.copy(phase = BootstrapPhase.Scanning, upper = upper, planned = true, nextLower = None))
       emit("BASELINE_PLANNED_AFTER_RESET", "upper" -> upper.map(JsString(_)).getOrElse(JsNull))
       return
     }
     if (s.window.isEmpty && s.planned && s.nextLower == s.upper) {
       // Empty input has no ranges. Nonempty input finishes exactly at frozen upper U.
       emit("BEFORE_F"); val f = fence(id + "_F", "F", context("F")); emit("F_READY", "sequence" -> JsNumber(f.sequence.get))
-      update(_.copy(phase = "REPLAYING", fence = Some(f.id), deltaAfter = logStore.subscription(id).get.bSequence.get)); return
+      update(_.copy(phase = BootstrapPhase.Replaying, fence = Some(f.id), deltaAfter = logStore.subscription(id).get.bSequence.get)); return
     }
     if (s.window.isEmpty) {
       val u = source.nextUpper(s.nextLower, s.upper.get, limits.chunkRows)
@@ -423,13 +436,13 @@ final class BootstrapRunner(
    * Rebuild the spool and exclusively claimed target under a new epoch.
    */
   private def resetBaselineAfterRestart(before: BootstrapProgress): Unit = {
-    require(before.phase != "STREAMING" && before.phase != "CANCELED" && before.phase != "PAUSED", "baseline reset is only valid before streaming")
+    require(before.phase != BootstrapPhase.Streaming && before.phase != BootstrapPhase.Canceled && before.phase != BootstrapPhase.Paused, "baseline reset is only valid before streaming")
     val epoch = (before.revision + 1).toInt
     spool.resetForRescan()
     target.resetForRescan(epoch)
     update(
       _.copy(
-        phase = "SCANNING",
+        phase = BootstrapPhase.Scanning,
         planned = false,
         upper = None,
         nextLower = None,
@@ -447,12 +460,12 @@ final class BootstrapRunner(
   private def cancelStep(): Unit = {
     val s = logStore.subscription(id)
     s.foreach { sub =>
-      if (sub.status == "B_PENDING") capture.cancelPending(id)
-      else if (sub.status == "CAPTURE_READY") { capture.unsubscribe(id); poll("K") { logStore.subscription(id).exists(_.k.nonEmpty) } }
+      if (sub.status == BootstrapPhase.BPending) capture.cancelPending(id)
+      else if (sub.status == BootstrapPhase.CaptureReady) { capture.unsubscribe(id); poll("K") { logStore.subscription(id).exists(_.k.nonEmpty) } }
     }
     val finalSub = logStore.subscription(id)
     if (target.activation.nonEmpty && finalSub.exists(_.k.nonEmpty)) while (replay(tail = true)) {}
-    update(_.copy(phase = "CANCELED")); emit("CANCELED", "K" -> finalSub.flatMap(_.k).map(_.json.parseJson).getOrElse(JsNull))
+    update(_.copy(phase = BootstrapPhase.Canceled)); emit(BootstrapPhase.Canceled, "K" -> finalSub.flatMap(_.k).map(_.json.parseJson).getOrElse(JsNull))
   }
 
   // A scheduled step owns no JDBC connection or run permit after a confirmed return.
@@ -521,12 +534,12 @@ final class BootstrapRunner(
               "fenceSequence" -> JsNumber(f.sequence.get),
               "schema"        -> JsString(source.codec.schemaId)))
           proof = Some(p); finite = false; after = f.sequence.get
-          if (accepted.phase == "STREAMING") {
+          if (accepted.phase == BootstrapPhase.Streaming) {
             require(target.activation.contains(p), "durable STREAMING has no target activation proof")
             if (after == accepted.deltaAfter) proof else None
           } else proof
         }
-      } else if (accepted.phase == "STREAMING") {
+      } else if (accepted.phase == BootstrapPhase.Streaming) {
         val entries = logStore.readForConsumer(id, after, limits.groupBatch, retentionConsumer).takeWhile(_.sequence <= accepted.deltaAfter)
         if (entries.nonEmpty) {
           val b = log.readBatch(id, after, entries.size, "source", accepted.executionId, 0, Some(retentionConsumer)).get
@@ -542,21 +555,21 @@ final class BootstrapRunner(
 
   private def scheduledCancel(): Boolean = {
     logStore.subscription(id) match {
-      case Some(sub) if sub.status == "B_PENDING" =>
+      case Some(sub) if sub.status == BootstrapPhase.BPending =>
         // Bind can win after the read. A known effective route must progress through K.
         try capture.cancelPending(id)
         catch {
-          case e: IllegalArgumentException if logStore.subscription(id).exists(_.status == "CAPTURE_READY") => return true
+          case e: IllegalArgumentException if logStore.subscription(id).exists(_.status == BootstrapPhase.CaptureReady) => return true
         }
-      case Some(sub) if sub.status == "CAPTURE_READY" =>
+      case Some(sub) if sub.status == BootstrapPhase.CaptureReady =>
         if (!stepCancelIssued) { capture.unsubscribe(id); stepCancelIssued = true; return true }
         return false
       case _ => ()
     }
     val sub = logStore.subscription(id)
-    if (sub.exists(_.status == "CAPTURE_READY")) return false
+    if (sub.exists(_.status == BootstrapPhase.CaptureReady)) return false
     if (target.activation.nonEmpty && sub.exists(_.k.nonEmpty) && replay(tail = true)) return true
-    update(_.copy(phase = "CANCELED")); emit("CANCELED", "K" -> sub.flatMap(_.k).map(_.json.parseJson).getOrElse(JsNull)); true
+    update(_.copy(phase = BootstrapPhase.Canceled)); emit(BootstrapPhase.Canceled, "K" -> sub.flatMap(_.k).map(_.json.parseJson).getOrElse(JsNull)); true
   }
 
   private def scheduledScan(): Boolean = {
@@ -567,7 +580,7 @@ final class BootstrapRunner(
         case None => emit("BEFORE_F"); capture.requestFence(name, id, "F", context("F")); true
         case Some(f) if f.covered =>
           emit("F_READY", "sequence" -> JsNumber(f.sequence.get))
-          update(_.copy(phase = "REPLAYING", fence = Some(f.id), deltaAfter = logStore.subscription(id).get.bSequence.get)); true
+          update(_.copy(phase = BootstrapPhase.Replaying, fence = Some(f.id), deltaAfter = logStore.subscription(id).get.bSequence.get)); true
         case _ => false
       }
     } else { scanStep(); true }
@@ -576,7 +589,7 @@ final class BootstrapRunner(
   /** Reconstruct the session once, checking the last clean continuation against Journal. */
   private def prepareStep(continuation: Option[BootstrapProgress]): Unit = {
     val before = state
-    require(before.phase != "RECOVERY_PENDING", "bootstrap recovery receipt has not been consumed")
+    require(before.phase != BootstrapPhase.RecoveryPending, "bootstrap recovery receipt has not been consumed")
     val proof = stepLastClean.orElse(continuation)
     proof.foreach(p => require(BootstrapStepContinuation.matches(p, before), "clean bootstrap step no longer matches Journal"))
     if (!stepPrepared) {
@@ -600,7 +613,7 @@ final class BootstrapRunner(
           // Do this only on first preparation, never between normal steps.
           if (BootstrapStepContinuation.needsReadViewRecovery(before, before.window.exists(w => spool.manifest(w).nonEmpty)))
             stepRestoring = true
-          if (before.phase == "STREAMING") require(target.activation.nonEmpty, "durable STREAMING has no target activation proof")
+          if (before.phase == BootstrapPhase.Streaming) require(target.activation.nonEmpty, "durable STREAMING has no target activation proof")
         }
       }
       stepPrepared = true
@@ -612,7 +625,7 @@ final class BootstrapRunner(
 
   /** Advance at most one bounded unit of initialization, replay, activation, or tailing. */
   private def advanceStep(stop: () => Boolean, work: StepActivity): Unit = {
-    if (!Set("PAUSED", "CANCELED", "RECOVERY_PENDING").contains(state.phase) && !stop()) {
+    if (!Set(BootstrapPhase.Paused, BootstrapPhase.Canceled, BootstrapPhase.RecoveryPending).contains(state.phase) && !stop()) {
       healthy()
       if (canceled) { stepAudit = None; work.didWork = scheduledCancel() }
       else {
@@ -623,7 +636,7 @@ final class BootstrapRunner(
           update(_.copy(attempt = s.attempt + 1, window = Some(next), manifest = None, appliedPage = 0))
           emit("ABANDONED", "window" -> JsString(old)); work.didWork = true
         }
-        if (stepRestoring && state.phase != "STREAMING") stepRestoring = false
+        if (stepRestoring && state.phase != BootstrapPhase.Streaming) stepRestoring = false
         if (stepRestoring) {
           if (stepAudit.isEmpty) stepAudit = Some(new StepAudit(state))
           if (stepAudit.get.advance().nonEmpty) { stepAudit = None; stepRestoring = false }
@@ -631,32 +644,32 @@ final class BootstrapRunner(
         } else if (logStore.subscription(id).isEmpty) { capture.subscribe(id, table, generation); work.didWork = true }
         else if (logStore.subscription(id).exists(_.b.isEmpty)) work.complete = false
         else if (!state.planned) {
-          val upper = source.maximum(); update(_.copy(phase = "SCANNING", upper = upper, planned = true)); work.didWork = true
+          val upper = source.maximum(); update(_.copy(phase = BootstrapPhase.Scanning, upper = upper, planned = true)); work.didWork = true
         } else
           state.phase match {
-            case "SCANNING" => work.didWork = scheduledScan()
-            case "REPLAYING" =>
+            case BootstrapPhase.Scanning => work.didWork = scheduledScan()
+            case BootstrapPhase.Replaying =>
               if (!replay(false))
-                update(_.copy(phase = "ACTIVATING", deltaAfter = activationFence(state.fence, logStore.subscription(id).get).sequence.get))
+                update(_.copy(phase = BootstrapPhase.Activating, deltaAfter = activationFence(state.fence, logStore.subscription(id).get).sequence.get))
               work.didWork = true
-            case "ACTIVATING" =>
+            case BootstrapPhase.Activating =>
               if (stepAudit.isEmpty) stepAudit = Some(new StepAudit(state))
               stepAudit.get.advance().foreach { proof =>
                 emit("BEFORE_ACTIVATE", "proof" -> proof.parseJson)
                 if (!canceled && !stop()) {
                   target.activate(proof); emit("ACTIVATION_T", "proof" -> proof.parseJson)
                   if (!canceled) {
-                    val accepted = update(_.copy(phase = "STREAMING"));
-                    if (accepted.phase == "STREAMING") emit("STREAMING", "proof" -> proof.parseJson)
+                    val accepted = update(_.copy(phase = BootstrapPhase.Streaming));
+                    if (accepted.phase == BootstrapPhase.Streaming) emit(BootstrapPhase.Streaming, "proof" -> proof.parseJson)
                   }
                 }
                 stepAudit = None
               }
-              work.didWork = true; work.complete = state.phase == "STREAMING"
-            case "STREAMING" if gcSealRequested =>
+              work.didWork = true; work.complete = state.phase == BootstrapPhase.Streaming
+            case BootstrapPhase.Streaming if gcSealRequested =>
               sealGcUnit()
               work.didWork = true; work.complete = !gcSealRequested
-            case "STREAMING" => work.didWork = replay(true)
+            case BootstrapPhase.Streaming => work.didWork = replay(true)
             case other       => throw new IllegalArgumentException("unexpected bootstrap phase: " + other)
           }
       }
@@ -673,8 +686,8 @@ final class BootstrapRunner(
   def step(stop: () => Boolean = () => false, continuation: Option[BootstrapProgress] = None): BootstrapStepResult = synchronized {
     if (stepReleaseUnknown) return BootstrapStepResult(stepLastObserved.getOrElse(state), false, false, 0, validationComplete = false)
     val initial = state
-    if (initial.phase == "RECOVERY_PENDING") return BootstrapStepResult(initial, false, true, 250, validationComplete = false)
-    if (stop() || Set("PAUSED", "CANCELED").contains(initial.phase))
+    if (initial.phase == BootstrapPhase.RecoveryPending) return BootstrapStepResult(initial, false, true, 250, validationComplete = false)
+    if (stop() || Set(BootstrapPhase.Paused, BootstrapPhase.Canceled).contains(initial.phase))
       return BootstrapStepResult(initial, false, true, 0)
     if (!capture.bootstrapReady) {
       healthy(); return BootstrapStepResult(initial, false, true, 250, validationComplete = false)
@@ -699,7 +712,7 @@ final class BootstrapRunner(
             stepAudit = None
             if (failure.releaseConfirmed && ExecutionFailure.Retryable(failure.code) && capture.failure.isEmpty) {
               recover(failure.code); stepRestoring = true
-            } else { release = failure.releaseConfirmed; update(_.copy(phase = "PAUSED", failure = Some(failure.code))) }
+            } else { release = failure.releaseConfirmed; update(_.copy(phase = BootstrapPhase.Paused, failure = Some(failure.code))) }
         } finally {
           if (leaseJdbc.query(c, "SELECT RELEASE_LOCK(?) AS released", name).head("released") != "1")
             throw new cn.xuyinyin.magic.cdc.recovery.CdcExecutionException(
@@ -720,7 +733,7 @@ final class BootstrapRunner(
   }
 
   def run(stop: () => Boolean = () => false): Unit = {
-    if (state.phase == "RECOVERY_PENDING") return
+    if (state.phase == BootstrapPhase.RecoveryPending) return
     admission.reserveRun(); val leaseJdbc = new BootstrapJdbc(leaseOpen, 1); var release = true
     try
       leaseJdbc.connection { c =>
@@ -730,12 +743,12 @@ final class BootstrapRunner(
           registerRetention(state)
           spool.initialize(boundDefinition, state.definition.nonEmpty); source.validate(Some(logStore.lineage)); target.claim()
           val s = state
-          if (s.phase == "CANCELED" || s.phase == "PAUSED") return
+          if (s.phase == BootstrapPhase.Canceled || s.phase == BootstrapPhase.Paused) return
           if (s.definition.isEmpty)
             update(_.copy(definition = MySQLCdcGroup.hash(boundDefinition), executionId = java.util.UUID.randomUUID().toString))
           else { require(s.definition == MySQLCdcGroup.hash(boundDefinition), "bootstrap definition changed"); recover(ExecutionFailure.Interrupted) }
-          if (state.phase == "PAUSED") return
-          if (state.phase == "STREAMING") {
+          if (state.phase == BootstrapPhase.Paused) return
+          if (state.phase == BootstrapPhase.Streaming) {
             val proof = audit(); require(target.activation.contains(proof), "durable STREAMING has no target activation proof")
             var after = activationFence(state.fence, logStore.subscription(id).get).sequence.get; val last = state.deltaAfter; var more = true
             while (more) {
@@ -760,10 +773,10 @@ final class BootstrapRunner(
             if (stop()) return
             if (!canceled) capture.subscribe(id, table, generation)
             if (!canceled) poll("B") { logStore.subscription(id).exists(_.b.nonEmpty) }
-            if (!canceled && !state.planned) { val upper = source.maximum(); update(_.copy(phase = "SCANNING", upper = upper, planned = true)) }
+            if (!canceled && !state.planned) { val upper = source.maximum(); update(_.copy(phase = BootstrapPhase.Scanning, upper = upper, planned = true)) }
           }
           var recovering = true
-          while (!stop() && !Set("PAUSED", "CANCELED").contains(state.phase)) {
+          while (!stop() && !Set(BootstrapPhase.Paused, BootstrapPhase.Canceled).contains(state.phase)) {
             try {
               healthy()
               if (canceled) cancelStep()
@@ -778,21 +791,21 @@ final class BootstrapRunner(
                   recovering = false
                 }
                 state.phase match {
-                  case "SCANNING" => scanStep()
-                  case "REPLAYING" =>
+                  case BootstrapPhase.Scanning => scanStep()
+                  case BootstrapPhase.Replaying =>
                     if (!replay(false))
-                      update(_.copy(phase = "ACTIVATING", deltaAfter = activationFence(state.fence, logStore.subscription(id).get).sequence.get))
-                  case "ACTIVATING" =>
+                      update(_.copy(phase = BootstrapPhase.Activating, deltaAfter = activationFence(state.fence, logStore.subscription(id).get).sequence.get))
+                  case BootstrapPhase.Activating =>
                     val proof = audit(); emit("BEFORE_ACTIVATE", "proof" -> proof.parseJson)
                     if (!canceled) {
                       target.activate(proof); emit("ACTIVATION_T", "proof" -> proof.parseJson)
                       if (!canceled) {
-                        val accepted = update(_.copy(phase = "STREAMING"));
-                        if (accepted.phase == "STREAMING") emit("STREAMING", "proof" -> proof.parseJson)
+                        val accepted = update(_.copy(phase = BootstrapPhase.Streaming));
+                        if (accepted.phase == BootstrapPhase.Streaming) emit(BootstrapPhase.Streaming, "proof" -> proof.parseJson)
                       }
                     }
-                  case "STREAMING" if gcSealRequested => sealGcUnit()
-                  case "STREAMING"                    => if (!replay(true)) Thread.sleep(50)
+                  case BootstrapPhase.Streaming if gcSealRequested => sealGcUnit()
+                  case BootstrapPhase.Streaming                    => if (!replay(true)) Thread.sleep(50)
                   case other                          => throw new IllegalArgumentException("unexpected bootstrap phase: " + other)
                 }
               }
@@ -803,14 +816,14 @@ final class BootstrapRunner(
                 if (canceled && failure.releaseConfirmed && capture.failure.isEmpty) cancelStep()
                 else if (failure.releaseConfirmed && ExecutionFailure.Retryable(failure.code) && capture.failure.isEmpty) {
                   recover(failure.code); recovering = true
-                } else { release = failure.releaseConfirmed; update(_.copy(phase = "PAUSED", failure = Some(failure.code))) }
+                } else { release = failure.releaseConfirmed; update(_.copy(phase = BootstrapPhase.Paused, failure = Some(failure.code))) }
             }
           }
         } catch {
           case NonFatal(e) =>
             val failure = ExecutionFailure.from(e, "bootstrap-prepare"); release = failure.releaseConfirmed
             emit("FAILURE", "code" -> JsString(failure.code), "error" -> JsString(e.toString))
-            update(_.copy(phase = "PAUSED", failure = Some(failure.code)))
+            update(_.copy(phase = BootstrapPhase.Paused, failure = Some(failure.code)))
         } finally {
           require(leaseJdbc.query(c, "SELECT RELEASE_LOCK(?) AS released", name).head("released") == "1", "bootstrap lease release unconfirmed")
         }

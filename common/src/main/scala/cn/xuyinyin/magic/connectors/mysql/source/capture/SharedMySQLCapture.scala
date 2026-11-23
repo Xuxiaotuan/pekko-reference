@@ -16,6 +16,7 @@ import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 import scala.util.Failure
 import cn.xuyinyin.magic.cdc.savepoint.CaptureEpoch
+import cn.xuyinyin.magic.cdc.stream.TableGraphCapture
 
 /** Single managed owner. A subscription becoming CAPTURE_READY does not initialize its target. */
 class SharedMySQLCapture(
@@ -33,7 +34,7 @@ class SharedMySQLCapture(
     sourceFenceUuid: Option[String] = None,
     recoveryGate: Option[cn.xuyinyin.magic.cdc.platform.CdcTaskStore.ReaderRecoveryGate] = None,
     ownerLockName: Option[String] = None)
-    extends AutoCloseable {
+    extends AutoCloseable with TableGraphCapture {
   require(source.connectorId == store.captureId, "capture namespace mismatch")
   require(recoveryGate.isEmpty || sourceFenceRequired, "recovery gate requires v2 source protection")
   recoveryGate.foreach(g => require(g != null && g.captureId == store.captureId, "reader recovery gate capture changed"))

@@ -3,10 +3,10 @@ package cn.xuyinyin.magic.cdc.stream
 import cn.xuyinyin.magic.cdc.bootstrap.{BootstrapJournal, BootstrapJournalAccess}
 import cn.xuyinyin.magic.cdc.checkpoint.{AlreadyCommitted, BatchCheckpoint, BatchCommitResult, Committed}
 import cn.xuyinyin.magic.connectors.mysql.sink.{MySQLCdcApplyConfig, MySQLCdcApplyEngine}
-import cn.xuyinyin.magic.connectors.mysql.source.capture.{CdcCapturedBatch, CdcCapturedBatchWorkflowAdapter, SharedMySQLCapture}
-import org.apache.pekko.Done
+import cn.xuyinyin.magic.connectors.mysql.source.capture.{CdcCapturedBatch, CdcCapturedBatchWorkflowAdapter}
+import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.stream.{KillSwitches, Materializer, UniqueKillSwitch}
-import org.apache.pekko.stream.scaladsl.{Keep, Sink}
+import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 import java.util.concurrent.atomic.AtomicReference
@@ -15,6 +15,25 @@ import spray.json._
 /** A table graph owns one table's Source, Sink, Journal handoff and ACK order. */
 trait TableGraphSink {
   def commit(subscriptionId: String, executionId: String, batch: CdcCapturedBatch)(implicit ec: ExecutionContext): Future[BatchCommitResult]
+}
+
+/** Capture capability required by a table graph. Reader lifecycle stays outside the graph. */
+trait TableGraphCapture {
+  def tableSource(
+      subscriptionId: String,
+      sourceNodeId: String,
+      executionId: String,
+      after: Long,
+      sequence: Long,
+      batchSize: Int,
+      consumerId: String)(implicit ec: ExecutionContext): Source[CdcCapturedBatch, NotUsed]
+
+  def acknowledgeTableBatch(
+      subscriptionId: String,
+      sourceNodeId: String,
+      consumerId: String,
+      batch: CdcCapturedBatch,
+      journalRevision: Long)(implicit ec: ExecutionContext): Future[Done]
 }
 
 trait TableGraphJournal {
@@ -51,7 +70,7 @@ final case class TableGraphMaterialized(
 }
 
 final class TableCdcGraph(
-    capture: SharedMySQLCapture,
+    capture: TableGraphCapture,
     settings: TableGraphSettings,
     sink: TableGraphSink,
     journal: TableGraphJournal,
