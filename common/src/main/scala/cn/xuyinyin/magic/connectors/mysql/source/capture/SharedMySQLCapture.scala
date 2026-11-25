@@ -12,7 +12,6 @@ import java.sql.{Connection, DriverManager}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 import scala.util.Failure
 import cn.xuyinyin.magic.cdc.savepoint.CaptureEpoch
@@ -39,6 +38,7 @@ class SharedMySQLCapture(
   require(recoveryGate.isEmpty || sourceFenceRequired, "recovery gate requires v2 source protection")
   recoveryGate.foreach(g => require(g != null && g.captureId == store.captureId, "reader recovery gate capture changed"))
   @volatile private var installedRecoveryGate = recoveryGate
+  private lazy val tableGraphAccess = new CaptureTableGraphAccess(store, source.database)
   private val started                         = new AtomicBoolean(false); private val closed = new AtomicBoolean(false)
   private val captureOwnerLock                = ownerLockName.getOrElse("pekko_capture_" + store.captureId)
   private val sharedLogOnly                   = new AtomicBoolean(false)
@@ -130,46 +130,18 @@ class SharedMySQLCapture(
       batchSize: Int,
       consumerId: String
     )(implicit ec: ExecutionContext): Source[CdcCapturedBatch, NotUsed] = {
-    require(subscriptionId.nonEmpty && sourceNodeId.nonEmpty && executionId.nonEmpty && consumerId.matches("[a-f0-9]{64}"))
-    require(batchSize > 0 && batchSize <= 1000 && after >= 0 && sequence >= 0)
-    val consumerKind = if (sourceNodeId == "bootstrap") "BOOTSTRAP" else "WORKFLOW"
-    store.registerConsumer(consumerId, consumerKind, subscriptionId, sourceNodeId, after)
-    val reader       = new CapturedLogReader(store, source.database)
-    val cursor       = new AnyRef
-    var current      = after
-    var nextSequence = sequence
-    Source
-      .tick(Duration.Zero, 100.millis, ())
-      .mapAsync(1) { _ =>
-        Future {
-          cursor.synchronized {
-            reader.readBatch(subscriptionId, current, batchSize, sourceNodeId, executionId, nextSequence, Some(consumerId)).map { batch =>
-              current = batch.cursor.value.parseJson.asJsObject.fields("sequence").asInstanceOf[JsNumber].value.toLongExact
-              nextSequence += 1L
-              batch
-            }
-          }
-        }
-      }
-      .mapConcat(_.toList)
-      .mapMaterializedValue(_ => NotUsed)
+    tableGraphAccess.tableSource(subscriptionId, sourceNodeId, executionId, after, sequence, batchSize, consumerId)
   }
 
   /** Persist the graph's table checkpoint after Journal has acknowledged it. */
-  def acknowledgeTableBatch(
+  override def acknowledgeTableBatch(
       subscriptionId: String,
       sourceNodeId: String,
       consumerId: String,
       batch: CdcCapturedBatch,
       journalRevision: Long
-    )(implicit ec: ExecutionContext): Future[Done] = Future {
-    require(consumerId.matches("[a-f0-9]{64}") && journalRevision >= 0)
-    val reader       = new CapturedLogReader(store, source.database)
-    val floor        = reader.resumePosition(subscriptionId, batch.cursor)
-    val consumerKind = if (sourceNodeId == "bootstrap") "BOOTSTRAP" else "WORKFLOW"
-    store.projectConsumerJournal(consumerId, consumerKind, subscriptionId, sourceNodeId, floor, journalRevision, batch.batchId)
-    Done
-  }
+    )(implicit ec: ExecutionContext): Future[Done] =
+    tableGraphAccess.acknowledgeTableBatch(subscriptionId, sourceNodeId, consumerId, batch, journalRevision)
 
   /** Install only after state and source release proof; never replace a gate in flight. */
   private[magic] def installRecoveryGate(gate: cn.xuyinyin.magic.cdc.platform.CdcTaskStore.ReaderRecoveryGate): Unit = commandLock.synchronized {
